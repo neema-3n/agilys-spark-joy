@@ -1,25 +1,428 @@
+import { useState, useEffect } from 'react';
+import { useExercice } from '@/contexts/ExerciceContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { budgetService } from '@/services/api/budget.service';
+import { LigneBudgetaire, ModificationBudgetaire, Section, Programme, Action } from '@/types/budget.types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Plus, FileEdit, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { BudgetTable } from '@/components/budget/BudgetTable';
+import { LigneBudgetaireDialog } from '@/components/budget/LigneBudgetaireDialog';
+import { ModificationBudgetaireDialog } from '@/components/budget/ModificationBudgetaireDialog';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 const Budgets = () => {
+  const { currentExercice } = useExercice();
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  const [sections, setSections] = useState<Section[]>([]);
+  const [programmes, setProgrammes] = useState<Programme[]>([]);
+  const [actions, setActions] = useState<Action[]>([]);
+  const [lignes, setLignes] = useState<LigneBudgetaire[]>([]);
+  const [modifications, setModifications] = useState<ModificationBudgetaire[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [ligneDialogOpen, setLigneDialogOpen] = useState(false);
+  const [modificationDialogOpen, setModificationDialogOpen] = useState(false);
+  const [selectedLigne, setSelectedLigne] = useState<LigneBudgetaire | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [ligneToDelete, setLigneToDelete] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadData();
+  }, [currentExercice]);
+
+  const loadData = async () => {
+    if (!currentExercice) return;
+
+    setLoading(true);
+    try {
+      const [sectionsData, programmesData, actionsData, lignesData, modificationsData] = 
+        await Promise.all([
+          budgetService.getSections(),
+          budgetService.getProgrammes(),
+          budgetService.getActions(),
+          budgetService.getLignesBudgetaires(currentExercice.id),
+          budgetService.getModifications(currentExercice.id),
+        ]);
+
+      setSections(sectionsData);
+      setProgrammes(programmesData);
+      setActions(actionsData);
+      setLignes(lignesData);
+      setModifications(modificationsData);
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de charger les données budgétaires',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateLigne = async (data: Partial<LigneBudgetaire>) => {
+    try {
+      await budgetService.createLigneBudgetaire(data as any);
+      toast({
+        title: 'Succès',
+        description: 'Ligne budgétaire créée avec succès',
+      });
+      loadData();
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de créer la ligne budgétaire',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleUpdateLigne = async (data: Partial<LigneBudgetaire>) => {
+    if (!data.id) return;
+    
+    try {
+      await budgetService.updateLigneBudgetaire(data.id, data);
+      toast({
+        title: 'Succès',
+        description: 'Ligne budgétaire modifiée avec succès',
+      });
+      setSelectedLigne(null);
+      loadData();
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de modifier la ligne budgétaire',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteLigne = async () => {
+    if (!ligneToDelete) return;
+
+    try {
+      await budgetService.deleteLigneBudgetaire(ligneToDelete);
+      toast({
+        title: 'Succès',
+        description: 'Ligne budgétaire supprimée avec succès',
+      });
+      setLigneToDelete(null);
+      setDeleteDialogOpen(false);
+      loadData();
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de supprimer la ligne budgétaire',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleCreateModification = async (data: any) => {
+    if (!currentExercice) return;
+
+    try {
+      await budgetService.createModification({
+        ...data,
+        exerciceId: currentExercice.id,
+        statut: 'brouillon' as const,
+      });
+      toast({
+        title: 'Succès',
+        description: 'Modification budgétaire créée avec succès',
+      });
+      loadData();
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de créer la modification budgétaire',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleValiderModification = async (id: string) => {
+    if (!user) return;
+
+    try {
+      await budgetService.validerModification(id, user.id);
+      toast({
+        title: 'Succès',
+        description: 'Modification validée avec succès',
+      });
+      loadData();
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de valider la modification',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleRejeterModification = async (id: string) => {
+    try {
+      await budgetService.rejeterModification(id);
+      toast({
+        title: 'Succès',
+        description: 'Modification rejetée',
+      });
+      loadData();
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de rejeter la modification',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const formatMontant = (montant: number) => {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'XOF',
+      minimumFractionDigits: 0,
+    }).format(montant);
+  };
+
+  const getModificationStatusBadge = (statut: string) => {
+    const variants: Record<string, 'success' | 'warning' | 'secondary' | 'destructive'> = {
+      validee: 'success',
+      en_attente: 'warning',
+      brouillon: 'secondary',
+      rejetee: 'destructive',
+    };
+    return variants[statut] || 'secondary';
+  };
+
+  const getModificationStatusLabel = (statut: string) => {
+    const labels: Record<string, string> = {
+      validee: 'Validée',
+      en_attente: 'En attente',
+      brouillon: 'Brouillon',
+      rejetee: 'Rejetée',
+    };
+    return labels[statut] || statut;
+  };
+
+  const getTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      augmentation: 'Augmentation',
+      diminution: 'Diminution',
+      virement: 'Virement',
+    };
+    return labels[type] || type;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Gestion des Budgets</h1>
         <p className="text-muted-foreground">
-          Plan budgétaire, modifications et suivi
+          Plan budgétaire, modifications et suivi d'exécution
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Module en construction</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            Le module de gestion des budgets sera développé prochainement.
-          </p>
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="lignes" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="lignes">Lignes Budgétaires</TabsTrigger>
+          <TabsTrigger value="modifications">
+            Modifications Budgétaires
+            {modifications.filter(m => m.statut === 'en_attente').length > 0 && (
+              <Badge variant="destructive" className="ml-2">
+                {modifications.filter(m => m.statut === 'en_attente').length}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="lignes" className="space-y-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Plan Budgétaire {currentExercice?.annee}</CardTitle>
+              <div className="flex gap-2">
+                <Button onClick={() => setModificationDialogOpen(true)}>
+                  <FileEdit className="h-4 w-4 mr-2" />
+                  Nouvelle modification
+                </Button>
+                <Button onClick={() => setLigneDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nouvelle ligne
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <BudgetTable
+                sections={sections}
+                programmes={programmes}
+                actions={actions}
+                lignes={lignes}
+                onEdit={(ligne) => {
+                  setSelectedLigne(ligne);
+                  setLigneDialogOpen(true);
+                }}
+                onDelete={(id) => {
+                  setLigneToDelete(id);
+                  setDeleteDialogOpen(true);
+                }}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="modifications" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Modifications Budgétaires</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Numéro</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Ligne</TableHead>
+                    <TableHead className="text-right">Montant</TableHead>
+                    <TableHead>Motif</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Statut</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {modifications.map((modification) => {
+                    const ligne = lignes.find(l => l.id === modification.ligneDestinationId);
+                    
+                    return (
+                      <TableRow key={modification.id}>
+                        <TableCell className="font-medium">{modification.numero}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{getTypeLabel(modification.type)}</Badge>
+                        </TableCell>
+                        <TableCell className="max-w-[200px] truncate">
+                          {ligne?.libelle || '-'}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatMontant(modification.montant)}
+                        </TableCell>
+                        <TableCell className="max-w-[250px] truncate">
+                          {modification.motif}
+                        </TableCell>
+                        <TableCell>{modification.dateCreation}</TableCell>
+                        <TableCell>
+                          <Badge variant={getModificationStatusBadge(modification.statut)}>
+                            {getModificationStatusLabel(modification.statut)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {modification.statut === 'en_attente' && (
+                            <div className="flex gap-1 justify-end">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleValiderModification(modification.id)}
+                              >
+                                <CheckCircle className="h-4 w-4 text-secondary" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleRejeterModification(modification.id)}
+                              >
+                                <XCircle className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          )}
+                          {modification.statut === 'validee' && (
+                            <div className="flex items-center justify-end gap-2 text-sm text-muted-foreground">
+                              <Clock className="h-4 w-4" />
+                              {modification.dateValidation}
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {modifications.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                        Aucune modification budgétaire
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      <LigneBudgetaireDialog
+        open={ligneDialogOpen}
+        onClose={() => {
+          setLigneDialogOpen(false);
+          setSelectedLigne(null);
+        }}
+        onSubmit={selectedLigne ? handleUpdateLigne : handleCreateLigne}
+        ligne={selectedLigne}
+        actions={actions}
+        exerciceId={currentExercice?.id || ''}
+      />
+
+      <ModificationBudgetaireDialog
+        open={modificationDialogOpen}
+        onClose={() => setModificationDialogOpen(false)}
+        onSubmit={handleCreateModification}
+        lignes={lignes}
+      />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer cette ligne budgétaire ? Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteLigne}>
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

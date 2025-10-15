@@ -68,3 +68,6 @@ export interface ExerciceContextType {
   exercices: Exercice[];
   setCurrentExercice: (exercice: Exercice) => void;
 }
+
+// Export budget types
+export * from './budget.types';
