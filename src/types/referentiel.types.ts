@@ -5,7 +5,8 @@ export type ReferentielCategorie =
   | 'source_financement'
   | 'statut_general'
   | 'type_projet'
-  | 'statut_projet';
+  | 'statut_projet'
+  | 'priorite_projet';
 
 export interface ParametreReferentiel {
   id: string;

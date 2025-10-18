@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Plus, Pencil, Trash2, Database, Check, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ReferentielDialog } from './ReferentielDialog';
@@ -54,6 +55,21 @@ const categories: CategorieConfig[] = [
     value: 'statut_general',
     label: 'Statuts généraux',
     description: 'Statuts généraux (actif, inactif, clôturé...)'
+  },
+  {
+    value: 'type_projet',
+    label: 'Types de projet',
+    description: 'Types de projets (infrastructure, formation, équipement...)'
+  },
+  {
+    value: 'statut_projet',
+    label: 'Statuts de projet',
+    description: 'Statuts des projets (planifié, en cours, terminé...)'
+  },
+  {
+    value: 'priorite_projet',
+    label: 'Priorités de projet',
+    description: 'Priorités des projets (haute, moyenne, basse)'
   }
 ];
 
@@ -154,13 +170,15 @@ export const ReferentielsManager = () => {
         </CardHeader>
         <CardContent>
           <Tabs value={activeCategorie} onValueChange={(v) => setActiveCategorie(v as ReferentielCategorie)}>
-            <TabsList className="grid w-full grid-cols-5">
-              {categories.map((cat) => (
-                <TabsTrigger key={cat.value} value={cat.value}>
-                  {cat.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            <ScrollArea className="w-full">
+              <TabsList className="inline-flex w-max">
+                {categories.map((cat) => (
+                  <TabsTrigger key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </ScrollArea>
 
             {categories.map((cat) => (
               <TabsContent key={cat.value} value={cat.value} className="space-y-4">

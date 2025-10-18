@@ -52,7 +52,7 @@ const formSchema = z.object({
   enveloppeId: z.string().optional().or(z.literal(undefined)),
   statut: z.string(),
   typeProjet: z.string().optional(),
-  priorite: z.string().optional(),
+  priorite: z.string(),
   tauxAvancement: z.number().min(0).max(100),
 }).refine((data) => data.dateFin >= data.dateDebut, {
   message: 'La date de fin doit être après la date de début',
@@ -74,6 +74,7 @@ export const ProjetDialog = ({
 }: ProjetDialogProps) => {
   const { data: typesProjet = [] } = useReferentiels('type_projet');
   const { data: statutsProjet = [] } = useReferentiels('statut_projet');
+  const { data: priorites = [] } = useReferentiels('priorite_projet');
   const { enveloppes } = useEnveloppes();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -89,7 +90,7 @@ export const ProjetDialog = ({
       enveloppeId: undefined,
       statut: 'planifie',
       typeProjet: undefined,
-      priorite: 'moyenne',
+      priorite: '',
       tauxAvancement: 0,
     },
   });
@@ -107,7 +108,7 @@ export const ProjetDialog = ({
         enveloppeId: projet.enveloppeId,
         statut: projet.statut,
         typeProjet: projet.typeProjet,
-        priorite: projet.priorite || 'moyenne',
+        priorite: projet.priorite || '',
         tauxAvancement: projet.tauxAvancement,
       });
     } else if (open && !projet) {
@@ -122,7 +123,7 @@ export const ProjetDialog = ({
         enveloppeId: undefined,
         statut: 'planifie',
         typeProjet: undefined,
-        priorite: 'moyenne',
+        priorite: '',
         tauxAvancement: 0,
       });
     }
@@ -373,7 +374,7 @@ export const ProjetDialog = ({
                 name="priorite"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Priorité</FormLabel>
+                    <FormLabel>Priorité *</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -381,9 +382,11 @@ export const ProjetDialog = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="haute">Haute</SelectItem>
-                        <SelectItem value="moyenne">Moyenne</SelectItem>
-                        <SelectItem value="basse">Basse</SelectItem>
+                        {priorites.map((priorite) => (
+                          <SelectItem key={priorite.id} value={priorite.code}>
+                            {priorite.libelle}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
