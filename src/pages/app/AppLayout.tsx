@@ -234,7 +234,7 @@ const AppLayout = () => {
             return (
               <Collapsible key={section.title} open={openSections[section.title]} onOpenChange={() => toggleSection(section.title)} className="space-y-1">
                 {/* Section Header - Cliquable pour toggle */}
-                {sidebarOpen && <CollapsibleTrigger className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors group">
+                {sidebarOpen && <CollapsibleTrigger className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-muted-foreground tracking-wider hover:text-foreground transition-colors group">
                     <div className="flex items-center gap-2">
                       <SectionIcon className="h-4 w-4" />
                       <span>{section.title}</span>
