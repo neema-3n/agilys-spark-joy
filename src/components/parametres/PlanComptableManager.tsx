@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, BookOpen, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { Plus, FolderTree, BookOpen } from 'lucide-react';
 import { useClient } from '@/contexts/ClientContext';
 import { Compte } from '@/types/compte.types';
 import { comptesService } from '@/services/api/comptes.service';
 import { CompteDialog } from './CompteDialog';
+import { CompteTreeItem } from './CompteTreeItem';
 import { useToast } from '@/hooks/use-toast';
+
+interface CompteNode extends Compte {
+  children: CompteNode[];
+}
 
 const PlanComptableManager = () => {
   const { currentClient } = useClient();
@@ -21,6 +24,50 @@ const PlanComptableManager = () => {
   const [selectedCompte, setSelectedCompte] = useState<Compte | undefined>();
   const [compteToDelete, setCompteToDelete] = useState<Compte | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Construire l'arbre hiérarchique
+  const buildTree = (comptes: Compte[]): CompteNode[] => {
+    const map = new Map<string, CompteNode>();
+    const roots: CompteNode[] = [];
+
+    // Initialiser tous les nœuds
+    comptes.forEach(compte => {
+      map.set(compte.id, { ...compte, children: [] });
+    });
+
+    // Construire les relations parent-enfant
+    comptes.forEach(compte => {
+      const node = map.get(compte.id)!;
+      if (compte.parentId && map.has(compte.parentId)) {
+        map.get(compte.parentId)!.children.push(node);
+      } else {
+        roots.push(node);
+      }
+    });
+
+    // Trier par numéro
+    const sortChildren = (nodes: CompteNode[]) => {
+      nodes.sort((a, b) => a.numero.localeCompare(b.numero));
+      nodes.forEach(node => sortChildren(node.children));
+    };
+    sortChildren(roots);
+
+    return roots;
+  };
+
+  // Filtrer les comptes par recherche
+  const filterComptes = (comptes: Compte[], term: string): Compte[] => {
+    if (!term) return comptes;
+    const lowerTerm = term.toLowerCase();
+    return comptes.filter(c => 
+      c.numero.toLowerCase().includes(lowerTerm) || 
+      c.libelle.toLowerCase().includes(lowerTerm)
+    );
+  };
+
+  const filteredComptes = filterComptes(comptes, searchTerm);
+  const compteTree = buildTree(filteredComptes);
 
   useEffect(() => {
     loadComptes();
@@ -163,11 +210,11 @@ const PlanComptableManager = () => {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5" />
+                <FolderTree className="h-5 w-5" />
                 Plan Comptable
               </CardTitle>
               <CardDescription>
-                Gérez les comptes comptables et leur structure
+                Structure hiérarchique du plan comptable
               </CardDescription>
             </div>
             <Button onClick={openCreateDialog}>
@@ -177,6 +224,15 @@ const PlanComptableManager = () => {
           </div>
         </CardHeader>
         <CardContent>
+          <div className="mb-4">
+            <Input 
+              placeholder="Rechercher par numéro ou libellé..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-md"
+            />
+          </div>
+          
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">
               Chargement...
@@ -187,60 +243,21 @@ const PlanComptableManager = () => {
               <p>Aucun compte enregistré</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Numéro</TableHead>
-                  <TableHead>Libellé</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Catégorie</TableHead>
-                  <TableHead>Niveau</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {comptes.map((compte) => (
-                  <TableRow key={compte.id}>
-                    <TableCell className="font-mono">{compte.numero}</TableCell>
-                    <TableCell className="font-medium">{compte.libelle}</TableCell>
-                    <TableCell>{getTypeLabel(compte.type)}</TableCell>
-                    <TableCell>{getCategorieLabel(compte.categorie)}</TableCell>
-                    <TableCell>{compte.niveau}</TableCell>
-                    <TableCell>
-                      <Badge variant={compte.statut === 'actif' ? 'default' : 'secondary'}>
-                        {compte.statut === 'actif' ? 'Actif' : 'Inactif'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEditDialog(compte)}>
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Modifier
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => {
-                              setCompteToDelete(compte);
-                              setDeleteDialogOpen(true);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Supprimer
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <div className="border rounded-lg">
+              {compteTree.map((node) => (
+                <CompteTreeItem
+                  key={node.id}
+                  node={node}
+                  onEdit={openEditDialog}
+                  onDelete={(compte) => {
+                    setCompteToDelete(compte);
+                    setDeleteDialogOpen(true);
+                  }}
+                  getTypeLabel={getTypeLabel}
+                  getCategorieLabel={getCategorieLabel}
+                />
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>
@@ -250,6 +267,7 @@ const PlanComptableManager = () => {
         onOpenChange={setDialogOpen}
         onSubmit={selectedCompte ? handleUpdate : handleCreate}
         compte={selectedCompte}
+        comptes={comptes}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

@@ -7,12 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Compte } from '@/types/compte.types';
+import { useEffect } from 'react';
 
 const compteSchema = z.object({
   numero: z.string().min(1, 'Le numéro est requis').max(20, 'Maximum 20 caractères'),
   libelle: z.string().min(3, 'Le libellé doit contenir au moins 3 caractères').max(200, 'Maximum 200 caractères'),
   type: z.enum(['actif', 'passif', 'charge', 'produit', 'resultat']),
   categorie: z.enum(['immobilisation', 'stock', 'creance', 'tresorerie', 'dette', 'capital', 'exploitation', 'financier', 'exceptionnel', 'autre']),
+  parentId: z.string().optional(),
   niveau: z.coerce.number().min(1).max(9).default(1),
   statut: z.enum(['actif', 'inactif'])
 });
@@ -24,13 +26,15 @@ interface CompteDialogProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: CompteFormData) => Promise<void>;
   compte?: Compte;
+  comptes: Compte[];
 }
 
 const CompteDialog = ({ 
   open, 
   onOpenChange, 
   onSubmit, 
-  compte
+  compte,
+  comptes
 }: CompteDialogProps) => {
   const form = useForm<CompteFormData>({
     resolver: zodResolver(compteSchema),
@@ -39,10 +43,25 @@ const CompteDialog = ({
       libelle: compte?.libelle || '',
       type: compte?.type || 'charge',
       categorie: compte?.categorie || 'exploitation',
+      parentId: compte?.parentId || '',
       niveau: compte?.niveau || 1,
       statut: compte?.statut || 'actif'
     }
   });
+
+  // Calculer automatiquement le niveau basé sur le parent
+  const selectedParentId = form.watch('parentId');
+  
+  useEffect(() => {
+    if (selectedParentId) {
+      const parent = comptes.find(c => c.id === selectedParentId);
+      if (parent) {
+        form.setValue('niveau', parent.niveau + 1);
+      }
+    } else {
+      form.setValue('niveau', 1);
+    }
+  }, [selectedParentId, comptes, form]);
 
   const handleSubmit = async (data: CompteFormData) => {
     await onSubmit(data);
@@ -71,24 +90,53 @@ const CompteDialog = ({
                       <Input placeholder="Ex: 601000" {...field} />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
+              </FormItem>
+            )}
+          />
 
-              <FormField
-                control={form.control}
-                name="niveau"
-                render={({ field }) => (
+          <FormField
+            control={form.control}
+            name="niveau"
+            render={({ field }) => (
                   <FormItem>
                     <FormLabel>Niveau *</FormLabel>
                     <FormControl>
-                      <Input type="number" min={1} max={9} {...field} />
+                      <Input type="number" min={1} max={9} {...field} disabled />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="parentId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Compte parent (optionnel)</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || ''}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Aucun parent (compte racine)" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="">Aucun parent (compte racine)</SelectItem>
+                      {comptes
+                        .filter(c => c.id !== compte?.id)
+                        .sort((a, b) => a.numero.localeCompare(b.numero))
+                        .map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.numero} - {c.libelle}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
