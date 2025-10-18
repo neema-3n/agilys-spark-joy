@@ -9,7 +9,9 @@ const Hero = () => {
       <div className="absolute inset-0 z-0">
         <img 
           src={heroBackground} 
-          alt="Hero background" 
+          alt="Système de gestion budgétaire moderne pour collectivités publiques" 
+          width="1504"
+          height="846"
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-accent/80 to-primary/90" />
