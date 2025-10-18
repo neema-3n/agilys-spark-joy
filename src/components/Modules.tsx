@@ -85,6 +85,12 @@ const modules = [
     category: "Opérations"
   },
   {
+    icon: TrendingUp,
+    title: "Suivi de Trésorerie",
+    description: "Tableau de flux, prévisions et suivi des encaissements",
+    category: "Trésorerie"
+  },
+  {
     icon: BookOpen,
     title: "Plan Comptable",
     description: "Import et structuration hiérarchique",
@@ -109,7 +115,7 @@ const Modules = () => {
     <section className="py-24 bg-background">
       <div className="container px-4 mx-auto">
         <div className="text-center mb-16">
-          <Badge className="mb-4">16 Modules Intégrés</Badge>
+          <Badge className="mb-4">15 Modules Intégrés</Badge>
           <h2 className="text-4xl font-bold mb-4 text-foreground">
             Modules Fonctionnels
           </h2>
