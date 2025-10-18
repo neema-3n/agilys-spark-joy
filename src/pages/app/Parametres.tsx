@@ -2,17 +2,19 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { CalendarDays, Briefcase, Building2, BookOpen, Users, Settings as SettingsIcon } from 'lucide-react';
+import { CalendarDays, Briefcase, Building2, BookOpen, Users, Settings as SettingsIcon, Database } from 'lucide-react';
 import { ExercicesManager } from '@/components/parametres/ExercicesManager';
 import { EnveloppesManager } from '@/components/parametres/EnveloppesManager';
 import { StructureManager } from '@/components/parametres/StructureManager';
 import { PlanComptableManager } from '@/components/parametres/PlanComptableManager';
+import { ReferentielsManager } from '@/components/parametres/ReferentielsManager';
 
 type ParametreSection = 
   | 'exercices' 
   | 'enveloppes' 
   | 'structure' 
-  | 'plan-comptable' 
+  | 'plan-comptable'
+  | 'referentiels' 
   | 'utilisateurs' 
   | 'general';
 
@@ -47,6 +49,13 @@ const Parametres = () => {
       description: 'Comptes et structure comptable',
       icon: BookOpen,
       component: <PlanComptableManager />
+    },
+    {
+      id: 'referentiels' as ParametreSection,
+      title: 'Référentiels',
+      description: 'Listes de valeurs',
+      icon: Database,
+      component: <ReferentielsManager />
     },
     {
       id: 'utilisateurs' as ParametreSection,

@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { Enveloppe } from '@/types/enveloppe.types';
+import { useReferentiels } from '@/hooks/useReferentiels';
 
 const enveloppeSchema = z.object({
   code: z.string()
@@ -39,7 +40,7 @@ const enveloppeSchema = z.object({
     .min(3, 'Le nom doit contenir au moins 3 caractères')
     .max(200, 'Le nom est trop long'),
   sourceFinancement: z.string()
-    .min(2, 'La source de financement est requise')
+    .min(1, 'La source de financement est requise')
     .max(200, 'La source de financement est trop longue'),
   montantAlloue: z.coerce
     .number()
@@ -48,7 +49,7 @@ const enveloppeSchema = z.object({
     .number()
     .min(0, 'Le montant doit être positif')
     .default(0),
-  statut: z.enum(['actif', 'cloture']),
+  statut: z.string().min(1, 'Le statut est requis'),
 }).refine(data => data.montantConsomme <= data.montantAlloue, {
   message: 'Le montant consommé ne peut pas dépasser le montant alloué',
   path: ['montantConsomme'],
@@ -72,6 +73,8 @@ export function EnveloppeDialog({
   mode,
 }: EnveloppeDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { data: sourcesFinancement = [], isLoading: loadingSources } = useReferentiels('source_financement');
+  const { data: statuts = [], isLoading: loadingStatuts } = useReferentiels('statut_general');
 
   const form = useForm<EnveloppeFormValues>({
     resolver: zodResolver(enveloppeSchema),
@@ -141,7 +144,7 @@ export function EnveloppeDialog({
                     <FormLabel>Statut</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -149,8 +152,17 @@ export function EnveloppeDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="actif">Actif</SelectItem>
-                        <SelectItem value="cloture">Clôturé</SelectItem>
+                        {loadingStatuts ? (
+                          <SelectItem value="" disabled>Chargement...</SelectItem>
+                        ) : statuts.length === 0 ? (
+                          <SelectItem value="" disabled>Aucun statut disponible</SelectItem>
+                        ) : (
+                          statuts.map((statut) => (
+                            <SelectItem key={statut.id} value={statut.code}>
+                              {statut.libelle}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -182,12 +194,29 @@ export function EnveloppeDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Source de financement</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Ex: Banque Mondiale, AFD, Fonds propres..."
-                      {...field}
-                    />
-                  </FormControl>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner une source" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {loadingSources ? (
+                        <SelectItem value="" disabled>Chargement...</SelectItem>
+                      ) : sourcesFinancement.length === 0 ? (
+                        <SelectItem value="" disabled>Aucune source disponible</SelectItem>
+                      ) : (
+                        sourcesFinancement.map((source) => (
+                          <SelectItem key={source.id} value={source.code}>
+                            {source.libelle}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
                   <FormDescription>
                     Bailleur ou source du financement
                   </FormDescription>

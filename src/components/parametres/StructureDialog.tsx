@@ -7,13 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Structure } from '@/types/structure.types';
+import { useReferentiels } from '@/hooks/useReferentiels';
 
 const structureSchema = z.object({
   code: z.string().min(1, 'Le code est requis').max(20, 'Maximum 20 caractères'),
   nom: z.string().min(3, 'Le nom doit contenir au moins 3 caractères').max(100, 'Maximum 100 caractères'),
-  type: z.enum(['entite', 'service', 'centre_cout', 'direction']),
+  type: z.string().min(1, 'Le type est requis'),
   responsable: z.string().max(100).optional(),
-  statut: z.enum(['actif', 'inactif'])
+  statut: z.string().min(1, 'Le statut est requis')
 });
 
 type StructureFormData = z.infer<typeof structureSchema>;
@@ -33,6 +34,8 @@ const StructureDialog = ({
   structure,
   structures = []
 }: StructureDialogProps) => {
+  const { data: structureTypes = [], isLoading: loadingTypes } = useReferentiels('structure_type');
+  const { data: statuts = [], isLoading: loadingStatuts } = useReferentiels('statut_general');
   const form = useForm<StructureFormData>({
     resolver: zodResolver(structureSchema),
     defaultValues: {
@@ -88,10 +91,17 @@ const StructureDialog = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="entite">Entité</SelectItem>
-                        <SelectItem value="direction">Direction</SelectItem>
-                        <SelectItem value="service">Service</SelectItem>
-                        <SelectItem value="centre_cout">Centre de coût</SelectItem>
+                        {loadingTypes ? (
+                          <SelectItem value="" disabled>Chargement...</SelectItem>
+                        ) : structureTypes.length === 0 ? (
+                          <SelectItem value="" disabled>Aucun type disponible</SelectItem>
+                        ) : (
+                          structureTypes.map((type) => (
+                            <SelectItem key={type.id} value={type.code}>
+                              {type.libelle}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -139,12 +149,21 @@ const StructureDialog = ({
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="actif">Actif</SelectItem>
-                      <SelectItem value="inactif">Inactif</SelectItem>
-                    </SelectContent>
-                  </Select>
+                      </FormControl>
+                      <SelectContent>
+                        {loadingStatuts ? (
+                          <SelectItem value="" disabled>Chargement...</SelectItem>
+                        ) : statuts.length === 0 ? (
+                          <SelectItem value="" disabled>Aucun statut disponible</SelectItem>
+                        ) : (
+                          statuts.map((statut) => (
+                            <SelectItem key={statut.id} value={statut.code}>
+                              {statut.libelle}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
                   <FormMessage />
                 </FormItem>
               )}

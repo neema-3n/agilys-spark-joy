@@ -7,16 +7,17 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Compte } from '@/types/compte.types';
+import { useReferentiels } from '@/hooks/useReferentiels';
 import { useEffect } from 'react';
 
 const compteSchema = z.object({
   numero: z.string().min(1, 'Le numéro est requis').max(20, 'Maximum 20 caractères'),
   libelle: z.string().min(3, 'Le libellé doit contenir au moins 3 caractères').max(200, 'Maximum 200 caractères'),
-  type: z.enum(['actif', 'passif', 'charge', 'produit', 'resultat']),
-  categorie: z.enum(['immobilisation', 'stock', 'creance', 'tresorerie', 'dette', 'capital', 'exploitation', 'financier', 'exceptionnel', 'autre']),
+  type: z.string().min(1, 'Le type est requis'),
+  categorie: z.string().min(1, 'La catégorie est requise'),
   parentId: z.string().optional(),
   niveau: z.coerce.number().min(1).max(9).default(1),
-  statut: z.enum(['actif', 'inactif'])
+  statut: z.string().min(1, 'Le statut est requis')
 });
 
 type CompteFormData = z.infer<typeof compteSchema>;
@@ -36,6 +37,10 @@ const CompteDialog = ({
   compte,
   comptes
 }: CompteDialogProps) => {
+  const { data: compteTypes = [], isLoading: loadingTypes } = useReferentiels('compte_type');
+  const { data: compteCategories = [], isLoading: loadingCategories } = useReferentiels('compte_categorie');
+  const { data: statuts = [], isLoading: loadingStatuts } = useReferentiels('statut_general');
+  
   const form = useForm<CompteFormData>({
     resolver: zodResolver(compteSchema),
     defaultValues: {
@@ -169,11 +174,17 @@ const CompteDialog = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="actif">Actif</SelectItem>
-                        <SelectItem value="passif">Passif</SelectItem>
-                        <SelectItem value="charge">Charge</SelectItem>
-                        <SelectItem value="produit">Produit</SelectItem>
-                        <SelectItem value="resultat">Résultat</SelectItem>
+                        {loadingTypes ? (
+                          <SelectItem value="" disabled>Chargement...</SelectItem>
+                        ) : compteTypes.length === 0 ? (
+                          <SelectItem value="" disabled>Aucun type disponible</SelectItem>
+                        ) : (
+                          compteTypes.map((type) => (
+                            <SelectItem key={type.id} value={type.code}>
+                              {type.libelle}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -194,16 +205,17 @@ const CompteDialog = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="immobilisation">Immobilisation</SelectItem>
-                        <SelectItem value="stock">Stock</SelectItem>
-                        <SelectItem value="creance">Créance</SelectItem>
-                        <SelectItem value="tresorerie">Trésorerie</SelectItem>
-                        <SelectItem value="dette">Dette</SelectItem>
-                        <SelectItem value="capital">Capital</SelectItem>
-                        <SelectItem value="exploitation">Exploitation</SelectItem>
-                        <SelectItem value="financier">Financier</SelectItem>
-                        <SelectItem value="exceptionnel">Exceptionnel</SelectItem>
-                        <SelectItem value="autre">Autre</SelectItem>
+                        {loadingCategories ? (
+                          <SelectItem value="" disabled>Chargement...</SelectItem>
+                        ) : compteCategories.length === 0 ? (
+                          <SelectItem value="" disabled>Aucune catégorie disponible</SelectItem>
+                        ) : (
+                          compteCategories.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.code}>
+                              {cat.libelle}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -223,12 +235,21 @@ const CompteDialog = ({
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="actif">Actif</SelectItem>
-                      <SelectItem value="inactif">Inactif</SelectItem>
-                    </SelectContent>
-                  </Select>
+                      </FormControl>
+                      <SelectContent>
+                        {loadingStatuts ? (
+                          <SelectItem value="" disabled>Chargement...</SelectItem>
+                        ) : statuts.length === 0 ? (
+                          <SelectItem value="" disabled>Aucun statut disponible</SelectItem>
+                        ) : (
+                          statuts.map((statut) => (
+                            <SelectItem key={statut.id} value={statut.code}>
+                              {statut.libelle}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
                   <FormMessage />
                 </FormItem>
               )}
