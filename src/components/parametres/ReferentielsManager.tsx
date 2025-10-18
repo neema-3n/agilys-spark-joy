@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Plus, Pencil, Trash2, Database, Check, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ReferentielDialog } from './ReferentielDialog';
@@ -170,14 +170,15 @@ export const ReferentielsManager = () => {
         </CardHeader>
         <CardContent>
           <Tabs value={activeCategorie} onValueChange={(v) => setActiveCategorie(v as ReferentielCategorie)}>
-            <ScrollArea className="w-full">
-              <TabsList className="inline-flex w-max">
+            <ScrollArea className="w-full whitespace-nowrap">
+              <TabsList className="inline-flex w-max h-auto p-1 mb-2">
                 {categories.map((cat) => (
-                  <TabsTrigger key={cat.value} value={cat.value}>
+                  <TabsTrigger key={cat.value} value={cat.value} className="whitespace-nowrap">
                     {cat.label}
                   </TabsTrigger>
                 ))}
               </TabsList>
+              <ScrollBar orientation="horizontal" />
             </ScrollArea>
 
             {categories.map((cat) => (
