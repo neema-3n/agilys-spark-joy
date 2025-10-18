@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { LigneBudgetaire, Action } from '@/types/budget.types';
+import { useComptes } from '@/hooks/useComptes';
 import {
   Dialog,
   DialogContent,
@@ -35,6 +36,8 @@ export const LigneBudgetaireDialog = ({
   actions,
   exerciceId,
 }: LigneBudgetaireDialogProps) => {
+  const { comptes, isLoading: isLoadingComptes } = useComptes();
+  
   const [formData, setFormData] = useState({
     actionId: '',
     compteId: '',
@@ -107,13 +110,31 @@ export const LigneBudgetaireDialog = ({
 
             <div className="space-y-2">
               <Label htmlFor="compteId">Compte comptable</Label>
-              <Input
-                id="compteId"
+              <Select
                 value={formData.compteId}
-                onChange={(e) => setFormData({ ...formData, compteId: e.target.value })}
-                placeholder="Ex: 601001"
-                required
-              />
+                onValueChange={(value) => setFormData({ ...formData, compteId: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un compte" />
+                </SelectTrigger>
+                <SelectContent>
+                  {isLoadingComptes ? (
+                    <SelectItem value="" disabled>
+                      Chargement...
+                    </SelectItem>
+                  ) : comptes.length === 0 ? (
+                    <SelectItem value="" disabled>
+                      Aucun compte disponible
+                    </SelectItem>
+                  ) : (
+                    comptes.map((compte) => (
+                      <SelectItem key={compte.id} value={compte.id}>
+                        {compte.numero} - {compte.libelle}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
