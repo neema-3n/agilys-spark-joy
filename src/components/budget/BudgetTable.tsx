@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, ChevronRight, Edit, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Edit, Trash2, Layers, GitBranch, Zap } from 'lucide-react';
 
 interface BudgetTableProps {
   sections: Section[];
@@ -66,18 +66,18 @@ export const BudgetTable = ({
   };
 
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="border rounded-lg overflow-hidden shadow-sm">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead className="w-[350px]">Libellé</TableHead>
-            <TableHead className="text-right">Montant Initial</TableHead>
-            <TableHead className="text-right">Montant Modifié</TableHead>
-            <TableHead className="text-right">Engagé</TableHead>
-            <TableHead className="text-right">Payé</TableHead>
-            <TableHead className="text-right">Disponible</TableHead>
-            <TableHead className="text-center">Taux Exec.</TableHead>
-            <TableHead className="text-right w-[100px]">Actions</TableHead>
+          <TableRow className="bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/15">
+            <TableHead className="w-[350px] font-semibold">Libellé</TableHead>
+            <TableHead className="text-right font-semibold">Montant Initial</TableHead>
+            <TableHead className="text-right font-semibold">Montant Modifié</TableHead>
+            <TableHead className="text-right font-semibold">Engagé</TableHead>
+            <TableHead className="text-right font-semibold">Payé</TableHead>
+            <TableHead className="text-right font-semibold">Disponible</TableHead>
+            <TableHead className="text-center font-semibold">Taux Exec.</TableHead>
+            <TableHead className="text-right w-[100px] font-semibold">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -87,21 +87,24 @@ export const BudgetTable = ({
             
             return (
               <React.Fragment key={section.id}>
-                <TableRow className="bg-muted/50 hover:bg-muted font-semibold">
+                <TableRow className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 hover:from-blue-100 hover:to-blue-200 dark:hover:from-blue-900 dark:hover:to-blue-800 border-l-4 border-l-blue-500">
                   <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleSection(section.id)}
-                      className="p-0 h-auto hover:bg-transparent"
-                    >
-                      {isExpanded ? (
-                        <ChevronDown className="h-4 w-4 mr-2" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4 mr-2" />
-                      )}
-                      {section.code} - {section.libelle}
-                    </Button>
+                    <div className="flex items-center">
+                      <Layers className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleSection(section.id)}
+                        className="p-0 h-auto hover:bg-transparent font-bold text-base"
+                      >
+                        {isExpanded ? (
+                          <ChevronDown className="h-5 w-5 mr-2" />
+                        ) : (
+                          <ChevronRight className="h-5 w-5 mr-2" />
+                        )}
+                        {section.code} - {section.libelle}
+                      </Button>
+                    </div>
                   </TableCell>
                   <TableCell colSpan={7} />
                 </TableRow>
@@ -112,21 +115,24 @@ export const BudgetTable = ({
                   
                   return (
                     <React.Fragment key={programme.id}>
-                      <TableRow className="bg-muted/30 hover:bg-muted/40 font-medium">
+                      <TableRow className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 hover:from-purple-100 hover:to-purple-200 dark:hover:from-purple-900 dark:hover:to-purple-800 border-l-4 border-l-purple-400">
                         <TableCell className="pl-8">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleProgramme(programme.id)}
-                            className="p-0 h-auto hover:bg-transparent"
-                          >
-                            {isProgrammeExpanded ? (
-                              <ChevronDown className="h-4 w-4 mr-2" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4 mr-2" />
-                            )}
-                            {programme.code} - {programme.libelle}
-                          </Button>
+                          <div className="flex items-center">
+                            <GitBranch className="h-4 w-4 mr-2 text-purple-600 dark:text-purple-400" />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleProgramme(programme.id)}
+                              className="p-0 h-auto hover:bg-transparent font-semibold"
+                            >
+                              {isProgrammeExpanded ? (
+                                <ChevronDown className="h-4 w-4 mr-2" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4 mr-2" />
+                              )}
+                              {programme.code} - {programme.libelle}
+                            </Button>
+                          </div>
                         </TableCell>
                         <TableCell colSpan={7} />
                       </TableRow>
@@ -136,9 +142,12 @@ export const BudgetTable = ({
                         
                         return (
                           <React.Fragment key={action.id}>
-                            <TableRow className="bg-muted/10 hover:bg-muted/20 text-sm">
-                              <TableCell className="pl-16 font-medium">
-                                {action.code} - {action.libelle}
+                            <TableRow className="bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-950 dark:to-amber-900 hover:from-amber-100 hover:to-amber-200 dark:hover:from-amber-900 dark:hover:to-amber-800 border-l-4 border-l-amber-300">
+                              <TableCell className="pl-16">
+                                <div className="flex items-center font-medium">
+                                  <Zap className="h-4 w-4 mr-2 text-amber-600 dark:text-amber-400" />
+                                  {action.code} - {action.libelle}
+                                </div>
                               </TableCell>
                               <TableCell colSpan={7} />
                             </TableRow>
@@ -147,11 +156,16 @@ export const BudgetTable = ({
                               const tauxExecution = getTauxExecution(ligne);
                               
                               return (
-                                <TableRow key={ligne.id} className="hover:bg-accent">
+                                <TableRow key={ligne.id} className="hover:bg-accent/50 bg-white dark:bg-gray-950 border-l-2 border-l-gray-300 dark:border-l-gray-700">
                                   <TableCell className="pl-24 text-sm">
-                                    {ligne.libelle}
-                                    <div className="text-xs text-muted-foreground">
-                                      Compte: {ligne.compteId}
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2 h-2 rounded-full bg-green-500" />
+                                      <div>
+                                        {ligne.libelle}
+                                        <div className="text-xs text-muted-foreground mt-0.5">
+                                          Compte: {ligne.compteId}
+                                        </div>
+                                      </div>
                                     </div>
                                   </TableCell>
                                   <TableCell className="text-right text-sm">
@@ -171,12 +185,13 @@ export const BudgetTable = ({
                                   </TableCell>
                                   <TableCell className="text-center">
                                     <Badge
+                                      className="font-semibold"
                                       variant={
                                         tauxExecution >= 80
                                           ? 'destructive'
                                           : tauxExecution >= 50
-                                          ? 'warning'
-                                          : 'success'
+                                          ? 'default'
+                                          : 'outline'
                                       }
                                     >
                                       {tauxExecution}%
