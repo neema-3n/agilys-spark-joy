@@ -194,39 +194,70 @@ const AppLayout = () => {
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {navigationSections.map((section, sectionIndex) => <Collapsible key={section.title} open={openSections[section.title]} onOpenChange={() => toggleSection(section.title)} className="space-y-1">
-              {/* Section Header - Cliquable pour toggle */}
-              {sidebarOpen && <CollapsibleTrigger className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors group">
-                  <span>{section.title}</span>
-                  <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${openSections[section.title] ? 'rotate-0' : '-rotate-90'}`} />
-                </CollapsibleTrigger>}
+          {navigationSections.map((section, sectionIndex) => {
+            const isSingleItem = section.items.length === 1;
+            
+            if (isSingleItem) {
+              // Pour les sections avec un seul item, afficher directement sans collapsible
+              const item = section.items[0];
+              const isActive = location.pathname === item.href;
+              const Icon = item.icon;
               
-              {/* Section Items - Collapsible */}
-              <CollapsibleContent className="space-y-1">
-                {section.items.map(item => {
-                  const isActive = location.pathname === item.href;
-                  const Icon = item.icon;
-                  
-                  return (
-                    <NavLink
-                      key={item.href}
-                      to={item.href}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                        isActive
-                          ? 'bg-primary text-primary-foreground font-medium'
-                          : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-                      }`}
-                    >
-                      <Icon className="h-4 w-4 flex-shrink-0" />
-                      {sidebarOpen && <span>{item.name}</span>}
-                    </NavLink>
-                  );
-                })}
-              </CollapsibleContent>
-              
-              {/* Separator entre sections sauf la dernière */}
-              {sidebarOpen && sectionIndex < navigationSections.length - 1 && <Separator className="my-2" />}
-            </Collapsible>)}
+              return (
+                <div key={section.title} className="space-y-1">
+                  <NavLink
+                    to={item.href}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                      isActive
+                        ? 'bg-primary text-primary-foreground font-medium'
+                        : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 flex-shrink-0" />
+                    {sidebarOpen && <span>{item.name}</span>}
+                  </NavLink>
+                  {sidebarOpen && sectionIndex < navigationSections.length - 1 && <Separator className="my-2" />}
+                </div>
+              );
+            }
+            
+            // Pour les sections avec plusieurs items, utiliser le collapsible
+            return (
+              <Collapsible key={section.title} open={openSections[section.title]} onOpenChange={() => toggleSection(section.title)} className="space-y-1">
+                {/* Section Header - Cliquable pour toggle */}
+                {sidebarOpen && <CollapsibleTrigger className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors group">
+                    <span>{section.title}</span>
+                    <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${openSections[section.title] ? 'rotate-0' : '-rotate-90'}`} />
+                  </CollapsibleTrigger>}
+                
+                {/* Section Items - Collapsible */}
+                <CollapsibleContent className="space-y-1">
+                  {section.items.map(item => {
+                    const isActive = location.pathname === item.href;
+                    const Icon = item.icon;
+                    
+                    return (
+                      <NavLink
+                        key={item.href}
+                        to={item.href}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                          isActive
+                            ? 'bg-primary text-primary-foreground font-medium'
+                            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                        }`}
+                      >
+                        <Icon className="h-4 w-4 flex-shrink-0" />
+                        {sidebarOpen && <span>{item.name}</span>}
+                      </NavLink>
+                    );
+                  })}
+                </CollapsibleContent>
+                
+                {/* Separator entre sections sauf la dernière */}
+                {sidebarOpen && sectionIndex < navigationSections.length - 1 && <Separator className="my-2" />}
+              </Collapsible>
+            );
+          })}
         </nav>
 
         {/* User Menu */}
