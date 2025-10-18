@@ -50,10 +50,12 @@ export interface Exercice {
 
 export interface AuthContextType {
   user: User | null;
+  session: any | null;
   isAuthenticated: boolean;
   hasRole: (role: AppRole) => boolean;
   hasAnyRole: (roles: AppRole[]) => boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signup: (email: string, password: string, nom: string, prenom: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
 }
 

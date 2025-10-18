@@ -1,52 +1,97 @@
-import { User } from '@/types';
-import { MOCK_USERS, MOCK_CREDENTIALS } from '../mockData/users.mock';
+import { supabase } from '@/integrations/supabase/client';
+import { User, AppRole } from '@/types';
 
 export const authService = {
+  // Connexion
   login: async (email: string, password: string): Promise<{ user?: User; error?: string }> => {
-    // Simulation d'un délai réseau
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
 
-    // Vérifier les credentials
-    const validPassword = MOCK_CREDENTIALS[email as keyof typeof MOCK_CREDENTIALS];
-    if (!validPassword || validPassword !== password) {
-      return { error: 'Email ou mot de passe incorrect' };
+    if (error) {
+      return { error: error.message };
     }
 
-    // Trouver l'utilisateur
-    const user = MOCK_USERS.find(u => u.email === email);
-    if (!user) {
+    if (!data.user) {
       return { error: 'Utilisateur non trouvé' };
     }
 
-    // Simuler un token JWT
-    const mockToken = btoa(JSON.stringify({ userId: user.id, exp: Date.now() + 24 * 60 * 60 * 1000 }));
-    localStorage.setItem('auth_token', mockToken);
-    localStorage.setItem('user', JSON.stringify(user));
-
+    // Récupérer le profil et les rôles
+    const user = await authService.getUserWithRoles(data.user.id);
+    if (!user) {
+      return { error: 'Erreur lors du chargement du profil' };
+    }
     return { user };
   },
 
-  logout: async () => {
-    // Simulation d'un délai réseau
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user');
+  // Inscription
+  signup: async (email: string, password: string, nom: string, prenom: string, clientId: string = 'client-1') => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          nom,
+          prenom,
+          client_id: clientId
+        },
+        emailRedirectTo: `${window.location.origin}/`
+      }
+    });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    return { user: data.user };
   },
 
-  getCurrentUser: (): User | null => {
-    const userStr = localStorage.getItem('user');
-    if (!userStr) return null;
-    
-    try {
-      return JSON.parse(userStr);
-    } catch {
+  // Déconnexion
+  logout: async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  },
+
+  // Récupérer l'utilisateur actuel avec ses rôles
+  getUserWithRoles: async (userId: string): Promise<User | null> => {
+    // Récupérer le profil
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (profileError || !profile) {
+      console.error('Erreur profil:', profileError);
       return null;
     }
+
+    // Récupérer les rôles
+    const { data: userRoles, error: rolesError } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId);
+
+    if (rolesError) {
+      console.error('Erreur rôles:', rolesError);
+    }
+
+    const roles = (userRoles || []).map(r => r.role as AppRole);
+
+    return {
+      id: profile.id,
+      email: profile.email,
+      nom: profile.nom,
+      prenom: profile.prenom,
+      clientId: profile.client_id,
+      roles
+    };
   },
 
-  isAuthenticated: (): boolean => {
-    const token = localStorage.getItem('auth_token');
-    return !!token;
+  // Vérifier si l'utilisateur est authentifié
+  isAuthenticated: async (): Promise<boolean> => {
+    const { data } = await supabase.auth.getSession();
+    return !!data.session;
   }
 };

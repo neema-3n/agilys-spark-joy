@@ -37,7 +37,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loginErrors, setLoginErrors] = useState<Record<string, string>>({});
   const [signupErrors, setSignupErrors] = useState<Record<string, string>>({});
-  const { login, isAuthenticated } = useAuth();
+  const { login, signup, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -102,15 +102,27 @@ const Login = () => {
     }
 
     setIsLoading(true);
-    // Simulation d'inscription (en Phase 0, on affiche juste un message)
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const result = await signup(signupEmail, signupPassword, nom, prenom);
     setIsLoading(false);
     
-    toast({
-      title: 'Inscription non disponible',
-      description: 'Cette fonctionnalité sera disponible en Phase 1 (Backend)',
-      variant: 'destructive',
-    });
+    if (result.success) {
+      toast({
+        title: 'Inscription réussie',
+        description: 'Vérifiez votre email pour confirmer votre compte',
+      });
+      // Reset form
+      setSignupEmail('');
+      setSignupPassword('');
+      setConfirmPassword('');
+      setNom('');
+      setPrenom('');
+    } else {
+      toast({
+        title: 'Erreur d\'inscription',
+        description: result.error || 'Une erreur est survenue',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -297,7 +309,7 @@ const Login = () => {
                 </Button>
               </form>
               <p className="text-xs text-muted-foreground mt-4 text-center">
-                L'inscription sera fonctionnelle après l'intégration du backend
+                Un email de confirmation sera envoyé après l'inscription
               </p>
             </TabsContent>
           </Tabs>
