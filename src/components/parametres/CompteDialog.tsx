@@ -96,6 +96,38 @@ const CompteDialog = ({
 
           <FormField
             control={form.control}
+            name="parentId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Compte parent (optionnel)</FormLabel>
+                <Select 
+                  onValueChange={(value) => field.onChange(value === "__none__" ? undefined : value)} 
+                  value={field.value || "__none__"}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Aucun parent (compte racine)" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="__none__">Aucun parent (compte racine)</SelectItem>
+                    {comptes
+                      .filter(c => c.id !== compte?.id)
+                      .sort((a, b) => a.numero.localeCompare(b.numero))
+                      .map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.numero} - {c.libelle}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
             name="niveau"
             render={({ field }) => (
                   <FormItem>
@@ -108,35 +140,6 @@ const CompteDialog = ({
                 )}
               />
             </div>
-
-            <FormField
-              control={form.control}
-              name="parentId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Compte parent (optionnel)</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || ''}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Aucun parent (compte racine)" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="">Aucun parent (compte racine)</SelectItem>
-                      {comptes
-                        .filter(c => c.id !== compte?.id)
-                        .sort((a, b) => a.numero.localeCompare(b.numero))
-                        .map((c) => (
-                          <SelectItem key={c.id} value={c.id}>
-                            {c.numero} - {c.libelle}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <FormField
               control={form.control}
