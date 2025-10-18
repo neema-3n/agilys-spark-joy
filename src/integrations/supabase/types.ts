@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      enveloppes: {
+        Row: {
+          client_id: string
+          code: string
+          created_at: string
+          created_by: string | null
+          exercice_id: string
+          id: string
+          montant_alloue: number
+          montant_consomme: number
+          nom: string
+          source_financement: string
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          code: string
+          created_at?: string
+          created_by?: string | null
+          exercice_id: string
+          id?: string
+          montant_alloue?: number
+          montant_consomme?: number
+          nom: string
+          source_financement: string
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          exercice_id?: string
+          id?: string
+          montant_alloue?: number
+          montant_consomme?: number
+          nom?: string
+          source_financement?: string
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enveloppes_exercice_id_fkey"
+            columns: ["exercice_id"]
+            isOneToOne: false
+            referencedRelation: "exercices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exercices: {
         Row: {
           client_id: string

@@ -80,3 +80,6 @@ export interface ExerciceContextType {
 
 // Export budget types
 export * from './budget.types';
+
+// Export enveloppe types
+export * from './enveloppe.types';
