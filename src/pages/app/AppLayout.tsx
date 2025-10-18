@@ -59,14 +59,6 @@ const AppLayout = () => {
       href: '/app/budgets',
       icon: Wallet
     }, {
-      name: 'Exercices Budgétaires',
-      href: '/app/parametres',
-      icon: CalendarDays
-    }, {
-      name: 'Enveloppes & Financement',
-      href: '/app/enveloppes',
-      icon: Briefcase
-    }, {
       name: 'Prévisions Budgétaires',
       href: '/app/previsions',
       icon: TrendingUp
