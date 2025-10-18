@@ -10,6 +10,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
+import InitTestUsers from "./pages/auth/InitTestUsers";
 import AppLayout from "./pages/app/AppLayout";
 import Dashboard from "./pages/app/Dashboard";
 import Budgets from "./pages/app/Budgets";
@@ -38,9 +39,10 @@ const App = () => (
         <AuthProvider>
           <ClientProvider>
             <ExerciceProvider>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/auth/login" element={<Login />} />
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/auth/login" element={<Login />} />
+          <Route path="/auth/init-test-users" element={<InitTestUsers />} />
                 <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                   <Route path="dashboard" element={<Dashboard />} />
                   <Route path="budgets" element={<Budgets />} />
