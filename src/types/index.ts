@@ -83,3 +83,9 @@ export * from './budget.types';
 
 // Export enveloppe types
 export * from './enveloppe.types';
+
+// Export structure types
+export * from './structure.types';
+
+// Export compte types
+export * from './compte.types';
