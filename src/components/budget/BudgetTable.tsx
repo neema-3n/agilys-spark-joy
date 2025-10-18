@@ -83,7 +83,7 @@ export const BudgetTable = ({
         <TableBody>
           {sections.map((section) => {
             const isExpanded = expandedSections.has(section.id);
-            const sectionProgrammes = programmes.filter(p => p.sectionId === section.id);
+            const sectionProgrammes = programmes.filter(p => p.section_id === section.id);
             
             return (
               <React.Fragment key={section.id}>
@@ -108,7 +108,7 @@ export const BudgetTable = ({
 
                 {isExpanded && sectionProgrammes.map((programme) => {
                   const isProgrammeExpanded = expandedProgrammes.has(programme.id);
-                  const programmeActions = actions.filter(a => a.programmeId === programme.id);
+                  const programmeActions = actions.filter(a => a.programme_id === programme.id);
                   
                   return (
                     <React.Fragment key={programme.id}>

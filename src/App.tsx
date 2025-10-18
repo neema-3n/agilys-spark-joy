@@ -14,6 +14,7 @@ import InitTestUsers from "./pages/auth/InitTestUsers";
 import AppLayout from "./pages/app/AppLayout";
 import Dashboard from "./pages/app/Dashboard";
 import Budgets from "./pages/app/Budgets";
+import StructureBudgetaire from "./pages/app/StructureBudgetaire";
 import Engagements from "./pages/app/Engagements";
 import Factures from "./pages/app/Factures";
 import Tresorerie from "./pages/app/Tresorerie";
@@ -51,6 +52,7 @@ const App = () => (
                 <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                   <Route path="dashboard" element={<Dashboard />} />
                   <Route path="budgets" element={<Budgets />} />
+                  <Route path="structure-budgetaire" element={<StructureBudgetaire />} />
                   <Route path="enveloppes" element={<Enveloppes />} />
                   <Route path="previsions" element={<Previsions />} />
                   <Route path="reservations" element={<Reservations />} />

@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { budgetService } from '@/services/api/budget.service';
-import { LigneBudgetaire, ModificationBudgetaire, Section, Programme, Action } from '@/types/budget.types';
+import { useSections } from '@/hooks/useSections';
+import { useProgrammes } from '@/hooks/useProgrammes';
+import { useActions } from '@/hooks/useActions';
+import { LigneBudgetaire, ModificationBudgetaire } from '@/types/budget.types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -36,9 +39,10 @@ const Budgets = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const [sections, setSections] = useState<Section[]>([]);
-  const [programmes, setProgrammes] = useState<Programme[]>([]);
-  const [actions, setActions] = useState<Action[]>([]);
+  const { sections, isLoading: loadingSections } = useSections();
+  const { programmes, isLoading: loadingProgrammes } = useProgrammes();
+  const { actions, isLoading: loadingActions } = useActions();
+
   const [lignes, setLignes] = useState<LigneBudgetaire[]>([]);
   const [modifications, setModifications] = useState<ModificationBudgetaire[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,18 +62,12 @@ const Budgets = () => {
 
     setLoading(true);
     try {
-      const [sectionsData, programmesData, actionsData, lignesData, modificationsData] = 
+      const [lignesData, modificationsData] = 
         await Promise.all([
-          budgetService.getSections(),
-          budgetService.getProgrammes(),
-          budgetService.getActions(),
           budgetService.getLignesBudgetaires(currentExercice.id),
           budgetService.getModifications(currentExercice.id),
         ]);
 
-      setSections(sectionsData);
-      setProgrammes(programmesData);
-      setActions(actionsData);
       setLignes(lignesData);
       setModifications(modificationsData);
     } catch (error) {
@@ -237,7 +235,7 @@ const Budgets = () => {
     return labels[type] || type;
   };
 
-  if (loading) {
+  if (loading || loadingSections || loadingProgrammes || loadingActions) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>

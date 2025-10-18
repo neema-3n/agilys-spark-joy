@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
-import { LigneBudgetaire, Action } from '@/types/budget.types';
+import { LigneBudgetaire } from '@/types/budget.types';
 import { useComptes } from '@/hooks/useComptes';
+import { useSections } from '@/hooks/useSections';
+import { useProgrammes } from '@/hooks/useProgrammes';
+import { useActions } from '@/hooks/useActions';
 import {
   Dialog,
   DialogContent,
@@ -33,10 +36,14 @@ export const LigneBudgetaireDialog = ({
   onClose,
   onSubmit,
   ligne,
-  actions,
   exerciceId,
 }: LigneBudgetaireDialogProps) => {
   const { comptes, isLoading: isLoadingComptes } = useComptes();
+  const { sections } = useSections();
+  const [selectedSectionId, setSelectedSectionId] = useState('');
+  const { programmes } = useProgrammes(selectedSectionId);
+  const [selectedProgrammeId, setSelectedProgrammeId] = useState('');
+  const { actions } = useActions(selectedProgrammeId);
   
   const [formData, setFormData] = useState({
     actionId: '',

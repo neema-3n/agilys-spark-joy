@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      actions: {
+        Row: {
+          client_id: string
+          code: string
+          created_at: string
+          created_by: string | null
+          exercice_id: string
+          id: string
+          libelle: string
+          ordre: number
+          programme_id: string
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          code: string
+          created_at?: string
+          created_by?: string | null
+          exercice_id: string
+          id?: string
+          libelle: string
+          ordre?: number
+          programme_id: string
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          exercice_id?: string
+          id?: string
+          libelle?: string
+          ordre?: number
+          programme_id?: string
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "actions_exercice_id_fkey"
+            columns: ["exercice_id"]
+            isOneToOne: false
+            referencedRelation: "exercices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "actions_programme_id_fkey"
+            columns: ["programme_id"]
+            isOneToOne: false
+            referencedRelation: "programmes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comptes: {
         Row: {
           categorie: string
@@ -234,6 +291,63 @@ export type Database = {
         }
         Relationships: []
       }
+      programmes: {
+        Row: {
+          client_id: string
+          code: string
+          created_at: string
+          created_by: string | null
+          exercice_id: string
+          id: string
+          libelle: string
+          ordre: number
+          section_id: string
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          code: string
+          created_at?: string
+          created_by?: string | null
+          exercice_id: string
+          id?: string
+          libelle: string
+          ordre?: number
+          section_id: string
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          exercice_id?: string
+          id?: string
+          libelle?: string
+          ordre?: number
+          section_id?: string
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programmes_exercice_id_fkey"
+            columns: ["exercice_id"]
+            isOneToOne: false
+            referencedRelation: "exercices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programmes_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projets: {
         Row: {
           budget_alloue: number | null
@@ -302,6 +416,53 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      sections: {
+        Row: {
+          client_id: string
+          code: string
+          created_at: string
+          created_by: string | null
+          exercice_id: string
+          id: string
+          libelle: string
+          ordre: number
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          code: string
+          created_at?: string
+          created_by?: string | null
+          exercice_id: string
+          id?: string
+          libelle: string
+          ordre?: number
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          exercice_id?: string
+          id?: string
+          libelle?: string
+          ordre?: number
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sections_exercice_id_fkey"
+            columns: ["exercice_id"]
+            isOneToOne: false
+            referencedRelation: "exercices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       structures: {
         Row: {

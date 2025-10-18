@@ -1,41 +1,13 @@
 import { 
   LigneBudgetaire, 
-  ModificationBudgetaire,
-  Section,
-  Programme,
-  Action
+  ModificationBudgetaire
 } from '@/types/budget.types';
-import { 
-  MOCK_LIGNES_BUDGETAIRES, 
-  MOCK_MODIFICATIONS_BUDGETAIRES,
-  MOCK_SECTIONS,
-  MOCK_PROGRAMMES,
-  MOCK_ACTIONS
-} from '../mockData/budget.mock';
 
 // Simulation d'une base de données en mémoire
-let lignesBudgetaires = [...MOCK_LIGNES_BUDGETAIRES];
-let modifications = [...MOCK_MODIFICATIONS_BUDGETAIRES];
+let lignesBudgetaires: LigneBudgetaire[] = [];
+let modifications: ModificationBudgetaire[] = [];
 
 export const budgetService = {
-  // Récupérer toutes les sections
-  getSections: async (): Promise<Section[]> => {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    return MOCK_SECTIONS;
-  },
-
-  // Récupérer tous les programmes
-  getProgrammes: async (): Promise<Programme[]> => {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    return MOCK_PROGRAMMES;
-  },
-
-  // Récupérer toutes les actions
-  getActions: async (): Promise<Action[]> => {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    return MOCK_ACTIONS;
-  },
-
   // Récupérer les lignes budgétaires par exercice
   getLignesBudgetaires: async (exerciceId: string): Promise<LigneBudgetaire[]> => {
     await new Promise(resolve => setTimeout(resolve, 300));

@@ -2,25 +2,43 @@
 
 export interface Section {
   id: string;
+  client_id: string;
+  exercice_id: string;
   code: string;
   libelle: string;
   ordre: number;
+  statut: 'actif' | 'archive';
+  created_at: string;
+  updated_at: string;
+  created_by?: string;
 }
 
 export interface Programme {
   id: string;
-  sectionId: string;
+  section_id: string;
+  client_id: string;
+  exercice_id: string;
   code: string;
   libelle: string;
   ordre: number;
+  statut: 'actif' | 'archive';
+  created_at: string;
+  updated_at: string;
+  created_by?: string;
 }
 
 export interface Action {
   id: string;
-  programmeId: string;
+  programme_id: string;
+  client_id: string;
+  exercice_id: string;
   code: string;
   libelle: string;
   ordre: number;
+  statut: 'actif' | 'archive';
+  created_at: string;
+  updated_at: string;
+  created_by?: string;
 }
 
 export interface LigneBudgetaire {
