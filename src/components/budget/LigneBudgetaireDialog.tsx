@@ -27,7 +27,6 @@ interface LigneBudgetaireDialogProps {
   onClose: () => void;
   onSubmit: (data: Partial<LigneBudgetaire>) => void;
   ligne?: LigneBudgetaire | null;
-  actions: Action[];
   exerciceId: string;
 }
 
@@ -97,10 +96,57 @@ export const LigneBudgetaireDialog = ({
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="actionId">Action</Label>
+              <Label htmlFor="sectionId">Section</Label>
+              <Select
+                value={selectedSectionId}
+                onValueChange={(value) => {
+                  setSelectedSectionId(value);
+                  setSelectedProgrammeId('');
+                  setFormData({ ...formData, actionId: '' });
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner une section" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sections.map((section) => (
+                    <SelectItem key={section.id} value={section.id}>
+                      {section.code} - {section.libelle}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="programmeId">Programme</Label>
+              <Select
+                value={selectedProgrammeId}
+                onValueChange={(value) => {
+                  setSelectedProgrammeId(value);
+                  setFormData({ ...formData, actionId: '' });
+                }}
+                disabled={!selectedSectionId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un programme" />
+                </SelectTrigger>
+                <SelectContent>
+                  {programmes.map((programme) => (
+                    <SelectItem key={programme.id} value={programme.id}>
+                      {programme.code} - {programme.libelle}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="actionId">Action budgétaire</Label>
               <Select
                 value={formData.actionId}
                 onValueChange={(value) => setFormData({ ...formData, actionId: value })}
+                disabled={!selectedProgrammeId}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner une action" />

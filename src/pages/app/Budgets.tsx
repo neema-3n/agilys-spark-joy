@@ -394,7 +394,6 @@ const Budgets = () => {
         }}
         onSubmit={selectedLigne ? handleUpdateLigne : handleCreateLigne}
         ligne={selectedLigne}
-        actions={actions}
         exerciceId={currentExercice?.id || ''}
       />
 
