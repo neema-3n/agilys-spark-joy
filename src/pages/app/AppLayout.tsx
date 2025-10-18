@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Wallet, FileText, Receipt, Building2, BarChart3, Settings, LogOut, ChevronDown, Menu, X, Users, FileCheck, CreditCard, Wallet2, BookOpen, ShieldCheck, LineChart, TrendingUp, BookmarkCheck, ShoppingCart, Briefcase, CalendarDays, DollarSign, FolderKanban } from 'lucide-react';
+import { LayoutDashboard, Wallet, FileText, Receipt, Building2, BarChart3, Settings, LogOut, ChevronDown, Menu, X, Users, FileCheck, CreditCard, Wallet2, BookOpen, ShieldCheck, LineChart, TrendingUp, BookmarkCheck, ShoppingCart, Briefcase, CalendarDays, DollarSign, FolderKanban, Layers } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { useState } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -102,6 +102,10 @@ const AppLayout = () => {
       name: 'Budget',
       href: '/app/budgets',
       icon: Wallet
+    }, {
+      name: 'Structure Budgétaire',
+      href: '/app/structure-budgetaire',
+      icon: Layers
     }, {
       name: 'Prévisions Budgétaires',
       href: '/app/previsions',
