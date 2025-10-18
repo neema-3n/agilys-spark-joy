@@ -8,7 +8,7 @@ export const exercicesService = {
       .from('exercices')
       .select('*')
       .eq('client_id', clientId)
-      .order('annee', { ascending: false });
+      .order('date_debut', { ascending: false });
 
     if (error) throw error;
     
