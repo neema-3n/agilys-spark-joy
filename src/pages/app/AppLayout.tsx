@@ -44,10 +44,6 @@ const AppLayout = () => {
   const navigationSections = [{
     title: 'Gestion',
     items: [{
-      name: 'Structure Organisationnelle',
-      href: '/app/structure',
-      icon: Building2
-    }, {
       name: 'Fournisseurs',
       href: '/app/fournisseurs',
       icon: Users

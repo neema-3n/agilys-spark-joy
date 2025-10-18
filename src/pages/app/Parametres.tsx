@@ -1,6 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExercicesManager } from '@/components/parametres/ExercicesManager';
 import { EnveloppesManager } from '@/components/parametres/EnveloppesManager';
+import { StructureManager } from '@/components/parametres/StructureManager';
 
 const Parametres = () => {
   return (
@@ -16,6 +17,7 @@ const Parametres = () => {
         <TabsList>
           <TabsTrigger value="exercices">Exercices Budgétaires</TabsTrigger>
           <TabsTrigger value="enveloppes">Enveloppes & Financement</TabsTrigger>
+          <TabsTrigger value="structure">Structure Organisationnelle</TabsTrigger>
           <TabsTrigger value="utilisateurs">Utilisateurs</TabsTrigger>
           <TabsTrigger value="general">Général</TabsTrigger>
         </TabsList>
@@ -26,6 +28,10 @@ const Parametres = () => {
 
         <TabsContent value="enveloppes">
           <EnveloppesManager />
+        </TabsContent>
+
+        <TabsContent value="structure">
+          <StructureManager />
         </TabsContent>
 
         <TabsContent value="utilisateurs">
