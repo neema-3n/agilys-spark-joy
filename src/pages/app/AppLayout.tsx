@@ -32,6 +32,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 const AppLayout = () => {
   const { user, logout } = useAuth();
@@ -39,6 +44,23 @@ const AppLayout = () => {
   const { currentExercice, exercices, setCurrentExercice } = useExercice();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    'Gestion': true,
+    'Budget': true,
+    'Opérations': true,
+    'Trésorerie': true,
+    'Comptabilité': true,
+    'Conformité': true,
+    'Analyse': true,
+    'Système': true,
+  });
+
+  const toggleSection = (sectionTitle: string) => {
+    setOpenSections(prev => ({
+      ...prev,
+      [sectionTitle]: !prev[sectionTitle]
+    }));
+  };
 
   const navigationSections = [
     {
@@ -184,16 +206,26 @@ const AppLayout = () => {
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {navigationSections.map((section, sectionIndex) => (
-            <div key={section.title}>
-              {/* Section Header - Visible uniquement si sidebar ouvert */}
+            <Collapsible
+              key={section.title}
+              open={openSections[section.title]}
+              onOpenChange={() => toggleSection(section.title)}
+              className="space-y-1"
+            >
+              {/* Section Header - Cliquable pour toggle */}
               {sidebarOpen && (
-                <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  {section.title}
-                </div>
+                <CollapsibleTrigger className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors group">
+                  <span>{section.title}</span>
+                  <ChevronDown 
+                    className={`h-4 w-4 transition-transform duration-200 ${
+                      openSections[section.title] ? 'rotate-0' : '-rotate-90'
+                    }`}
+                  />
+                </CollapsibleTrigger>
               )}
               
-              {/* Section Items */}
-              <div className="space-y-1 mb-4">
+              {/* Section Items - Collapsible */}
+              <CollapsibleContent className="space-y-1">
                 {section.items.map((item) => {
                   const isActive = location.pathname === item.href;
                   return (
@@ -211,13 +243,13 @@ const AppLayout = () => {
                     </NavLink>
                   );
                 })}
-              </div>
+              </CollapsibleContent>
               
               {/* Separator entre sections sauf la dernière */}
               {sidebarOpen && sectionIndex < navigationSections.length - 1 && (
                 <Separator className="my-2" />
               )}
-            </div>
+            </Collapsible>
           ))}
         </nav>
 
