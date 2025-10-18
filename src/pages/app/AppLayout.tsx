@@ -22,7 +22,13 @@ import {
   BookOpen,
   ShieldCheck,
   LineChart,
-  TrendingUp
+  TrendingUp,
+  BookmarkCheck,
+  ShoppingCart,
+  Briefcase,
+  CalendarDays,
+  DollarSign,
+  FolderKanban
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { useState } from 'react';
@@ -74,15 +80,19 @@ const AppLayout = () => {
       title: 'Budget',
       items: [
         { name: 'Budget', href: '/app/budgets', icon: Wallet },
+        { name: 'Exercices Budgétaires', href: '/app/parametres', icon: CalendarDays },
+        { name: 'Enveloppes & Financement', href: '/app/enveloppes', icon: Briefcase },
         { name: 'Prévisions Budgétaires', href: '/app/previsions', icon: TrendingUp },
       ]
     },
     {
       title: 'Opérations',
       items: [
+        { name: 'Réservation de Crédits', href: '/app/reservations', icon: BookmarkCheck },
         { name: 'Engagements', href: '/app/engagements', icon: FileText },
-        { name: 'Mandats', href: '/app/mandats', icon: FileCheck },
+        { name: 'Bons de Commande', href: '/app/bons-commande', icon: ShoppingCart },
         { name: 'Factures', href: '/app/factures', icon: Receipt },
+        { name: 'Dépenses', href: '/app/depenses', icon: DollarSign },
         { name: 'Paiements', href: '/app/paiements', icon: CreditCard },
       ]
     },
@@ -108,6 +118,7 @@ const AppLayout = () => {
       title: 'Analyse',
       items: [
         { name: 'Tableau de bord', href: '/app/dashboard', icon: LayoutDashboard },
+        { name: 'Projets & Analytique', href: '/app/projets', icon: FolderKanban },
         { name: 'Analyses Financières', href: '/app/analyses', icon: LineChart },
         { name: 'Reporting', href: '/app/reporting', icon: BarChart3 },
       ]

@@ -27,6 +27,11 @@ import PlanComptable from "./pages/app/PlanComptable";
 import ControleInterne from "./pages/app/ControleInterne";
 import Analyses from "./pages/app/Analyses";
 import Previsions from "./pages/app/Previsions";
+import Reservations from "./pages/app/Reservations";
+import BonsCommande from "./pages/app/BonsCommande";
+import Depenses from "./pages/app/Depenses";
+import Enveloppes from "./pages/app/Enveloppes";
+import Projets from "./pages/app/Projets";
 
 const queryClient = new QueryClient();
 
@@ -46,14 +51,19 @@ const App = () => (
                 <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                   <Route path="dashboard" element={<Dashboard />} />
                   <Route path="budgets" element={<Budgets />} />
+                  <Route path="enveloppes" element={<Enveloppes />} />
                   <Route path="previsions" element={<Previsions />} />
+                  <Route path="reservations" element={<Reservations />} />
                   <Route path="engagements" element={<Engagements />} />
+                  <Route path="bons-commande" element={<BonsCommande />} />
+                  <Route path="depenses" element={<Depenses />} />
                   <Route path="mandats" element={<Mandats />} />
                   <Route path="factures" element={<Factures />} />
                   <Route path="paiements" element={<Paiements />} />
                   <Route path="tresorerie" element={<Tresorerie />} />
                   <Route path="plan-comptable" element={<PlanComptable />} />
                   <Route path="controle-interne" element={<ControleInterne />} />
+                  <Route path="projets" element={<Projets />} />
                   <Route path="analyses" element={<Analyses />} />
                   <Route path="reporting" element={<Reporting />} />
                   <Route path="structure" element={<Structure />} />
