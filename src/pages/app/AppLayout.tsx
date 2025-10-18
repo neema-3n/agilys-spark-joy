@@ -43,6 +43,7 @@ const AppLayout = () => {
   };
   const navigationSections = [{
     title: 'Fournisseurs',
+    icon: Users,
     items: [{
       name: 'Fournisseurs',
       href: '/app/fournisseurs',
@@ -50,6 +51,7 @@ const AppLayout = () => {
     }]
   }, {
     title: 'Budget',
+    icon: Wallet,
     items: [{
       name: 'Budget',
       href: '/app/budgets',
@@ -61,8 +63,9 @@ const AppLayout = () => {
     }]
   }, {
     title: 'Opérations',
+    icon: FileCheck,
     items: [{
-      name: 'Réservation de Crédits',
+      name: 'Réservation De Crédits',
       href: '/app/reservations',
       icon: BookmarkCheck
     }, {
@@ -70,7 +73,7 @@ const AppLayout = () => {
       href: '/app/engagements',
       icon: FileText
     }, {
-      name: 'Bons de Commande',
+      name: 'Bons De Commande',
       href: '/app/bons-commande',
       icon: ShoppingCart
     }, {
@@ -88,13 +91,15 @@ const AppLayout = () => {
     }]
   }, {
     title: 'Trésorerie',
+    icon: Wallet2,
     items: [{
-      name: 'Suivi de Trésorerie',
+      name: 'Suivi De Trésorerie',
       href: '/app/tresorerie',
       icon: Wallet2
     }]
   }, {
     title: 'Comptabilité',
+    icon: BookOpen,
     items: [{
       name: 'Plan Comptable',
       href: '/app/plan-comptable',
@@ -102,6 +107,7 @@ const AppLayout = () => {
     }]
   }, {
     title: 'Conformité',
+    icon: ShieldCheck,
     items: [{
       name: 'Contrôle Interne',
       href: '/app/controle-interne',
@@ -109,8 +115,9 @@ const AppLayout = () => {
     }]
   }, {
     title: 'Analyse',
+    icon: BarChart3,
     items: [{
-      name: 'Tableau de bord',
+      name: 'Tableau De Bord',
       href: '/app/dashboard',
       icon: LayoutDashboard
     }, {
@@ -128,6 +135,7 @@ const AppLayout = () => {
     }]
   }, {
     title: 'Système',
+    icon: Settings,
     items: [{
       name: 'Paramètres',
       href: '/app/parametres',
@@ -196,6 +204,7 @@ const AppLayout = () => {
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {navigationSections.map((section, sectionIndex) => {
             const isSingleItem = section.items.length === 1;
+            const SectionIcon = section.icon;
             
             if (isSingleItem) {
               // Pour les sections avec un seul item, afficher directement sans collapsible
@@ -226,7 +235,10 @@ const AppLayout = () => {
               <Collapsible key={section.title} open={openSections[section.title]} onOpenChange={() => toggleSection(section.title)} className="space-y-1">
                 {/* Section Header - Cliquable pour toggle */}
                 {sidebarOpen && <CollapsibleTrigger className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors group">
-                    <span>{section.title}</span>
+                    <div className="flex items-center gap-2">
+                      <SectionIcon className="h-4 w-4" />
+                      <span>{section.title}</span>
+                    </div>
                     <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${openSections[section.title] ? 'rotate-0' : '-rotate-90'}`} />
                   </CollapsibleTrigger>}
                 
