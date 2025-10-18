@@ -67,6 +67,12 @@ export interface ExerciceContextType {
   currentExercice: Exercice | null;
   exercices: Exercice[];
   setCurrentExercice: (exercice: Exercice) => void;
+  createExercice: (exercice: Omit<Exercice, 'id'>) => Promise<Exercice>;
+  updateExercice: (id: string, updates: Partial<Omit<Exercice, 'id' | 'clientId'>>) => Promise<Exercice>;
+  cloturerExercice: (id: string) => Promise<Exercice>;
+  deleteExercice: (id: string) => Promise<void>;
+  isLoading: boolean;
+  refreshExercices: () => Promise<void>;
 }
 
 // Export budget types

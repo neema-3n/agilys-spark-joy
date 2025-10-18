@@ -1,4 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ExercicesManager } from '@/components/parametres/ExercicesManager';
 
 const Parametres = () => {
   return (
@@ -10,16 +11,29 @@ const Parametres = () => {
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Module en construction</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            Le module de paramètres sera développé prochainement.
-          </p>
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="exercices" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="exercices">Exercices Budgétaires</TabsTrigger>
+          <TabsTrigger value="utilisateurs">Utilisateurs</TabsTrigger>
+          <TabsTrigger value="general">Général</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="exercices">
+          <ExercicesManager />
+        </TabsContent>
+
+        <TabsContent value="utilisateurs">
+          <div className="text-muted-foreground">
+            Module de gestion des utilisateurs à venir
+          </div>
+        </TabsContent>
+
+        <TabsContent value="general">
+          <div className="text-muted-foreground">
+            Paramètres généraux à venir
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
