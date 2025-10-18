@@ -159,6 +159,51 @@ export type Database = {
         }
         Relationships: []
       }
+      parametres_referentiels: {
+        Row: {
+          actif: boolean | null
+          categorie: string
+          client_id: string
+          code: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          libelle: string
+          modifiable: boolean | null
+          ordre: number | null
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean | null
+          categorie: string
+          client_id: string
+          code: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          libelle: string
+          modifiable?: boolean | null
+          ordre?: number | null
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean | null
+          categorie?: string
+          client_id?: string
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          libelle?: string
+          modifiable?: boolean | null
+          ordre?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           client_id: string
