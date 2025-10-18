@@ -41,49 +41,49 @@ const AppLayout = () => {
       [sectionTitle]: !prev[sectionTitle]
     }));
   };
-  // Color mapping for each section - simplified without gradients
+  // Color mapping for each section
   const sectionColors: Record<string, { bg: string; border: string; text: string; hover: string }> = {
     'Fournisseurs': { 
-      bg: 'bg-accent', 
-      border: 'border-l-primary', 
-      text: 'text-foreground',
-      hover: 'hover:bg-accent'
+      bg: 'bg-gradient-to-r from-blue-50/50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/30', 
+      border: 'border-l-blue-500', 
+      text: 'text-blue-700 dark:text-blue-300',
+      hover: 'hover:bg-blue-50/80 dark:hover:bg-blue-950/50'
     },
     'Budget': { 
-      bg: 'bg-accent', 
-      border: 'border-l-primary', 
-      text: 'text-foreground',
-      hover: 'hover:bg-accent'
+      bg: 'bg-gradient-to-r from-purple-50/50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/30', 
+      border: 'border-l-purple-500', 
+      text: 'text-purple-700 dark:text-purple-300',
+      hover: 'hover:bg-purple-50/80 dark:hover:bg-purple-950/50'
     },
     'Opérations': { 
-      bg: 'bg-accent', 
-      border: 'border-l-primary', 
-      text: 'text-foreground',
-      hover: 'hover:bg-accent'
+      bg: 'bg-gradient-to-r from-amber-50/50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/30', 
+      border: 'border-l-amber-500', 
+      text: 'text-amber-700 dark:text-amber-300',
+      hover: 'hover:bg-amber-50/80 dark:hover:bg-amber-950/50'
     },
     'Trésorerie': { 
-      bg: 'bg-accent', 
-      border: 'border-l-primary', 
-      text: 'text-foreground',
-      hover: 'hover:bg-accent'
+      bg: 'bg-gradient-to-r from-green-50/50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/30', 
+      border: 'border-l-green-500', 
+      text: 'text-green-700 dark:text-green-300',
+      hover: 'hover:bg-green-50/80 dark:hover:bg-green-950/50'
     },
     'Conformité': { 
-      bg: 'bg-accent', 
-      border: 'border-l-primary', 
-      text: 'text-foreground',
-      hover: 'hover:bg-accent'
+      bg: 'bg-gradient-to-r from-red-50/50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/30', 
+      border: 'border-l-red-500', 
+      text: 'text-red-700 dark:text-red-300',
+      hover: 'hover:bg-red-50/80 dark:hover:bg-red-950/50'
     },
     'Analyse': { 
-      bg: 'bg-accent', 
-      border: 'border-l-primary', 
-      text: 'text-foreground',
-      hover: 'hover:bg-accent'
+      bg: 'bg-gradient-to-r from-indigo-50/50 to-indigo-100/50 dark:from-indigo-950/30 dark:to-indigo-900/30', 
+      border: 'border-l-indigo-500', 
+      text: 'text-indigo-700 dark:text-indigo-300',
+      hover: 'hover:bg-indigo-50/80 dark:hover:bg-indigo-950/50'
     },
     'Système': { 
-      bg: 'bg-accent', 
-      border: 'border-l-primary', 
-      text: 'text-foreground',
-      hover: 'hover:bg-accent'
+      bg: 'bg-gradient-to-r from-slate-50/50 to-slate-100/50 dark:from-slate-950/30 dark:to-slate-900/30', 
+      border: 'border-l-slate-500', 
+      text: 'text-slate-700 dark:text-slate-300',
+      hover: 'hover:bg-slate-50/80 dark:hover:bg-slate-950/50'
     }
   };
 
@@ -259,10 +259,10 @@ const AppLayout = () => {
                 <div key={section.title} className="space-y-1">
                   <NavLink
                     to={item.href}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 border-l-4 ${
                       isActive
-                        ? 'bg-accent text-foreground font-semibold'
-                        : 'text-muted-foreground hover:bg-accent/50'
+                        ? `${colors.border} ${colors.bg} ${colors.text} font-semibold shadow-sm`
+                        : `border-l-transparent text-muted-foreground ${colors.hover}`
                     }`}
                   >
                     <Icon className={`h-4 w-4 flex-shrink-0 transition-transform duration-200 ${isActive ? 'scale-110' : ''}`} />
@@ -281,7 +281,7 @@ const AppLayout = () => {
                 {/* Section Header - Cliquable pour toggle */}
                 {sidebarOpen && (
                   <CollapsibleTrigger 
-                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-bold tracking-wider transition-all duration-200 hover:bg-accent text-muted-foreground group"
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-bold tracking-wider transition-all duration-200 border-l-4 ${colors.border} ${colors.bg} ${colors.text} ${colors.hover} shadow-sm group`}
                   >
                     <div className="flex items-center gap-2">
                       <SectionIcon className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
@@ -304,10 +304,10 @@ const AppLayout = () => {
                       <NavLink
                         key={item.href}
                         to={item.href}
-                        className={`flex items-center gap-3 px-3 py-2 ml-2 rounded-lg text-sm transition-all duration-200 ${
+                        className={`flex items-center gap-3 px-3 py-2 ml-2 rounded-lg text-sm transition-all duration-200 border-l-3 ${
                           isActive
-                            ? 'bg-accent text-foreground font-semibold'
-                            : 'text-muted-foreground hover:bg-accent/50'
+                            ? `${colors.border} ${colors.bg} ${colors.text} font-semibold shadow-sm`
+                            : `border-l-transparent text-muted-foreground ${colors.hover}`
                         }`}
                       >
                         <Icon className={`h-4 w-4 flex-shrink-0 transition-transform duration-200 ${isActive ? 'scale-110' : ''}`} />
