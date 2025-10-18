@@ -92,7 +92,7 @@ const Dashboard = () => {
       <div>
         <h1 className="text-3xl font-bold text-foreground">Tableau de Bord</h1>
         <p className="text-muted-foreground mt-2">
-          {currentClient?.nom} - Exercice {currentExercice?.annee}
+          {currentClient?.nom} - {currentExercice?.libelle}
         </p>
       </div>
 

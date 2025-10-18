@@ -270,7 +270,7 @@ const Budgets = () => {
         <TabsContent value="lignes" className="space-y-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Plan Budgétaire {currentExercice?.annee}</CardTitle>
+              <CardTitle>Plan Budgétaire {currentExercice?.libelle}</CardTitle>
               <div className="flex gap-2">
                 <Button onClick={() => setModificationDialogOpen(true)}>
                   <FileEdit className="h-4 w-4 mr-2" />

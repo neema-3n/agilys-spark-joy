@@ -42,7 +42,8 @@ export interface Client {
 export interface Exercice {
   id: string;
   clientId: string;
-  annee: number;
+  libelle: string;
+  code?: string;
   dateDebut: string;
   dateFin: string;
   statut: 'ouvert' | 'cloture';

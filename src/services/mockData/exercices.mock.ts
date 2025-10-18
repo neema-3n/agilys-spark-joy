@@ -4,7 +4,8 @@ export const MOCK_EXERCICES: Exercice[] = [
   {
     id: 'ex-2024',
     clientId: 'client-1',
-    annee: 2024,
+    libelle: 'Exercice 2024',
+    code: 'EX2024',
     dateDebut: '2024-01-01',
     dateFin: '2024-12-31',
     statut: 'ouvert'
@@ -12,7 +13,8 @@ export const MOCK_EXERCICES: Exercice[] = [
   {
     id: 'ex-2023',
     clientId: 'client-1',
-    annee: 2023,
+    libelle: 'Exercice 2023',
+    code: 'EX2023',
     dateDebut: '2023-01-01',
     dateFin: '2023-12-31',
     statut: 'cloture'
@@ -20,9 +22,10 @@ export const MOCK_EXERCICES: Exercice[] = [
   {
     id: 'ex-2025',
     clientId: 'client-1',
-    annee: 2025,
-    dateDebut: '2025-01-01',
-    dateFin: '2025-12-31',
+    libelle: 'Budget Juillet 2024 - Juin 2025',
+    code: 'FY2024-25',
+    dateDebut: '2024-07-01',
+    dateFin: '2025-06-30',
     statut: 'ouvert'
   }
 ];

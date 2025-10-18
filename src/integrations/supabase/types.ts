@@ -16,35 +16,38 @@ export type Database = {
     Tables: {
       exercices: {
         Row: {
-          annee: number
           client_id: string
+          code: string | null
           created_at: string | null
           created_by: string | null
           date_debut: string
           date_fin: string
           id: string
+          libelle: string
           statut: string
           updated_at: string | null
         }
         Insert: {
-          annee: number
           client_id: string
+          code?: string | null
           created_at?: string | null
           created_by?: string | null
           date_debut: string
           date_fin: string
           id?: string
+          libelle: string
           statut: string
           updated_at?: string | null
         }
         Update: {
-          annee?: number
           client_id?: string
+          code?: string | null
           created_at?: string | null
           created_by?: string | null
           date_debut?: string
           date_fin?: string
           id?: string
+          libelle?: string
           statut?: string
           updated_at?: string | null
         }

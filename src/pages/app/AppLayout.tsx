@@ -179,13 +179,13 @@ const AppLayout = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="w-full justify-between text-sm">
-                    <span>{currentExercice?.annee || 'Sélectionner'}</span>
+                    <span>{currentExercice?.libelle || 'Sélectionner'}</span>
                     <ChevronDown className="h-4 w-4 ml-2" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56">
                   {exercices.map(exercice => <DropdownMenuItem key={exercice.id} onClick={() => setCurrentExercice(exercice)}>
-                      {exercice.annee} ({exercice.statut})
+                      {exercice.libelle} ({exercice.statut})
                     </DropdownMenuItem>)}
                 </DropdownMenuContent>
               </DropdownMenu>

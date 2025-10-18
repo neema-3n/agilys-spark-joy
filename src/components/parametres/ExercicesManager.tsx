@@ -46,7 +46,8 @@ export function ExercicesManager() {
     if (!currentClient) return;
     await createExercice({
       clientId: currentClient.id,
-      annee: data.annee,
+      libelle: data.libelle,
+      code: data.code || undefined,
       dateDebut: data.dateDebut,
       dateFin: data.dateFin,
       statut: data.statut,
@@ -56,7 +57,8 @@ export function ExercicesManager() {
   const handleUpdate = async (data: any) => {
     if (!selectedExercice) return;
     await updateExercice(selectedExercice.id, {
-      annee: data.annee,
+      libelle: data.libelle,
+      code: data.code || undefined,
       dateDebut: data.dateDebut,
       dateFin: data.dateFin,
       statut: data.statut,
@@ -115,16 +117,23 @@ export function ExercicesManager() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Année</TableHead>
-                  <TableHead>Période</TableHead>
-                  <TableHead>Statut</TableHead>
+              <TableHead>Libellé / Code</TableHead>
+              <TableHead>Période</TableHead>
+              <TableHead>Statut</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {exercices.map((exercice) => (
-                  <TableRow key={exercice.id}>
-                    <TableCell className="font-medium">{exercice.annee}</TableCell>
+            {exercices.map((exercice) => (
+              <TableRow key={exercice.id}>
+                <TableCell className="font-medium">
+                  <div className="flex flex-col">
+                    <span>{exercice.libelle}</span>
+                    {exercice.code && (
+                      <span className="text-sm text-muted-foreground">{exercice.code}</span>
+                    )}
+                  </div>
+                </TableCell>
                     <TableCell>
                       {format(new Date(exercice.dateDebut), 'dd MMMM yyyy', { locale: fr })}
                       {' - '}
@@ -192,7 +201,7 @@ export function ExercicesManager() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
             <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer l'exercice {exerciceToDelete?.annee} ? 
+              Êtes-vous sûr de vouloir supprimer l'exercice "{exerciceToDelete?.libelle}" ? 
               Cette action est irréversible et supprimera toutes les données associées.
             </AlertDialogDescription>
           </AlertDialogHeader>
