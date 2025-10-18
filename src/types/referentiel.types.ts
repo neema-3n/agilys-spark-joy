@@ -3,7 +3,9 @@ export type ReferentielCategorie =
   | 'compte_categorie' 
   | 'structure_type'
   | 'source_financement'
-  | 'statut_general';
+  | 'statut_general'
+  | 'type_projet'
+  | 'statut_projet';
 
 export interface ParametreReferentiel {
   id: string;

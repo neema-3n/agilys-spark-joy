@@ -234,6 +234,75 @@ export type Database = {
         }
         Relationships: []
       }
+      projets: {
+        Row: {
+          budget_alloue: number | null
+          budget_consomme: number | null
+          budget_engage: number | null
+          client_id: string
+          code: string
+          created_at: string | null
+          created_by: string | null
+          date_debut: string
+          date_fin: string
+          description: string | null
+          enveloppe_id: string | null
+          exercice_id: string
+          id: string
+          nom: string
+          priorite: string | null
+          responsable: string | null
+          statut: string
+          taux_avancement: number | null
+          type_projet: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          budget_alloue?: number | null
+          budget_consomme?: number | null
+          budget_engage?: number | null
+          client_id: string
+          code: string
+          created_at?: string | null
+          created_by?: string | null
+          date_debut: string
+          date_fin: string
+          description?: string | null
+          enveloppe_id?: string | null
+          exercice_id: string
+          id?: string
+          nom: string
+          priorite?: string | null
+          responsable?: string | null
+          statut?: string
+          taux_avancement?: number | null
+          type_projet?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          budget_alloue?: number | null
+          budget_consomme?: number | null
+          budget_engage?: number | null
+          client_id?: string
+          code?: string
+          created_at?: string | null
+          created_by?: string | null
+          date_debut?: string
+          date_fin?: string
+          description?: string | null
+          enveloppe_id?: string | null
+          exercice_id?: string
+          id?: string
+          nom?: string
+          priorite?: string | null
+          responsable?: string | null
+          statut?: string
+          taux_avancement?: number | null
+          type_projet?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       structures: {
         Row: {
           client_id: string
