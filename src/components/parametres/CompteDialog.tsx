@@ -54,6 +54,31 @@ const CompteDialog = ({
     }
   });
 
+  // Réinitialiser le formulaire quand le compte change ou que le dialog s'ouvre
+  useEffect(() => {
+    if (open && compte) {
+      form.reset({
+        numero: compte.numero || '',
+        libelle: compte.libelle || '',
+        type: compte.type || 'charge',
+        categorie: compte.categorie || 'exploitation',
+        parentId: compte.parentId || '',
+        niveau: compte.niveau || 1,
+        statut: compte.statut || 'actif'
+      });
+    } else if (open && !compte) {
+      form.reset({
+        numero: '',
+        libelle: '',
+        type: 'charge',
+        categorie: 'exploitation',
+        parentId: '',
+        niveau: 1,
+        statut: 'actif'
+      });
+    }
+  }, [open, compte, form]);
+
   // Calculer automatiquement le niveau basé sur le parent
   const selectedParentId = form.watch('parentId');
   
