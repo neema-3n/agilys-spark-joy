@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Section } from '@/types/budget.types';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import {
   Dialog,
   DialogContent,
@@ -9,7 +12,26 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+
+const sectionSchema = z.object({
+  code: z.string()
+    .min(2, "Le code doit contenir au moins 2 caractères")
+    .max(10, "Le code ne peut pas dépasser 10 caractères"),
+  libelle: z.string()
+    .min(3, "Le libellé doit contenir au moins 3 caractères")
+    .max(200, "Le libellé ne peut pas dépasser 200 caractères"),
+  ordre: z.coerce.number()
+    .int("L'ordre doit être un nombre entier")
+    .min(0, "L'ordre doit être positif ou zéro"),
+});
 
 interface SectionDialogProps {
   open: boolean;
@@ -28,32 +50,36 @@ export const SectionDialog = ({
   clientId,
   exerciceId,
 }: SectionDialogProps) => {
-  const [formData, setFormData] = useState({
-    code: '',
-    libelle: '',
-    ordre: 0,
+  const form = useForm<z.infer<typeof sectionSchema>>({
+    resolver: zodResolver(sectionSchema),
+    defaultValues: {
+      code: '',
+      libelle: '',
+      ordre: 0,
+    },
   });
 
   useEffect(() => {
     if (section) {
-      setFormData({
+      form.reset({
         code: section.code,
         libelle: section.libelle,
         ordre: section.ordre,
       });
     } else {
-      setFormData({
+      form.reset({
         code: '',
         libelle: '',
         ordre: 0,
       });
     }
-  }, [section, open]);
+  }, [section, open, form]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (values: z.infer<typeof sectionSchema>) => {
     onSubmit({
-      ...formData,
+      code: values.code,
+      libelle: values.libelle,
+      ordre: values.ordre,
       client_id: clientId,
       exercice_id: exerciceId,
       statut: 'actif',
@@ -70,52 +96,62 @@ export const SectionDialog = ({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="code">Code</Label>
-              <Input
-                id="code"
-                value={formData.code}
-                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                placeholder="Ex: S01"
-                required
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)}>
+            <div className="space-y-4 py-4">
+              <FormField
+                control={form.control}
+                name="code"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Code</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: S01" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="libelle"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Libellé</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Fonctionnement" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="ordre"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ordre d'affichage</FormLabel>
+                    <FormControl>
+                      <Input type="number" min={0} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="libelle">Libellé</Label>
-              <Input
-                id="libelle"
-                value={formData.libelle}
-                onChange={(e) => setFormData({ ...formData, libelle: e.target.value })}
-                placeholder="Ex: Fonctionnement"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="ordre">Ordre d'affichage</Label>
-              <Input
-                id="ordre"
-                type="number"
-                value={formData.ordre}
-                onChange={(e) => setFormData({ ...formData, ordre: parseInt(e.target.value) })}
-                min={0}
-                required
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              Annuler
-            </Button>
-            <Button type="submit">
-              {section ? 'Modifier' : 'Créer'}
-            </Button>
-          </DialogFooter>
-        </form>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={onClose}>
+                Annuler
+              </Button>
+              <Button type="submit" disabled={!form.formState.isValid}>
+                {section ? 'Modifier' : 'Créer'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

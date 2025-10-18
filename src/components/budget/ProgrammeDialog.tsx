@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Programme, Section } from '@/types/budget.types';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import {
   Dialog,
   DialogContent,
@@ -9,7 +12,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -17,6 +19,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+
+const programmeSchema = z.object({
+  section_id: z.string().min(1, "Veuillez sélectionner une section"),
+  code: z.string()
+    .min(2, "Le code doit contenir au moins 2 caractères")
+    .max(10, "Le code ne peut pas dépasser 10 caractères"),
+  libelle: z.string()
+    .min(3, "Le libellé doit contenir au moins 3 caractères")
+    .max(200, "Le libellé ne peut pas dépasser 200 caractères"),
+  ordre: z.coerce.number()
+    .int("L'ordre doit être un nombre entier")
+    .min(0, "L'ordre doit être positif ou zéro"),
+});
 
 interface ProgrammeDialogProps {
   open: boolean;
@@ -37,35 +60,40 @@ export const ProgrammeDialog = ({
   clientId,
   exerciceId,
 }: ProgrammeDialogProps) => {
-  const [formData, setFormData] = useState({
-    section_id: '',
-    code: '',
-    libelle: '',
-    ordre: 0,
+  const form = useForm<z.infer<typeof programmeSchema>>({
+    resolver: zodResolver(programmeSchema),
+    defaultValues: {
+      section_id: '',
+      code: '',
+      libelle: '',
+      ordre: 0,
+    },
   });
 
   useEffect(() => {
     if (programme) {
-      setFormData({
+      form.reset({
         section_id: programme.section_id,
         code: programme.code,
         libelle: programme.libelle,
         ordre: programme.ordre,
       });
     } else {
-      setFormData({
+      form.reset({
         section_id: '',
         code: '',
         libelle: '',
         ordre: 0,
       });
     }
-  }, [programme, open]);
+  }, [programme, open, form]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (values: z.infer<typeof programmeSchema>) => {
     onSubmit({
-      ...formData,
+      section_id: values.section_id,
+      code: values.code,
+      libelle: values.libelle,
+      ordre: values.ordre,
       client_id: clientId,
       exercice_id: exerciceId,
       statut: 'actif',
@@ -82,71 +110,87 @@ export const ProgrammeDialog = ({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="section_id">Section</Label>
-              <Select
-                value={formData.section_id}
-                onValueChange={(value) => setFormData({ ...formData, section_id: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner une section" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sections.map((section) => (
-                    <SelectItem key={section.id} value={section.id}>
-                      {section.code} - {section.libelle}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)}>
+            <div className="space-y-4 py-4">
+              <FormField
+                control={form.control}
+                name="section_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Section</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner une section" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {sections.map((section) => (
+                          <SelectItem key={section.id} value={section.id}>
+                            {section.code} - {section.libelle}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <div className="space-y-2">
-              <Label htmlFor="code">Code</Label>
-              <Input
-                id="code"
-                value={formData.code}
-                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                placeholder="Ex: P01"
-                required
+              <FormField
+                control={form.control}
+                name="code"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Code</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: P01" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="libelle"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Libellé</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Administration Générale" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="ordre"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ordre d'affichage</FormLabel>
+                    <FormControl>
+                      <Input type="number" min={0} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="libelle">Libellé</Label>
-              <Input
-                id="libelle"
-                value={formData.libelle}
-                onChange={(e) => setFormData({ ...formData, libelle: e.target.value })}
-                placeholder="Ex: Administration Générale"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="ordre">Ordre d'affichage</Label>
-              <Input
-                id="ordre"
-                type="number"
-                value={formData.ordre}
-                onChange={(e) => setFormData({ ...formData, ordre: parseInt(e.target.value) })}
-                min={0}
-                required
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              Annuler
-            </Button>
-            <Button type="submit">
-              {programme ? 'Modifier' : 'Créer'}
-            </Button>
-          </DialogFooter>
-        </form>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={onClose}>
+                Annuler
+              </Button>
+              <Button type="submit" disabled={!form.formState.isValid}>
+                {programme ? 'Modifier' : 'Créer'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
