@@ -49,7 +49,7 @@ const formSchema = z.object({
   dateDebut: z.date({ required_error: 'La date de début est requise' }),
   dateFin: z.date({ required_error: 'La date de fin est requise' }),
   budgetAlloue: z.coerce.number().min(0, 'Le budget doit être positif'),
-  enveloppeId: z.string().optional(),
+  enveloppeId: z.string().optional().or(z.literal(undefined)),
   statut: z.string(),
   typeProjet: z.string().optional(),
   priorite: z.string().optional(),
@@ -86,9 +86,9 @@ export const ProjetDialog = ({
       dateDebut: new Date(),
       dateFin: new Date(),
       budgetAlloue: 0,
-      enveloppeId: '',
+      enveloppeId: undefined,
       statut: 'planifie',
-      typeProjet: '',
+      typeProjet: undefined,
       priorite: 'moyenne',
       tauxAvancement: 0,
     },
@@ -104,9 +104,9 @@ export const ProjetDialog = ({
         dateDebut: new Date(projet.dateDebut),
         dateFin: new Date(projet.dateFin),
         budgetAlloue: projet.budgetAlloue,
-        enveloppeId: projet.enveloppeId || '',
+        enveloppeId: projet.enveloppeId,
         statut: projet.statut,
-        typeProjet: projet.typeProjet || '',
+        typeProjet: projet.typeProjet,
         priorite: projet.priorite || 'moyenne',
         tauxAvancement: projet.tauxAvancement,
       });
@@ -119,9 +119,9 @@ export const ProjetDialog = ({
         dateDebut: new Date(),
         dateFin: new Date(),
         budgetAlloue: 0,
-        enveloppeId: '',
+        enveloppeId: undefined,
         statut: 'planifie',
-        typeProjet: '',
+        typeProjet: undefined,
         priorite: 'moyenne',
         tauxAvancement: 0,
       });
@@ -306,7 +306,6 @@ export const ProjetDialog = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Aucune</SelectItem>
                         {enveloppes.map((env) => (
                           <SelectItem key={env.id} value={env.id}>
                             {env.code} - {env.nom}
