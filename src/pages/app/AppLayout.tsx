@@ -98,14 +98,6 @@ const AppLayout = () => {
       icon: Wallet2
     }]
   }, {
-    title: 'Comptabilité',
-    icon: BookOpen,
-    items: [{
-      name: 'Plan Comptable',
-      href: '/app/plan-comptable',
-      icon: BookOpen
-    }]
-  }, {
     title: 'Conformité',
     icon: ShieldCheck,
     items: [{
