@@ -14,8 +14,17 @@ import {
   LogOut,
   ChevronDown,
   Menu,
-  X
+  X,
+  Users,
+  FileCheck,
+  CreditCard,
+  Wallet2,
+  BookOpen,
+  ShieldCheck,
+  LineChart,
+  TrendingUp
 } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 import { useState } from 'react';
 import {
   DropdownMenu,
@@ -31,14 +40,62 @@ const AppLayout = () => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const navigation = [
-    { name: 'Tableau de bord', href: '/app/dashboard', icon: LayoutDashboard },
-    { name: 'Budget', href: '/app/budgets', icon: Wallet },
-    { name: 'Engagements', href: '/app/engagements', icon: FileText },
-    { name: 'Factures', href: '/app/factures', icon: Receipt },
-    { name: 'Trésorerie', href: '/app/tresorerie', icon: Building2 },
-    { name: 'Reporting', href: '/app/reporting', icon: BarChart3 },
-    { name: 'Paramètres', href: '/app/parametres', icon: Settings },
+  const navigationSections = [
+    {
+      title: 'Gestion',
+      items: [
+        { name: 'Structure Organisationnelle', href: '/app/structure', icon: Building2 },
+        { name: 'Fournisseurs', href: '/app/fournisseurs', icon: Users },
+      ]
+    },
+    {
+      title: 'Budget',
+      items: [
+        { name: 'Budget', href: '/app/budgets', icon: Wallet },
+        { name: 'Prévisions Budgétaires', href: '/app/previsions', icon: TrendingUp },
+      ]
+    },
+    {
+      title: 'Opérations',
+      items: [
+        { name: 'Engagements', href: '/app/engagements', icon: FileText },
+        { name: 'Mandats', href: '/app/mandats', icon: FileCheck },
+        { name: 'Factures', href: '/app/factures', icon: Receipt },
+        { name: 'Paiements', href: '/app/paiements', icon: CreditCard },
+      ]
+    },
+    {
+      title: 'Trésorerie',
+      items: [
+        { name: 'Suivi de Trésorerie', href: '/app/tresorerie', icon: Wallet2 },
+      ]
+    },
+    {
+      title: 'Comptabilité',
+      items: [
+        { name: 'Plan Comptable', href: '/app/plan-comptable', icon: BookOpen },
+      ]
+    },
+    {
+      title: 'Conformité',
+      items: [
+        { name: 'Contrôle Interne', href: '/app/controle-interne', icon: ShieldCheck },
+      ]
+    },
+    {
+      title: 'Analyse',
+      items: [
+        { name: 'Tableau de bord', href: '/app/dashboard', icon: LayoutDashboard },
+        { name: 'Analyses Financières', href: '/app/analyses', icon: LineChart },
+        { name: 'Reporting', href: '/app/reporting', icon: BarChart3 },
+      ]
+    },
+    {
+      title: 'Système',
+      items: [
+        { name: 'Paramètres', href: '/app/parametres', icon: Settings },
+      ]
+    }
   ];
 
   const handleLogout = async () => {
@@ -125,24 +182,43 @@ const AppLayout = () => {
         )}
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1">
-          {navigation.map((item) => {
-            const isActive = location.pathname === item.href;
-            return (
-              <NavLink
-                key={item.name}
-                to={item.href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                }`}
-              >
-                <item.icon className="h-5 w-5 flex-shrink-0" />
-                {sidebarOpen && <span className="text-sm font-medium">{item.name}</span>}
-              </NavLink>
-            );
-          })}
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          {navigationSections.map((section, sectionIndex) => (
+            <div key={section.title}>
+              {/* Section Header - Visible uniquement si sidebar ouvert */}
+              {sidebarOpen && (
+                <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {section.title}
+                </div>
+              )}
+              
+              {/* Section Items */}
+              <div className="space-y-1 mb-4">
+                {section.items.map((item) => {
+                  const isActive = location.pathname === item.href;
+                  return (
+                    <NavLink
+                      key={item.name}
+                      to={item.href}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                        isActive
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                      }`}
+                    >
+                      <item.icon className="h-5 w-5 flex-shrink-0" />
+                      {sidebarOpen && <span className="text-sm font-medium">{item.name}</span>}
+                    </NavLink>
+                  );
+                })}
+              </div>
+              
+              {/* Separator entre sections sauf la dernière */}
+              {sidebarOpen && sectionIndex < navigationSections.length - 1 && (
+                <Separator className="my-2" />
+              )}
+            </div>
+          ))}
         </nav>
 
         {/* User Menu */}

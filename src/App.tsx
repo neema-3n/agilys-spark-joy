@@ -18,6 +18,14 @@ import Factures from "./pages/app/Factures";
 import Tresorerie from "./pages/app/Tresorerie";
 import Reporting from "./pages/app/Reporting";
 import Parametres from "./pages/app/Parametres";
+import Structure from "./pages/app/Structure";
+import Fournisseurs from "./pages/app/Fournisseurs";
+import Mandats from "./pages/app/Mandats";
+import Paiements from "./pages/app/Paiements";
+import PlanComptable from "./pages/app/PlanComptable";
+import ControleInterne from "./pages/app/ControleInterne";
+import Analyses from "./pages/app/Analyses";
+import Previsions from "./pages/app/Previsions";
 
 const queryClient = new QueryClient();
 
@@ -36,10 +44,18 @@ const App = () => (
                 <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                   <Route path="dashboard" element={<Dashboard />} />
                   <Route path="budgets" element={<Budgets />} />
+                  <Route path="previsions" element={<Previsions />} />
                   <Route path="engagements" element={<Engagements />} />
+                  <Route path="mandats" element={<Mandats />} />
                   <Route path="factures" element={<Factures />} />
+                  <Route path="paiements" element={<Paiements />} />
                   <Route path="tresorerie" element={<Tresorerie />} />
+                  <Route path="plan-comptable" element={<PlanComptable />} />
+                  <Route path="controle-interne" element={<ControleInterne />} />
+                  <Route path="analyses" element={<Analyses />} />
                   <Route path="reporting" element={<Reporting />} />
+                  <Route path="structure" element={<Structure />} />
+                  <Route path="fournisseurs" element={<Fournisseurs />} />
                   <Route path="parametres" element={<Parametres />} />
                 </Route>
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
