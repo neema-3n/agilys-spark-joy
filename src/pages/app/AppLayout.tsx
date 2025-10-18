@@ -42,7 +42,7 @@ const AppLayout = () => {
     }));
   };
   const navigationSections = [{
-    title: 'Gestion',
+    title: 'Fournisseurs',
     items: [{
       name: 'Fournisseurs',
       href: '/app/fournisseurs',
