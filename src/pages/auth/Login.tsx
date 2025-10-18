@@ -197,10 +197,10 @@ const Login = () => {
               <div className="mt-6 p-4 bg-muted rounded-lg">
                 <p className="text-sm font-medium mb-2">Comptes de test :</p>
                 <div className="space-y-1 text-xs text-muted-foreground">
-                  <p>Admin : admin@portonovo.bj / admin123</p>
-                  <p>Directeur : directeur@portonovo.bj / directeur123</p>
-                  <p>Comptable : comptable@portonovo.bj / comptable123</p>
-                  <p>Super Admin : super@agilys.com / super123</p>
+                  <p>• <strong>Super Admin :</strong> super@agilys.com / MotDePasse123!</p>
+                  <p>• <strong>Admin :</strong> admin@portonovo.bj / MotDePasse123!</p>
+                  <p>• <strong>Directeur :</strong> directeur@portonovo.bj / MotDePasse123!</p>
+                  <p>• <strong>Comptable :</strong> comptable@portonovo.bj / MotDePasse123!</p>
                 </div>
               </div>
             </TabsContent>
