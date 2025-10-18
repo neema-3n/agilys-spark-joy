@@ -216,9 +216,24 @@ const AppLayout = () => {
               {/* Section Items - Collapsible */}
               <CollapsibleContent className="space-y-1">
                 {section.items.map(item => {
-              const isActive = location.pathname === item.href;
-              return;
-            })}
+                  const isActive = location.pathname === item.href;
+                  const Icon = item.icon;
+                  
+                  return (
+                    <NavLink
+                      key={item.href}
+                      to={item.href}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                        isActive
+                          ? 'bg-primary text-primary-foreground font-medium'
+                          : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                      }`}
+                    >
+                      <Icon className="h-4 w-4 flex-shrink-0" />
+                      {sidebarOpen && <span>{item.name}</span>}
+                    </NavLink>
+                  );
+                })}
               </CollapsibleContent>
               
               {/* Separator entre sections sauf la dernière */}
