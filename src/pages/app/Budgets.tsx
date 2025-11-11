@@ -160,6 +160,7 @@ const Budgets = () => {
         description: 'Modification budgétaire créée avec succès',
       });
       loadData();
+      setActiveTab('modifications');
     } catch (error) {
       toast({
         title: 'Erreur',
