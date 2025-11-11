@@ -30,7 +30,12 @@ const getStorageKey = (clientId: string, exerciceId: string, type: 'sections' | 
   return `budget_expanded_${type}_${clientId}_${exerciceId}`;
 };
 
-const getInitialExpandedState = (clientId: string, exerciceId: string, type: 'sections' | 'programmes') => {
+const getInitialExpandedState = (
+  clientId: string, 
+  exerciceId: string, 
+  type: 'sections' | 'programmes',
+  items: Array<{ id: string }>
+) => {
   const key = getStorageKey(clientId, exerciceId, type);
   const stored = localStorage.getItem(key);
   if (stored) {
@@ -40,8 +45,8 @@ const getInitialExpandedState = (clientId: string, exerciceId: string, type: 'se
       return new Set<string>();
     }
   }
-  // Valeurs par défaut si rien en localStorage
-  return type === 'sections' ? new Set(['sec-1']) : new Set(['prog-1']);
+  // Déplier le premier item par défaut si rien en localStorage
+  return items.length > 0 ? new Set([items[0].id]) : new Set<string>();
 };
 
 const saveExpandedState = (clientId: string, exerciceId: string, type: 'sections' | 'programmes', state: Set<string>) => {
@@ -61,10 +66,10 @@ export const BudgetTable = ({
   onDelete,
 }: BudgetTableProps) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    () => getInitialExpandedState(clientId, exerciceId, 'sections')
+    () => getInitialExpandedState(clientId, exerciceId, 'sections', sections)
   );
   const [expandedProgrammes, setExpandedProgrammes] = useState<Set<string>>(
-    () => getInitialExpandedState(clientId, exerciceId, 'programmes')
+    () => getInitialExpandedState(clientId, exerciceId, 'programmes', programmes)
   );
 
   const formatMontant = (montant: number) => {
