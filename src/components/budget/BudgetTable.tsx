@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { LigneBudgetaire, Section, Programme, Action } from '@/types/budget.types';
+import { Compte } from '@/types/compte.types';
 import {
   Table,
   TableBody,
@@ -17,6 +18,7 @@ interface BudgetTableProps {
   programmes: Programme[];
   actions: Action[];
   lignes: LigneBudgetaire[];
+  comptes: Compte[];
   onEdit: (ligne: LigneBudgetaire) => void;
   onDelete: (id: string) => void;
 }
@@ -26,6 +28,7 @@ export const BudgetTable = ({
   programmes,
   actions,
   lignes,
+  comptes,
   onEdit,
   onDelete,
 }: BudgetTableProps) => {
@@ -63,6 +66,12 @@ export const BudgetTable = ({
   const getTauxExecution = (ligne: LigneBudgetaire) => {
     if (ligne.montantModifie === 0) return 0;
     return Math.round((ligne.montantEngage / ligne.montantModifie) * 100);
+  };
+
+  const getCompteDisplay = (compteId: string) => {
+    const compte = comptes.find(c => c.id === compteId);
+    if (!compte) return compteId;
+    return `${compte.numero} - ${compte.libelle}`;
   };
 
   return (
@@ -163,7 +172,7 @@ export const BudgetTable = ({
                                       <div>
                                         {ligne.libelle}
                                         <div className="text-xs text-muted-foreground mt-0.5">
-                                          Compte: {ligne.compteId}
+                                          Compte: {getCompteDisplay(ligne.compteId)}
                                         </div>
                                       </div>
                                     </div>
