@@ -46,6 +46,7 @@ export interface LigneBudgetaire {
   exerciceId: string;
   actionId: string;
   compteId: string;
+  enveloppeId?: string;
   libelle: string;
   montantInitial: number;
   montantModifie: number;

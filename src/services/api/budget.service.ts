@@ -50,6 +50,7 @@ export const budgetService = {
       exercice_id: ligne.exerciceId,
       action_id: ligne.actionId,
       compte_id: ligne.compteId,
+      enveloppe_id: ligne.enveloppeId || null,
       libelle: ligne.libelle,
       montant_initial: ligne.montantInitial,
       montant_modifie: ligne.montantInitial,

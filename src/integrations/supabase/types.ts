@@ -224,6 +224,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           disponible: number
+          enveloppe_id: string | null
           exercice_id: string
           id: string
           libelle: string
@@ -241,6 +242,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           disponible?: number
+          enveloppe_id?: string | null
           exercice_id: string
           id?: string
           libelle: string
@@ -258,6 +260,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           disponible?: number
+          enveloppe_id?: string | null
           exercice_id?: string
           id?: string
           libelle?: string
@@ -268,7 +271,15 @@ export type Database = {
           statut?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "lignes_budgetaires_enveloppe_id_fkey"
+            columns: ["enveloppe_id"]
+            isOneToOne: false
+            referencedRelation: "enveloppes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       modifications_budgetaires: {
         Row: {

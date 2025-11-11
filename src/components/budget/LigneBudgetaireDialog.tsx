@@ -4,6 +4,7 @@ import { useComptes } from '@/hooks/useComptes';
 import { useSections } from '@/hooks/useSections';
 import { useProgrammes } from '@/hooks/useProgrammes';
 import { useActions } from '@/hooks/useActions';
+import { useEnveloppes } from '@/hooks/useEnveloppes';
 import {
   Dialog,
   DialogContent,
@@ -40,6 +41,7 @@ export const LigneBudgetaireDialog = ({
 }: LigneBudgetaireDialogProps) => {
   const { toast } = useToast();
   const { comptes, isLoading: isLoadingComptes } = useComptes();
+  const { enveloppes } = useEnveloppes();
   const { sections } = useSections();
   const [selectedSectionId, setSelectedSectionId] = useState('');
   const { programmes } = useProgrammes(selectedSectionId);
@@ -49,6 +51,7 @@ export const LigneBudgetaireDialog = ({
   const [formData, setFormData] = useState({
     actionId: '',
     compteId: '',
+    enveloppeId: '',
     libelle: '',
     montantInitial: '',
   });
@@ -58,6 +61,7 @@ export const LigneBudgetaireDialog = ({
       setFormData({
         actionId: ligne.actionId,
         compteId: ligne.compteId,
+        enveloppeId: ligne.enveloppeId || '',
         libelle: ligne.libelle,
         montantInitial: ligne.montantInitial.toString(),
       });
@@ -65,6 +69,7 @@ export const LigneBudgetaireDialog = ({
       setFormData({
         actionId: '',
         compteId: '',
+        enveloppeId: '',
         libelle: '',
         montantInitial: '',
       });
@@ -134,6 +139,7 @@ export const LigneBudgetaireDialog = ({
       exerciceId,
       actionId: formData.actionId,
       compteId: formData.compteId,
+      enveloppeId: formData.enveloppeId || undefined,
       libelle: formData.libelle,
       montantInitial: parseFloat(formData.montantInitial),
     });
@@ -269,6 +275,28 @@ export const LigneBudgetaireDialog = ({
                       </SelectItem>
                     ))
                   )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="enveloppeId">
+                Enveloppe de financement
+              </Label>
+              <Select
+                value={formData.enveloppeId}
+                onValueChange={(value) => setFormData({ ...formData, enveloppeId: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Aucune enveloppe (optionnel)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Aucune enveloppe</SelectItem>
+                  {enveloppes.map((enveloppe) => (
+                    <SelectItem key={enveloppe.id} value={enveloppe.id}>
+                      {enveloppe.code} - {enveloppe.nom} ({enveloppe.montantDisponible.toLocaleString()} FCFA disponible)
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

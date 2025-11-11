@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { LigneBudgetaire, Section, Programme, Action } from '@/types/budget.types';
 import { Compte } from '@/types/compte.types';
+import { Enveloppe } from '@/types/enveloppe.types';
 import {
   Table,
   TableBody,
@@ -21,6 +22,7 @@ interface BudgetTableProps {
   actions: Action[];
   lignes: LigneBudgetaire[];
   comptes: Compte[];
+  enveloppes: Enveloppe[];
   onEdit: (ligne: LigneBudgetaire) => void;
   onDelete: (id: string) => void;
 }
@@ -62,6 +64,7 @@ export const BudgetTable = ({
   actions,
   lignes,
   comptes,
+  enveloppes,
   onEdit,
   onDelete,
 }: BudgetTableProps) => {
@@ -111,6 +114,13 @@ export const BudgetTable = ({
     const compte = comptes.find(c => c.id === compteId);
     if (!compte) return compteId;
     return `${compte.numero} - ${compte.libelle}`;
+  };
+
+  const getEnveloppeDisplay = (enveloppeId?: string) => {
+    if (!enveloppeId) return null;
+    const enveloppe = enveloppes.find(e => e.id === enveloppeId);
+    if (!enveloppe) return null;
+    return `${enveloppe.code} - ${enveloppe.nom}`;
   };
 
   return (
@@ -205,7 +215,7 @@ export const BudgetTable = ({
                               
                               return (
                                 <TableRow key={ligne.id} className="hover:bg-accent/50 bg-white dark:bg-gray-950 border-l-2 border-l-gray-300 dark:border-l-gray-700">
-                                  <TableCell className="pl-24 text-sm">
+                                   <TableCell className="pl-24 text-sm">
                                     <div className="flex items-center gap-2">
                                       <div className="w-2 h-2 rounded-full bg-green-500" />
                                       <div>
@@ -213,6 +223,11 @@ export const BudgetTable = ({
                                         <div className="text-xs text-muted-foreground mt-0.5">
                                           Compte: {getCompteDisplay(ligne.compteId)}
                                         </div>
+                                        {ligne.enveloppeId && (
+                                          <div className="text-xs text-primary/80 mt-0.5">
+                                            Enveloppe: {getEnveloppeDisplay(ligne.enveloppeId)}
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
                                   </TableCell>

@@ -8,6 +8,7 @@ import { useSections } from '@/hooks/useSections';
 import { useProgrammes } from '@/hooks/useProgrammes';
 import { useActions } from '@/hooks/useActions';
 import { useComptes } from '@/hooks/useComptes';
+import { useEnveloppes } from '@/hooks/useEnveloppes';
 import { LigneBudgetaire, ModificationBudgetaire } from '@/types/budget.types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -47,6 +48,7 @@ const Budgets = () => {
   const { programmes, isLoading: loadingProgrammes } = useProgrammes();
   const { actions, isLoading: loadingActions } = useActions();
   const { comptes, isLoading: loadingComptes } = useComptes();
+  const { enveloppes, isLoading: loadingEnveloppes } = useEnveloppes();
 
   const [lignes, setLignes] = useState<LigneBudgetaire[]>([]);
   const [modifications, setModifications] = useState<ModificationBudgetaire[]>([]);
@@ -267,7 +269,7 @@ const Budgets = () => {
     return labels[type] || type;
   };
 
-  if (loading || loadingSections || loadingProgrammes || loadingActions || loadingComptes) {
+  if (loading || loadingSections || loadingProgrammes || loadingActions || loadingComptes || loadingEnveloppes) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -315,6 +317,7 @@ const Budgets = () => {
                 actions={actions}
                 lignes={lignes}
                 comptes={comptes}
+                enveloppes={enveloppes}
                 onEdit={(ligne) => {
                   setSelectedLigne(ligne);
                   setLigneDialogOpen(true);
