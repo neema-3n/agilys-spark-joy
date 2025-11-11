@@ -216,6 +216,129 @@ export type Database = {
         }
         Relationships: []
       }
+      fournisseurs: {
+        Row: {
+          adresse: string | null
+          banque: string | null
+          categorie: string | null
+          client_id: string
+          code: string
+          code_swift: string | null
+          commentaires: string | null
+          conditions_paiement: string | null
+          contact_email: string | null
+          contact_fonction: string | null
+          contact_nom: string | null
+          contact_prenom: string | null
+          contact_telephone: string | null
+          created_at: string | null
+          created_by: string | null
+          date_premiere_collaboration: string | null
+          delai_livraison_moyen: number | null
+          dernier_engagement_date: string | null
+          email: string | null
+          forme_juridique: string | null
+          iban: string | null
+          id: string
+          montant_total_engage: number | null
+          nom: string
+          nom_court: string | null
+          nombre_engagements: number | null
+          note_evaluation: number | null
+          numero_compte: string | null
+          numero_contribuable: string | null
+          pays: string | null
+          registre_commerce: string | null
+          site_web: string | null
+          statut: string
+          telephone: string | null
+          telephone_mobile: string | null
+          type_fournisseur: string
+          updated_at: string | null
+          ville: string | null
+        }
+        Insert: {
+          adresse?: string | null
+          banque?: string | null
+          categorie?: string | null
+          client_id: string
+          code: string
+          code_swift?: string | null
+          commentaires?: string | null
+          conditions_paiement?: string | null
+          contact_email?: string | null
+          contact_fonction?: string | null
+          contact_nom?: string | null
+          contact_prenom?: string | null
+          contact_telephone?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          date_premiere_collaboration?: string | null
+          delai_livraison_moyen?: number | null
+          dernier_engagement_date?: string | null
+          email?: string | null
+          forme_juridique?: string | null
+          iban?: string | null
+          id?: string
+          montant_total_engage?: number | null
+          nom: string
+          nom_court?: string | null
+          nombre_engagements?: number | null
+          note_evaluation?: number | null
+          numero_compte?: string | null
+          numero_contribuable?: string | null
+          pays?: string | null
+          registre_commerce?: string | null
+          site_web?: string | null
+          statut?: string
+          telephone?: string | null
+          telephone_mobile?: string | null
+          type_fournisseur: string
+          updated_at?: string | null
+          ville?: string | null
+        }
+        Update: {
+          adresse?: string | null
+          banque?: string | null
+          categorie?: string | null
+          client_id?: string
+          code?: string
+          code_swift?: string | null
+          commentaires?: string | null
+          conditions_paiement?: string | null
+          contact_email?: string | null
+          contact_fonction?: string | null
+          contact_nom?: string | null
+          contact_prenom?: string | null
+          contact_telephone?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          date_premiere_collaboration?: string | null
+          delai_livraison_moyen?: number | null
+          dernier_engagement_date?: string | null
+          email?: string | null
+          forme_juridique?: string | null
+          iban?: string | null
+          id?: string
+          montant_total_engage?: number | null
+          nom?: string
+          nom_court?: string | null
+          nombre_engagements?: number | null
+          note_evaluation?: number | null
+          numero_compte?: string | null
+          numero_contribuable?: string | null
+          pays?: string | null
+          registre_commerce?: string | null
+          site_web?: string | null
+          statut?: string
+          telephone?: string | null
+          telephone_mobile?: string | null
+          type_fournisseur?: string
+          updated_at?: string | null
+          ville?: string | null
+        }
+        Relationships: []
+      }
       lignes_budgetaires: {
         Row: {
           action_id: string

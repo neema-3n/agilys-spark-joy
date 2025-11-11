@@ -95,3 +95,6 @@ export * from './projet.types';
 
 // Export prevision types
 export * from './prevision.types';
+
+// Export fournisseur types
+export * from './fournisseur.types';
