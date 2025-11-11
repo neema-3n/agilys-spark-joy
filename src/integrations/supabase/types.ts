@@ -281,6 +281,75 @@ export type Database = {
           },
         ]
       }
+      lignes_prevision: {
+        Row: {
+          action_code: string | null
+          annee: number
+          client_id: string
+          compte_numero: string | null
+          created_at: string
+          enveloppe_id: string | null
+          hypotheses: string | null
+          id: string
+          libelle: string
+          montant_prevu: number
+          programme_code: string | null
+          scenario_id: string
+          section_code: string | null
+          taux_croissance: number | null
+          updated_at: string
+        }
+        Insert: {
+          action_code?: string | null
+          annee: number
+          client_id: string
+          compte_numero?: string | null
+          created_at?: string
+          enveloppe_id?: string | null
+          hypotheses?: string | null
+          id?: string
+          libelle: string
+          montant_prevu?: number
+          programme_code?: string | null
+          scenario_id: string
+          section_code?: string | null
+          taux_croissance?: number | null
+          updated_at?: string
+        }
+        Update: {
+          action_code?: string | null
+          annee?: number
+          client_id?: string
+          compte_numero?: string | null
+          created_at?: string
+          enveloppe_id?: string | null
+          hypotheses?: string | null
+          id?: string
+          libelle?: string
+          montant_prevu?: number
+          programme_code?: string | null
+          scenario_id?: string
+          section_code?: string | null
+          taux_croissance?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lignes_prevision_enveloppe_id_fkey"
+            columns: ["enveloppe_id"]
+            isOneToOne: false
+            referencedRelation: "enveloppes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lignes_prevision_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "scenarios_prevision"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       modifications_budgetaires: {
         Row: {
           client_id: string
@@ -535,6 +604,59 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      scenarios_prevision: {
+        Row: {
+          annee_reference: number
+          client_id: string
+          code: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          exercice_reference_id: string | null
+          id: string
+          nom: string
+          statut: string
+          type_scenario: string
+          updated_at: string
+        }
+        Insert: {
+          annee_reference: number
+          client_id: string
+          code: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          exercice_reference_id?: string | null
+          id?: string
+          nom: string
+          statut?: string
+          type_scenario: string
+          updated_at?: string
+        }
+        Update: {
+          annee_reference?: number
+          client_id?: string
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          exercice_reference_id?: string | null
+          id?: string
+          nom?: string
+          statut?: string
+          type_scenario?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scenarios_prevision_exercice_reference_id_fkey"
+            columns: ["exercice_reference_id"]
+            isOneToOne: false
+            referencedRelation: "exercices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sections: {
         Row: {

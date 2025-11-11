@@ -92,3 +92,6 @@ export * from './compte.types';
 
 // Export projet types
 export * from './projet.types';
+
+// Export prevision types
+export * from './prevision.types';
