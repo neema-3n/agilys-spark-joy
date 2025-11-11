@@ -235,7 +235,7 @@ export function EnveloppeDialog({
                     <FormControl>
                       <Input
                         type="number"
-                        step="0.01"
+                        step="any"
                         placeholder="0.00"
                         {...field}
                       />
@@ -254,7 +254,7 @@ export function EnveloppeDialog({
                     <FormControl>
                       <Input
                         type="number"
-                        step="0.01"
+                        step="any"
                         placeholder="0.00"
                         {...field}
                       />

@@ -156,8 +156,8 @@ export const ModificationBudgetaireDialog = ({
                 value={formData.montant}
                 onChange={(e) => setFormData({ ...formData, montant: e.target.value })}
                 placeholder="0"
-                min="1"
-                step="1000"
+                min="0.01"
+                step="any"
                 required
               />
             </div>
