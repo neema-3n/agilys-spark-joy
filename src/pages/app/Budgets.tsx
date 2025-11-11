@@ -294,16 +294,10 @@ const Budgets = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Plan Budgétaire {currentExercice?.libelle}</CardTitle>
-              <div className="flex gap-2">
-                <Button onClick={() => setModificationDialogOpen(true)}>
-                  <FileEdit className="h-4 w-4 mr-2" />
-                  Nouvelle modification
-                </Button>
-                <Button onClick={() => setLigneDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nouvelle ligne
-                </Button>
-              </div>
+              <Button onClick={() => setLigneDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nouvelle ligne
+              </Button>
             </CardHeader>
             <CardContent>
               <BudgetTable
@@ -329,8 +323,12 @@ const Budgets = () => {
 
         <TabsContent value="modifications" className="space-y-4">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Modifications Budgétaires</CardTitle>
+              <Button onClick={() => setModificationDialogOpen(true)}>
+                <FileEdit className="h-4 w-4 mr-2" />
+                Nouvelle modification
+              </Button>
             </CardHeader>
             <CardContent>
               <Table>
