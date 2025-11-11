@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,13 +39,16 @@ const Login = () => {
   const [signupErrors, setSignupErrors] = useState<Record<string, string>>({});
   const { login, signup, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+
+  const from = location.state?.from || '/app/dashboard';
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/app/dashboard', { replace: true });
+      navigate(from, { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, from]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +73,7 @@ const Login = () => {
         title: 'Connexion réussie',
         description: 'Bienvenue sur AGILYS',
       });
-      navigate('/app/dashboard');
+      navigate(from);
     } else {
       toast({
         title: 'Erreur de connexion',
