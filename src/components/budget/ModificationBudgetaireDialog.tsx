@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { toast } from '@/hooks/use-toast';
 
 interface ModificationBudgetaireDialogProps {
   open: boolean;
@@ -46,14 +47,55 @@ export const ModificationBudgetaireDialog = ({
     motif: '',
   });
 
+  const isFormValid = () => {
+    return (
+      formData.ligneDestinationId !== '' &&
+      formData.montant !== '' &&
+      parseFloat(formData.montant) > 0 &&
+      formData.motif.trim() !== '' &&
+      (formData.type !== 'virement' || formData.ligneSourceId !== '')
+    );
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation de la ligne budgétaire
+    if (!formData.ligneDestinationId) {
+      toast({
+        title: 'Erreur',
+        description: 'Veuillez sélectionner une ligne budgétaire',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Validation de la ligne source pour les virements
+    if (formData.type === 'virement' && !formData.ligneSourceId) {
+      toast({
+        title: 'Erreur',
+        description: 'Veuillez sélectionner une ligne source pour le virement',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Validation du montant
+    const montant = parseFloat(formData.montant);
+    if (isNaN(montant) || montant <= 0) {
+      toast({
+        title: 'Erreur',
+        description: 'Le montant doit être supérieur à 0',
+        variant: 'destructive',
+      });
+      return;
+    }
     
     onSubmit({
       type: formData.type,
       ligneSourceId: formData.type === 'virement' ? formData.ligneSourceId : undefined,
       ligneDestinationId: formData.ligneDestinationId,
-      montant: parseFloat(formData.montant),
+      montant: montant,
       motif: formData.motif,
     });
     
@@ -179,7 +221,9 @@ export const ModificationBudgetaireDialog = ({
             <Button type="button" variant="outline" onClick={onClose}>
               Annuler
             </Button>
-            <Button type="submit">Créer la modification</Button>
+            <Button type="submit" disabled={!isFormValid()}>
+              Créer la modification
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
