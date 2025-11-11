@@ -59,7 +59,7 @@ const Budgets = () => {
 
   useEffect(() => {
     loadData();
-  }, [currentExercice]);
+  }, [currentExercice, currentClient]);
 
   const loadData = async () => {
     if (!currentExercice || !currentClient) return;
