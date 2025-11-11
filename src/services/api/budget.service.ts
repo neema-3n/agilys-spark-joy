@@ -124,6 +124,23 @@ export const budgetService = {
     return modification;
   },
 
+  // Soumettre une modification budgétaire (brouillon -> en_attente)
+  soumettreModification: async (id: string): Promise<ModificationBudgetaire> => {
+    await new Promise(resolve => setTimeout(resolve, 400));
+    
+    const modification = modifications.find(m => m.id === id);
+    if (!modification) {
+      throw new Error('Modification non trouvée');
+    }
+    
+    if (modification.statut !== 'brouillon') {
+      throw new Error('Seules les modifications en brouillon peuvent être soumises');
+    }
+    
+    modification.statut = 'en_attente';
+    return modification;
+  },
+
   // Rejeter une modification budgétaire
   rejeterModification: async (id: string): Promise<ModificationBudgetaire> => {
     await new Promise(resolve => setTimeout(resolve, 400));

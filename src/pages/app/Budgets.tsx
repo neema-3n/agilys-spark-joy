@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Plus, FileEdit, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Plus, FileEdit, CheckCircle, XCircle, Clock, Send } from 'lucide-react';
 import { BudgetTable } from '@/components/budget/BudgetTable';
 import { LigneBudgetaireDialog } from '@/components/budget/LigneBudgetaireDialog';
 import { ModificationBudgetaireDialog } from '@/components/budget/ModificationBudgetaireDialog';
@@ -181,6 +181,23 @@ const Budgets = () => {
     }
   };
 
+  const handleSoumettreModification = async (id: string) => {
+    try {
+      await budgetService.soumettreModification(id);
+      toast({
+        title: 'Succès',
+        description: 'Modification soumise pour validation',
+      });
+      loadData();
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de soumettre la modification',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleRejeterModification = async (id: string) => {
     try {
       await budgetService.rejeterModification(id);
@@ -344,6 +361,17 @@ const Budgets = () => {
                           </Badge>
                         </TableCell>
                         <TableCell>
+                          {modification.statut === 'brouillon' && (
+                            <div className="flex gap-1 justify-end">
+                              <Button
+                                size="sm"
+                                onClick={() => handleSoumettreModification(modification.id)}
+                              >
+                                <Send className="h-4 w-4 mr-1" />
+                                Soumettre
+                              </Button>
+                            </div>
+                          )}
                           {modification.statut === 'en_attente' && (
                             <div className="flex gap-1 justify-end">
                               <Button
