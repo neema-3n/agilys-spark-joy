@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Plus, FileEdit, CheckCircle, XCircle, Clock, Send } from 'lucide-react';
+import { Plus, FileEdit, CheckCircle, XCircle, Clock, Send, ArrowDown } from 'lucide-react';
 import { BudgetTable } from '@/components/budget/BudgetTable';
 import { LigneBudgetaireDialog } from '@/components/budget/LigneBudgetaireDialog';
 import { ModificationBudgetaireDialog } from '@/components/budget/ModificationBudgetaireDialog';
@@ -349,13 +349,27 @@ const Budgets = () => {
                     const ligne = lignes.find(l => l.id === modification.ligneDestinationId);
                     
                     return (
-                      <TableRow key={modification.id}>
+                      <TableRow key={modification.id} className="align-top">
                         <TableCell className="font-medium">{modification.numero}</TableCell>
                         <TableCell>
                           <Badge variant="outline">{getTypeLabel(modification.type)}</Badge>
                         </TableCell>
-                        <TableCell className="max-w-[200px] truncate">
-                          {ligne?.libelle || '-'}
+                        <TableCell className="min-w-[180px]">
+                          {modification.type === 'virement' && modification.ligneSourceId ? (
+                            <div className="flex flex-col items-start gap-0.5 py-1">
+                              <span className="text-sm text-muted-foreground truncate max-w-full">
+                                {lignes.find(l => l.id === modification.ligneSourceId)?.libelle || '-'}
+                              </span>
+                              <ArrowDown className="h-3 w-3 text-primary mx-auto" />
+                              <span className="text-sm font-medium truncate max-w-full">
+                                {ligne?.libelle || '-'}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-sm truncate">
+                              {ligne?.libelle || '-'}
+                            </span>
+                          )}
                         </TableCell>
                         <TableCell className="text-right font-medium">
                           {formatMontant(modification.montant)}
