@@ -216,6 +216,114 @@ export type Database = {
         }
         Relationships: []
       }
+      lignes_budgetaires: {
+        Row: {
+          action_id: string
+          client_id: string
+          compte_id: string
+          created_at: string
+          created_by: string | null
+          disponible: number
+          exercice_id: string
+          id: string
+          libelle: string
+          montant_engage: number
+          montant_initial: number
+          montant_modifie: number
+          montant_paye: number
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          action_id: string
+          client_id: string
+          compte_id: string
+          created_at?: string
+          created_by?: string | null
+          disponible?: number
+          exercice_id: string
+          id?: string
+          libelle: string
+          montant_engage?: number
+          montant_initial?: number
+          montant_modifie?: number
+          montant_paye?: number
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          action_id?: string
+          client_id?: string
+          compte_id?: string
+          created_at?: string
+          created_by?: string | null
+          disponible?: number
+          exercice_id?: string
+          id?: string
+          libelle?: string
+          montant_engage?: number
+          montant_initial?: number
+          montant_modifie?: number
+          montant_paye?: number
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      modifications_budgetaires: {
+        Row: {
+          client_id: string
+          created_at: string
+          date_creation: string
+          date_validation: string | null
+          exercice_id: string
+          id: string
+          ligne_destination_id: string
+          ligne_source_id: string | null
+          montant: number
+          motif: string
+          numero: string
+          statut: string
+          type: string
+          updated_at: string
+          valide_par: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          date_creation?: string
+          date_validation?: string | null
+          exercice_id: string
+          id?: string
+          ligne_destination_id: string
+          ligne_source_id?: string | null
+          montant: number
+          motif: string
+          numero: string
+          statut?: string
+          type: string
+          updated_at?: string
+          valide_par?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          date_creation?: string
+          date_validation?: string | null
+          exercice_id?: string
+          id?: string
+          ligne_destination_id?: string
+          ligne_source_id?: string | null
+          montant?: number
+          motif?: string
+          numero?: string
+          statut?: string
+          type?: string
+          updated_at?: string
+          valide_par?: string | null
+        }
+        Relationships: []
+      }
       parametres_referentiels: {
         Row: {
           actif: boolean | null

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useExercice } from '@/contexts/ExerciceContext';
+import { useClient } from '@/contexts/ClientContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { budgetService } from '@/services/api/budget.service';
 import { useSections } from '@/hooks/useSections';
@@ -36,6 +37,7 @@ import {
 
 const Budgets = () => {
   const { currentExercice } = useExercice();
+  const { currentClient } = useClient();
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -58,14 +60,14 @@ const Budgets = () => {
   }, [currentExercice]);
 
   const loadData = async () => {
-    if (!currentExercice) return;
+    if (!currentExercice || !currentClient) return;
 
     setLoading(true);
     try {
       const [lignesData, modificationsData] = 
         await Promise.all([
-          budgetService.getLignesBudgetaires(currentExercice.id),
-          budgetService.getModifications(currentExercice.id),
+          budgetService.getLignesBudgetaires(currentExercice.id, currentClient.id),
+          budgetService.getModifications(currentExercice.id, currentClient.id),
         ]);
 
       setLignes(lignesData);
@@ -82,8 +84,10 @@ const Budgets = () => {
   };
 
   const handleCreateLigne = async (data: Partial<LigneBudgetaire>) => {
+    if (!currentClient || !user) return;
+    
     try {
-      await budgetService.createLigneBudgetaire(data as any);
+      await budgetService.createLigneBudgetaire(data as any, currentClient.id, user.id);
       toast({
         title: 'Succès',
         description: 'Ligne budgétaire créée avec succès',
@@ -140,14 +144,14 @@ const Budgets = () => {
   };
 
   const handleCreateModification = async (data: any) => {
-    if (!currentExercice) return;
+    if (!currentExercice || !currentClient) return;
 
     try {
       await budgetService.createModification({
         ...data,
         exerciceId: currentExercice.id,
         statut: 'brouillon' as const,
-      });
+      }, currentClient.id);
       toast({
         title: 'Succès',
         description: 'Modification budgétaire créée avec succès',
