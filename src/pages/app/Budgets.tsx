@@ -356,12 +356,14 @@ const Budgets = () => {
                         </TableCell>
                         <TableCell className="min-w-[180px]">
                           {modification.type === 'virement' && modification.ligneSourceId ? (
-                            <div className="flex flex-col items-start gap-0.5 py-1">
-                              <span className="text-sm text-muted-foreground truncate max-w-full">
+                            <div className="flex flex-col gap-0.5 py-1">
+                              <span className="text-sm text-muted-foreground truncate">
                                 {lignes.find(l => l.id === modification.ligneSourceId)?.libelle || '-'}
                               </span>
-                              <ArrowDown className="h-3 w-3 text-primary mx-auto" />
-                              <span className="text-sm font-medium truncate max-w-full">
+                              <div className="flex justify-center">
+                                <ArrowDown className="h-3 w-3 text-primary" />
+                              </div>
+                              <span className="text-sm font-medium truncate">
                                 {ligne?.libelle || '-'}
                               </span>
                             </div>
