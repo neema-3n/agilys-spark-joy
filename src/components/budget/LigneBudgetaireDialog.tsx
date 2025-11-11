@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 
 interface LigneBudgetaireDialogProps {
   open: boolean;
@@ -37,6 +38,7 @@ export const LigneBudgetaireDialog = ({
   ligne,
   exerciceId,
 }: LigneBudgetaireDialogProps) => {
+  const { toast } = useToast();
   const { comptes, isLoading: isLoadingComptes } = useComptes();
   const { sections } = useSections();
   const [selectedSectionId, setSelectedSectionId] = useState('');
@@ -72,6 +74,61 @@ export const LigneBudgetaireDialog = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validation des champs obligatoires
+    if (!selectedSectionId) {
+      toast({
+        title: 'Erreur de validation',
+        description: 'Veuillez sélectionner une section',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    if (!selectedProgrammeId) {
+      toast({
+        title: 'Erreur de validation',
+        description: 'Veuillez sélectionner un programme',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    if (!formData.actionId) {
+      toast({
+        title: 'Erreur de validation',
+        description: 'Veuillez sélectionner une action budgétaire',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    if (!formData.compteId) {
+      toast({
+        title: 'Erreur de validation',
+        description: 'Veuillez sélectionner un compte comptable',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    if (!formData.libelle.trim()) {
+      toast({
+        title: 'Erreur de validation',
+        description: 'Veuillez saisir un libellé',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    if (!formData.montantInitial || parseFloat(formData.montantInitial) < 0) {
+      toast({
+        title: 'Erreur de validation',
+        description: 'Veuillez saisir un montant valide',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     onSubmit({
       ...(ligne ? { id: ligne.id } : {}),
       exerciceId,
@@ -96,7 +153,9 @@ export const LigneBudgetaireDialog = ({
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="sectionId">Section</Label>
+              <Label htmlFor="sectionId">
+                Section <span className="text-destructive">*</span>
+              </Label>
               <Select
                 value={selectedSectionId}
                 onValueChange={(value) => {
@@ -105,21 +164,29 @@ export const LigneBudgetaireDialog = ({
                   setFormData({ ...formData, actionId: '' });
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger className={!selectedSectionId ? 'border-muted-foreground/20' : ''}>
                   <SelectValue placeholder="Sélectionner une section" />
                 </SelectTrigger>
                 <SelectContent>
-                  {sections.map((section) => (
-                    <SelectItem key={section.id} value={section.id}>
-                      {section.code} - {section.libelle}
+                  {sections.length === 0 ? (
+                    <SelectItem value="" disabled>
+                      Aucune section disponible
                     </SelectItem>
-                  ))}
+                  ) : (
+                    sections.map((section) => (
+                      <SelectItem key={section.id} value={section.id}>
+                        {section.code} - {section.libelle}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="programmeId">Programme</Label>
+              <Label htmlFor="programmeId">
+                Programme <span className="text-destructive">*</span>
+              </Label>
               <Select
                 value={selectedProgrammeId}
                 onValueChange={(value) => {
@@ -128,46 +195,62 @@ export const LigneBudgetaireDialog = ({
                 }}
                 disabled={!selectedSectionId}
               >
-                <SelectTrigger>
+                <SelectTrigger className={!selectedProgrammeId && selectedSectionId ? 'border-muted-foreground/20' : ''}>
                   <SelectValue placeholder="Sélectionner un programme" />
                 </SelectTrigger>
                 <SelectContent>
-                  {programmes.map((programme) => (
-                    <SelectItem key={programme.id} value={programme.id}>
-                      {programme.code} - {programme.libelle}
+                  {programmes.length === 0 ? (
+                    <SelectItem value="" disabled>
+                      {selectedSectionId ? 'Aucun programme disponible' : 'Sélectionnez d\'abord une section'}
                     </SelectItem>
-                  ))}
+                  ) : (
+                    programmes.map((programme) => (
+                      <SelectItem key={programme.id} value={programme.id}>
+                        {programme.code} - {programme.libelle}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="actionId">Action budgétaire</Label>
+              <Label htmlFor="actionId">
+                Action budgétaire <span className="text-destructive">*</span>
+              </Label>
               <Select
                 value={formData.actionId}
                 onValueChange={(value) => setFormData({ ...formData, actionId: value })}
                 disabled={!selectedProgrammeId}
               >
-                <SelectTrigger>
+                <SelectTrigger className={!formData.actionId && selectedProgrammeId ? 'border-muted-foreground/20' : ''}>
                   <SelectValue placeholder="Sélectionner une action" />
                 </SelectTrigger>
                 <SelectContent>
-                  {actions.map((action) => (
-                    <SelectItem key={action.id} value={action.id}>
-                      {action.code} - {action.libelle}
+                  {actions.length === 0 ? (
+                    <SelectItem value="" disabled>
+                      {selectedProgrammeId ? 'Aucune action disponible' : 'Sélectionnez d\'abord un programme'}
                     </SelectItem>
-                  ))}
+                  ) : (
+                    actions.map((action) => (
+                      <SelectItem key={action.id} value={action.id}>
+                        {action.code} - {action.libelle}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="compteId">Compte comptable</Label>
+              <Label htmlFor="compteId">
+                Compte comptable <span className="text-destructive">*</span>
+              </Label>
               <Select
                 value={formData.compteId}
                 onValueChange={(value) => setFormData({ ...formData, compteId: value })}
               >
-                <SelectTrigger>
+                <SelectTrigger className={!formData.compteId ? 'border-muted-foreground/20' : ''}>
                   <SelectValue placeholder="Sélectionner un compte" />
                 </SelectTrigger>
                 <SelectContent>
@@ -191,7 +274,9 @@ export const LigneBudgetaireDialog = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="libelle">Libellé</Label>
+              <Label htmlFor="libelle">
+                Libellé <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="libelle"
                 value={formData.libelle}
@@ -202,7 +287,9 @@ export const LigneBudgetaireDialog = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="montantInitial">Montant initial (FCFA)</Label>
+              <Label htmlFor="montantInitial">
+                Montant initial (FCFA) <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="montantInitial"
                 type="number"
