@@ -367,7 +367,7 @@ const Budgets = () => {
                               <span className="text-sm text-muted-foreground truncate">
                                 {lignes.find(l => l.id === modification.ligneSourceId)?.libelle || '-'}
                               </span>
-                              <div className="flex justify-center">
+                              <div className="flex justify-start">
                                 <ArrowDown className="h-3 w-3 text-primary" />
                               </div>
                               <span className="text-sm font-medium truncate">
