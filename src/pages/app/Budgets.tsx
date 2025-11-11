@@ -56,6 +56,7 @@ const Budgets = () => {
   const [selectedLigne, setSelectedLigne] = useState<LigneBudgetaire | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [ligneToDelete, setLigneToDelete] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('lignes');
 
   useEffect(() => {
     loadData();
@@ -275,7 +276,7 @@ const Budgets = () => {
         </p>
       </div>
 
-      <Tabs defaultValue="lignes" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList>
           <TabsTrigger value="lignes">Lignes Budgétaires</TabsTrigger>
           <TabsTrigger value="modifications">
