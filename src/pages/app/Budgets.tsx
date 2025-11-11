@@ -382,20 +382,24 @@ const Budgets = () => {
                             </div>
                           )}
                           {modification.statut === 'en_attente' && (
-                            <div className="flex gap-1 justify-end">
+                            <div className="flex gap-2 justify-end">
                               <Button
                                 size="sm"
-                                variant="ghost"
+                                variant="outline"
+                                className="text-green-600 border-green-600 hover:bg-green-50"
                                 onClick={() => handleValiderModification(modification.id)}
                               >
-                                <CheckCircle className="h-4 w-4 text-secondary" />
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Valider
                               </Button>
                               <Button
                                 size="sm"
-                                variant="ghost"
+                                variant="outline"
+                                className="text-red-600 border-red-600 hover:bg-red-50"
                                 onClick={() => handleRejeterModification(modification.id)}
                               >
-                                <XCircle className="h-4 w-4 text-destructive" />
+                                <XCircle className="h-4 w-4 mr-1" />
+                                Rejeter
                               </Button>
                             </div>
                           )}
