@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Fournisseur, TypeFournisseur, StatutFournisseur } from '@/types/fournisseur.types';
+import { useToast } from '@/hooks/use-toast';
 
 interface FournisseurDialogProps {
   open: boolean;
@@ -16,6 +17,7 @@ interface FournisseurDialogProps {
 }
 
 export const FournisseurDialog = ({ open, onOpenChange, onSubmit, fournisseur }: FournisseurDialogProps) => {
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     code: '',
     nom: '',
@@ -123,6 +125,16 @@ export const FournisseurDialog = ({ open, onOpenChange, onSubmit, fournisseur }:
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation des champs obligatoires
+    if (!formData.code.trim() || !formData.nom.trim()) {
+      toast({
+        title: 'Erreur de validation',
+        description: 'Le code et le nom sont obligatoires',
+        variant: 'destructive',
+      });
+      return;
+    }
     
     const payload: any = {
       code: formData.code,
