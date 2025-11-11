@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { useClient } from '@/contexts/ClientContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -56,7 +57,13 @@ const Budgets = () => {
   const [selectedLigne, setSelectedLigne] = useState<LigneBudgetaire | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [ligneToDelete, setLigneToDelete] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('lignes');
+  
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'lignes';
+  
+  const handleTabChange = (value: string) => {
+    setSearchParams({ tab: value });
+  };
 
   useEffect(() => {
     loadData();
@@ -160,7 +167,7 @@ const Budgets = () => {
         description: 'Modification budgétaire créée avec succès',
       });
       loadData();
-      setActiveTab('modifications');
+      setSearchParams({ tab: 'modifications' });
     } catch (error) {
       toast({
         title: 'Erreur',
@@ -277,7 +284,7 @@ const Budgets = () => {
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         <TabsList>
           <TabsTrigger value="lignes">Lignes Budgétaires</TabsTrigger>
           <TabsTrigger value="modifications">
