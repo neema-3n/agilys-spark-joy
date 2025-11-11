@@ -125,13 +125,20 @@ export const fournisseursService = {
       client_id: input.clientId,
     };
 
+    console.log('🔍 Création fournisseur - Payload:', payload);
+
     const { data, error } = await supabase
       .from('fournisseurs')
       .insert(payload)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Erreur création fournisseur:', error);
+      throw error;
+    }
+    
+    console.log('✅ Fournisseur créé:', data);
     return mapFromDatabase(data);
   },
 

@@ -121,7 +121,7 @@ export const FournisseurDialog = ({ open, onOpenChange, onSubmit, fournisseur }:
     }
   }, [open, fournisseur]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const payload: any = {
@@ -158,21 +158,25 @@ export const FournisseurDialog = ({ open, onOpenChange, onSubmit, fournisseur }:
     if (formData.contactTelephone) payload.contactTelephone = formData.contactTelephone;
     if (formData.commentaires) payload.commentaires = formData.commentaires;
 
-    onSubmit(payload);
-    onOpenChange(false);
+    try {
+      await onSubmit(payload);
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Erreur lors de la soumission:', error);
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {fournisseur ? 'Modifier le fournisseur' : 'Nouveau fournisseur'}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit}>
-          <Tabs defaultValue="general" className="w-full">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+          <Tabs defaultValue="general" className="flex-1 flex flex-col">
             <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="general">Général</TabsTrigger>
               <TabsTrigger value="coordonnees">Coordonnées</TabsTrigger>
@@ -181,7 +185,8 @@ export const FournisseurDialog = ({ open, onOpenChange, onSubmit, fournisseur }:
               <TabsTrigger value="contact">Contact</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="general" className="space-y-4 mt-4">
+            <div className="flex-1 overflow-y-auto">
+              <TabsContent value="general" className="space-y-4 mt-4 h-full">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="code">Code *</Label>
@@ -284,7 +289,7 @@ export const FournisseurDialog = ({ open, onOpenChange, onSubmit, fournisseur }:
               </div>
             </TabsContent>
 
-            <TabsContent value="coordonnees" className="space-y-4 mt-4">
+            <TabsContent value="coordonnees" className="space-y-4 mt-4 h-full">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="email">Email</Label>
@@ -349,7 +354,7 @@ export const FournisseurDialog = ({ open, onOpenChange, onSubmit, fournisseur }:
               </div>
             </TabsContent>
 
-            <TabsContent value="legal" className="space-y-4 mt-4">
+            <TabsContent value="legal" className="space-y-4 mt-4 h-full">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="numeroContribuable">Numéro contribuable</Label>
@@ -379,7 +384,7 @@ export const FournisseurDialog = ({ open, onOpenChange, onSubmit, fournisseur }:
               </div>
             </TabsContent>
 
-            <TabsContent value="bancaire" className="space-y-4 mt-4">
+            <TabsContent value="bancaire" className="space-y-4 mt-4 h-full">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="banque">Banque</Label>
@@ -416,7 +421,7 @@ export const FournisseurDialog = ({ open, onOpenChange, onSubmit, fournisseur }:
               </div>
             </TabsContent>
 
-            <TabsContent value="contact" className="space-y-4 mt-4">
+            <TabsContent value="contact" className="space-y-4 mt-4 h-full">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="contactNom">Nom</Label>
@@ -461,9 +466,10 @@ export const FournisseurDialog = ({ open, onOpenChange, onSubmit, fournisseur }:
                 </div>
               </div>
             </TabsContent>
+            </div>
           </Tabs>
 
-          <DialogFooter className="mt-6">
+          <DialogFooter className="mt-6 pt-4 border-t">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Annuler
             </Button>

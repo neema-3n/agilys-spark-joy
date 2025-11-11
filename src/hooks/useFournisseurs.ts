@@ -29,6 +29,7 @@ export const useFournisseurs = () => {
       fournisseursService.create({ ...input, clientId: currentClient!.id }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fournisseurs'] });
+      queryClient.invalidateQueries({ queryKey: ['fournisseurs-stats'] });
       toast({
         title: 'Succès',
         description: 'Fournisseur créé avec succès',
