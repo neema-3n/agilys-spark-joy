@@ -20,7 +20,10 @@ export const ClientProvider = ({ children }: { children: ReactNode }) => {
     const allClients = await clientsService.getAll();
     setClients(allClients);
     
-    // Définir le client actuel selon le rôle
+    // SECURITY NOTE: This client-side role check is for UI/UX purposes only.
+    // Actual data access control is enforced server-side via RLS policies
+    // that filter by the user's client_id from their profile.
+    // This code only determines which client selector to display in the UI.
     if (user?.roles.includes('super_admin')) {
       setCurrentClient(allClients[0] || null);
     } else {
