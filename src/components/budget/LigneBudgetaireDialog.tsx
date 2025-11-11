@@ -169,9 +169,9 @@ export const LigneBudgetaireDialog = ({
                 </SelectTrigger>
                 <SelectContent>
                   {sections.length === 0 ? (
-                    <SelectItem value="" disabled>
+                    <div className="px-2 py-6 text-center text-sm text-muted-foreground">
                       Aucune section disponible
-                    </SelectItem>
+                    </div>
                   ) : (
                     sections.map((section) => (
                       <SelectItem key={section.id} value={section.id}>
@@ -200,9 +200,9 @@ export const LigneBudgetaireDialog = ({
                 </SelectTrigger>
                 <SelectContent>
                   {programmes.length === 0 ? (
-                    <SelectItem value="" disabled>
+                    <div className="px-2 py-6 text-center text-sm text-muted-foreground">
                       {selectedSectionId ? 'Aucun programme disponible' : 'Sélectionnez d\'abord une section'}
-                    </SelectItem>
+                    </div>
                   ) : (
                     programmes.map((programme) => (
                       <SelectItem key={programme.id} value={programme.id}>
@@ -228,9 +228,9 @@ export const LigneBudgetaireDialog = ({
                 </SelectTrigger>
                 <SelectContent>
                   {actions.length === 0 ? (
-                    <SelectItem value="" disabled>
+                    <div className="px-2 py-6 text-center text-sm text-muted-foreground">
                       {selectedProgrammeId ? 'Aucune action disponible' : 'Sélectionnez d\'abord un programme'}
-                    </SelectItem>
+                    </div>
                   ) : (
                     actions.map((action) => (
                       <SelectItem key={action.id} value={action.id}>
@@ -255,13 +255,13 @@ export const LigneBudgetaireDialog = ({
                 </SelectTrigger>
                 <SelectContent>
                   {isLoadingComptes ? (
-                    <SelectItem value="" disabled>
+                    <div className="px-2 py-6 text-center text-sm text-muted-foreground">
                       Chargement...
-                    </SelectItem>
+                    </div>
                   ) : comptes.length === 0 ? (
-                    <SelectItem value="" disabled>
+                    <div className="px-2 py-6 text-center text-sm text-muted-foreground">
                       Aucun compte disponible
-                    </SelectItem>
+                    </div>
                   ) : (
                     comptes.map((compte) => (
                       <SelectItem key={compte.id} value={compte.id}>
