@@ -120,10 +120,10 @@ export const LigneBudgetaireDialog = ({
       return;
     }
     
-    if (!formData.montantInitial || parseFloat(formData.montantInitial) < 0) {
+    if (!formData.montantInitial || parseFloat(formData.montantInitial) <= 0) {
       toast({
         title: 'Erreur de validation',
-        description: 'Veuillez saisir un montant valide',
+        description: 'Le montant doit être supérieur à zéro',
         variant: 'destructive',
       });
       return;
@@ -296,8 +296,8 @@ export const LigneBudgetaireDialog = ({
                 value={formData.montantInitial}
                 onChange={(e) => setFormData({ ...formData, montantInitial: e.target.value })}
                 placeholder="0"
-                min="0"
-                step="1000"
+                min="0.01"
+                step="any"
                 required
               />
             </div>
