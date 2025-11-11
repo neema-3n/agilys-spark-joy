@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,22 +23,46 @@ export function ScenarioDialog({ open, onOpenChange, onSubmit, scenario }: Scena
   const { user } = useAuth();
 
   const [formData, setFormData] = useState({
-    code: scenario?.code || '',
-    nom: scenario?.nom || '',
-    description: scenario?.description || '',
-    typeScenario: scenario?.typeScenario || 'realiste' as TypeScenario,
-    anneeReference: scenario?.anneeReference || new Date().getFullYear(),
-    exerciceReferenceId: scenario?.exerciceReferenceId || '',
+    code: '',
+    nom: '',
+    description: '',
+    typeScenario: 'realiste' as TypeScenario,
+    anneeReference: new Date().getFullYear(),
+    exerciceReferenceId: undefined as string | undefined,
   });
+
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        code: scenario?.code || '',
+        nom: scenario?.nom || '',
+        description: scenario?.description || '',
+        typeScenario: scenario?.typeScenario || 'realiste',
+        anneeReference: scenario?.anneeReference || new Date().getFullYear(),
+        exerciceReferenceId: scenario?.exerciceReferenceId || undefined,
+      });
+    }
+  }, [open, scenario]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({
-      ...formData,
+    
+    const payload: any = {
+      code: formData.code,
+      nom: formData.nom,
+      description: formData.description,
+      typeScenario: formData.typeScenario,
+      anneeReference: formData.anneeReference,
       clientId: currentClient!.id,
       statut: 'brouillon',
       createdBy: user?.id,
-    });
+    };
+    
+    if (formData.exerciceReferenceId) {
+      payload.exerciceReferenceId = formData.exerciceReferenceId;
+    }
+    
+    onSubmit(payload);
     onOpenChange(false);
   };
 

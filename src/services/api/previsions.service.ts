@@ -54,19 +54,22 @@ export const previsionsService = {
   },
 
   async createScenario(scenario: Omit<Scenario, 'id' | 'createdAt' | 'updatedAt'>): Promise<Scenario> {
+    const payload: any = {
+      client_id: scenario.clientId,
+      code: scenario.code,
+      nom: scenario.nom,
+      type_scenario: scenario.typeScenario,
+      annee_reference: scenario.anneeReference,
+      statut: scenario.statut,
+    };
+
+    if (scenario.description) payload.description = scenario.description;
+    if (scenario.exerciceReferenceId) payload.exercice_reference_id = scenario.exerciceReferenceId;
+    if (scenario.createdBy) payload.created_by = scenario.createdBy;
+
     const { data, error } = await supabase
       .from('scenarios_prevision')
-      .insert({
-        client_id: scenario.clientId,
-        code: scenario.code,
-        nom: scenario.nom,
-        description: scenario.description,
-        type_scenario: scenario.typeScenario,
-        annee_reference: scenario.anneeReference,
-        exercice_reference_id: scenario.exerciceReferenceId,
-        statut: scenario.statut,
-        created_by: scenario.createdBy,
-      })
+      .insert(payload)
       .select()
       .single();
 
