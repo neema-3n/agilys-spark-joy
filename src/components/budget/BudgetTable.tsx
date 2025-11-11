@@ -14,6 +14,8 @@ import { Badge } from '@/components/ui/badge';
 import { ChevronDown, ChevronRight, Edit, Trash2, Layers, GitBranch, Zap } from 'lucide-react';
 
 interface BudgetTableProps {
+  clientId: string;
+  exerciceId: string;
   sections: Section[];
   programmes: Programme[];
   actions: Action[];
@@ -23,7 +25,33 @@ interface BudgetTableProps {
   onDelete: (id: string) => void;
 }
 
+// Helper functions pour localStorage
+const getStorageKey = (clientId: string, exerciceId: string, type: 'sections' | 'programmes') => {
+  return `budget_expanded_${type}_${clientId}_${exerciceId}`;
+};
+
+const getInitialExpandedState = (clientId: string, exerciceId: string, type: 'sections' | 'programmes') => {
+  const key = getStorageKey(clientId, exerciceId, type);
+  const stored = localStorage.getItem(key);
+  if (stored) {
+    try {
+      return new Set<string>(JSON.parse(stored));
+    } catch {
+      return new Set<string>();
+    }
+  }
+  // Valeurs par défaut si rien en localStorage
+  return type === 'sections' ? new Set(['sec-1']) : new Set(['prog-1']);
+};
+
+const saveExpandedState = (clientId: string, exerciceId: string, type: 'sections' | 'programmes', state: Set<string>) => {
+  const key = getStorageKey(clientId, exerciceId, type);
+  localStorage.setItem(key, JSON.stringify([...state]));
+};
+
 export const BudgetTable = ({
+  clientId,
+  exerciceId,
   sections,
   programmes,
   actions,
@@ -32,8 +60,12 @@ export const BudgetTable = ({
   onEdit,
   onDelete,
 }: BudgetTableProps) => {
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['sec-1']));
-  const [expandedProgrammes, setExpandedProgrammes] = useState<Set<string>>(new Set(['prog-1']));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(
+    () => getInitialExpandedState(clientId, exerciceId, 'sections')
+  );
+  const [expandedProgrammes, setExpandedProgrammes] = useState<Set<string>>(
+    () => getInitialExpandedState(clientId, exerciceId, 'programmes')
+  );
 
   const formatMontant = (montant: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -51,6 +83,7 @@ export const BudgetTable = ({
       newExpanded.add(sectionId);
     }
     setExpandedSections(newExpanded);
+    saveExpandedState(clientId, exerciceId, 'sections', newExpanded);
   };
 
   const toggleProgramme = (programmeId: string) => {
@@ -61,6 +94,7 @@ export const BudgetTable = ({
       newExpanded.add(programmeId);
     }
     setExpandedProgrammes(newExpanded);
+    saveExpandedState(clientId, exerciceId, 'programmes', newExpanded);
   };
 
   const getTauxExecution = (ligne: LigneBudgetaire) => {

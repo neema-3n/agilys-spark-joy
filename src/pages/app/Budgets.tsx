@@ -305,6 +305,8 @@ const Budgets = () => {
             </CardHeader>
             <CardContent>
               <BudgetTable
+                clientId={currentClient?.id || ''}
+                exerciceId={currentExercice?.id || ''}
                 sections={sections}
                 programmes={programmes}
                 actions={actions}
