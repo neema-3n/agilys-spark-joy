@@ -728,6 +728,60 @@ export type Database = {
         }
         Relationships: []
       }
+      reservations_credits: {
+        Row: {
+          beneficiaire: string | null
+          client_id: string
+          created_at: string
+          created_by: string | null
+          date_expiration: string | null
+          date_reservation: string
+          exercice_id: string
+          id: string
+          ligne_budgetaire_id: string
+          montant: number
+          motif_annulation: string | null
+          numero: string
+          objet: string
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          beneficiaire?: string | null
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          date_expiration?: string | null
+          date_reservation?: string
+          exercice_id: string
+          id?: string
+          ligne_budgetaire_id: string
+          montant?: number
+          motif_annulation?: string | null
+          numero: string
+          objet: string
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          beneficiaire?: string | null
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          date_expiration?: string | null
+          date_reservation?: string
+          exercice_id?: string
+          id?: string
+          ligne_budgetaire_id?: string
+          montant?: number
+          motif_annulation?: string | null
+          numero?: string
+          objet?: string
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       scenarios_prevision: {
         Row: {
           annee_reference: number
