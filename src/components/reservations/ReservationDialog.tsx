@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
 import { useProjets } from '@/hooks/useProjets';
+import { useExercice } from '@/contexts/ExerciceContext';
 import type { ReservationCredit, ReservationCreditFormData } from '@/types/reservation.types';
 
 interface ReservationDialogProps {
@@ -19,6 +20,7 @@ interface ReservationDialogProps {
 export const ReservationDialog = ({ open, onOpenChange, onSave, reservation }: ReservationDialogProps) => {
   const { lignes: lignesBudgetaires = [] } = useLignesBudgetaires();
   const { projets = [] } = useProjets();
+  const { currentExercice } = useExercice();
   const [typeBeneficiaire, setTypeBeneficiaire] = useState<'projet' | 'autre'>('projet');
   const [formData, setFormData] = useState<ReservationCreditFormData>({
     ligneBudgetaireId: '',
@@ -50,10 +52,10 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation }: R
         objet: '',
         beneficiaire: '',
         projetId: '',
-        dateExpiration: '',
+        dateExpiration: currentExercice?.dateFin || '',
       });
     }
-  }, [reservation, open]);
+  }, [reservation, open, currentExercice]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,12 +120,13 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation }: R
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="dateExpiration">Date d'expiration</Label>
+              <Label htmlFor="dateExpiration">Date d'expiration *</Label>
               <Input
                 id="dateExpiration"
                 type="date"
                 value={formData.dateExpiration}
                 onChange={(e) => setFormData({ ...formData, dateExpiration: e.target.value })}
+                required
               />
             </div>
           </div>
