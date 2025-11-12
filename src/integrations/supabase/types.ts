@@ -812,13 +812,6 @@ export type Database = {
             referencedRelation: "projets"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "reservations_credits_projet_id_fkey"
-            columns: ["projet_id"]
-            isOneToOne: false
-            referencedRelation: "projets"
-            referencedColumns: ["id"]
-          },
         ]
       }
       scenarios_prevision: {
