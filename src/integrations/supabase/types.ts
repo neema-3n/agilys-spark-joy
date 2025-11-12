@@ -785,6 +785,34 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_reservations_credits_created_by"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_reservations_credits_exercice"
+            columns: ["exercice_id"]
+            isOneToOne: false
+            referencedRelation: "exercices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_reservations_credits_ligne_budgetaire"
+            columns: ["ligne_budgetaire_id"]
+            isOneToOne: false
+            referencedRelation: "lignes_budgetaires"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_reservations_credits_projet"
+            columns: ["projet_id"]
+            isOneToOne: false
+            referencedRelation: "projets"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "reservations_credits_projet_id_fkey"
             columns: ["projet_id"]
             isOneToOne: false
