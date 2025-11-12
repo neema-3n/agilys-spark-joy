@@ -71,11 +71,11 @@ export const getReservations = async (
     .from('reservations_credits')
     .select(`
       *,
-      lignes_budgetaires!ligne_budgetaire_id (
+      ligne_budgetaire:lignes_budgetaires!ligne_budgetaire_id (
         libelle,
         disponible
       ),
-      projets!fk_reservations_credits_projet (
+      projet:projets!fk_reservations_credits_projet (
         id,
         code,
         nom,
@@ -113,11 +113,11 @@ export const createReservation = async (
     .insert(newReservation)
     .select(`
       *,
-      lignes_budgetaires!ligne_budgetaire_id (
+      ligne_budgetaire:lignes_budgetaires!ligne_budgetaire_id (
         libelle,
         disponible
       ),
-      projets!fk_reservations_credits_projet (
+      projet:projets!fk_reservations_credits_projet (
         id,
         code,
         nom,
@@ -140,11 +140,11 @@ export const updateReservation = async (
     .eq('id', id)
     .select(`
       *,
-      lignes_budgetaires!ligne_budgetaire_id (
+      ligne_budgetaire:lignes_budgetaires!ligne_budgetaire_id (
         libelle,
         disponible
       ),
-      projets!fk_reservations_credits_projet (
+      projet:projets!fk_reservations_credits_projet (
         id,
         code,
         nom,
@@ -164,11 +164,11 @@ export const utiliserReservation = async (id: string): Promise<ReservationCredit
     .eq('id', id)
     .select(`
       *,
-      lignes_budgetaires!ligne_budgetaire_id (
+      ligne_budgetaire:lignes_budgetaires!ligne_budgetaire_id (
         libelle,
         disponible
       ),
-      projets!fk_reservations_credits_projet (
+      projet:projets!fk_reservations_credits_projet (
         id,
         code,
         nom,
@@ -194,11 +194,11 @@ export const annulerReservation = async (
     .eq('id', id)
     .select(`
       *,
-      lignes_budgetaires!ligne_budgetaire_id (
+      ligne_budgetaire:lignes_budgetaires!ligne_budgetaire_id (
         libelle,
         disponible
       ),
-      projets!fk_reservations_credits_projet (
+      projet:projets!fk_reservations_credits_projet (
         id,
         code,
         nom,
