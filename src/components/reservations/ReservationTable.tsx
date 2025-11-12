@@ -10,7 +10,7 @@ import { fr } from 'date-fns/locale';
 interface ReservationTableProps {
   reservations: ReservationCredit[];
   onEdit: (reservation: ReservationCredit) => void;
-  onUtiliser: (id: string) => void;
+  onCreerEngagement: (reservation: ReservationCredit) => void;
   onAnnuler: (id: string, motif: string) => void;
   onDelete: (id: string) => void;
 }
@@ -18,7 +18,7 @@ interface ReservationTableProps {
 export const ReservationTable = ({
   reservations,
   onEdit,
-  onUtiliser,
+  onCreerEngagement,
   onAnnuler,
   onDelete,
 }: ReservationTableProps) => {
@@ -68,6 +68,7 @@ export const ReservationTable = ({
             <TableHead>Date</TableHead>
             <TableHead>Expiration</TableHead>
             <TableHead>Statut</TableHead>
+            <TableHead>Engagement</TableHead>
             <TableHead className="w-12"></TableHead>
           </TableRow>
         </TableHeader>
@@ -107,6 +108,15 @@ export const ReservationTable = ({
                 </TableCell>
                 <TableCell>{getStatutBadge(reservation.statut)}</TableCell>
                 <TableCell>
+                  {reservation.engagement ? (
+                    <Badge variant="outline" className="text-xs">
+                      {reservation.engagement.numero}
+                    </Badge>
+                  ) : (
+                    '-'
+                  )}
+                </TableCell>
+                <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm">
@@ -120,9 +130,9 @@ export const ReservationTable = ({
                             <Edit className="h-4 w-4 mr-2" />
                             Modifier
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onUtiliser(reservation.id)}>
+                          <DropdownMenuItem onClick={() => onCreerEngagement(reservation)}>
                             <CheckCircle className="h-4 w-4 mr-2" />
-                            Utiliser
+                            Créer un engagement
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleAnnuler(reservation.id)}>
                             <XCircle className="h-4 w-4 mr-2" />

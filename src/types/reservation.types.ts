@@ -26,6 +26,10 @@ export interface ReservationCredit {
     nom: string;
     statut: string;
   };
+  engagement?: {
+    numero: string;
+    statut: string;
+  };
 }
 
 export interface ReservationCreditFormData {

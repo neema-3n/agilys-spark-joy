@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Plus } from 'lucide-react';
@@ -13,6 +14,7 @@ import type { ReservationCredit } from '@/types/reservation.types';
 const Reservations = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<ReservationCredit | undefined>();
+  const navigate = useNavigate();
   const { toast } = useToast();
   
   const {
@@ -60,22 +62,8 @@ const Reservations = () => {
     }
   };
 
-  const handleUtiliser = async (id: string) => {
-    if (!confirm('Confirmer l\'utilisation de cette réservation ?')) return;
-    
-    try {
-      await utiliserReservation(id);
-      toast({
-        title: 'Réservation utilisée',
-        description: 'La réservation a été marquée comme utilisée.',
-      });
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: 'Une erreur est survenue.',
-        variant: 'destructive',
-      });
-    }
+  const handleCreerEngagement = (reservation: ReservationCredit) => {
+    navigate(`/app/engagements?from_reservation=${reservation.id}`);
   };
 
   const handleAnnuler = async (id: string, motif: string) => {
@@ -138,7 +126,7 @@ const Reservations = () => {
           <ReservationTable
             reservations={reservations}
             onEdit={handleEdit}
-            onUtiliser={handleUtiliser}
+            onCreerEngagement={handleCreerEngagement}
             onAnnuler={handleAnnuler}
             onDelete={handleDelete}
           />

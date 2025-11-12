@@ -101,3 +101,6 @@ export * from './fournisseur.types';
 
 // Export reservation types
 export * from './reservation.types';
+
+// Export engagement types
+export * from './engagement.types';

@@ -124,6 +124,94 @@ export type Database = {
           },
         ]
       }
+      engagements: {
+        Row: {
+          beneficiaire: string | null
+          client_id: string
+          created_at: string
+          created_by: string | null
+          date_creation: string
+          date_validation: string | null
+          exercice_id: string
+          fournisseur_id: string | null
+          id: string
+          ligne_budgetaire_id: string
+          montant: number
+          motif_annulation: string | null
+          numero: string
+          objet: string
+          observations: string | null
+          projet_id: string | null
+          reservation_credit_id: string | null
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          beneficiaire?: string | null
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          date_creation?: string
+          date_validation?: string | null
+          exercice_id: string
+          fournisseur_id?: string | null
+          id?: string
+          ligne_budgetaire_id: string
+          montant?: number
+          motif_annulation?: string | null
+          numero: string
+          objet: string
+          observations?: string | null
+          projet_id?: string | null
+          reservation_credit_id?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          beneficiaire?: string | null
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          date_creation?: string
+          date_validation?: string | null
+          exercice_id?: string
+          fournisseur_id?: string | null
+          id?: string
+          ligne_budgetaire_id?: string
+          montant?: number
+          motif_annulation?: string | null
+          numero?: string
+          objet?: string
+          observations?: string | null
+          projet_id?: string | null
+          reservation_credit_id?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "engagements_fournisseur_id_fkey"
+            columns: ["fournisseur_id"]
+            isOneToOne: false
+            referencedRelation: "fournisseurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "engagements_projet_id_fkey"
+            columns: ["projet_id"]
+            isOneToOne: false
+            referencedRelation: "projets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "engagements_reservation_credit_id_fkey"
+            columns: ["reservation_credit_id"]
+            isOneToOne: false
+            referencedRelation: "reservations_credits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       enveloppes: {
         Row: {
           client_id: string
