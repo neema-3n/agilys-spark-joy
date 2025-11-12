@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
 import { useProjets } from '@/hooks/useProjets';
 import { useExercice } from '@/contexts/ExerciceContext';
+import { useToast } from '@/hooks/use-toast';
 import type { ReservationCredit, ReservationCreditFormData } from '@/types/reservation.types';
 
 interface ReservationDialogProps {
@@ -21,6 +22,7 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation }: R
   const { lignes: lignesBudgetaires = [] } = useLignesBudgetaires();
   const { projets = [] } = useProjets();
   const { currentExercice } = useExercice();
+  const { toast } = useToast();
   const [typeBeneficiaire, setTypeBeneficiaire] = useState<'projet' | 'autre'>('projet');
   const [formData, setFormData] = useState<ReservationCreditFormData>({
     ligneBudgetaireId: '',
@@ -57,8 +59,47 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation }: R
     }
   }, [reservation, open, currentExercice]);
 
+  const validateForm = (): string | null => {
+    if (!formData.ligneBudgetaireId) {
+      return 'Veuillez sélectionner une ligne budgétaire';
+    }
+
+    if (!formData.montant || formData.montant <= 0) {
+      return 'Le montant doit être supérieur à 0';
+    }
+
+    if (!formData.objet.trim()) {
+      return 'Veuillez saisir l\'objet de la réservation';
+    }
+
+    if (!formData.dateExpiration) {
+      return 'Veuillez saisir la date d\'expiration';
+    }
+
+    if (typeBeneficiaire === 'projet' && !formData.projetId) {
+      return 'Veuillez sélectionner un projet';
+    }
+
+    if (typeBeneficiaire === 'autre' && !formData.beneficiaire?.trim()) {
+      return 'Veuillez saisir le nom du bénéficiaire';
+    }
+
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const validationError = validateForm();
+    if (validationError) {
+      toast({
+        title: 'Formulaire incomplet',
+        description: validationError,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await onSave(formData);
@@ -111,11 +152,18 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation }: R
               <Input
                 id="montant"
                 type="number"
-                min="0"
+                min="0.01"
                 step="0.01"
-                value={formData.montant}
-                onChange={(e) => setFormData({ ...formData, montant: parseFloat(e.target.value) || 0 })}
+                value={formData.montant || ''}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value);
+                  setFormData({ 
+                    ...formData, 
+                    montant: !isNaN(value) && value > 0 ? value : 0 
+                  });
+                }}
                 required
+                placeholder="Saisir le montant"
               />
             </div>
 

@@ -56,6 +56,7 @@ const Reservations = () => {
         description: 'Une erreur est survenue lors de la sauvegarde.',
         variant: 'destructive',
       });
+      throw error;
     }
   };
 
