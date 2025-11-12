@@ -743,6 +743,7 @@ export type Database = {
           motif_annulation: string | null
           numero: string
           objet: string
+          projet_id: string | null
           statut: string
           updated_at: string
         }
@@ -760,6 +761,7 @@ export type Database = {
           motif_annulation?: string | null
           numero: string
           objet: string
+          projet_id?: string | null
           statut?: string
           updated_at?: string
         }
@@ -777,10 +779,19 @@ export type Database = {
           motif_annulation?: string | null
           numero?: string
           objet?: string
+          projet_id?: string | null
           statut?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "reservations_credits_projet_id_fkey"
+            columns: ["projet_id"]
+            isOneToOne: false
+            referencedRelation: "projets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       scenarios_prevision: {
         Row: {

@@ -59,6 +59,12 @@ export const getReservations = async (
       lignes_budgetaires:ligne_budgetaire_id (
         libelle,
         disponible
+      ),
+      projets:projet_id (
+        id,
+        code,
+        nom,
+        statut
       )
     `)
     .eq('exercice_id', exerciceId)
@@ -95,6 +101,12 @@ export const createReservation = async (
       lignes_budgetaires:ligne_budgetaire_id (
         libelle,
         disponible
+      ),
+      projets:projet_id (
+        id,
+        code,
+        nom,
+        statut
       )
     `)
     .single();
@@ -116,6 +128,12 @@ export const updateReservation = async (
       lignes_budgetaires:ligne_budgetaire_id (
         libelle,
         disponible
+      ),
+      projets:projet_id (
+        id,
+        code,
+        nom,
+        statut
       )
     `)
     .single();
@@ -134,6 +152,12 @@ export const utiliserReservation = async (id: string): Promise<ReservationCredit
       lignes_budgetaires:ligne_budgetaire_id (
         libelle,
         disponible
+      ),
+      projets:projet_id (
+        id,
+        code,
+        nom,
+        statut
       )
     `)
     .single();
@@ -158,6 +182,12 @@ export const annulerReservation = async (
       lignes_budgetaires:ligne_budgetaire_id (
         libelle,
         disponible
+      ),
+      projets:projet_id (
+        id,
+        code,
+        nom,
+        statut
       )
     `)
     .single();

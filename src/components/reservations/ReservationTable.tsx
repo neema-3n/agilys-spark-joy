@@ -86,7 +86,18 @@ export const ReservationTable = ({
                   {reservation.ligneBudgetaire?.libelle || 'N/A'}
                 </TableCell>
                 <TableCell className="max-w-xs truncate">{reservation.objet}</TableCell>
-                <TableCell>{reservation.beneficiaire || '-'}</TableCell>
+                <TableCell>
+                  {reservation.projet ? (
+                    <div>
+                      <div className="font-medium">{reservation.projet.nom}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {reservation.projet.code}
+                      </div>
+                    </div>
+                  ) : (
+                    reservation.beneficiaire || '-'
+                  )}
+                </TableCell>
                 <TableCell className="text-right font-medium">
                   {formatCurrency(reservation.montant)} FCFA
                 </TableCell>

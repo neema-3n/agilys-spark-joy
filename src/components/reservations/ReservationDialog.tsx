@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
+import { useProjets } from '@/hooks/useProjets';
 import type { ReservationCredit, ReservationCreditFormData } from '@/types/reservation.types';
 
 interface ReservationDialogProps {
@@ -17,30 +18,38 @@ interface ReservationDialogProps {
 
 export const ReservationDialog = ({ open, onOpenChange, onSave, reservation }: ReservationDialogProps) => {
   const { lignes: lignesBudgetaires = [] } = useLignesBudgetaires();
+  const { projets = [] } = useProjets();
+  const [typeBeneficiaire, setTypeBeneficiaire] = useState<'projet' | 'autre'>('projet');
   const [formData, setFormData] = useState<ReservationCreditFormData>({
     ligneBudgetaireId: '',
     montant: 0,
     objet: '',
     beneficiaire: '',
+    projetId: '',
     dateExpiration: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (reservation) {
+      const hasProjet = !!reservation.projetId;
+      setTypeBeneficiaire(hasProjet ? 'projet' : 'autre');
       setFormData({
         ligneBudgetaireId: reservation.ligneBudgetaireId,
         montant: reservation.montant,
         objet: reservation.objet,
         beneficiaire: reservation.beneficiaire || '',
+        projetId: reservation.projetId || '',
         dateExpiration: reservation.dateExpiration || '',
       });
     } else {
+      setTypeBeneficiaire('projet');
       setFormData({
         ligneBudgetaireId: '',
         montant: 0,
         objet: '',
         beneficiaire: '',
+        projetId: '',
         dateExpiration: '',
       });
     }
@@ -60,6 +69,9 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation }: R
   };
 
   const lignesActives = lignesBudgetaires.filter(l => l.statut === 'actif' && l.disponible > 0);
+  const projetsActifs = projets.filter(p => 
+    p.statut === 'planifie' || p.statut === 'en_cours'
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -117,14 +129,64 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation }: R
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="beneficiaire">Bénéficiaire</Label>
-            <Input
-              id="beneficiaire"
-              value={formData.beneficiaire}
-              onChange={(e) => setFormData({ ...formData, beneficiaire: e.target.value })}
-              placeholder="Nom du bénéficiaire"
-            />
+            <Label>Type de bénéficiaire</Label>
+            <div className="flex gap-4">
+              <Button
+                type="button"
+                variant={typeBeneficiaire === 'projet' ? 'default' : 'outline'}
+                onClick={() => {
+                  setTypeBeneficiaire('projet');
+                  setFormData({ ...formData, beneficiaire: '' });
+                }}
+              >
+                Projet
+              </Button>
+              <Button
+                type="button"
+                variant={typeBeneficiaire === 'autre' ? 'default' : 'outline'}
+                onClick={() => {
+                  setTypeBeneficiaire('autre');
+                  setFormData({ ...formData, projetId: '' });
+                }}
+              >
+                Autre bénéficiaire
+              </Button>
+            </div>
           </div>
+
+          {typeBeneficiaire === 'projet' && (
+            <div className="space-y-2">
+              <Label htmlFor="projet">Projet *</Label>
+              <Select
+                value={formData.projetId}
+                onValueChange={(value) => setFormData({ ...formData, projetId: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un projet" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projetsActifs.map((projet) => (
+                    <SelectItem key={projet.id} value={projet.id}>
+                      {projet.code} - {projet.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {typeBeneficiaire === 'autre' && (
+            <div className="space-y-2">
+              <Label htmlFor="beneficiaire">Bénéficiaire *</Label>
+              <Input
+                id="beneficiaire"
+                value={formData.beneficiaire}
+                onChange={(e) => setFormData({ ...formData, beneficiaire: e.target.value })}
+                placeholder="Nom du bénéficiaire"
+                required
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="objet">Objet *</Label>

@@ -6,6 +6,7 @@ export interface ReservationCredit {
   montant: number;
   objet: string;
   beneficiaire?: string;
+  projetId?: string;
   dateReservation: string;
   dateExpiration?: string;
   statut: 'active' | 'utilisee' | 'annulee' | 'expiree';
@@ -19,6 +20,12 @@ export interface ReservationCredit {
     libelle: string;
     disponible: number;
   };
+  projet?: {
+    id: string;
+    code: string;
+    nom: string;
+    statut: string;
+  };
 }
 
 export interface ReservationCreditFormData {
@@ -26,5 +33,6 @@ export interface ReservationCreditFormData {
   montant: number;
   objet: string;
   beneficiaire?: string;
+  projetId?: string;
   dateExpiration?: string;
 }
