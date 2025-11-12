@@ -189,9 +189,9 @@ const AppLayout = () => {
   };
   return <div className="min-h-screen bg-background flex w-full">
       {/* Sidebar */}
-      <aside className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-card border-r border-border transition-all duration-300 flex flex-col`}>
-        {/* Header Sidebar */}
-        <div className="p-4 border-b border-border flex items-center justify-between bg-gradient-to-r from-primary/5 to-primary/10">
+      <aside className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-card border-r border-border transition-all duration-300 flex flex-col h-screen`}>
+        {/* Header Sidebar - FIXE */}
+        <div className="flex-shrink-0 p-4 border-b border-border flex items-center justify-between bg-gradient-to-r from-primary/5 to-primary/10">
           {sidebarOpen && <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center shadow-md">
                 <span className="text-sm font-bold text-primary-foreground">A</span>
@@ -203,8 +203,8 @@ const AppLayout = () => {
           </Button>
         </div>
 
-        {/* Sélecteurs */}
-        {sidebarOpen && <div className="p-4 space-y-3 border-b border-border bg-gradient-to-b from-muted/20 to-transparent">
+        {/* Sélecteurs - FIXES */}
+        {sidebarOpen && <div className="flex-shrink-0 p-4 space-y-3 border-b border-border bg-gradient-to-b from-muted/20 to-transparent">
             {/* Sélecteur de client */}
             <div>
               <label className="text-xs font-semibold text-muted-foreground mb-1.5 block uppercase tracking-wide">Client</label>
@@ -326,8 +326,8 @@ const AppLayout = () => {
           })}
         </nav>
 
-        {/* User Menu */}
-        <div className="p-4 border-t border-border bg-gradient-to-t from-muted/20 to-transparent">
+        {/* User Menu - FIXE */}
+        <div className="flex-shrink-0 p-4 border-t border-border bg-gradient-to-t from-muted/20 to-transparent">
           {sidebarOpen ? <div className="flex items-center gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold truncate">
@@ -345,7 +345,7 @@ const AppLayout = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 h-screen overflow-hidden">
         <Outlet />
       </main>
     </div>;

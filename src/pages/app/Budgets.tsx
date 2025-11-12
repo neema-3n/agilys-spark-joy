@@ -278,15 +278,20 @@ const Budgets = () => {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Gestion des Budgets</h1>
-        <p className="text-muted-foreground">
-          Plan budgétaire, modifications et suivi d'exécution
-        </p>
+    <div className="flex flex-col h-full">
+      {/* EN-TÊTE STICKY */}
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border">
+        <div className="p-8 pb-6">
+          <h1 className="text-3xl font-bold mb-2">Gestion des Budgets</h1>
+          <p className="text-muted-foreground">
+            Plan budgétaire, modifications et suivi d'exécution
+          </p>
+        </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+      {/* CONTENU SCROLLABLE */}
+      <div className="flex-1 overflow-y-auto p-8 pt-6">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         <TabsList>
           <TabsTrigger value="lignes">Lignes Budgétaires</TabsTrigger>
           <TabsTrigger value="modifications">
@@ -452,6 +457,7 @@ const Budgets = () => {
           </Card>
         </TabsContent>
       </Tabs>
+      </div>
 
       <LigneBudgetaireDialog
         open={ligneDialogOpen}
