@@ -102,7 +102,21 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation }: R
 
     setIsSubmitting(true);
     try {
-      await onSave(formData);
+      // Nettoyer les données selon le type de bénéficiaire
+      const dataToSave: ReservationCreditFormData = {
+        ligneBudgetaireId: formData.ligneBudgetaireId,
+        montant: formData.montant,
+        objet: formData.objet,
+        dateExpiration: formData.dateExpiration,
+      };
+
+      if (typeBeneficiaire === 'projet') {
+        dataToSave.projetId = formData.projetId || undefined;
+      } else {
+        dataToSave.beneficiaire = formData.beneficiaire || undefined;
+      }
+
+      await onSave(dataToSave);
       onOpenChange(false);
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);

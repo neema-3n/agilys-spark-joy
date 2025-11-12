@@ -29,6 +29,21 @@ const toSnakeCase = (obj: any): any => {
   return obj;
 };
 
+// Helper pour nettoyer les données avant l'envoi à Supabase
+const cleanData = (obj: any): any => {
+  const cleaned: any = {};
+  for (const key in obj) {
+    const value = obj[key];
+    // Convertir les chaînes vides ou undefined en null pour les champs optionnels
+    if (value === '' || value === undefined) {
+      cleaned[key] = null;
+    } else {
+      cleaned[key] = value;
+    }
+  }
+  return cleaned;
+};
+
 // Générer un numéro de réservation unique
 const generateNumeroReservation = async (exerciceId: string, clientId: string): Promise<string> => {
   const { data, error } = await supabase
@@ -60,7 +75,7 @@ export const getReservations = async (
         libelle,
         disponible
       ),
-      projets!projet_id (
+      projets!fk_reservations_credits_projet (
         id,
         code,
         nom,
@@ -84,14 +99,14 @@ export const createReservation = async (
   // Générer le numéro de réservation
   const numero = await generateNumeroReservation(exerciceId, clientId);
 
-  const newReservation = {
+  const newReservation = cleanData({
     ...toSnakeCase(reservation),
     numero,
     exercice_id: exerciceId,
     client_id: clientId,
     created_by: userId,
     statut: 'active'
-  };
+  });
 
   const { data, error } = await supabase
     .from('reservations_credits')
@@ -102,7 +117,7 @@ export const createReservation = async (
         libelle,
         disponible
       ),
-      projets!projet_id (
+      projets!fk_reservations_credits_projet (
         id,
         code,
         nom,
@@ -121,7 +136,7 @@ export const updateReservation = async (
 ): Promise<ReservationCredit> => {
   const { data, error } = await supabase
     .from('reservations_credits')
-    .update(toSnakeCase(updates))
+    .update(cleanData(toSnakeCase(updates)))
     .eq('id', id)
     .select(`
       *,
@@ -129,7 +144,7 @@ export const updateReservation = async (
         libelle,
         disponible
       ),
-      projets!projet_id (
+      projets!fk_reservations_credits_projet (
         id,
         code,
         nom,
@@ -153,7 +168,7 @@ export const utiliserReservation = async (id: string): Promise<ReservationCredit
         libelle,
         disponible
       ),
-      projets!projet_id (
+      projets!fk_reservations_credits_projet (
         id,
         code,
         nom,
@@ -183,7 +198,7 @@ export const annulerReservation = async (
         libelle,
         disponible
       ),
-      projets!projet_id (
+      projets!fk_reservations_credits_projet (
         id,
         code,
         nom,
