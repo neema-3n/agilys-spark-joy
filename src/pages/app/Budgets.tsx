@@ -297,7 +297,7 @@ const Budgets = () => {
           <TabsTrigger value="modifications">
             Modifications Budgétaires
             {modifications.filter(m => m.statut === 'en_attente').length > 0 && (
-              <Badge variant="destructive" className="ml-2">
+              <Badge variant="warning" className="ml-2">
                 {modifications.filter(m => m.statut === 'en_attente').length}
               </Badge>
             )}
