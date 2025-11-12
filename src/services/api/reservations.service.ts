@@ -56,11 +56,11 @@ export const getReservations = async (
     .from('reservations_credits')
     .select(`
       *,
-      lignes_budgetaires:ligne_budgetaire_id (
+      lignes_budgetaires!ligne_budgetaire_id (
         libelle,
         disponible
       ),
-      projets:projet_id (
+      projets!projet_id (
         id,
         code,
         nom,
@@ -98,11 +98,11 @@ export const createReservation = async (
     .insert(newReservation)
     .select(`
       *,
-      lignes_budgetaires:ligne_budgetaire_id (
+      lignes_budgetaires!ligne_budgetaire_id (
         libelle,
         disponible
       ),
-      projets:projet_id (
+      projets!projet_id (
         id,
         code,
         nom,
@@ -125,11 +125,11 @@ export const updateReservation = async (
     .eq('id', id)
     .select(`
       *,
-      lignes_budgetaires:ligne_budgetaire_id (
+      lignes_budgetaires!ligne_budgetaire_id (
         libelle,
         disponible
       ),
-      projets:projet_id (
+      projets!projet_id (
         id,
         code,
         nom,
@@ -149,11 +149,11 @@ export const utiliserReservation = async (id: string): Promise<ReservationCredit
     .eq('id', id)
     .select(`
       *,
-      lignes_budgetaires:ligne_budgetaire_id (
+      lignes_budgetaires!ligne_budgetaire_id (
         libelle,
         disponible
       ),
-      projets:projet_id (
+      projets!projet_id (
         id,
         code,
         nom,
@@ -179,11 +179,11 @@ export const annulerReservation = async (
     .eq('id', id)
     .select(`
       *,
-      lignes_budgetaires:ligne_budgetaire_id (
+      lignes_budgetaires!ligne_budgetaire_id (
         libelle,
         disponible
       ),
-      projets:projet_id (
+      projets!projet_id (
         id,
         code,
         nom,
