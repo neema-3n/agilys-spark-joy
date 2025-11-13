@@ -8,12 +8,25 @@ import { ReservationDialog } from '@/components/reservations/ReservationDialog';
 import { ReservationTable } from '@/components/reservations/ReservationTable';
 import { ReservationStats } from '@/components/reservations/ReservationStats';
 import { useReservations } from '@/hooks/useReservations';
+import { useEngagements } from '@/hooks/useEngagements';
 import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import type { ReservationCredit } from '@/types/reservation.types';
 
 const Reservations = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<ReservationCredit | undefined>();
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [pendingAnnulation, setPendingAnnulation] = useState<{ id: string; motif: string; engagements: any[] } | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -26,6 +39,8 @@ const Reservations = () => {
     annulerReservation,
     deleteReservation,
   } = useReservations();
+
+  const { annulerEngagement } = useEngagements();
 
   const handleCreate = () => {
     setSelectedReservation(undefined);
@@ -67,18 +82,59 @@ const Reservations = () => {
   };
 
   const handleAnnuler = async (id: string, motif: string) => {
+    // Trouver la réservation et vérifier les engagements actifs
+    const reservation = reservations.find(r => r.id === id);
+    const engagementsActifs = reservation?.engagements?.filter(
+      e => e.statut !== 'annule'
+    ) || [];
+
+    if (engagementsActifs.length > 0) {
+      // Afficher le dialogue de confirmation
+      setPendingAnnulation({ id, motif, engagements: engagementsActifs });
+      setConfirmDialogOpen(true);
+    } else {
+      // Annulation directe sans engagements
+      await executeAnnulation(id, motif, []);
+    }
+  };
+
+  const executeAnnulation = async (id: string, motif: string, engagements: any[]) => {
     try {
+      // Annuler d'abord tous les engagements liés
+      for (const engagement of engagements) {
+        await annulerEngagement({ 
+          id: engagement.id, 
+          motif: `Annulation automatique suite à l'annulation de la réservation - ${motif}` 
+        });
+      }
+
+      // Puis annuler la réservation
       await annulerReservation({ id, motif });
+      
       toast({
         title: 'Réservation annulée',
-        description: 'La réservation a été annulée.',
+        description: engagements.length > 0 
+          ? `La réservation et ${engagements.length} engagement(s) ont été annulés.`
+          : 'La réservation a été annulée.',
       });
     } catch (error) {
       toast({
         title: 'Erreur',
-        description: 'Une erreur est survenue.',
+        description: 'Une erreur est survenue lors de l\'annulation.',
         variant: 'destructive',
       });
+    }
+  };
+
+  const confirmCascadeAnnulation = async () => {
+    if (pendingAnnulation) {
+      await executeAnnulation(
+        pendingAnnulation.id, 
+        pendingAnnulation.motif, 
+        pendingAnnulation.engagements
+      );
+      setConfirmDialogOpen(false);
+      setPendingAnnulation(null);
     }
   };
 
@@ -139,6 +195,36 @@ const Reservations = () => {
         onSave={handleSave}
         reservation={selectedReservation}
       />
+
+      <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Annulation en cascade</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette réservation a {pendingAnnulation?.engagements.length} engagement(s) actif(s).
+              <br /><br />
+              <strong>Les engagements suivants seront également annulés :</strong>
+              <ul className="mt-2 space-y-1 list-disc list-inside">
+                {pendingAnnulation?.engagements.map((eng) => (
+                  <li key={eng.id} className="text-sm">
+                    {eng.numero} - {eng.montant.toLocaleString()} FCFA ({eng.statut})
+                  </li>
+                ))}
+              </ul>
+              <br />
+              Voulez-vous continuer ?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingAnnulation(null)}>
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmCascadeAnnulation}>
+              Confirmer l'annulation
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
