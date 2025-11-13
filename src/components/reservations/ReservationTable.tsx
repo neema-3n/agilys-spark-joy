@@ -122,16 +122,9 @@ export const ReservationTable = ({
                     const isPartiel = solde < reservation.montant && solde > 0;
                     
                     return (
-                      <div className="flex items-center justify-end gap-2">
-                        <span className={`font-medium ${isEpuise ? 'text-destructive' : isPartiel ? 'text-orange-600' : 'text-green-600'}`}>
-                          {formatCurrency(solde)} FCFA
-                        </span>
-                        {isEpuise && (
-                          <Badge variant="destructive" className="text-xs">
-                            Épuisé
-                          </Badge>
-                        )}
-                      </div>
+                      <span className={`font-medium ${isEpuise ? 'text-destructive' : isPartiel ? 'text-orange-600' : 'text-green-600'}`}>
+                        {formatCurrency(solde)} FCFA
+                      </span>
                     );
                   })()}
                 </TableCell>
