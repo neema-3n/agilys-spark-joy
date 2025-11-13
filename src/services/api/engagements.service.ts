@@ -161,14 +161,16 @@ export const createEngagementFromReservation = async (
 
   if (resError) throw resError;
 
+  // Utiliser les données du formulaire en priorité, avec fallback sur la réservation
   const engagementData: EngagementFormData = {
+    ligneBudgetaireId: additionalData.ligneBudgetaireId || reservation.ligne_budgetaire_id,
+    objet: additionalData.objet || reservation.objet,
+    montant: additionalData.montant !== undefined ? additionalData.montant : Number(reservation.montant),
     reservationCreditId: reservationId,
-    ligneBudgetaireId: reservation.ligne_budgetaire_id,
-    objet: reservation.objet,
-    montant: Number(reservation.montant),
-    beneficiaire: reservation.beneficiaire,
-    projetId: reservation.projet_id,
-    ...additionalData,
+    fournisseurId: additionalData.fournisseurId,
+    beneficiaire: additionalData.beneficiaire !== undefined ? additionalData.beneficiaire : reservation.beneficiaire,
+    projetId: additionalData.projetId !== undefined ? additionalData.projetId : reservation.projet_id,
+    observations: additionalData.observations,
   };
 
   return createEngagement(engagementData, exerciceId, clientId, userId);
