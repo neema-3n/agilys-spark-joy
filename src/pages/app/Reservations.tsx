@@ -27,6 +27,8 @@ const Reservations = () => {
   const [selectedReservation, setSelectedReservation] = useState<ReservationCredit | undefined>();
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [pendingAnnulation, setPendingAnnulation] = useState<{ id: string; motif: string; engagements: any[] } | null>(null);
+  const [confirmDeleteDialogOpen, setConfirmDeleteDialogOpen] = useState(false);
+  const [pendingSuppression, setPendingSuppression] = useState<{ id: string; engagements: any[] } | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -139,11 +141,40 @@ const Reservations = () => {
   };
 
   const handleDelete = async (id: string) => {
+    // Trouver la réservation et vérifier les engagements actifs
+    const reservation = reservations.find(r => r.id === id);
+    const engagementsActifs = reservation?.engagements?.filter(
+      e => e.statut !== 'annule'
+    ) || [];
+
+    if (engagementsActifs.length > 0) {
+      // Afficher le dialogue de confirmation de suppression
+      setPendingSuppression({ id, engagements: engagementsActifs });
+      setConfirmDeleteDialogOpen(true);
+    } else {
+      // Suppression directe sans engagements
+      await executeSuppression(id, []);
+    }
+  };
+
+  const executeSuppression = async (id: string, engagements: any[]) => {
     try {
+      // Annuler d'abord tous les engagements liés
+      for (const engagement of engagements) {
+        await annulerEngagement({ 
+          id: engagement.id, 
+          motif: 'Annulation automatique suite à la suppression de la réservation' 
+        });
+      }
+
+      // Puis supprimer la réservation
       await deleteReservation(id);
+      
       toast({
         title: 'Réservation supprimée',
-        description: 'La réservation a été supprimée avec succès.',
+        description: engagements.length > 0 
+          ? `La réservation et ${engagements.length} engagement(s) ont été annulés puis supprimés.`
+          : 'La réservation a été supprimée.',
       });
     } catch (error) {
       toast({
@@ -151,6 +182,17 @@ const Reservations = () => {
         description: 'Une erreur est survenue lors de la suppression.',
         variant: 'destructive',
       });
+    }
+  };
+
+  const confirmCascadeSuppression = async () => {
+    if (pendingSuppression) {
+      await executeSuppression(
+        pendingSuppression.id, 
+        pendingSuppression.engagements
+      );
+      setConfirmDeleteDialogOpen(false);
+      setPendingSuppression(null);
     }
   };
 
@@ -221,6 +263,36 @@ const Reservations = () => {
             </AlertDialogCancel>
             <AlertDialogAction onClick={confirmCascadeAnnulation}>
               Confirmer l'annulation
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmDeleteDialogOpen} onOpenChange={setConfirmDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Suppression en cascade</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette réservation a {pendingSuppression?.engagements.length} engagement(s) actif(s).
+              <br /><br />
+              <strong>Les engagements suivants seront annulés avant la suppression :</strong>
+              <ul className="mt-2 space-y-1 list-disc list-inside">
+                {pendingSuppression?.engagements.map((eng) => (
+                  <li key={eng.id} className="text-sm">
+                    {eng.numero} - {eng.montant.toLocaleString()} FCFA ({eng.statut})
+                  </li>
+                ))}
+              </ul>
+              <br />
+              <strong className="text-destructive">Attention :</strong> Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingSuppression(null)}>
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmCascadeSuppression} className="bg-destructive hover:bg-destructive/90">
+              Confirmer la suppression
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
