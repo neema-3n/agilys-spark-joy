@@ -42,7 +42,7 @@ const Reservations = () => {
     deleteReservation,
   } = useReservations();
 
-  const { annulerEngagement } = useEngagements();
+  const { annulerEngagement, deleteEngagement } = useEngagements();
 
   const handleCreate = () => {
     setSelectedReservation(undefined);
@@ -159,12 +159,9 @@ const Reservations = () => {
 
   const executeSuppression = async (id: string, engagements: any[]) => {
     try {
-      // Annuler d'abord tous les engagements liés
+      // Supprimer d'abord tous les engagements liés
       for (const engagement of engagements) {
-        await annulerEngagement({ 
-          id: engagement.id, 
-          motif: 'Annulation automatique suite à la suppression de la réservation' 
-        });
+        await deleteEngagement(engagement.id);
       }
 
       // Puis supprimer la réservation
@@ -173,7 +170,7 @@ const Reservations = () => {
       toast({
         title: 'Réservation supprimée',
         description: engagements.length > 0 
-          ? `La réservation et ${engagements.length} engagement(s) ont été annulés puis supprimés.`
+          ? `La réservation et ${engagements.length} engagement(s) ont été supprimés.`
           : 'La réservation a été supprimée.',
       });
     } catch (error) {
@@ -275,7 +272,7 @@ const Reservations = () => {
             <AlertDialogDescription>
               Cette réservation a {pendingSuppression?.engagements.length} engagement(s) actif(s).
               <br /><br />
-              <strong>Les engagements suivants seront annulés avant la suppression :</strong>
+              <strong>Les engagements suivants seront également supprimés (suppression définitive) :</strong>
               <ul className="mt-2 space-y-1 list-disc list-inside">
                 {pendingSuppression?.engagements.map((eng) => (
                   <li key={eng.id} className="text-sm">
@@ -284,7 +281,7 @@ const Reservations = () => {
                 ))}
               </ul>
               <br />
-              <strong className="text-destructive">Attention :</strong> Cette action est irréversible.
+              <strong className="text-destructive">Attention :</strong> Cette action est irréversible. Les données seront perdues définitivement.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
