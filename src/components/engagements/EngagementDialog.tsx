@@ -243,7 +243,7 @@ export const EngagementDialog = ({
             <div className="space-y-2">
               <Label htmlFor="fournisseur-select">Fournisseur *</Label>
               <Select
-                value={formData.fournisseurId || ''}
+                value={formData.fournisseurId}
                 onValueChange={(value) =>
                   setFormData({ ...formData, fournisseurId: value })
                 }
@@ -277,16 +277,15 @@ export const EngagementDialog = ({
           <div className="space-y-2">
             <Label htmlFor="projet">Projet (optionnel)</Label>
             <Select
-              value={formData.projetId || ''}
+              value={formData.projetId}
               onValueChange={(value) =>
-                setFormData({ ...formData, projetId: value || undefined })
+                setFormData({ ...formData, projetId: value })
               }
             >
               <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un projet" />
+                <SelectValue placeholder="Aucun projet sélectionné" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Aucun projet</SelectItem>
                 {projetsActifs.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.code} - {p.nom}
@@ -294,6 +293,16 @@ export const EngagementDialog = ({
                 ))}
               </SelectContent>
             </Select>
+            {formData.projetId && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setFormData({ ...formData, projetId: undefined })}
+                className="text-xs"
+              >
+                Retirer le projet
+              </Button>
+            )}
           </div>
 
           <div className="space-y-2">
