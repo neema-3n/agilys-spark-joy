@@ -72,7 +72,11 @@ export const EngagementDialog = ({
         projetId: reservation.projetId,
         observations: '',
       });
-      setTypeBeneficiaire(reservation.beneficiaire ? 'direct' : 'fournisseur');
+      // Ne forcer le type que si on a vraiment un bénéficiaire direct
+      if (reservation.beneficiaire) {
+        setTypeBeneficiaire('direct');
+      }
+      // Sinon garder 'fournisseur' par défaut
     } else if (engagement) {
       // Modifier un engagement existant
       setFormData({
@@ -243,7 +247,7 @@ export const EngagementDialog = ({
             <div className="space-y-2">
               <Label htmlFor="fournisseur-select">Fournisseur *</Label>
               <Select
-                value={formData.fournisseurId}
+                value={formData.fournisseurId || ""}
                 onValueChange={(value) =>
                   setFormData({ ...formData, fournisseurId: value })
                 }
