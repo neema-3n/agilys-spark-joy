@@ -68,6 +68,12 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation }: R
       return 'Le montant doit être supérieur à 0';
     }
 
+    // Vérifier que le montant ne dépasse pas le disponible de la ligne budgétaire
+    const ligneBudgetaire = lignesBudgetaires.find(l => l.id === formData.ligneBudgetaireId);
+    if (ligneBudgetaire && formData.montant > ligneBudgetaire.disponible) {
+      return `Le montant ne peut pas dépasser le disponible de la ligne budgétaire (${ligneBudgetaire.disponible.toLocaleString('fr-FR')} FCFA)`;
+    }
+
     if (!formData.objet.trim()) {
       return 'Veuillez saisir l\'objet de la réservation';
     }
