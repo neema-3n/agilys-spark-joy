@@ -21,6 +21,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
 import { useFournisseurs } from '@/hooks/useFournisseurs';
 import { useProjets } from '@/hooks/useProjets';
+import { useEngagements } from '@/hooks/useEngagements';
+import { supabase } from '@/integrations/supabase/client';
 import type { Engagement, EngagementFormData } from '@/types/engagement.types';
 import type { ReservationCredit } from '@/types/reservation.types';
 
@@ -42,6 +44,7 @@ export const EngagementDialog = ({
   const { lignes: lignesBudgetaires } = useLignesBudgetaires();
   const { fournisseurs } = useFournisseurs();
   const { projets } = useProjets();
+  const { engagements } = useEngagements();
 
   const lignesActives = lignesBudgetaires.filter(l => l.statut === 'actif');
   const fournisseursActifs = fournisseurs.filter(f => f.statut === 'actif');
@@ -49,6 +52,7 @@ export const EngagementDialog = ({
 
   const [typeBeneficiaire, setTypeBeneficiaire] = useState<'fournisseur' | 'direct'>('fournisseur');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [montantDisponibleReservation, setMontantDisponibleReservation] = useState<number | null>(null);
 
   const [formData, setFormData] = useState<EngagementFormData>({
     ligneBudgetaireId: '',
@@ -76,6 +80,15 @@ export const EngagementDialog = ({
       if (reservation.beneficiaire) {
         setTypeBeneficiaire('direct');
       }
+      // Calculer le montant disponible de la réservation
+      const calculerMontantDisponible = async () => {
+        const engagementsReservation = engagements.filter(
+          e => e.reservationCreditId === reservation.id && e.statut !== 'annule'
+        );
+        const montantEngage = engagementsReservation.reduce((sum, e) => sum + e.montant, 0);
+        setMontantDisponibleReservation(reservation.montant - montantEngage);
+      };
+      calculerMontantDisponible();
       // Sinon garder 'fournisseur' par défaut
     } else if (engagement) {
       // Modifier un engagement existant
@@ -89,6 +102,7 @@ export const EngagementDialog = ({
         observations: engagement.observations,
       });
       setTypeBeneficiaire(engagement.fournisseurId ? 'fournisseur' : 'direct');
+      setMontantDisponibleReservation(null);
     } else {
       // Nouveau engagement vide
       setFormData({
@@ -101,13 +115,21 @@ export const EngagementDialog = ({
         observations: '',
       });
       setTypeBeneficiaire('fournisseur');
+      setMontantDisponibleReservation(null);
     }
-  }, [engagement, reservation, open]);
+  }, [engagement, reservation, open, engagements]);
 
   const validateForm = (): string | null => {
     if (!formData.ligneBudgetaireId) return 'Veuillez sélectionner une ligne budgétaire';
     if (!formData.objet.trim()) return 'Veuillez saisir l\'objet de l\'engagement';
     if (formData.montant <= 0) return 'Le montant doit être supérieur à 0';
+    
+    // Validation montant par rapport à la réservation
+    if (reservation && montantDisponibleReservation !== null) {
+      if (formData.montant > montantDisponibleReservation) {
+        return `Le montant (${formData.montant.toLocaleString()} FCFA) dépasse le montant disponible de la réservation (${montantDisponibleReservation.toLocaleString()} FCFA)`;
+      }
+    }
     
     const ligneBudgetaire = lignesActives.find(l => l.id === formData.ligneBudgetaireId);
     if (ligneBudgetaire && formData.montant > ligneBudgetaire.disponible) {
@@ -165,8 +187,22 @@ export const EngagementDialog = ({
 
         <div className="space-y-4">
           {reservation && (
-            <div className="bg-muted p-3 rounded-md text-sm">
-              <strong>Réservation :</strong> {reservation.numero} - {reservation.objet}
+            <div className="bg-muted p-3 rounded-md space-y-2">
+              <div className="text-sm">
+                <strong>Réservation :</strong> {reservation.numero} - {reservation.objet}
+              </div>
+              <div className="text-sm">
+                <span className="font-medium">Montant total :</span>{' '}
+                {reservation.montant.toLocaleString()} FCFA
+              </div>
+              {montantDisponibleReservation !== null && (
+                <div className="text-sm">
+                  <span className="font-medium">Montant disponible :</span>{' '}
+                  <span className={montantDisponibleReservation > 0 ? 'text-green-600' : 'text-red-600'}>
+                    {montantDisponibleReservation.toLocaleString()} FCFA
+                  </span>
+                </div>
+              )}
             </div>
           )}
 

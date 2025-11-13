@@ -41,6 +41,35 @@ const cleanData = (obj: any): any => {
   }, {} as any);
 };
 
+// Calculer le montant disponible d'une réservation
+export const getMontantDisponibleReservation = async (
+  reservationId: string
+): Promise<number> => {
+  // 1. Récupérer la réservation
+  const { data: reservation, error: resError } = await supabase
+    .from('reservations_credits')
+    .select('montant')
+    .eq('id', reservationId)
+    .single();
+  
+  if (resError) throw resError;
+  
+  // 2. Récupérer tous les engagements liés (sauf ceux annulés)
+  const { data: engagements, error: engError } = await supabase
+    .from('engagements')
+    .select('montant')
+    .eq('reservation_credit_id', reservationId)
+    .neq('statut', 'annule');
+  
+  if (engError) throw engError;
+  
+  // 3. Calculer le montant déjà engagé
+  const montantEngage = engagements?.reduce((sum, eng) => sum + Number(eng.montant), 0) || 0;
+  
+  // 4. Retourner le disponible
+  return Number(reservation.montant) - montantEngage;
+};
+
 // Générer un numéro d'engagement unique
 export const generateNumeroEngagement = async (
   exerciceId: string,
@@ -161,11 +190,23 @@ export const createEngagementFromReservation = async (
 
   if (resError) throw resError;
 
+  // Calculer le montant de l'engagement
+  const montant = additionalData.montant !== undefined ? additionalData.montant : Number(reservation.montant);
+  
+  // Valider que le montant ne dépasse pas le disponible de la réservation
+  const montantDisponible = await getMontantDisponibleReservation(reservationId);
+  
+  if (montant > montantDisponible) {
+    throw new Error(
+      `Le montant de l'engagement (${montant.toLocaleString()} FCFA) dépasse le montant disponible de la réservation (${montantDisponible.toLocaleString()} FCFA)`
+    );
+  }
+
   // Utiliser les données du formulaire en priorité, avec fallback sur la réservation
   const engagementData: EngagementFormData = {
     ligneBudgetaireId: additionalData.ligneBudgetaireId || reservation.ligne_budgetaire_id,
     objet: additionalData.objet || reservation.objet,
-    montant: additionalData.montant !== undefined ? additionalData.montant : Number(reservation.montant),
+    montant,
     reservationCreditId: reservationId,
     fournisseurId: additionalData.fournisseurId,
     beneficiaire: additionalData.beneficiaire !== undefined ? additionalData.beneficiaire : reservation.beneficiaire,
