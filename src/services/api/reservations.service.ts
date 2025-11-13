@@ -80,6 +80,12 @@ export const getReservations = async (
         code,
         nom,
         statut
+      ),
+      engagements:engagements!engagements_reservation_credit_id_fkey (
+        id,
+        numero,
+        montant,
+        statut
       )
     `)
     .eq('exercice_id', exerciceId)

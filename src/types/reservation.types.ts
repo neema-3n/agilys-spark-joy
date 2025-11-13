@@ -30,6 +30,12 @@ export interface ReservationCredit {
     numero: string;
     statut: string;
   };
+  engagements?: Array<{
+    id: string;
+    numero: string;
+    montant: number;
+    statut: string;
+  }>;
 }
 
 export interface ReservationCreditFormData {

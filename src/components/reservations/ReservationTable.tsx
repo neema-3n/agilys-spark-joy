@@ -22,6 +22,18 @@ export const ReservationTable = ({
   onAnnuler,
   onDelete,
 }: ReservationTableProps) => {
+  const calculerSolde = (reservation: ReservationCredit): number => {
+    if (!reservation.engagements || reservation.engagements.length === 0) {
+      return reservation.montant;
+    }
+    
+    const montantEngage = reservation.engagements
+      .filter(e => e.statut !== 'annule')
+      .reduce((sum, e) => sum + Number(e.montant), 0);
+    
+    return Number(reservation.montant) - montantEngage;
+  };
+
   const getStatutBadge = (statut: string) => {
     switch (statut) {
       case 'active':
@@ -65,6 +77,7 @@ export const ReservationTable = ({
             <TableHead>Objet</TableHead>
             <TableHead>Bénéficiaire</TableHead>
             <TableHead className="text-right">Montant</TableHead>
+            <TableHead className="text-right">Solde</TableHead>
             <TableHead>Date</TableHead>
             <TableHead>Expiration</TableHead>
             <TableHead>Statut</TableHead>
@@ -75,7 +88,7 @@ export const ReservationTable = ({
         <TableBody>
           {reservations.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={9} className="text-center text-muted-foreground">
+              <TableCell colSpan={11} className="text-center text-muted-foreground">
                 Aucune réservation
               </TableCell>
             </TableRow>
@@ -101,6 +114,26 @@ export const ReservationTable = ({
                 </TableCell>
                 <TableCell className="text-right font-medium">
                   {formatCurrency(reservation.montant)} FCFA
+                </TableCell>
+                <TableCell className="text-right">
+                  {(() => {
+                    const solde = calculerSolde(reservation);
+                    const isEpuise = solde === 0;
+                    const isPartiel = solde < reservation.montant && solde > 0;
+                    
+                    return (
+                      <div className="flex items-center justify-end gap-2">
+                        <span className={`font-medium ${isEpuise ? 'text-destructive' : isPartiel ? 'text-orange-600' : 'text-green-600'}`}>
+                          {formatCurrency(solde)} FCFA
+                        </span>
+                        {isEpuise && (
+                          <Badge variant="destructive" className="text-xs">
+                            Épuisé
+                          </Badge>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </TableCell>
                 <TableCell>{formatDate(reservation.dateReservation)}</TableCell>
                 <TableCell>
@@ -130,9 +163,23 @@ export const ReservationTable = ({
                             <Edit className="h-4 w-4 mr-2" />
                             Modifier
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onCreerEngagement(reservation)}>
+                          <DropdownMenuItem 
+                            onClick={() => {
+                              const solde = calculerSolde(reservation);
+                              if (solde > 0) {
+                                onCreerEngagement(reservation);
+                              }
+                            }}
+                            disabled={calculerSolde(reservation) === 0}
+                            className={calculerSolde(reservation) === 0 ? 'opacity-50 cursor-not-allowed' : ''}
+                          >
                             <CheckCircle className="h-4 w-4 mr-2" />
                             Créer un engagement
+                            {calculerSolde(reservation) === 0 && (
+                              <Badge variant="destructive" className="ml-2 text-xs">
+                                Solde épuisé
+                              </Badge>
+                            )}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleAnnuler(reservation.id)}>
                             <XCircle className="h-4 w-4 mr-2" />
