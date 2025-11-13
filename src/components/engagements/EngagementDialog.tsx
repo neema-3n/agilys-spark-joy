@@ -66,29 +66,29 @@ export const EngagementDialog = ({
 
   useEffect(() => {
     if (reservation) {
-      // Pré-remplir depuis une réservation
+      // Calculer d'abord le montant disponible de la réservation
+      const engagementsReservation = engagements.filter(
+        e => e.reservationCreditId === reservation.id && e.statut !== 'annule'
+      );
+      const montantEngage = engagementsReservation.reduce((sum, e) => sum + e.montant, 0);
+      const montantDisponible = reservation.montant - montantEngage;
+      setMontantDisponibleReservation(montantDisponible);
+      
+      // Pré-remplir depuis une réservation avec le solde disponible
       setFormData({
         reservationCreditId: reservation.id,
         ligneBudgetaireId: reservation.ligneBudgetaireId,
         objet: reservation.objet,
-        montant: reservation.montant,
+        montant: montantDisponible,
         beneficiaire: reservation.beneficiaire,
         projetId: reservation.projetId,
         observations: '',
       });
+      
       // Ne forcer le type que si on a vraiment un bénéficiaire direct
       if (reservation.beneficiaire) {
         setTypeBeneficiaire('direct');
       }
-      // Calculer le montant disponible de la réservation
-      const calculerMontantDisponible = async () => {
-        const engagementsReservation = engagements.filter(
-          e => e.reservationCreditId === reservation.id && e.statut !== 'annule'
-        );
-        const montantEngage = engagementsReservation.reduce((sum, e) => sum + e.montant, 0);
-        setMontantDisponibleReservation(reservation.montant - montantEngage);
-      };
-      calculerMontantDisponible();
       // Sinon garder 'fournisseur' par défaut
     } else if (engagement) {
       // Modifier un engagement existant
