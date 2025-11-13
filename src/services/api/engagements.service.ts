@@ -73,19 +73,19 @@ export const getEngagements = async (
     .from('engagements')
     .select(`
       *,
-      ligne_budgetaire:lignes_budgetaires!ligne_budgetaire_id (
+      ligne_budgetaire:lignes_budgetaires!engagements_ligne_budgetaire_id_fkey (
         libelle,
         disponible
       ),
-      fournisseur:fournisseurs!fournisseur_id (
+      fournisseur:fournisseurs!engagements_fournisseur_id_fkey (
         nom,
         code
       ),
-      projet:projets!projet_id (
+      projet:projets!engagements_projet_id_fkey (
         code,
         nom
       ),
-      reservation_credit:reservations_credits!reservation_credit_id (
+      reservation_credit:reservations_credits!engagements_reservation_credit_id_fkey (
         numero,
         statut
       )
@@ -121,19 +121,19 @@ export const createEngagement = async (
     .insert(cleanedData)
     .select(`
       *,
-      ligne_budgetaire:lignes_budgetaires!ligne_budgetaire_id (
+      ligne_budgetaire:lignes_budgetaires!engagements_ligne_budgetaire_id_fkey (
         libelle,
         disponible
       ),
-      fournisseur:fournisseurs!fournisseur_id (
+      fournisseur:fournisseurs!engagements_fournisseur_id_fkey (
         nom,
         code
       ),
-      projet:projets!projet_id (
+      projet:projets!engagements_projet_id_fkey (
         code,
         nom
       ),
-      reservation_credit:reservations_credits!reservation_credit_id (
+      reservation_credit:reservations_credits!engagements_reservation_credit_id_fkey (
         numero,
         statut
       )
@@ -189,19 +189,19 @@ export const updateEngagement = async (
     .eq('id', id)
     .select(`
       *,
-      ligne_budgetaire:lignes_budgetaires!ligne_budgetaire_id (
+      ligne_budgetaire:lignes_budgetaires!engagements_ligne_budgetaire_id_fkey (
         libelle,
         disponible
       ),
-      fournisseur:fournisseurs!fournisseur_id (
+      fournisseur:fournisseurs!engagements_fournisseur_id_fkey (
         nom,
         code
       ),
-      projet:projets!projet_id (
+      projet:projets!engagements_projet_id_fkey (
         code,
         nom
       ),
-      reservation_credit:reservations_credits!reservation_credit_id (
+      reservation_credit:reservations_credits!engagements_reservation_credit_id_fkey (
         numero,
         statut
       )
@@ -223,19 +223,19 @@ export const validerEngagement = async (id: string): Promise<Engagement> => {
     .eq('id', id)
     .select(`
       *,
-      ligne_budgetaire:lignes_budgetaires!ligne_budgetaire_id (
+      ligne_budgetaire:lignes_budgetaires!engagements_ligne_budgetaire_id_fkey (
         libelle,
         disponible
       ),
-      fournisseur:fournisseurs!fournisseur_id (
+      fournisseur:fournisseurs!engagements_fournisseur_id_fkey (
         nom,
         code
       ),
-      projet:projets!projet_id (
+      projet:projets!engagements_projet_id_fkey (
         code,
         nom
       ),
-      reservation_credit:reservations_credits!reservation_credit_id (
+      reservation_credit:reservations_credits!engagements_reservation_credit_id_fkey (
         numero,
         statut
       )
@@ -260,19 +260,19 @@ export const annulerEngagement = async (
     .eq('id', id)
     .select(`
       *,
-      ligne_budgetaire:lignes_budgetaires!ligne_budgetaire_id (
+      ligne_budgetaire:lignes_budgetaires!engagements_ligne_budgetaire_id_fkey (
         libelle,
         disponible
       ),
-      fournisseur:fournisseurs!fournisseur_id (
+      fournisseur:fournisseurs!engagements_fournisseur_id_fkey (
         nom,
         code
       ),
-      projet:projets!projet_id (
+      projet:projets!engagements_projet_id_fkey (
         code,
         nom
       ),
-      reservation_credit:reservations_credits!reservation_credit_id (
+      reservation_credit:reservations_credits!engagements_reservation_credit_id_fkey (
         numero,
         statut
       )
