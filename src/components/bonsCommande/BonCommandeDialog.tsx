@@ -27,12 +27,14 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { BonCommande, CreateBonCommandeInput, UpdateBonCommandeInput } from '@/types/bonCommande.types';
+import type { Engagement } from '@/types/engagement.types';
 import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { useFournisseurs } from '@/hooks/useFournisseurs';
 import { useEngagements } from '@/hooks/useEngagements';
 import { useProjets } from '@/hooks/useProjets';
 import { format } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
 
 const formSchema = z.object({
   numero: z.string().min(1, 'Le numéro est requis'),
@@ -54,6 +56,7 @@ interface BonCommandeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   bonCommande?: BonCommande;
+  selectedEngagement?: Engagement;
   onSubmit: (data: CreateBonCommandeInput | UpdateBonCommandeInput) => Promise<void>;
   onGenererNumero: () => Promise<string>;
 }
@@ -62,6 +65,7 @@ export const BonCommandeDialog = ({
   open,
   onOpenChange,
   bonCommande,
+  selectedEngagement,
   onSubmit,
   onGenererNumero,
 }: BonCommandeDialogProps) => {
@@ -92,12 +96,34 @@ export const BonCommandeDialog = ({
   });
 
   useEffect(() => {
-    if (open && !bonCommande) {
+    if (open && !bonCommande && !selectedEngagement) {
       onGenererNumero().then((numero) => {
         form.setValue('numero', numero);
       });
     }
-  }, [open, bonCommande, onGenererNumero, form]);
+  }, [open, bonCommande, selectedEngagement, onGenererNumero, form]);
+
+  useEffect(() => {
+    if (selectedEngagement && open && !bonCommande) {
+      onGenererNumero().then((numero) => {
+        form.reset({
+          numero: numero,
+          dateCommande: format(new Date(), 'yyyy-MM-dd'),
+          fournisseurId: selectedEngagement.fournisseurId || '',
+          engagementId: selectedEngagement.id,
+          projetId: selectedEngagement.projetId || '',
+          objet: selectedEngagement.objet,
+          montant: selectedEngagement.montant.toString(),
+          statut: 'brouillon',
+          observations: `Créé depuis l'engagement ${selectedEngagement.numero}`,
+          dateValidation: '',
+          dateLivraisonPrevue: '',
+          dateLivraisonReelle: '',
+          conditionsLivraison: '',
+        });
+      });
+    }
+  }, [selectedEngagement, open, bonCommande, onGenererNumero, form]);
 
   useEffect(() => {
     if (bonCommande) {
@@ -171,11 +197,26 @@ export const BonCommandeDialog = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {bonCommande ? 'Modifier le bon de commande' : 'Nouveau bon de commande'}
-          </DialogTitle>
-        </DialogHeader>
+      <DialogHeader>
+        <DialogTitle>
+          {bonCommande ? 'Modifier le bon de commande' : 'Nouveau bon de commande'}
+        </DialogTitle>
+      </DialogHeader>
+
+      {selectedEngagement && (
+        <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-md">
+          <p className="text-sm">
+            <strong>Engagement :</strong> {selectedEngagement.numero} - {selectedEngagement.objet}
+          </p>
+          <Badge variant="outline" className="mt-1">
+            {new Intl.NumberFormat('fr-FR', {
+              style: 'currency',
+              currency: 'XAF',
+              minimumFractionDigits: 0,
+            }).format(selectedEngagement.montant)}
+          </Badge>
+        </div>
+      )}
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">

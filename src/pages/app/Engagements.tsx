@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Plus } from 'lucide-react';
@@ -18,6 +18,7 @@ const Engagements = () => {
   const [selectedEngagement, setSelectedEngagement] = useState<Engagement | undefined>();
   const [selectedReservation, setSelectedReservation] = useState<ReservationCredit | undefined>();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { toast } = useToast();
   
   const {
@@ -145,6 +146,10 @@ const Engagements = () => {
     }
   };
 
+  const handleCreerBonCommande = (engagement: Engagement) => {
+    navigate(`/app/bons-commande?from_engagement=${engagement.id}`);
+  };
+
   const handleDialogClose = (open: boolean) => {
     setDialogOpen(open);
     if (!open) {
@@ -178,13 +183,14 @@ const Engagements = () => {
         <EngagementStats engagements={engagements} />
 
         <Card className="p-6">
-          <EngagementTable
-            engagements={engagements}
-            onEdit={handleEdit}
-            onValider={handleValider}
-            onAnnuler={handleAnnuler}
-            onDelete={handleDelete}
-          />
+        <EngagementTable
+          engagements={engagements}
+          onEdit={handleEdit}
+          onValider={handleValider}
+          onAnnuler={handleAnnuler}
+          onDelete={handleDelete}
+          onCreerBonCommande={handleCreerBonCommande}
+        />
         </Card>
       </div>
 
