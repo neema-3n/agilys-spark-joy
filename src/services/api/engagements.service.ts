@@ -117,6 +117,9 @@ export const getEngagements = async (
       reservation_credit:reservations_credits!engagements_reservation_credit_id_fkey (
         numero,
         statut
+      ),
+      bons_commande:bons_commande!bons_commande_engagement_id_fkey (
+        montant
       )
     `)
     .eq('exercice_id', exerciceId)
@@ -124,7 +127,22 @@ export const getEngagements = async (
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return toCamelCase(data || []);
+  
+  // Calculer le solde pour chaque engagement
+  const engagementsAvecSolde = (data || []).map(eng => {
+    const montantBonsCommande = eng.bons_commande?.reduce((sum: number, bc: any) => sum + Number(bc.montant || 0), 0) || 0;
+    const solde = Number(eng.montant) - montantBonsCommande;
+    
+    // Retirer bons_commande du résultat final pour garder la structure propre
+    const { bons_commande, ...engagementData } = eng;
+    
+    return {
+      ...engagementData,
+      solde
+    };
+  });
+  
+  return toCamelCase(engagementsAvecSolde);
 };
 
 // Créer un engagement
