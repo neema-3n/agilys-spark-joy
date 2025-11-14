@@ -310,6 +310,21 @@ export const annulerEngagement = async (
   id: string,
   motifAnnulation: string
 ): Promise<Engagement> => {
+  // Vérifier s'il existe des bons de commande liés
+  const { data: bonsCommande, error: checkError } = await supabase
+    .from('bons_commande')
+    .select('id, numero')
+    .eq('engagement_id', id);
+  
+  if (checkError) throw checkError;
+  
+  if (bonsCommande && bonsCommande.length > 0) {
+    throw new Error(
+      `Impossible d'annuler cet engagement : ${bonsCommande.length} bon(s) de commande y sont liés. ` +
+      `Veuillez d'abord supprimer ou dissocier les BC suivants : ${bonsCommande.map(bc => bc.numero).join(', ')}`
+    );
+  }
+  
   const { data, error } = await supabase
     .from('engagements')
     .update({

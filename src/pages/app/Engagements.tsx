@@ -119,10 +119,10 @@ const Engagements = () => {
         title: 'Engagement annulé',
         description: 'L\'engagement a été annulé.',
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: 'Erreur',
-        description: 'Une erreur est survenue lors de l\'annulation.',
+        title: 'Erreur d\'annulation',
+        description: error.message || 'Une erreur est survenue lors de l\'annulation.',
         variant: 'destructive',
       });
     }
