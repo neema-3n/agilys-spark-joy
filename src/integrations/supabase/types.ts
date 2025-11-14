@@ -197,6 +197,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "engagements_ligne_budgetaire_id_fkey"
+            columns: ["ligne_budgetaire_id"]
+            isOneToOne: false
+            referencedRelation: "lignes_budgetaires"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "engagements_projet_id_fkey"
             columns: ["projet_id"]
             isOneToOne: false
