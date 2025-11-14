@@ -12,7 +12,9 @@ export const ReservationStats = ({ reservations }: ReservationStatsProps) => {
     montantActif: reservations
       .filter(r => r.statut === 'active')
       .reduce((sum, r) => sum + r.montant, 0),
-    totalUtilisees: reservations.filter(r => r.statut === 'utilisee').length,
+    montantUtilise: reservations
+      .filter(r => r.statut === 'utilisee')
+      .reduce((sum, r) => sum + r.montant, 0),
     totalAnnulees: reservations.filter(r => r.statut === 'annulee').length,
   };
 
@@ -40,26 +42,26 @@ export const ReservationStats = ({ reservations }: ReservationStatsProps) => {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Montant Réservé</CardTitle>
+          <CardTitle className="text-sm font-medium">Montant Actif</CardTitle>
           <DollarSign className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{formatCurrency(stats.montantActif)}</div>
           <p className="text-xs text-muted-foreground">
-            FCFA en réservation
+            FCFA en réservation active
           </p>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Réservations Utilisées</CardTitle>
+          <CardTitle className="text-sm font-medium">Montant Utilisé</CardTitle>
           <CheckCircle className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.totalUtilisees}</div>
+          <div className="text-2xl font-bold">{formatCurrency(stats.montantUtilise)}</div>
           <p className="text-xs text-muted-foreground">
-            Crédits consommés
+            FCFA consommés
           </p>
         </CardContent>
       </Card>
