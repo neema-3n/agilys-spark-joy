@@ -91,6 +91,7 @@ export const BonCommandeTable = ({ bonsCommande, onEdit, onDelete }: BonCommande
               <TableHead>Numéro</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Fournisseur</TableHead>
+              <TableHead>Engagement</TableHead>
               <TableHead>Objet</TableHead>
               <TableHead className="text-right">Montant</TableHead>
               <TableHead>Statut</TableHead>
@@ -101,7 +102,7 @@ export const BonCommandeTable = ({ bonsCommande, onEdit, onDelete }: BonCommande
           <TableBody>
             {bonsCommande.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground">
+                <TableCell colSpan={9} className="text-center text-muted-foreground">
                   Aucun bon de commande trouvé
                 </TableCell>
               </TableRow>
@@ -113,6 +114,15 @@ export const BonCommandeTable = ({ bonsCommande, onEdit, onDelete }: BonCommande
                     {format(new Date(bc.dateCommande), 'dd/MM/yyyy', { locale: fr })}
                   </TableCell>
                   <TableCell>{bc.fournisseur?.nom || '-'}</TableCell>
+                  <TableCell>
+                    {bc.engagement ? (
+                      <Badge variant="outline" className="text-xs">
+                        {bc.engagement.numero}
+                      </Badge>
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
                   <TableCell className="max-w-xs truncate">{bc.objet}</TableCell>
                   <TableCell className="text-right font-medium">
                     {formatCurrency(bc.montant)}

@@ -26,10 +26,6 @@ export interface ReservationCredit {
     nom: string;
     statut: string;
   };
-  engagement?: {
-    numero: string;
-    statut: string;
-  };
   engagements?: Array<{
     id: string;
     numero: string;
