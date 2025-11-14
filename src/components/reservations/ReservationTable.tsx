@@ -81,14 +81,13 @@ export const ReservationTable = ({
             <TableHead>Date</TableHead>
             <TableHead>Expiration</TableHead>
             <TableHead>Statut</TableHead>
-            <TableHead>Engagement</TableHead>
             <TableHead className="w-12"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {reservations.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={11} className="text-center text-muted-foreground">
+              <TableCell colSpan={10} className="text-center text-muted-foreground">
                 Aucune réservation
               </TableCell>
             </TableRow>
@@ -133,15 +132,6 @@ export const ReservationTable = ({
                   {reservation.dateExpiration ? formatDate(reservation.dateExpiration) : '-'}
                 </TableCell>
                 <TableCell>{getStatutBadge(reservation.statut)}</TableCell>
-                <TableCell>
-                  {reservation.engagement ? (
-                    <Badge variant="outline" className="text-xs">
-                      {reservation.engagement.numero}
-                    </Badge>
-                  ) : (
-                    '-'
-                  )}
-                </TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
