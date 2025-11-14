@@ -71,6 +71,111 @@ export type Database = {
           },
         ]
       }
+      bons_commande: {
+        Row: {
+          client_id: string
+          conditions_livraison: string | null
+          created_at: string
+          created_by: string | null
+          date_commande: string
+          date_livraison_prevue: string | null
+          date_livraison_reelle: string | null
+          date_validation: string | null
+          engagement_id: string | null
+          exercice_id: string
+          fournisseur_id: string
+          id: string
+          ligne_budgetaire_id: string | null
+          montant: number
+          numero: string
+          objet: string
+          observations: string | null
+          projet_id: string | null
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          conditions_livraison?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_commande?: string
+          date_livraison_prevue?: string | null
+          date_livraison_reelle?: string | null
+          date_validation?: string | null
+          engagement_id?: string | null
+          exercice_id: string
+          fournisseur_id: string
+          id?: string
+          ligne_budgetaire_id?: string | null
+          montant?: number
+          numero: string
+          objet: string
+          observations?: string | null
+          projet_id?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          conditions_livraison?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_commande?: string
+          date_livraison_prevue?: string | null
+          date_livraison_reelle?: string | null
+          date_validation?: string | null
+          engagement_id?: string | null
+          exercice_id?: string
+          fournisseur_id?: string
+          id?: string
+          ligne_budgetaire_id?: string | null
+          montant?: number
+          numero?: string
+          objet?: string
+          observations?: string | null
+          projet_id?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bons_commande_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bons_commande_exercice_id_fkey"
+            columns: ["exercice_id"]
+            isOneToOne: false
+            referencedRelation: "exercices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bons_commande_fournisseur_id_fkey"
+            columns: ["fournisseur_id"]
+            isOneToOne: false
+            referencedRelation: "fournisseurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bons_commande_ligne_budgetaire_id_fkey"
+            columns: ["ligne_budgetaire_id"]
+            isOneToOne: false
+            referencedRelation: "lignes_budgetaires"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bons_commande_projet_id_fkey"
+            columns: ["projet_id"]
+            isOneToOne: false
+            referencedRelation: "projets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comptes: {
         Row: {
           categorie: string
