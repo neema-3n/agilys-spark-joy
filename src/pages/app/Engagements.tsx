@@ -137,10 +137,10 @@ const Engagements = () => {
         title: 'Engagement supprimé',
         description: 'L\'engagement a été supprimé avec succès.',
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: 'Erreur',
-        description: 'Une erreur est survenue lors de la suppression.',
+        title: 'Erreur de suppression',
+        description: error.message || 'Une erreur est survenue lors de la suppression.',
         variant: 'destructive',
       });
     }
