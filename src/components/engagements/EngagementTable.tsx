@@ -15,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Edit, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Edit, CheckCircle, XCircle, Trash2, FileText } from 'lucide-react';
 import type { Engagement } from '@/types/engagement.types';
 
 interface EngagementTableProps {
@@ -24,6 +24,7 @@ interface EngagementTableProps {
   onValider: (id: string) => void;
   onAnnuler: (id: string, motif: string) => void;
   onDelete: (id: string) => void;
+  onCreerBonCommande: (engagement: Engagement) => void;
 }
 
 export const EngagementTable = ({
@@ -32,6 +33,7 @@ export const EngagementTable = ({
   onValider,
   onAnnuler,
   onDelete,
+  onCreerBonCommande,
 }: EngagementTableProps) => {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -137,6 +139,10 @@ export const EngagementTable = ({
                   )}
                   {engagement.statut === 'valide' && (
                     <>
+                      <DropdownMenuItem onClick={() => onCreerBonCommande(engagement)}>
+                        <FileText className="h-4 w-4 mr-2" />
+                        Créer bon de commande
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleAnnuler(engagement.id)}>
                         <XCircle className="h-4 w-4 mr-2" />
                         Annuler
