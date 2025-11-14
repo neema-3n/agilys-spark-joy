@@ -12,9 +12,13 @@ export const ReservationStats = ({ reservations }: ReservationStatsProps) => {
     montantActif: reservations
       .filter(r => r.statut === 'active')
       .reduce((sum, r) => sum + r.montant, 0),
-    montantUtilise: reservations
-      .filter(r => r.statut === 'utilisee')
-      .reduce((sum, r) => sum + r.montant, 0),
+    montantUtilise: reservations.reduce((sum, r) => {
+      // Calculer le montant réellement utilisé via les engagements liés
+      const montantEngagements = r.engagements
+        ?.filter(e => e.statut !== 'annule')
+        .reduce((engSum, e) => engSum + Number(e.montant), 0) || 0;
+      return sum + montantEngagements;
+    }, 0),
     totalAnnulees: reservations.filter(r => r.statut === 'annulee').length,
   };
 
