@@ -83,6 +83,7 @@ export const EngagementTable = ({
           <TableHead>Objet</TableHead>
           <TableHead>Bénéficiaire</TableHead>
           <TableHead className="text-right">Montant</TableHead>
+          <TableHead className="text-right">Solde</TableHead>
           <TableHead>Statut</TableHead>
           <TableHead>Date création</TableHead>
           <TableHead>Réservation</TableHead>
@@ -104,6 +105,11 @@ export const EngagementTable = ({
             </TableCell>
             <TableCell className="text-right font-medium">
               {formatCurrency(engagement.montant)}
+            </TableCell>
+            <TableCell className="text-right">
+              <span className={engagement.solde === 0 ? 'text-muted-foreground' : engagement.solde && engagement.solde < 0 ? 'text-destructive font-medium' : 'text-foreground'}>
+                {formatCurrency(engagement.solde || engagement.montant)}
+              </span>
             </TableCell>
             <TableCell>{getStatusBadge(engagement.statut)}</TableCell>
             <TableCell>{formatDate(engagement.dateCreation)}</TableCell>

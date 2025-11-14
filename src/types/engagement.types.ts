@@ -20,6 +20,7 @@ export interface Engagement {
   updatedAt: string;
   motifAnnulation?: string;
   observations?: string;
+  solde?: number;
   
   // Données jointes
   ligneBudgetaire?: {
