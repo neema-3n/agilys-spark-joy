@@ -173,8 +173,16 @@ export const FactureDialog = ({
     const ht = parseFloat(watchMontantHT) || 0;
     const tva = parseFloat(watchMontantTVA) || 0;
     const ttc = ht + tva;
-    if (!isNaN(ttc)) {
-      form.setValue('montantTTC', ttc.toFixed(2));
+    const ttcFormatted = ttc.toFixed(2);
+    
+    // Only update if the value has actually changed to avoid infinite loops
+    const currentValue = form.getValues('montantTTC');
+    if (!isNaN(ttc) && currentValue !== ttcFormatted) {
+      form.setValue('montantTTC', ttcFormatted, { 
+        shouldValidate: false,
+        shouldDirty: false,
+        shouldTouch: false
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchMontantHT, watchMontantTVA]);

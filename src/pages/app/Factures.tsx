@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -95,13 +95,13 @@ export default function Factures() {
     }
   };
 
-  const handleGenererNumero = async () => {
+  const handleGenererNumero = useCallback(async () => {
     if (!currentClient || !currentExercice) return '';
     return await genererNumero({
       clientId: currentClient.id,
       exerciceId: currentExercice.id,
     });
-  };
+  }, [currentClient, currentExercice, genererNumero]);
 
   const handleAnnuler = (id: string) => {
     setFactureToAnnuler(id);
