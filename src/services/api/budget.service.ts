@@ -118,37 +118,21 @@ export const budgetService = {
     modification: Omit<ModificationBudgetaire, 'id' | 'dateCreation' | 'numero'>,
     clientId: string
   ): Promise<ModificationBudgetaire> => {
-    // Générer le numéro de modification
-    const { count } = await supabase
-      .from('modifications_budgetaires')
-      .select('*', { count: 'exact', head: true })
-      .eq('exercice_id', modification.exerciceId)
-      .eq('client_id', clientId);
+    // Appeler l'Edge Function pour créer la modification avec numéro atomique
+    const { data, error } = await supabase.functions.invoke('create-modification-budgetaire', {
+      body: {
+        exerciceId: modification.exerciceId,
+        clientId,
+        type: modification.type,
+        ligneSourceId: modification.ligneSourceId,
+        ligneDestinationId: modification.ligneDestinationId,
+        montant: modification.montant,
+        motif: modification.motif,
+      },
+    });
 
-    const numero = `MOD/${new Date().getFullYear()}/${String((count || 0) + 1).padStart(3, '0')}`;
-
-    const modificationData = {
-      client_id: clientId,
-      exercice_id: modification.exerciceId,
-      numero,
-      type: modification.type,
-      ligne_source_id: modification.ligneSourceId,
-      ligne_destination_id: modification.ligneDestinationId,
-      montant: modification.montant,
-      motif: modification.motif,
-      statut: 'brouillon',
-      date_creation: new Date().toISOString().split('T')[0]
-    };
-
-    const { data, error } = await supabase
-      .from('modifications_budgetaires')
-      .insert(modificationData)
-      .select()
-      .single();
-
-    if (error) throw error;
-    
-    return toCamelCase(data);
+    if (error) throw new Error(error.message || 'Erreur lors de la création de la modification budgétaire');
+    return data;
   },
 
   // Valider une modification budgétaire

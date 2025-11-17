@@ -70,30 +70,8 @@ export const getMontantDisponibleReservation = async (
   return Number(reservation.montant) - montantEngage;
 };
 
-// Générer un numéro d'engagement unique
-export const generateNumeroEngagement = async (
-  exerciceId: string,
-  clientId: string
-): Promise<string> => {
-  const { data: exercice } = await supabase
-    .from('exercices')
-    .select('code')
-    .eq('id', exerciceId)
-    .single();
+// Note: La génération du numéro est désormais gérée par l'Edge Function create-engagement
 
-  const { count } = await supabase
-    .from('engagements')
-    .select('*', { count: 'exact', head: true })
-    .eq('exercice_id', exerciceId)
-    .eq('client_id', clientId);
-
-  const nextNumber = (count || 0) + 1;
-  const year = exercice?.code || new Date().getFullYear();
-  
-  return `ENG/${year}/${nextNumber.toString().padStart(3, '0')}`;
-};
-
-// Récupérer tous les engagements
 export const getEngagements = async (
   exerciceId: string,
   clientId: string
@@ -152,43 +130,24 @@ export const createEngagement = async (
   clientId: string,
   userId: string
 ): Promise<Engagement> => {
-  const numero = await generateNumeroEngagement(exerciceId, clientId);
-  
-  const cleanedData = cleanData({
-    ...toSnakeCase(engagement),
-    numero,
-    exercice_id: exerciceId,
-    client_id: clientId,
-    created_by: userId,
-    statut: 'brouillon',
+  // Appeler l'Edge Function pour créer l'engagement avec numéro atomique
+  const { data, error } = await supabase.functions.invoke('create-engagement', {
+    body: {
+      exerciceId,
+      clientId,
+      ligneBudgetaireId: engagement.ligneBudgetaireId,
+      objet: engagement.objet,
+      montant: engagement.montant,
+      fournisseurId: engagement.fournisseurId,
+      beneficiaire: engagement.beneficiaire,
+      projetId: engagement.projetId,
+      observations: engagement.observations,
+      reservationCreditId: engagement.reservationCreditId,
+    },
   });
 
-  const { data, error } = await supabase
-    .from('engagements')
-    .insert(cleanedData)
-    .select(`
-      *,
-      ligne_budgetaire:lignes_budgetaires!engagements_ligne_budgetaire_id_fkey (
-        libelle,
-        disponible
-      ),
-      fournisseur:fournisseurs!engagements_fournisseur_id_fkey (
-        nom,
-        code
-      ),
-      projet:projets!engagements_projet_id_fkey (
-        code,
-        nom
-      ),
-      reservation_credit:reservations_credits!engagements_reservation_credit_id_fkey (
-        numero,
-        statut
-      )
-    `)
-    .single();
-
-  if (error) throw error;
-  return toCamelCase(data);
+  if (error) throw new Error(error.message || 'Erreur lors de la création de l\'engagement');
+  return data;
 };
 
 // Créer un engagement depuis une réservation

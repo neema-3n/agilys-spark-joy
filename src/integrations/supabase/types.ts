@@ -1325,6 +1325,48 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_engagement_with_numero: {
+        Args: {
+          p_beneficiaire: string
+          p_client_id: string
+          p_exercice_id: string
+          p_fournisseur_id: string
+          p_ligne_budgetaire_id: string
+          p_montant: number
+          p_objet: string
+          p_observations: string
+          p_projet_id: string
+          p_reservation_credit_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      create_modification_budgetaire_with_numero: {
+        Args: {
+          p_client_id: string
+          p_exercice_id: string
+          p_ligne_destination_id: string
+          p_ligne_source_id: string
+          p_montant: number
+          p_motif: string
+          p_type: string
+        }
+        Returns: Json
+      }
+      create_reservation_with_numero: {
+        Args: {
+          p_beneficiaire: string
+          p_client_id: string
+          p_date_expiration: string
+          p_exercice_id: string
+          p_ligne_budgetaire_id: string
+          p_montant: number
+          p_objet: string
+          p_projet_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       get_user_client_id: { Args: { user_id: string }; Returns: string }
       has_role: {
         Args: {

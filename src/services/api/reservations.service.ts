@@ -44,24 +44,7 @@ const cleanData = (obj: any): any => {
   return cleaned;
 };
 
-// Générer un numéro de réservation unique
-const generateNumeroReservation = async (exerciceId: string, clientId: string): Promise<string> => {
-  const { data, error } = await supabase
-    .from('reservations_credits')
-    .select('numero')
-    .eq('exercice_id', exerciceId)
-    .eq('client_id', clientId)
-    .order('created_at', { ascending: false })
-    .limit(1);
-
-  if (error) throw error;
-
-  const lastNumero = data && data.length > 0 ? data[0].numero : null;
-  const lastNumber = lastNumero ? parseInt(lastNumero.split('-')[1]) : 0;
-  const newNumber = lastNumber + 1;
-
-  return `RES-${newNumber.toString().padStart(5, '0')}`;
-};
+// Note: La génération du numéro est désormais gérée par l'Edge Function create-reservation
 
 export const getReservations = async (
   exerciceId: string,
@@ -102,38 +85,22 @@ export const createReservation = async (
   clientId: string,
   userId: string
 ): Promise<ReservationCredit> => {
-  // Générer le numéro de réservation
-  const numero = await generateNumeroReservation(exerciceId, clientId);
-
-  const newReservation = cleanData({
-    ...toSnakeCase(reservation),
-    numero,
-    exercice_id: exerciceId,
-    client_id: clientId,
-    created_by: userId,
-    statut: 'active'
+  // Appeler l'Edge Function pour créer la réservation avec numéro atomique
+  const { data, error } = await supabase.functions.invoke('create-reservation', {
+    body: {
+      exerciceId,
+      clientId,
+      ligneBudgetaireId: reservation.ligneBudgetaireId,
+      montant: reservation.montant,
+      objet: reservation.objet,
+      beneficiaire: reservation.beneficiaire,
+      projetId: reservation.projetId,
+      dateExpiration: reservation.dateExpiration,
+    },
   });
 
-  const { data, error } = await supabase
-    .from('reservations_credits')
-    .insert(newReservation)
-    .select(`
-      *,
-      ligne_budgetaire:lignes_budgetaires!ligne_budgetaire_id (
-        libelle,
-        disponible
-      ),
-      projet:projets!fk_reservations_credits_projet (
-        id,
-        code,
-        nom,
-        statut
-      )
-    `)
-    .single();
-
-  if (error) throw error;
-  return toCamelCase(data);
+  if (error) throw new Error(error.message || 'Erreur lors de la création de la réservation');
+  return data;
 };
 
 export const updateReservation = async (
