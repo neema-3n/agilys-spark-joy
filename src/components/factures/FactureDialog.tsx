@@ -19,6 +19,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -198,7 +199,7 @@ export const FactureDialog = ({
           </DialogTitle>
         </DialogHeader>
         
-        <div className="flex-1 overflow-y-auto px-1">
+        <ScrollArea className="flex-1 px-1">
           <Form {...form}>
           <form className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
@@ -383,7 +384,7 @@ export const FactureDialog = ({
 
             </form>
           </Form>
-        </div>
+        </ScrollArea>
         
         <div className="flex justify-end gap-2 flex-shrink-0 pt-4 border-t">
           <Button

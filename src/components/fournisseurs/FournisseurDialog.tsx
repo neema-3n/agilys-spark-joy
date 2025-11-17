@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Fournisseur, TypeFournisseur, StatutFournisseur } from '@/types/fournisseur.types';
 
 const fournisseurSchema = z.object({
@@ -178,7 +179,7 @@ export const FournisseurDialog = ({ open, onOpenChange, onSubmit, fournisseur }:
           </DialogTitle>
         </DialogHeader>
         
-        <div className="flex-1 overflow-y-auto px-1">
+        <ScrollArea className="flex-1 px-1">
           <Form {...form}>
           <form className="space-y-4 py-4">
             <Tabs defaultValue="general">
@@ -659,7 +660,7 @@ export const FournisseurDialog = ({ open, onOpenChange, onSubmit, fournisseur }:
 
             </form>
           </Form>
-        </div>
+        </ScrollArea>
         
         <DialogFooter className="flex-shrink-0 pt-4 border-t">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

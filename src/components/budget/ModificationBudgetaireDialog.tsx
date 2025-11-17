@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -121,7 +122,7 @@ export const ModificationBudgetaireDialog = ({
           <DialogTitle>Nouvelle modification budgétaire</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-1">
+        <ScrollArea className="flex-1 px-1">
           <form className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="type">Type de modification</Label>
@@ -216,7 +217,7 @@ export const ModificationBudgetaireDialog = ({
               />
             </div>
           </form>
-        </div>
+        </ScrollArea>
         
         <DialogFooter className="flex-shrink-0 pt-4 border-t">
           <Button type="button" variant="outline" onClick={onClose}>

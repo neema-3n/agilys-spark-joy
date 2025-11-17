@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface AnnulerBCDialogProps {
   open: boolean;
@@ -53,7 +54,7 @@ export const AnnulerBCDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-1">
+        <ScrollArea className="flex-1 px-1">
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="motif">Motif d'annulation *</Label>
@@ -66,7 +67,7 @@ export const AnnulerBCDialog = ({
               />
             </div>
           </div>
-        </div>
+        </ScrollArea>
 
         <DialogFooter className="flex-shrink-0 pt-4 border-t">
           <Button

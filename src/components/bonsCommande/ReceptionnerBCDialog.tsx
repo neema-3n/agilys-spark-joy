@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 
 interface ReceptionnerBCDialogProps {
@@ -50,7 +51,7 @@ export const ReceptionnerBCDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-1">
+        <ScrollArea className="flex-1 px-1">
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="dateLivraison">Date de livraison réelle *</Label>
@@ -63,7 +64,7 @@ export const ReceptionnerBCDialog = ({
               />
             </div>
           </div>
-        </div>
+        </ScrollArea>
 
         <DialogFooter className="flex-shrink-0 pt-4 border-t">
           <Button
