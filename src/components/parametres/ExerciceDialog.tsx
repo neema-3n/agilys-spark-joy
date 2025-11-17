@@ -23,6 +23,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Calendar } from 'lucide-react';
 import { Exercice } from '@/types';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -154,7 +155,7 @@ export function ExerciceDialog({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-1">
+        <ScrollArea className="flex-1 px-1">
           <Form {...form}>
             <form className="space-y-6 py-4">
             {/* Templates rapides - seulement pour création */}
@@ -292,7 +293,7 @@ export function ExerciceDialog({
 
           </form>
         </Form>
-        </div>
+        </ScrollArea>
         
         <DialogFooter className="flex-shrink-0 pt-4 border-t">
           <Button 

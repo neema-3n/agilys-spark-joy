@@ -6,6 +6,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Structure } from '@/types/structure.types';
 import { useReferentiels } from '@/hooks/useReferentiels';
 
@@ -61,7 +62,7 @@ const StructureDialog = ({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-1">
+        <ScrollArea className="flex-1 px-1">
           <Form {...form}>
             <form className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
@@ -172,7 +173,7 @@ const StructureDialog = ({
 
             </form>
           </Form>
-        </div>
+        </ScrollArea>
         
         <div className="flex justify-end gap-2 flex-shrink-0 pt-4 border-t">
           <Button

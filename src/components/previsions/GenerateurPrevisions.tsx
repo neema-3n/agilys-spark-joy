@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Scenario, GenerationParams } from '@/types/prevision.types';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { Loader2, Wand2 } from 'lucide-react';
@@ -60,7 +61,7 @@ export function GenerateurPrevisions({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-1">
+        <ScrollArea className="flex-1 px-1">
           <form className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="exerciceReference">Exercice de référence *</Label>
@@ -158,7 +159,7 @@ export function GenerateurPrevisions({
             </ul>
           </div>
           </form>
-        </div>
+        </ScrollArea>
 
         <DialogFooter className="flex-shrink-0 pt-4 border-t">
           <Button

@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -110,7 +111,7 @@ export const ActionDialog = ({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-1">
+        <ScrollArea className="flex-1 px-1">
           <Form {...form}>
             <form className="space-y-4 py-4">
               <FormField
@@ -181,7 +182,7 @@ export const ActionDialog = ({
             />
             </form>
           </Form>
-        </div>
+        </ScrollArea>
         
         <DialogFooter className="flex-shrink-0 pt-4 border-t">
           <Button type="button" variant="outline" onClick={onClose}>
