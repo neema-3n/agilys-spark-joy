@@ -123,6 +123,19 @@ export const bonsCommandeService = {
   },
 
   async update(id: string, bonCommande: UpdateBonCommandeInput): Promise<BonCommande> {
+    // Vérifier que le bon de commande est en brouillon ou validé avant modification
+    const { data: currentBC, error: fetchError } = await supabase
+      .from('bons_commande')
+      .select('statut')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) throw fetchError;
+    
+    if (currentBC.statut !== 'brouillon' && currentBC.statut !== 'valide') {
+      throw new Error('Seuls les bons de commande en brouillon ou validés peuvent être modifiés');
+    }
+
     const { data, error } = await supabase
       .from('bons_commande')
       .update(mapBonCommandeToDB(bonCommande))
