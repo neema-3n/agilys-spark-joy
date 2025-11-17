@@ -158,8 +158,9 @@ export const BonCommandeTable = ({
 
   return (
     <>
-      <div className="rounded-md border">
-        <Table>
+      <div className="rounded-md border max-h-[600px] overflow-auto">
+        <div className="[&>div]:max-h-none [&>div]:overflow-visible">
+          <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Numéro</TableHead>
@@ -299,6 +300,7 @@ export const BonCommandeTable = ({
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>

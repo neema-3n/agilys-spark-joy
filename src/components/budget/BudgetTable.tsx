@@ -124,8 +124,9 @@ export const BudgetTable = ({
   };
 
   return (
-    <div className="border rounded-lg overflow-hidden shadow-sm">
-      <Table>
+      <div className="rounded-md border max-h-[600px] overflow-auto">
+        <div className="[&>div]:max-h-none [&>div]:overflow-visible">
+          <Table>
         <TableHeader>
           <TableRow className="bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/15">
             <TableHead className="w-[350px] font-semibold">Libellé</TableHead>
@@ -292,6 +293,7 @@ export const BudgetTable = ({
           })}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 };

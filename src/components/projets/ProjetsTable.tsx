@@ -102,8 +102,9 @@ export const ProjetsTable = ({ projets, onEdit, onDelete, canEdit = true }: Proj
         </Select>
       </div>
 
-      <div className="rounded-md border">
-        <Table>
+      <div className="rounded-md border max-h-[600px] overflow-auto">
+        <div className="[&>div]:max-h-none [&>div]:overflow-visible">
+          <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Code</TableHead>
@@ -193,6 +194,7 @@ export const ProjetsTable = ({ projets, onEdit, onDelete, canEdit = true }: Proj
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
     </div>
   );
