@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Facture } from '@/types/facture.types';
+import { Facture, StatutFacture } from '@/types/facture.types';
 import {
   Table,
   TableBody,
@@ -16,13 +16,15 @@ import {
   Trash2, 
   CheckCircle, 
   DollarSign,
-  XCircle 
+  XCircle,
+  Eye
 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -80,6 +82,17 @@ export const FactureTable = ({
     return format(new Date(dateString), 'dd/MM/yyyy', { locale: fr });
   };
 
+  const hasAvailableActions = (statut: StatutFacture) => {
+    // Brouillon : peut tout faire (modifier, valider, annuler, supprimer)
+    if (statut === 'brouillon') return true;
+    
+    // Validée : peut marquer payée ou annuler
+    if (statut === 'validee') return true;
+    
+    // Payée ou Annulée : aucune action disponible
+    return false;
+  };
+
   return (
     <>
       <div className="rounded-md border">
@@ -122,19 +135,27 @@ export const FactureTable = ({
                   </TableCell>
                   <TableCell>{getStatutBadge(facture.statut)}</TableCell>
                   <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {facture.statut === 'brouillon' && (
+                    {hasAvailableActions(facture.statut) && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => onEdit(facture)}>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Modifier
+                            <Eye className="mr-2 h-4 w-4" />
+                            Voir les détails
                           </DropdownMenuItem>
-                        )}
+                          
+                          <DropdownMenuSeparator />
+                          
+                          {facture.statut === 'brouillon' && (
+                            <DropdownMenuItem onClick={() => onEdit(facture)}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Modifier
+                            </DropdownMenuItem>
+                          )}
                         {facture.statut === 'brouillon' && (
                           <DropdownMenuItem onClick={() => onValider(facture.id)}>
                             <CheckCircle className="mr-2 h-4 w-4" />
@@ -162,8 +183,9 @@ export const FactureTable = ({
                             Supprimer
                           </DropdownMenuItem>
                         )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </TableCell>
                 </TableRow>
               ))

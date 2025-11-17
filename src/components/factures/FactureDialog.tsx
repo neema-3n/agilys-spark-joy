@@ -75,6 +75,8 @@ export const FactureDialog = ({
   currentExerciceId,
   onGenererNumero,
 }: FactureDialogProps) => {
+  const isReadOnly = facture && facture.statut !== 'brouillon';
+
   const form = useForm<z.infer<typeof factureSchema>>({
     resolver: zodResolver(factureSchema),
     defaultValues: {
@@ -218,7 +220,7 @@ export const FactureDialog = ({
                   <FormItem>
                     <FormLabel>Date de facture</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input type="date" {...field} disabled={isReadOnly} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -233,7 +235,7 @@ export const FactureDialog = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Fournisseur *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Sélectionner un fournisseur" />
@@ -258,7 +260,7 @@ export const FactureDialog = ({
                   <FormItem>
                     <FormLabel>N° facture fournisseur</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Ex: F-2025-001" />
+                      <Input {...field} placeholder="Ex: F-2025-001" disabled={isReadOnly} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -273,7 +275,7 @@ export const FactureDialog = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Bon de commande</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Sélectionner un BC" />
@@ -299,7 +301,7 @@ export const FactureDialog = ({
                   <FormItem>
                     <FormLabel>Date d'échéance</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input type="date" {...field} disabled={isReadOnly} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -314,7 +316,7 @@ export const FactureDialog = ({
                 <FormItem>
                   <FormLabel>Objet *</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Description de la facture" />
+                    <Input {...field} placeholder="Description de la facture" disabled={isReadOnly} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -322,14 +324,14 @@ export const FactureDialog = ({
             />
 
             <div className="grid grid-cols-3 gap-4">
-              <FormField
+                <FormField
                 control={form.control}
                 name="montantHT"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Montant HT *</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" {...field} />
+                      <Input type="number" step="0.01" {...field} disabled={isReadOnly} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -342,7 +344,7 @@ export const FactureDialog = ({
                   <FormItem>
                     <FormLabel>Montant TVA *</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" {...field} />
+                      <Input type="number" step="0.01" {...field} disabled={isReadOnly} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -370,7 +372,7 @@ export const FactureDialog = ({
                 <FormItem>
                   <FormLabel>Observations</FormLabel>
                   <FormControl>
-                    <Textarea {...field} rows={3} />
+                    <Textarea {...field} rows={3} disabled={isReadOnly} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -383,11 +385,13 @@ export const FactureDialog = ({
                 variant="outline"
                 onClick={() => onOpenChange(false)}
               >
-                Annuler
+                {isReadOnly ? 'Fermer' : 'Annuler'}
               </Button>
-              <Button type="submit">
-                {facture ? 'Mettre à jour' : 'Créer'}
-              </Button>
+              {!isReadOnly && (
+                <Button type="submit">
+                  {facture ? 'Mettre à jour' : 'Créer'}
+                </Button>
+              )}
             </div>
           </form>
         </Form>
