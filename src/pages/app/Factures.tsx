@@ -1,27 +1,196 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState } from 'react';
+import { PageHeader } from '@/components/PageHeader';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
+import { useFactures } from '@/hooks/useFactures';
+import { useFournisseurs } from '@/hooks/useFournisseurs';
+import { useProjets } from '@/hooks/useProjets';
+import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
+import { useEngagements } from '@/hooks/useEngagements';
+import { useClient } from '@/contexts/ClientContext';
+import { useExercice } from '@/contexts/ExerciceContext';
+import { FactureStats } from '@/components/factures/FactureStats';
+import { FactureTable } from '@/components/factures/FactureTable';
+import { FactureDialog } from '@/components/factures/FactureDialog';
+import { Facture, CreateFactureInput } from '@/types/facture.types';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
-const Factures = () => {
+export default function Factures() {
+  const { currentClient } = useClient();
+  const { currentExercice } = useExercice();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedFacture, setSelectedFacture] = useState<Facture | undefined>();
+  const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
+  const [factureToAnnuler, setFactureToAnnuler] = useState<string | null>(null);
+  const [motifAnnulation, setMotifAnnulation] = useState('');
+
+  const {
+    factures,
+    isLoading,
+    createFacture,
+    updateFacture,
+    deleteFacture,
+    genererNumero,
+    validerFacture,
+    marquerPayee,
+    annulerFacture,
+  } = useFactures();
+
+  const { fournisseurs } = useFournisseurs();
+  const { projets } = useProjets();
+  const { lignes: lignesBudgetaires } = useLignesBudgetaires();
+  const { engagements } = useEngagements();
+
+  // Récupérer les bons de commande
+  const { data: bonsCommande = [] } = useQuery({
+    queryKey: ['bons-commande', currentClient?.id, currentExercice?.id],
+    queryFn: async () => {
+      if (!currentClient) return [];
+      
+      let query = supabase
+        .from('bons_commande')
+        .select('id, numero')
+        .eq('client_id', currentClient.id)
+        .order('numero', { ascending: false });
+
+      if (currentExercice) {
+        query = query.eq('exercice_id', currentExercice.id);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!currentClient,
+  });
+
+  const handleCreate = () => {
+    setSelectedFacture(undefined);
+    setDialogOpen(true);
+  };
+
+  const handleEdit = (facture: Facture) => {
+    setSelectedFacture(facture);
+    setDialogOpen(true);
+  };
+
+  const handleSubmit = async (data: CreateFactureInput) => {
+    if (selectedFacture) {
+      await updateFacture({ id: selectedFacture.id, facture: data });
+    } else {
+      await createFacture(data);
+    }
+  };
+
+  const handleGenererNumero = async () => {
+    if (!currentClient || !currentExercice) return '';
+    return await genererNumero({
+      clientId: currentClient.id,
+      exerciceId: currentExercice.id,
+    });
+  };
+
+  const handleAnnuler = (id: string) => {
+    setFactureToAnnuler(id);
+    setMotifAnnulation('');
+    setAnnulerDialogOpen(true);
+  };
+
+  const handleConfirmAnnulation = async () => {
+    if (factureToAnnuler && motifAnnulation.trim()) {
+      await annulerFacture({ id: factureToAnnuler, motif: motifAnnulation });
+      setAnnulerDialogOpen(false);
+      setFactureToAnnuler(null);
+      setMotifAnnulation('');
+    }
+  };
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-full">Chargement...</div>;
+  }
+
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Gestion des Factures</h1>
-        <p className="text-muted-foreground">
-          Saisie, validation et paiement des factures
-        </p>
-      </div>
+    <div className="space-y-6 p-6">
+      <PageHeader
+        title="Gestion des Factures"
+        description="Gérez les factures fournisseurs"
+        actions={
+          <Button onClick={handleCreate}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nouvelle facture
+          </Button>
+        }
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Module en construction</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            Le module de gestion des factures sera développé prochainement.
-          </p>
-        </CardContent>
-      </Card>
+      <FactureStats factures={factures} />
+
+      <FactureTable
+        factures={factures}
+        onEdit={handleEdit}
+        onDelete={deleteFacture}
+        onValider={validerFacture}
+        onMarquerPayee={marquerPayee}
+        onAnnuler={handleAnnuler}
+      />
+
+      <FactureDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        facture={selectedFacture}
+        onSubmit={handleSubmit}
+        fournisseurs={fournisseurs}
+        bonsCommande={bonsCommande}
+        engagements={engagements.filter(e => e.statut === 'valide')}
+        lignesBudgetaires={lignesBudgetaires.filter(lb => lb.statut === 'actif')}
+        projets={projets}
+        currentClientId={currentClient?.id || ''}
+        currentExerciceId={currentExercice?.id || ''}
+        onGenererNumero={handleGenererNumero}
+      />
+
+      <AlertDialog open={annulerDialogOpen} onOpenChange={setAnnulerDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Annuler la facture</AlertDialogTitle>
+            <AlertDialogDescription>
+              Veuillez indiquer le motif d'annulation de cette facture.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="motif">Motif d'annulation</Label>
+            <Input
+              id="motif"
+              value={motifAnnulation}
+              onChange={(e) => setMotifAnnulation(e.target.value)}
+              placeholder="Ex: Erreur de saisie, facture en double..."
+              className="mt-2"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmAnnulation}
+              disabled={!motifAnnulation.trim()}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Confirmer l'annulation
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
-};
-
-export default Factures;
+}
