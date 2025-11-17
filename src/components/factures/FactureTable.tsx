@@ -129,10 +129,12 @@ export const FactureTable = ({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEdit(facture)}>
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Modifier
-                        </DropdownMenuItem>
+                        {facture.statut === 'brouillon' && (
+                          <DropdownMenuItem onClick={() => onEdit(facture)}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Modifier
+                          </DropdownMenuItem>
+                        )}
                         {facture.statut === 'brouillon' && (
                           <DropdownMenuItem onClick={() => onValider(facture.id)}>
                             <CheckCircle className="mr-2 h-4 w-4" />
