@@ -52,15 +52,16 @@ export function GenerateurPrevisions({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Wand2 className="h-5 w-5" />
             Générateur de prévisions
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex-1 overflow-y-auto px-1">
+          <form className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="exerciceReference">Exercice de référence *</Label>
             <Select

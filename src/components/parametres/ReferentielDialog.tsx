@@ -55,8 +55,8 @@ export const ReferentielDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             {referentiel ? 'Modifier' : 'Nouveau'} - {categorieLabel}
             {isSystemValue && (
@@ -65,8 +65,9 @@ export const ReferentielDialog = ({
           </DialogTitle>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        <div className="flex-1 overflow-y-auto px-1">
+          <Form {...form}>
+            <form className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -172,20 +173,22 @@ export const ReferentielDialog = ({
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Annuler
-              </Button>
-              <Button type="submit" disabled={isSystemValue}>
-                {referentiel ? 'Mettre à jour' : 'Créer'}
-              </Button>
-            </div>
-          </form>
-        </Form>
+            </form>
+          </Form>
+        </div>
+        
+        <div className="flex justify-end gap-2 flex-shrink-0 pt-4 border-t">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
+            Annuler
+          </Button>
+          <Button type="button" disabled={isSystemValue} onClick={form.handleSubmit(handleSubmit)}>
+            {referentiel ? 'Mettre à jour' : 'Créer'}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
