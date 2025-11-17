@@ -171,14 +171,16 @@ export const FournisseurDialog = ({ open, onOpenChange, onSubmit, fournisseur }:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {fournisseur ? 'Modifier le fournisseur' : 'Créer un fournisseur'}
           </DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        
+        <div className="flex-1 overflow-y-auto px-1">
+          <Form {...form}>
+          <form className="space-y-4 py-4">
             <Tabs defaultValue="general">
               <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="general">Général</TabsTrigger>
@@ -649,22 +651,27 @@ export const FournisseurDialog = ({ open, onOpenChange, onSubmit, fournisseur }:
                         </FormControl>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
-                </div>
-              </TabsContent>
-            </Tabs>
+                  )}
+                />
+              </div>
+            </TabsContent>
+          </Tabs>
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Annuler
-              </Button>
-              <Button type="submit">
-                {fournisseur ? 'Modifier' : 'Créer'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+            </form>
+          </Form>
+        </div>
+        
+        <DialogFooter className="flex-shrink-0 pt-4 border-t">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Annuler
+          </Button>
+          <Button 
+            type="button"
+            onClick={form.handleSubmit(handleSubmit)}
+          >
+            {fournisseur ? 'Modifier' : 'Créer'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

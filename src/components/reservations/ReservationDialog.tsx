@@ -121,8 +121,8 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation }: R
             {reservation ? 'Modifier la réservation' : 'Créer une réservation de crédit'}
           </DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <Form {...form}>
+          <form className="space-y-4 py-4">
             <FormField
               control={form.control}
               name="ligneBudgetaireId"

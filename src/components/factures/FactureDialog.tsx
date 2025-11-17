@@ -197,8 +197,8 @@ export const FactureDialog = ({
             {facture ? 'Modifier la facture' : 'Nouvelle facture'}
           </DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <Form {...form}>
+          <form className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -379,22 +379,27 @@ export const FactureDialog = ({
               )}
             />
 
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                {isReadOnly ? 'Fermer' : 'Annuler'}
-              </Button>
-              {!isReadOnly && (
-                <Button type="submit">
-                  {facture ? 'Mettre à jour' : 'Créer'}
-                </Button>
-              )}
-            </div>
-          </form>
-        </Form>
+            </form>
+          </Form>
+        </div>
+        
+        <div className="flex justify-end gap-2 flex-shrink-0 pt-4 border-t">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
+            {isReadOnly ? 'Fermer' : 'Annuler'}
+          </Button>
+          {!isReadOnly && (
+            <Button 
+              type="button"
+              onClick={form.handleSubmit(handleSubmit)}
+            >
+              {facture ? 'Mettre à jour' : 'Créer'}
+            </Button>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );

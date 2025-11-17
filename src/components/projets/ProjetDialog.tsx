@@ -146,8 +146,8 @@ export const ProjetDialog = ({
             {projet ? 'Modifier le projet' : 'Nouveau projet'}
           </DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <Form {...form}>
+          <form className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -415,20 +415,25 @@ export const ProjetDialog = ({
               )}
             />
 
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Annuler
-              </Button>
-              <Button type="submit">
-                {projet ? 'Modifier' : 'Créer'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+            </form>
+          </Form>
+        </div>
+        
+        <DialogFooter className="flex-shrink-0 pt-4 border-t">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
+            Annuler
+          </Button>
+          <Button 
+            type="button"
+            onClick={form.handleSubmit(handleSubmit)}
+          >
+            {projet ? 'Modifier' : 'Créer'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
