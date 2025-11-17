@@ -89,16 +89,16 @@ export const SectionDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {section ? 'Modifier la section' : 'Nouvelle section'}
           </DialogTitle>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <div className="space-y-4 py-4">
+        <div className="flex-1 overflow-y-auto px-1">
+          <Form {...form}>
+            <form className="space-y-4 py-4">
               <FormField
                 control={form.control}
                 name="code"
@@ -140,18 +140,22 @@ export const SectionDialog = ({
                   </FormItem>
                 )}
               />
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose}>
-                Annuler
-              </Button>
-              <Button type="submit" disabled={!form.formState.isValid}>
-                {section ? 'Modifier' : 'Créer'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+            </form>
+          </Form>
+        </div>
+        
+        <DialogFooter className="flex-shrink-0 pt-4 border-t">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Annuler
+          </Button>
+          <Button 
+            type="button"
+            disabled={!form.formState.isValid}
+            onClick={form.handleSubmit(handleSubmit)}
+          >
+            {section ? 'Modifier' : 'Créer'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

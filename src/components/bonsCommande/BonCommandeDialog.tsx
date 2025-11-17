@@ -187,8 +187,8 @@ export const BonCommandeDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {bonCommande ? 'Modifier le bon de commande' : 'Nouveau bon de commande'}
           </DialogTitle>
@@ -199,8 +199,9 @@ export const BonCommandeDialog = ({
           )}
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <div className="flex-1 overflow-y-auto px-1">
+          <Form {...form}>
+          <form className="space-y-6 py-4">
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}

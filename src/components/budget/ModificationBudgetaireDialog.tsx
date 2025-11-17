@@ -116,13 +116,13 @@ export const ModificationBudgetaireDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Nouvelle modification budgétaire</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
+        <div className="flex-1 overflow-y-auto px-1">
+          <form className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="type">Type de modification</Label>
               <Select
@@ -215,17 +215,21 @@ export const ModificationBudgetaireDialog = ({
                 required
               />
             </div>
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              Annuler
-            </Button>
-            <Button type="submit" disabled={!isFormValid()}>
-              Créer la modification
-            </Button>
-          </DialogFooter>
-        </form>
+          </form>
+        </div>
+        
+        <DialogFooter className="flex-shrink-0 pt-4 border-t">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Annuler
+          </Button>
+          <Button 
+            type="button"
+            disabled={!isFormValid()}
+            onClick={(e) => { e.preventDefault(); handleSubmit(e); }}
+          >
+            Créer la modification
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

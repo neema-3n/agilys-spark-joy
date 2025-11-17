@@ -115,12 +115,14 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation }: R
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {reservation ? 'Modifier la réservation' : 'Créer une réservation de crédit'}
           </DialogTitle>
         </DialogHeader>
+        
+        <div className="flex-1 overflow-y-auto px-1">
           <Form {...form}>
           <form className="space-y-4 py-4">
             <FormField
@@ -244,20 +246,26 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation }: R
                     </FormControl>
                     <FormMessage />
                   </FormItem>
-                )}
-              />
+              )}
+            />
             )}
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Annuler
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Enregistrement...' : reservation ? 'Modifier' : 'Créer'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+            </form>
+          </Form>
+        </div>
+        
+        <DialogFooter className="flex-shrink-0 pt-4 border-t">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Annuler
+          </Button>
+          <Button 
+            type="button" 
+            disabled={isSubmitting}
+            onClick={form.handleSubmit(handleSubmit)}
+          >
+            {isSubmitting ? 'Enregistrement...' : reservation ? 'Modifier' : 'Créer'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
