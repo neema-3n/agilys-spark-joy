@@ -265,26 +265,27 @@ export function EnveloppeDialog({
                 )}
               />
             </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={isSubmitting}
-              >
-                Annuler
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting
-                  ? 'Enregistrement...'
-                  : mode === 'create'
-                  ? 'Créer'
-                  : 'Enregistrer'}
-              </Button>
-            </DialogFooter>
           </form>
         </Form>
+        </div>
+
+        <DialogFooter className="flex-shrink-0 pt-4 border-t">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
+            Annuler
+          </Button>
+          <Button type="button" disabled={isSubmitting} onClick={form.handleSubmit(handleSubmit)}>
+            {isSubmitting
+              ? 'Enregistrement...'
+              : mode === 'create'
+              ? 'Créer'
+              : 'Enregistrer'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

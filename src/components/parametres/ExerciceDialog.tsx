@@ -148,14 +148,15 @@ export function ExerciceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <div className="flex-1 overflow-y-auto px-1">
+          <Form {...form}>
+            <form className="space-y-6 py-4">
             {/* Templates rapides - seulement pour création */}
             {!exercice && (
               <div className="space-y-2">
@@ -289,8 +290,8 @@ export function ExerciceDialog({
               />
             </div>
 
-            </form>
-          </Form>
+          </form>
+        </Form>
         </div>
         
         <DialogFooter className="flex-shrink-0 pt-4 border-t">
