@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Plus } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { EngagementDialog } from '@/components/engagements/EngagementDialog';
@@ -182,7 +181,6 @@ const Engagements = () => {
       <div className="flex-1 overflow-y-auto p-8 pt-6 space-y-6">
         <EngagementStats engagements={engagements} />
 
-        <Card className="p-6">
         <EngagementTable
           engagements={engagements}
           onEdit={handleEdit}
@@ -191,7 +189,6 @@ const Engagements = () => {
           onDelete={handleDelete}
           onCreerBonCommande={handleCreerBonCommande}
         />
-        </Card>
       </div>
 
       <EngagementDialog
