@@ -268,6 +268,7 @@ export const BonCommandeDialog = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        <SelectItem value="">-- Aucun --</SelectItem>
                         {engagementsValides.map((e) => (
                           <SelectItem key={e.id} value={e.id}>{e.numero} - {e.objet}</SelectItem>
                         ))}
@@ -291,6 +292,7 @@ export const BonCommandeDialog = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        <SelectItem value="">-- Aucun --</SelectItem>
                         {projets.map((p) => (
                           <SelectItem key={p.id} value={p.id}>{p.code} - {p.nom}</SelectItem>
                         ))}
