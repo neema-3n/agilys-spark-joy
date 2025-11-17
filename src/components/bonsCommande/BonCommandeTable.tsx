@@ -84,6 +84,40 @@ const getStatutLabel = (statut: string) => {
   }
 };
 
+const getRetardStatus = (bc: BonCommande): 'on_time' | 'late' | 'pending_late' | 'no_data' => {
+  if (!bc.dateLivraisonPrevue) return 'no_data';
+  
+  const datePrevue = new Date(bc.dateLivraisonPrevue);
+  
+  // Si réceptionné : comparer date réelle vs prévue
+  if (bc.dateLivraisonReelle) {
+    const dateReelle = new Date(bc.dateLivraisonReelle);
+    return dateReelle <= datePrevue ? 'on_time' : 'late';
+  }
+  
+  // Si en cours ou validé : comparer date actuelle vs prévue
+  if (bc.statut === 'en_cours' || bc.statut === 'valide') {
+    const dateActuelle = new Date();
+    return dateActuelle > datePrevue ? 'pending_late' : 'no_data';
+  }
+  
+  return 'no_data';
+};
+
+const getRetardColorClass = (status: ReturnType<typeof getRetardStatus>): string => {
+  switch (status) {
+    case 'on_time':
+      return 'text-secondary font-semibold'; // Vert pour à l'heure
+    case 'late':
+      return 'text-destructive font-semibold'; // Rouge pour retard confirmé
+    case 'pending_late':
+      return 'text-orange-600 font-semibold'; // Orange pour retard en cours
+    case 'no_data':
+    default:
+      return ''; // Style par défaut
+  }
+};
+
 export const BonCommandeTable = ({
   bonsCommande,
   onEdit,
@@ -162,14 +196,26 @@ export const BonCommandeTable = ({
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {bc.dateLivraisonPrevue
-                      ? format(new Date(bc.dateLivraisonPrevue), 'dd/MM/yyyy', { locale: fr })
-                      : '-'}
+                    {bc.dateLivraisonPrevue ? (
+                      <span className={
+                        getRetardStatus(bc) === 'pending_late' 
+                          ? getRetardColorClass('pending_late')
+                          : ''
+                      }>
+                        {format(new Date(bc.dateLivraisonPrevue), 'dd/MM/yyyy', { locale: fr })}
+                      </span>
+                    ) : (
+                      '-'
+                    )}
                   </TableCell>
                   <TableCell>
-                    {bc.dateLivraisonReelle
-                      ? format(new Date(bc.dateLivraisonReelle), 'dd/MM/yyyy', { locale: fr })
-                      : '-'}
+                    {bc.dateLivraisonReelle ? (
+                      <span className={getRetardColorClass(getRetardStatus(bc))}>
+                        {format(new Date(bc.dateLivraisonReelle), 'dd/MM/yyyy', { locale: fr })}
+                      </span>
+                    ) : (
+                      '-'
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
