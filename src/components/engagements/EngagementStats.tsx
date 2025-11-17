@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatsCard } from '@/components/ui/stats-card';
 import { FileText, TrendingUp, Clock, XCircle } from 'lucide-react';
 import type { Engagement } from '@/types/engagement.types';
 
@@ -25,57 +25,35 @@ export const EngagementStats = ({ engagements }: EngagementStatsProps) => {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Engagements Actifs</CardTitle>
-          <FileText className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{totalActifs}</div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Hors engagements annulés
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Montant Engagé</CardTitle>
-          <TrendingUp className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(montantActif)}</div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Montant des engagements actifs
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">En Attente</CardTitle>
-          <Clock className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{enAttente}</div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Brouillons à valider
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Annulés</CardTitle>
-          <XCircle className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{engagementsAnnules}</div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Engagements annulés
-          </p>
-        </CardContent>
-      </Card>
+      <StatsCard
+        title="Engagements Actifs"
+        value={totalActifs.toString()}
+        icon={FileText}
+        color="text-primary"
+        trend="Hors engagements annulés"
+      />
+      <StatsCard
+        title="Montant Engagé"
+        value={formatCurrency(montantActif)}
+        icon={TrendingUp}
+        color="text-secondary"
+        trend="Montant des engagements actifs"
+        trendUp={true}
+      />
+      <StatsCard
+        title="En Attente"
+        value={enAttente.toString()}
+        icon={Clock}
+        color="text-muted-foreground"
+        trend="Brouillons à valider"
+      />
+      <StatsCard
+        title="Annulés"
+        value={engagementsAnnules.toString()}
+        icon={XCircle}
+        color="text-muted-foreground"
+        trend="Engagements annulés"
+      />
     </div>
   );
 };
