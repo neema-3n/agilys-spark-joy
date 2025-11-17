@@ -83,14 +83,8 @@ export const FactureTable = ({
   };
 
   const hasAvailableActions = (statut: StatutFacture) => {
-    // Brouillon : peut tout faire (modifier, valider, annuler, supprimer)
-    if (statut === 'brouillon') return true;
-    
-    // Validée : peut marquer payée ou annuler
-    if (statut === 'validee') return true;
-    
-    // Payée ou Annulée : aucune action disponible
-    return false;
+    // "Voir les détails" est disponible pour TOUS les statuts
+    return true;
   };
 
   return (
