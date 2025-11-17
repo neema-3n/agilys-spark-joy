@@ -2,3 +2,12 @@ project_id = "gvpsfgzstiqbjlgqglyh"
 
 [functions.init-test-users]
 verify_jwt = true
+
+[functions.create-engagement]
+verify_jwt = true
+
+[functions.create-reservation]
+verify_jwt = true
+
+[functions.create-modification-budgetaire]
+verify_jwt = true
