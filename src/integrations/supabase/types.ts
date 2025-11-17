@@ -416,6 +416,131 @@ export type Database = {
         }
         Relationships: []
       }
+      factures: {
+        Row: {
+          bon_commande_id: string | null
+          client_id: string
+          created_at: string
+          created_by: string | null
+          date_echeance: string | null
+          date_facture: string
+          date_validation: string | null
+          engagement_id: string | null
+          exercice_id: string
+          fournisseur_id: string
+          id: string
+          ligne_budgetaire_id: string | null
+          montant_ht: number
+          montant_ttc: number
+          montant_tva: number
+          numero: string
+          numero_facture_fournisseur: string | null
+          objet: string
+          observations: string | null
+          projet_id: string | null
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          bon_commande_id?: string | null
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          date_echeance?: string | null
+          date_facture?: string
+          date_validation?: string | null
+          engagement_id?: string | null
+          exercice_id: string
+          fournisseur_id: string
+          id?: string
+          ligne_budgetaire_id?: string | null
+          montant_ht?: number
+          montant_ttc?: number
+          montant_tva?: number
+          numero: string
+          numero_facture_fournisseur?: string | null
+          objet: string
+          observations?: string | null
+          projet_id?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          bon_commande_id?: string | null
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          date_echeance?: string | null
+          date_facture?: string
+          date_validation?: string | null
+          engagement_id?: string | null
+          exercice_id?: string
+          fournisseur_id?: string
+          id?: string
+          ligne_budgetaire_id?: string | null
+          montant_ht?: number
+          montant_ttc?: number
+          montant_tva?: number
+          numero?: string
+          numero_facture_fournisseur?: string | null
+          objet?: string
+          observations?: string | null
+          projet_id?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "factures_bon_commande_id_fkey"
+            columns: ["bon_commande_id"]
+            isOneToOne: false
+            referencedRelation: "bons_commande"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factures_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factures_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factures_exercice_id_fkey"
+            columns: ["exercice_id"]
+            isOneToOne: false
+            referencedRelation: "exercices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factures_fournisseur_id_fkey"
+            columns: ["fournisseur_id"]
+            isOneToOne: false
+            referencedRelation: "fournisseurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factures_ligne_budgetaire_id_fkey"
+            columns: ["ligne_budgetaire_id"]
+            isOneToOne: false
+            referencedRelation: "lignes_budgetaires"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factures_projet_id_fkey"
+            columns: ["projet_id"]
+            isOneToOne: false
+            referencedRelation: "projets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fournisseurs: {
         Row: {
           adresse: string | null
