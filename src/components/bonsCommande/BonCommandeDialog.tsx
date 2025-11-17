@@ -46,6 +46,17 @@ const formSchema = z.object({
   dateLivraisonPrevue: z.string().optional(),
   conditionsLivraison: z.string().optional(),
   observations: z.string().optional(),
+}).refine((data) => {
+  // Validation : la date de livraison prévue doit être >= date de commande
+  if (data.dateLivraisonPrevue && data.dateCommande) {
+    const dateCommande = new Date(data.dateCommande);
+    const dateLivraison = new Date(data.dateLivraisonPrevue);
+    return dateLivraison >= dateCommande;
+  }
+  return true;
+}, {
+  message: "La date de livraison prévue doit être postérieure ou égale à la date de commande",
+  path: ["dateLivraisonPrevue"],
 });
 
 interface BonCommandeDialogProps {
