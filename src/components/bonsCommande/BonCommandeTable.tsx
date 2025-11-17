@@ -123,13 +123,14 @@ export const BonCommandeTable = ({
               <TableHead className="text-right">Montant</TableHead>
               <TableHead>Statut</TableHead>
               <TableHead>Livraison prévue</TableHead>
+              <TableHead>Livraison effective</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {bonsCommande.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-muted-foreground">
+                <TableCell colSpan={10} className="text-center text-muted-foreground">
                   Aucun bon de commande trouvé
                 </TableCell>
               </TableRow>
@@ -162,6 +163,11 @@ export const BonCommandeTable = ({
                   <TableCell>
                     {bc.dateLivraisonPrevue
                       ? format(new Date(bc.dateLivraisonPrevue), 'dd/MM/yyyy', { locale: fr })
+                      : '-'}
+                  </TableCell>
+                  <TableCell>
+                    {bc.dateLivraisonReelle
+                      ? format(new Date(bc.dateLivraisonReelle), 'dd/MM/yyyy', { locale: fr })
                       : '-'}
                   </TableCell>
                   <TableCell className="text-right">
