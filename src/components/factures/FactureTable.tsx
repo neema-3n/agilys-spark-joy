@@ -90,8 +90,8 @@ export const FactureTable = ({
 
   return (
     <>
-      <div className="rounded-md border">
-        <div className="max-h-[600px] overflow-y-auto overflow-x-auto">
+      <div className="rounded-md border max-h-[600px] overflow-auto">
+        <div className="[&>div]:max-h-none [&>div]:overflow-visible">
           <Table>
           <TableHeader>
             <TableRow>
