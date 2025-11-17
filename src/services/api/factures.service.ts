@@ -139,6 +139,19 @@ export const facturesService = {
   },
 
   async update(id: string, facture: UpdateFactureInput): Promise<Facture> {
+    // Vérifier que la facture est en brouillon avant modification
+    const { data: currentFacture, error: fetchError } = await supabase
+      .from('factures')
+      .select('statut')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) throw fetchError;
+    
+    if (currentFacture.statut !== 'brouillon') {
+      throw new Error('Seules les factures en brouillon peuvent être modifiées');
+    }
+
     const { data, error } = await supabase
       .from('factures')
       .update(mapFactureToDB(facture))
