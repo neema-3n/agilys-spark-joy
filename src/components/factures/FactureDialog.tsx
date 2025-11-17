@@ -75,7 +75,7 @@ export const FactureDialog = ({
   currentExerciceId,
   onGenererNumero,
 }: FactureDialogProps) => {
-  const isReadOnly = facture && facture.statut !== 'brouillon';
+  const isReadOnly = facture && (facture.statut === 'payee' || facture.statut === 'annulee');
 
   const form = useForm<z.infer<typeof factureSchema>>({
     resolver: zodResolver(factureSchema),

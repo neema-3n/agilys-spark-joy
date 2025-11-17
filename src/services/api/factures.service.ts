@@ -148,8 +148,8 @@ export const facturesService = {
 
     if (fetchError) throw fetchError;
     
-    if (currentFacture.statut !== 'brouillon') {
-      throw new Error('Seules les factures en brouillon peuvent être modifiées');
+    if (currentFacture.statut !== 'brouillon' && currentFacture.statut !== 'validee') {
+      throw new Error('Seules les factures en brouillon ou validées peuvent être modifiées');
     }
 
     const { data, error } = await supabase
