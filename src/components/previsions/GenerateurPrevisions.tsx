@@ -157,31 +157,36 @@ export function GenerateurPrevisions({
               </li>
             </ul>
           </div>
+          </form>
+        </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isGenerating}
-            >
-              Annuler
-            </Button>
-            <Button type="submit" disabled={isGenerating || !formData.exerciceReferenceId}>
-              {isGenerating ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Génération...
-                </>
-              ) : (
-                <>
-                  <Wand2 className="h-4 w-4 mr-2" />
-                  Générer les prévisions
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
+        <DialogFooter className="flex-shrink-0 pt-4 border-t">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isGenerating}
+          >
+            Annuler
+          </Button>
+          <Button 
+            type="button" 
+            onClick={handleSubmit} 
+            disabled={isGenerating || !formData.exerciceReferenceId}
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Génération...
+              </>
+            ) : (
+              <>
+                <Wand2 className="h-4 w-4 mr-2" />
+                Générer les prévisions
+              </>
+            )}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
