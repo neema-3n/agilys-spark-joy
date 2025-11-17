@@ -109,14 +109,16 @@ export const LigneBudgetaireDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {ligne ? 'Modifier la ligne budgétaire' : 'Créer une ligne budgétaire'}
           </DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        
+        <div className="flex-1 overflow-y-auto px-1">
+          <Form {...form}>
+          <form className="space-y-4 py-4">
             <div className="space-y-2">
               <FormLabel>Section *</FormLabel>
               <Select
@@ -270,16 +272,21 @@ export const LigneBudgetaireDialog = ({
               )}
             />
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose}>
-                Annuler
-              </Button>
-              <Button type="submit">
-                {ligne ? 'Modifier' : 'Créer'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+            </form>
+          </Form>
+        </div>
+        
+        <DialogFooter className="flex-shrink-0 pt-4 border-t">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Annuler
+          </Button>
+          <Button 
+            type="button"
+            onClick={form.handleSubmit(handleSubmit)}
+          >
+            {ligne ? 'Modifier' : 'Créer'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

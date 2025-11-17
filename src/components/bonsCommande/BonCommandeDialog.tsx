@@ -376,18 +376,24 @@ export const BonCommandeDialog = ({
               )}
             />
 
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                {isReadOnly ? 'Fermer' : 'Annuler'}
-              </Button>
-              {!isReadOnly && (
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Enregistrement...' : bonCommande ? 'Mettre à jour' : 'Créer'}
-                </Button>
-              )}
-            </div>
-          </form>
-        </Form>
+            </form>
+          </Form>
+        </div>
+        
+        <div className="flex justify-end gap-2 flex-shrink-0 pt-4 border-t">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            {isReadOnly ? 'Fermer' : 'Annuler'}
+          </Button>
+          {!isReadOnly && (
+            <Button 
+              type="button"
+              disabled={isSubmitting}
+              onClick={form.handleSubmit(handleSubmit)}
+            >
+              {isSubmitting ? 'Enregistrement...' : bonCommande ? 'Mettre à jour' : 'Créer'}
+            </Button>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
