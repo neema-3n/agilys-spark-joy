@@ -38,6 +38,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface FactureTableProps {
   factures: Facture[];
@@ -90,7 +91,8 @@ export const FactureTable = ({
   return (
     <>
       <div className="rounded-md border">
-        <Table>
+        <ScrollArea className="h-[600px]">
+          <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Numéro</TableHead>
@@ -175,10 +177,11 @@ export const FactureTable = ({
                     )}
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+            ))
+          )}
+        </TableBody>
+      </Table>
+        </ScrollArea>
       </div>
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
