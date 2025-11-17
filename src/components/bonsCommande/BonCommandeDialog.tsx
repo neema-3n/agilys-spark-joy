@@ -91,8 +91,8 @@ export const BonCommandeDialog = ({
       numero: '',
       dateCommande: format(new Date(), 'yyyy-MM-dd'),
       fournisseurId: '',
-      engagementId: '',
-      projetId: '',
+      engagementId: 'none',
+      projetId: 'none',
       objet: '',
       montant: '',
       dateLivraisonPrevue: '',
@@ -108,8 +108,8 @@ export const BonCommandeDialog = ({
           numero: numero,
           dateCommande: format(new Date(), 'yyyy-MM-dd'),
           fournisseurId: '',
-          engagementId: '',
-          projetId: '',
+          engagementId: 'none',
+          projetId: 'none',
           objet: '',
           montant: '',
           dateLivraisonPrevue: '',
@@ -128,7 +128,7 @@ export const BonCommandeDialog = ({
           dateCommande: format(new Date(), 'yyyy-MM-dd'),
           fournisseurId: selectedEngagement.fournisseurId || '',
           engagementId: selectedEngagement.id,
-          projetId: selectedEngagement.projetId || '',
+          projetId: selectedEngagement.projetId || 'none',
           objet: selectedEngagement.objet,
           montant: selectedEngagement.montant.toString(),
           observations: `Créé depuis l'engagement ${selectedEngagement.numero}`,
@@ -143,8 +143,8 @@ export const BonCommandeDialog = ({
         numero: bonCommande.numero,
         dateCommande: bonCommande.dateCommande,
         fournisseurId: bonCommande.fournisseurId,
-        engagementId: bonCommande.engagementId || '',
-        projetId: bonCommande.projetId || '',
+        engagementId: bonCommande.engagementId || 'none',
+        projetId: bonCommande.projetId || 'none',
         objet: bonCommande.objet,
         montant: bonCommande.montant.toString(),
         dateLivraisonPrevue: bonCommande.dateLivraisonPrevue || '',
@@ -165,8 +165,8 @@ export const BonCommandeDialog = ({
         numero: values.numero,
         dateCommande: values.dateCommande,
         fournisseurId: values.fournisseurId,
-        engagementId: values.engagementId || undefined,
-        projetId: values.projetId || undefined,
+        engagementId: values.engagementId && values.engagementId !== 'none' ? values.engagementId : undefined,
+        projetId: values.projetId && values.projetId !== 'none' ? values.projetId : undefined,
         objet: values.objet,
         montant: parseFloat(values.montant),
         statut: 'brouillon',
@@ -268,7 +268,7 @@ export const BonCommandeDialog = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">-- Aucun --</SelectItem>
+                        <SelectItem value="none">-- Aucun --</SelectItem>
                         {engagementsValides.map((e) => (
                           <SelectItem key={e.id} value={e.id}>{e.numero} - {e.objet}</SelectItem>
                         ))}
@@ -292,7 +292,7 @@ export const BonCommandeDialog = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">-- Aucun --</SelectItem>
+                        <SelectItem value="none">-- Aucun --</SelectItem>
                         {projets.map((p) => (
                           <SelectItem key={p.id} value={p.id}>{p.code} - {p.nom}</SelectItem>
                         ))}
