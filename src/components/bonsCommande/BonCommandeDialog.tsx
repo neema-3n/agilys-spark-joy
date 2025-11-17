@@ -34,7 +34,6 @@ import { useFournisseurs } from '@/hooks/useFournisseurs';
 import { useEngagements } from '@/hooks/useEngagements';
 import { useProjets } from '@/hooks/useProjets';
 import { format } from 'date-fns';
-import { Badge } from '@/components/ui/badge';
 
 const formSchema = z.object({
   numero: z.string().min(1, 'Le numéro est requis'),
@@ -44,10 +43,7 @@ const formSchema = z.object({
   projetId: z.string().optional(),
   objet: z.string().min(1, 'L\'objet est requis'),
   montant: z.string().min(1, 'Le montant est requis'),
-  statut: z.string(),
-  dateValidation: z.string().optional(),
   dateLivraisonPrevue: z.string().optional(),
-  dateLivraisonReelle: z.string().optional(),
   conditionsLivraison: z.string().optional(),
   observations: z.string().optional(),
 });
@@ -75,6 +71,8 @@ export const BonCommandeDialog = ({
   const { engagements } = useEngagements();
   const { projets } = useProjets();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const isReadOnly = bonCommande && bonCommande.statut !== 'brouillon';
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -86,10 +84,7 @@ export const BonCommandeDialog = ({
       projetId: '',
       objet: '',
       montant: '',
-      statut: 'brouillon',
-      dateValidation: '',
       dateLivraisonPrevue: '',
-      dateLivraisonReelle: '',
       conditionsLivraison: '',
       observations: '',
     },
@@ -114,19 +109,14 @@ export const BonCommandeDialog = ({
           projetId: selectedEngagement.projetId || '',
           objet: selectedEngagement.objet,
           montant: selectedEngagement.montant.toString(),
-          statut: 'brouillon',
           observations: `Créé depuis l'engagement ${selectedEngagement.numero}`,
-          dateValidation: '',
-          dateLivraisonPrevue: '',
-          dateLivraisonReelle: '',
-          conditionsLivraison: '',
         });
       });
     }
   }, [selectedEngagement, open, bonCommande, onGenererNumero, form]);
 
   useEffect(() => {
-    if (bonCommande) {
+    if (bonCommande && open) {
       form.reset({
         numero: bonCommande.numero,
         dateCommande: bonCommande.dateCommande,
@@ -135,38 +125,19 @@ export const BonCommandeDialog = ({
         projetId: bonCommande.projetId || '',
         objet: bonCommande.objet,
         montant: bonCommande.montant.toString(),
-        statut: bonCommande.statut,
-        dateValidation: bonCommande.dateValidation || '',
         dateLivraisonPrevue: bonCommande.dateLivraisonPrevue || '',
-        dateLivraisonReelle: bonCommande.dateLivraisonReelle || '',
         conditionsLivraison: bonCommande.conditionsLivraison || '',
         observations: bonCommande.observations || '',
       });
-    } else {
-      form.reset({
-        numero: '',
-        dateCommande: format(new Date(), 'yyyy-MM-dd'),
-        fournisseurId: '',
-        engagementId: '',
-        projetId: '',
-        objet: '',
-        montant: '',
-        statut: 'brouillon',
-        dateValidation: '',
-        dateLivraisonPrevue: '',
-        dateLivraisonReelle: '',
-        conditionsLivraison: '',
-        observations: '',
-      });
     }
-  }, [bonCommande, form]);
+  }, [bonCommande, form, open]);
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!currentClient || !currentExercice) return;
 
     setIsSubmitting(true);
     try {
-      const data: CreateBonCommandeInput = {
+      const data: any = {
         clientId: currentClient.id,
         exerciceId: currentExercice.id,
         numero: values.numero,
@@ -176,10 +147,8 @@ export const BonCommandeDialog = ({
         projetId: values.projetId || undefined,
         objet: values.objet,
         montant: parseFloat(values.montant),
-        statut: values.statut as any,
-        dateValidation: values.dateValidation || undefined,
+        statut: 'brouillon',
         dateLivraisonPrevue: values.dateLivraisonPrevue || undefined,
-        dateLivraisonReelle: values.dateLivraisonReelle || undefined,
         conditionsLivraison: values.conditionsLivraison || undefined,
         observations: values.observations || undefined,
       };
@@ -187,48 +156,38 @@ export const BonCommandeDialog = ({
       await onSubmit(data);
       onOpenChange(false);
       form.reset();
-    } catch (error) {
-      console.error('Erreur lors de la soumission:', error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const engagementsValides = engagements.filter(e => e.statut === 'valide');
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-      <DialogHeader>
-        <DialogTitle>
-          {bonCommande ? 'Modifier le bon de commande' : 'Nouveau bon de commande'}
-        </DialogTitle>
-      </DialogHeader>
-
-      {selectedEngagement && (
-        <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-md">
-          <p className="text-sm">
-            <strong>Engagement :</strong> {selectedEngagement.numero} - {selectedEngagement.objet}
-          </p>
-          <Badge variant="outline" className="mt-1">
-            {new Intl.NumberFormat('fr-FR', {
-              style: 'currency',
-              currency: 'XAF',
-              minimumFractionDigits: 0,
-            }).format(selectedEngagement.montant)}
-          </Badge>
-        </div>
-      )}
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {bonCommande ? 'Modifier le bon de commande' : 'Nouveau bon de commande'}
+          </DialogTitle>
+          {isReadOnly && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Seuls les bons de commande en brouillon peuvent être modifiés.
+            </p>
+          )}
+        </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="numero"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Numéro</FormLabel>
+                    <FormLabel>Numéro *</FormLabel>
                     <FormControl>
-                      <Input {...field} disabled />
+                      <Input {...field} readOnly disabled />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -240,9 +199,9 @@ export const BonCommandeDialog = ({
                 name="dateCommande"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Date de commande</FormLabel>
+                    <FormLabel>Date de commande *</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input type="date" {...field} disabled={isReadOnly} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -255,8 +214,8 @@ export const BonCommandeDialog = ({
               name="fournisseurId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Fournisseur</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <FormLabel>Fournisseur *</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionner un fournisseur" />
@@ -264,9 +223,7 @@ export const BonCommandeDialog = ({
                     </FormControl>
                     <SelectContent>
                       {fournisseurs.map((f) => (
-                        <SelectItem key={f.id} value={f.id}>
-                          {f.code} - {f.nom}
-                        </SelectItem>
+                        <SelectItem key={f.id} value={f.id}>{f.nom}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -281,18 +238,16 @@ export const BonCommandeDialog = ({
                 name="engagementId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Engagement (optionnel)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <FormLabel>Engagement</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner un engagement" />
+                          <SelectValue placeholder="Optionnel" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {engagements.map((e) => (
-                          <SelectItem key={e.id} value={e.id}>
-                            {e.numero} - {e.objet}
-                          </SelectItem>
+                        {engagementsValides.map((e) => (
+                          <SelectItem key={e.id} value={e.id}>{e.numero} - {e.objet}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -306,18 +261,16 @@ export const BonCommandeDialog = ({
                 name="projetId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Projet (optionnel)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <FormLabel>Projet</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner un projet" />
+                          <SelectValue placeholder="Optionnel" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {projets.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>
-                            {p.code} - {p.nom}
-                          </SelectItem>
+                          <SelectItem key={p.id} value={p.id}>{p.code} - {p.nom}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -332,9 +285,9 @@ export const BonCommandeDialog = ({
               name="objet"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Objet</FormLabel>
+                  <FormLabel>Objet *</FormLabel>
                   <FormControl>
-                    <Textarea {...field} rows={3} />
+                    <Textarea {...field} rows={2} disabled={isReadOnly} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -347,50 +300,9 @@ export const BonCommandeDialog = ({
                 name="montant"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Montant (FCFA)</FormLabel>
+                    <FormLabel>Montant *</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="statut"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Statut</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="brouillon">Brouillon</SelectItem>
-                        <SelectItem value="valide">Validé</SelectItem>
-                        <SelectItem value="en_cours">En cours</SelectItem>
-                        <SelectItem value="receptionne">Réceptionné</SelectItem>
-                        <SelectItem value="annule">Annulé</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="dateValidation"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date de validation</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
+                      <Input type="number" step="0.01" {...field} disabled={isReadOnly} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -402,23 +314,9 @@ export const BonCommandeDialog = ({
                 name="dateLivraisonPrevue"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Livraison prévue</FormLabel>
+                    <FormLabel>Date de livraison prévue</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="dateLivraisonReelle"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Livraison réelle</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
+                      <Input type="date" {...field} value={field.value || ''} disabled={isReadOnly} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -433,7 +331,7 @@ export const BonCommandeDialog = ({
                 <FormItem>
                   <FormLabel>Conditions de livraison</FormLabel>
                   <FormControl>
-                    <Textarea {...field} rows={2} />
+                    <Textarea {...field} rows={2} disabled={isReadOnly} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -447,7 +345,7 @@ export const BonCommandeDialog = ({
                 <FormItem>
                   <FormLabel>Observations</FormLabel>
                   <FormControl>
-                    <Textarea {...field} rows={2} />
+                    <Textarea {...field} rows={2} disabled={isReadOnly} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -455,16 +353,14 @@ export const BonCommandeDialog = ({
             />
 
             <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Annuler
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                {isReadOnly ? 'Fermer' : 'Annuler'}
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
-              </Button>
+              {!isReadOnly && (
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? 'Enregistrement...' : bonCommande ? 'Mettre à jour' : 'Créer'}
+                </Button>
+              )}
             </div>
           </form>
         </Form>

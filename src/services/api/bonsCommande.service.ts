@@ -173,4 +173,148 @@ export const bonsCommandeService = {
 
     return 'BC-00001';
   },
+
+  async validerBonCommande(id: string): Promise<BonCommande> {
+    // Récupérer le BC avec ses relations pour validation
+    const { data: bc, error: fetchError } = await supabase
+      .from('bons_commande')
+      .select(`
+        *,
+        engagements(id, numero, montant)
+      `)
+      .eq('id', id)
+      .single();
+
+    if (fetchError) throw fetchError;
+    if (bc.statut !== 'brouillon') {
+      throw new Error('Seuls les bons de commande en brouillon peuvent être validés');
+    }
+
+    // Validation métier : vérifier que le montant ne dépasse pas l'engagement si lié
+    if (bc.engagement_id && bc.engagements) {
+      const engagement = bc.engagements;
+      
+      if (bc.montant > engagement.montant) {
+        throw new Error(
+          `Le montant du BC (${bc.montant}) dépasse le montant de l'engagement ${engagement.numero} (${engagement.montant})`
+        );
+      }
+    }
+
+    // Mettre à jour le statut
+    const { data, error } = await supabase
+      .from('bons_commande')
+      .update({
+        statut: 'valide',
+        date_validation: new Date().toISOString().split('T')[0],
+      })
+      .eq('id', id)
+      .select(`
+        *,
+        fournisseurs(id, nom, code),
+        engagements(id, numero),
+        lignes_budgetaires(id, libelle),
+        projets(id, nom)
+      `)
+      .single();
+
+    if (error) throw error;
+    return mapBonCommandeFromDB(data);
+  },
+
+  async mettreEnCours(id: string): Promise<BonCommande> {
+    const { data: bc, error: fetchError } = await supabase
+      .from('bons_commande')
+      .select('statut')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) throw fetchError;
+    if (bc.statut !== 'valide') {
+      throw new Error('Seuls les bons de commande validés peuvent être mis en cours');
+    }
+
+    const { data, error } = await supabase
+      .from('bons_commande')
+      .update({ statut: 'en_cours' })
+      .eq('id', id)
+      .select(`
+        *,
+        fournisseurs(id, nom, code),
+        engagements(id, numero),
+        lignes_budgetaires(id, libelle),
+        projets(id, nom)
+      `)
+      .single();
+
+    if (error) throw error;
+    return mapBonCommandeFromDB(data);
+  },
+
+  async receptionner(id: string, dateLivraisonReelle: string): Promise<BonCommande> {
+    const { data: bc, error: fetchError } = await supabase
+      .from('bons_commande')
+      .select('statut')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) throw fetchError;
+    if (bc.statut !== 'en_cours') {
+      throw new Error('Seuls les bons de commande en cours peuvent être réceptionnés');
+    }
+
+    const { data, error } = await supabase
+      .from('bons_commande')
+      .update({
+        statut: 'receptionne',
+        date_livraison_reelle: dateLivraisonReelle,
+      })
+      .eq('id', id)
+      .select(`
+        *,
+        fournisseurs(id, nom, code),
+        engagements(id, numero),
+        lignes_budgetaires(id, libelle),
+        projets(id, nom)
+      `)
+      .single();
+
+    if (error) throw error;
+    return mapBonCommandeFromDB(data);
+  },
+
+  async annuler(id: string, motif: string): Promise<BonCommande> {
+    const { data: bc, error: fetchError } = await supabase
+      .from('bons_commande')
+      .select('statut')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) throw fetchError;
+    if (bc.statut === 'receptionne') {
+      throw new Error('Impossible d\'annuler un bon de commande déjà réceptionné');
+    }
+    if (bc.statut === 'annule') {
+      throw new Error('Ce bon de commande est déjà annulé');
+    }
+
+    const { data, error } = await supabase
+      .from('bons_commande')
+      .update({
+        statut: 'annule',
+        observations: motif,
+      })
+      .eq('id', id)
+      .select(`
+        *,
+        fournisseurs(id, nom, code),
+        engagements(id, numero),
+        lignes_budgetaires(id, libelle),
+        projets(id, nom)
+      `)
+      .single();
+
+    if (error) throw error;
+    return mapBonCommandeFromDB(data);
+  },
 };

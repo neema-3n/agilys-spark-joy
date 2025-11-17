@@ -8,11 +8,15 @@ import { useEngagements } from '@/hooks/useEngagements';
 import { BonCommandeStats } from '@/components/bonsCommande/BonCommandeStats';
 import { BonCommandeTable } from '@/components/bonsCommande/BonCommandeTable';
 import { BonCommandeDialog } from '@/components/bonsCommande/BonCommandeDialog';
+import { AnnulerBCDialog } from '@/components/bonsCommande/AnnulerBCDialog';
+import { ReceptionnerBCDialog } from '@/components/bonsCommande/ReceptionnerBCDialog';
 import { BonCommande, CreateBonCommandeInput, UpdateBonCommandeInput } from '@/types/bonCommande.types';
 import type { Engagement } from '@/types/engagement.types';
 
 const BonsCommande = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
+  const [receptionnerDialogOpen, setReceptionnerDialogOpen] = useState(false);
   const [selectedBonCommande, setSelectedBonCommande] = useState<BonCommande | undefined>();
   const [selectedEngagement, setSelectedEngagement] = useState<Engagement | undefined>();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -24,6 +28,10 @@ const BonsCommande = () => {
     updateBonCommande,
     deleteBonCommande,
     genererNumero,
+    validerBonCommande,
+    mettreEnCours,
+    receptionnerBonCommande,
+    annulerBonCommande,
   } = useBonsCommande();
 
   const { engagements } = useEngagements();
@@ -72,6 +80,44 @@ const BonsCommande = () => {
     await deleteBonCommande(id);
   };
 
+  const handleValider = async (id: string) => {
+    await validerBonCommande(id);
+  };
+
+  const handleMettreEnCours = async (id: string) => {
+    await mettreEnCours(id);
+  };
+
+  const handleReceptionner = (id: string) => {
+    const bc = bonsCommande.find(b => b.id === id);
+    if (bc) {
+      setSelectedBonCommande(bc);
+      setReceptionnerDialogOpen(true);
+    }
+  };
+
+  const handleReceptionnerConfirm = async (dateLivraisonReelle: string) => {
+    if (selectedBonCommande) {
+      await receptionnerBonCommande({ id: selectedBonCommande.id, date: dateLivraisonReelle });
+      setSelectedBonCommande(undefined);
+    }
+  };
+
+  const handleAnnuler = (id: string) => {
+    const bc = bonsCommande.find(b => b.id === id);
+    if (bc) {
+      setSelectedBonCommande(bc);
+      setAnnulerDialogOpen(true);
+    }
+  };
+
+  const handleAnnulerConfirm = async (motif: string) => {
+    if (selectedBonCommande) {
+      await annulerBonCommande({ id: selectedBonCommande.id, motif });
+      setSelectedBonCommande(undefined);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -98,6 +144,10 @@ const BonsCommande = () => {
         <BonCommandeTable
           bonsCommande={bonsCommande}
           onEdit={handleEdit}
+          onValider={handleValider}
+          onMettreEnCours={handleMettreEnCours}
+          onReceptionner={handleReceptionner}
+          onAnnuler={handleAnnuler}
           onDelete={handleDelete}
         />
       </div>
@@ -109,6 +159,20 @@ const BonsCommande = () => {
         selectedEngagement={selectedEngagement}
         onSubmit={handleSubmit}
         onGenererNumero={genererNumero}
+      />
+
+      <AnnulerBCDialog
+        open={annulerDialogOpen}
+        onOpenChange={setAnnulerDialogOpen}
+        bonCommandeNumero={selectedBonCommande?.numero || ''}
+        onConfirm={handleAnnulerConfirm}
+      />
+
+      <ReceptionnerBCDialog
+        open={receptionnerDialogOpen}
+        onOpenChange={setReceptionnerDialogOpen}
+        bonCommandeNumero={selectedBonCommande?.numero || ''}
+        onConfirm={handleReceptionnerConfirm}
       />
     </div>
   );

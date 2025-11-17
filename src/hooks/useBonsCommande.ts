@@ -54,6 +54,52 @@ export const useBonsCommande = () => {
     mutationFn: () => bonsCommandeService.genererNumero(currentClient!.id, currentExercice!.id),
   });
 
+  const validerMutation = useMutation({
+    mutationFn: (id: string) => bonsCommandeService.validerBonCommande(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bons-commande'] });
+      toast.success('Bon de commande validé avec succès');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Erreur lors de la validation du bon de commande');
+    },
+  });
+
+  const mettreEnCoursMutation = useMutation({
+    mutationFn: (id: string) => bonsCommandeService.mettreEnCours(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bons-commande'] });
+      toast.success('Bon de commande mis en cours');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Erreur lors de la mise en cours du bon de commande');
+    },
+  });
+
+  const receptionnerMutation = useMutation({
+    mutationFn: ({ id, date }: { id: string; date: string }) => 
+      bonsCommandeService.receptionner(id, date),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bons-commande'] });
+      toast.success('Bon de commande réceptionné avec succès');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Erreur lors de la réception du bon de commande');
+    },
+  });
+
+  const annulerMutation = useMutation({
+    mutationFn: ({ id, motif }: { id: string; motif: string }) => 
+      bonsCommandeService.annuler(id, motif),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bons-commande'] });
+      toast.success('Bon de commande annulé avec succès');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Erreur lors de l\'annulation du bon de commande');
+    },
+  });
+
   return {
     bonsCommande,
     isLoading,
@@ -61,5 +107,9 @@ export const useBonsCommande = () => {
     updateBonCommande: updateMutation.mutateAsync,
     deleteBonCommande: deleteMutation.mutateAsync,
     genererNumero: genererNumeroMutation.mutateAsync,
+    validerBonCommande: validerMutation.mutateAsync,
+    mettreEnCours: mettreEnCoursMutation.mutateAsync,
+    receptionnerBonCommande: receptionnerMutation.mutateAsync,
+    annulerBonCommande: annulerMutation.mutateAsync,
   };
 };

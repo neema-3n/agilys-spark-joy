@@ -9,7 +9,15 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2 } from 'lucide-react';
+import {
+  MoreHorizontal,
+  Edit,
+  CheckCircle,
+  Truck,
+  Package,
+  XCircle,
+  Trash2
+} from 'lucide-react';
 import { BonCommande } from '@/types/bonCommande.types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -23,10 +31,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 
 interface BonCommandeTableProps {
   bonsCommande: BonCommande[];
   onEdit: (bonCommande: BonCommande) => void;
+  onValider: (id: string) => void;
+  onMettreEnCours: (id: string) => void;
+  onReceptionner: (id: string) => void;
+  onAnnuler: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
@@ -64,7 +83,15 @@ const getStatutLabel = (statut: string) => {
   }
 };
 
-export const BonCommandeTable = ({ bonsCommande, onEdit, onDelete }: BonCommandeTableProps) => {
+export const BonCommandeTable = ({
+  bonsCommande,
+  onEdit,
+  onValider,
+  onMettreEnCours,
+  onReceptionner,
+  onAnnuler,
+  onDelete,
+}: BonCommandeTableProps) => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const formatCurrency = (amount: number) => {
@@ -138,22 +165,65 @@ export const BonCommandeTable = ({ bonsCommande, onEdit, onDelete }: BonCommande
                       : '-'}
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onEdit(bc)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setDeleteId(bc.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {bc.statut === 'brouillon' && (
+                          <>
+                            <DropdownMenuItem onClick={() => onEdit(bc)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Modifier
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onValider(bc.id)}>
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Valider
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                          </>
+                        )}
+                        
+                        {bc.statut === 'valide' && (
+                          <>
+                            <DropdownMenuItem onClick={() => onMettreEnCours(bc.id)}>
+                              <Truck className="h-4 w-4 mr-2" />
+                              Mettre en cours
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                          </>
+                        )}
+                        
+                        {bc.statut === 'en_cours' && (
+                          <>
+                            <DropdownMenuItem onClick={() => onReceptionner(bc.id)}>
+                              <Package className="h-4 w-4 mr-2" />
+                              Réceptionner
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                          </>
+                        )}
+                        
+                        {bc.statut !== 'receptionne' && bc.statut !== 'annule' && (
+                          <DropdownMenuItem onClick={() => onAnnuler(bc.id)}>
+                            <XCircle className="h-4 w-4 mr-2" />
+                            Annuler
+                          </DropdownMenuItem>
+                        )}
+                        
+                        {bc.statut === 'brouillon' && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => setDeleteId(bc.id)}>
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Supprimer
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
