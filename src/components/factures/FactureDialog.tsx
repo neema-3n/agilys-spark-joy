@@ -133,7 +133,8 @@ export const FactureDialog = ({
         observations: facture.observations || '',
       });
     }
-  }, [open, facture, form, onGenererNumero]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, facture, onGenererNumero]);
 
   const handleSubmit = async (values: z.infer<typeof factureSchema>) => {
     try {
@@ -175,7 +176,8 @@ export const FactureDialog = ({
     if (!isNaN(ttc)) {
       form.setValue('montantTTC', ttc.toFixed(2));
     }
-  }, [watchMontantHT, watchMontantTVA, form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchMontantHT, watchMontantTVA]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
