@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { LigneBudgetaire } from '@/types/budget.types';
 import { useComptes } from '@/hooks/useComptes';
 import { useSections } from '@/hooks/useSections';
@@ -14,7 +17,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -22,7 +24,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+
+const ligneBudgetaireSchema = z.object({
+  actionId: z.string().min(1, 'Veuillez sélectionner une action budgétaire'),
+  compteId: z.string().min(1, 'Veuillez sélectionner un compte comptable'),
+  enveloppeId: z.string().optional(),
+  libelle: z.string().min(1, 'Le libellé est requis').max(200, 'Le libellé ne peut dépasser 200 caractères'),
+  montantInitial: z.coerce.number().positive('Le montant doit être supérieur à 0'),
+});
 
 interface LigneBudgetaireDialogProps {
   open: boolean;
@@ -39,7 +49,6 @@ export const LigneBudgetaireDialog = ({
   ligne,
   exerciceId,
 }: LigneBudgetaireDialogProps) => {
-  const { toast } = useToast();
   const { comptes, isLoading: isLoadingComptes } = useComptes();
   const { enveloppes } = useEnveloppes();
   const { sections } = useSections();
@@ -47,254 +56,84 @@ export const LigneBudgetaireDialog = ({
   const { programmes } = useProgrammes(selectedSectionId);
   const [selectedProgrammeId, setSelectedProgrammeId] = useState('');
   const { actions } = useActions(selectedProgrammeId);
-  
-  const [formData, setFormData] = useState({
-    actionId: '',
-    compteId: '',
-    enveloppeId: '',
-    libelle: '',
-    montantInitial: '',
+
+  const form = useForm<z.infer<typeof ligneBudgetaireSchema>>({
+    resolver: zodResolver(ligneBudgetaireSchema),
+    defaultValues: {
+      actionId: '',
+      compteId: '',
+      enveloppeId: '',
+      libelle: '',
+      montantInitial: 0,
+    },
   });
 
   useEffect(() => {
     if (ligne) {
-      setFormData({
+      form.reset({
         actionId: ligne.actionId,
         compteId: ligne.compteId,
         enveloppeId: ligne.enveloppeId || '',
         libelle: ligne.libelle,
-        montantInitial: ligne.montantInitial.toString(),
+        montantInitial: ligne.montantInitial,
       });
     } else {
-      setFormData({
+      form.reset({
         actionId: '',
         compteId: '',
         enveloppeId: '',
         libelle: '',
-        montantInitial: '',
+        montantInitial: 0,
       });
     }
   }, [ligne, open]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validation des champs obligatoires
-    if (!selectedSectionId) {
-      toast({
-        title: 'Erreur de validation',
-        description: 'Veuillez sélectionner une section',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    if (!selectedProgrammeId) {
-      toast({
-        title: 'Erreur de validation',
-        description: 'Veuillez sélectionner un programme',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    if (!formData.actionId) {
-      toast({
-        title: 'Erreur de validation',
-        description: 'Veuillez sélectionner une action budgétaire',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    if (!formData.compteId) {
-      toast({
-        title: 'Erreur de validation',
-        description: 'Veuillez sélectionner un compte comptable',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    if (!formData.libelle.trim()) {
-      toast({
-        title: 'Erreur de validation',
-        description: 'Veuillez saisir un libellé',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    if (!formData.montantInitial || parseFloat(formData.montantInitial) <= 0) {
-      toast({
-        title: 'Erreur de validation',
-        description: 'Le montant doit être supérieur à zéro',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
+  const handleSubmit = (values: z.infer<typeof ligneBudgetaireSchema>) => {
     onSubmit({
       ...(ligne ? { id: ligne.id } : {}),
+      actionId: values.actionId,
+      compteId: values.compteId,
+      enveloppeId: values.enveloppeId || null,
+      libelle: values.libelle,
+      montantInitial: values.montantInitial,
       exerciceId,
-      actionId: formData.actionId,
-      compteId: formData.compteId,
-      enveloppeId: formData.enveloppeId || undefined,
-      libelle: formData.libelle,
-      montantInitial: parseFloat(formData.montantInitial),
     });
-    
     onClose();
   };
 
+  const comptesActifs = comptes.filter(c => c.statut === 'actif');
+  const enveloppesActives = enveloppes.filter(e => e.statut === 'actif');
+  const sectionsActives = sections.filter(s => s.statut === 'actif');
+  const programmesActifs = programmes.filter(p => p.statut === 'actif');
+  const actionsActives = actions.filter(a => a.statut === 'actif');
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            {ligne ? 'Modifier la ligne budgétaire' : 'Nouvelle ligne budgétaire'}
+            {ligne ? 'Modifier la ligne budgétaire' : 'Créer une ligne budgétaire'}
           </DialogTitle>
         </DialogHeader>
-
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="sectionId">
-                Section <span className="text-destructive">*</span>
-              </Label>
+              <FormLabel>Section *</FormLabel>
               <Select
                 value={selectedSectionId}
                 onValueChange={(value) => {
                   setSelectedSectionId(value);
                   setSelectedProgrammeId('');
-                  setFormData({ ...formData, actionId: '' });
+                  form.setValue('actionId', '');
                 }}
               >
-                <SelectTrigger className={!selectedSectionId ? 'border-muted-foreground/20' : ''}>
+                <SelectTrigger>
                   <SelectValue placeholder="Sélectionner une section" />
                 </SelectTrigger>
                 <SelectContent>
-                  {sections.length === 0 ? (
-                    <div className="px-2 py-6 text-center text-sm text-muted-foreground">
-                      Aucune section disponible
-                    </div>
-                  ) : (
-                    sections.map((section) => (
-                      <SelectItem key={section.id} value={section.id}>
-                        {section.code} - {section.libelle}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="programmeId">
-                Programme <span className="text-destructive">*</span>
-              </Label>
-              <Select
-                value={selectedProgrammeId}
-                onValueChange={(value) => {
-                  setSelectedProgrammeId(value);
-                  setFormData({ ...formData, actionId: '' });
-                }}
-                disabled={!selectedSectionId}
-              >
-                <SelectTrigger className={!selectedProgrammeId && selectedSectionId ? 'border-muted-foreground/20' : ''}>
-                  <SelectValue placeholder="Sélectionner un programme" />
-                </SelectTrigger>
-                <SelectContent>
-                  {programmes.length === 0 ? (
-                    <div className="px-2 py-6 text-center text-sm text-muted-foreground">
-                      {selectedSectionId ? 'Aucun programme disponible' : 'Sélectionnez d\'abord une section'}
-                    </div>
-                  ) : (
-                    programmes.map((programme) => (
-                      <SelectItem key={programme.id} value={programme.id}>
-                        {programme.code} - {programme.libelle}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="actionId">
-                Action budgétaire <span className="text-destructive">*</span>
-              </Label>
-              <Select
-                value={formData.actionId}
-                onValueChange={(value) => setFormData({ ...formData, actionId: value })}
-                disabled={!selectedProgrammeId}
-              >
-                <SelectTrigger className={!formData.actionId && selectedProgrammeId ? 'border-muted-foreground/20' : ''}>
-                  <SelectValue placeholder="Sélectionner une action" />
-                </SelectTrigger>
-                <SelectContent>
-                  {actions.length === 0 ? (
-                    <div className="px-2 py-6 text-center text-sm text-muted-foreground">
-                      {selectedProgrammeId ? 'Aucune action disponible' : 'Sélectionnez d\'abord un programme'}
-                    </div>
-                  ) : (
-                    actions.map((action) => (
-                      <SelectItem key={action.id} value={action.id}>
-                        {action.code} - {action.libelle}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="compteId">
-                Compte comptable <span className="text-destructive">*</span>
-              </Label>
-              <Select
-                value={formData.compteId}
-                onValueChange={(value) => setFormData({ ...formData, compteId: value })}
-              >
-                <SelectTrigger className={!formData.compteId ? 'border-muted-foreground/20' : ''}>
-                  <SelectValue placeholder="Sélectionner un compte" />
-                </SelectTrigger>
-                <SelectContent>
-                  {isLoadingComptes ? (
-                    <div className="px-2 py-6 text-center text-sm text-muted-foreground">
-                      Chargement...
-                    </div>
-                  ) : comptes.length === 0 ? (
-                    <div className="px-2 py-6 text-center text-sm text-muted-foreground">
-                      Aucun compte disponible
-                    </div>
-                  ) : (
-                    comptes.map((compte) => (
-                      <SelectItem key={compte.id} value={compte.id}>
-                        {compte.numero} - {compte.libelle}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="enveloppeId">
-                Enveloppe de financement
-              </Label>
-              <Select
-                value={formData.enveloppeId}
-                onValueChange={(value) => setFormData({ ...formData, enveloppeId: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Aucune enveloppe (optionnel)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Aucune enveloppe</SelectItem>
-                  {enveloppes.map((enveloppe) => (
-                    <SelectItem key={enveloppe.id} value={enveloppe.id}>
-                      {enveloppe.code} - {enveloppe.nom} ({enveloppe.montantDisponible.toLocaleString()} FCFA disponible)
+                  {sectionsActives.map((section) => (
+                    <SelectItem key={section.id} value={section.id}>
+                      {section.code} - {section.libelle}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -302,44 +141,145 @@ export const LigneBudgetaireDialog = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="libelle">
-                Libellé <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="libelle"
-                value={formData.libelle}
-                onChange={(e) => setFormData({ ...formData, libelle: e.target.value })}
-                placeholder="Libellé de la ligne budgétaire"
-                required
-              />
+              <FormLabel>Programme *</FormLabel>
+              <Select
+                value={selectedProgrammeId}
+                onValueChange={(value) => {
+                  setSelectedProgrammeId(value);
+                  form.setValue('actionId', '');
+                }}
+                disabled={!selectedSectionId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={selectedSectionId ? "Sélectionner un programme" : "Veuillez d'abord sélectionner une section"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {programmesActifs.map((programme) => (
+                    <SelectItem key={programme.id} value={programme.id}>
+                      {programme.code} - {programme.libelle}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="montantInitial">
-                Montant initial (FCFA) <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="montantInitial"
-                type="number"
-                value={formData.montantInitial}
-                onChange={(e) => setFormData({ ...formData, montantInitial: e.target.value })}
-                placeholder="0"
-                min="0.01"
-                step="any"
-                required
-              />
-            </div>
-          </div>
+            <FormField
+              control={form.control}
+              name="actionId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Action budgétaire *</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={!selectedProgrammeId}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={selectedProgrammeId ? "Sélectionner une action" : "Veuillez d'abord sélectionner un programme"} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {actionsActives.map((action) => (
+                        <SelectItem key={action.id} value={action.id}>
+                          {action.code} - {action.libelle}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              Annuler
-            </Button>
-            <Button type="submit">
-              {ligne ? 'Modifier' : 'Créer'}
-            </Button>
-          </DialogFooter>
-        </form>
+            <FormField
+              control={form.control}
+              name="compteId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Compte comptable *</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner un compte" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {isLoadingComptes ? (
+                        <SelectItem value="loading" disabled>Chargement...</SelectItem>
+                      ) : (
+                        comptesActifs.map((compte) => (
+                          <SelectItem key={compte.id} value={compte.id}>
+                            {compte.numero} - {compte.libelle}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="enveloppeId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Enveloppe (optionnel)</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner une enveloppe" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {enveloppesActives.map((enveloppe) => (
+                        <SelectItem key={enveloppe.id} value={enveloppe.id}>
+                          {enveloppe.code} - {enveloppe.nom}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="libelle"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Libellé *</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Libellé de la ligne budgétaire" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="montantInitial"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Montant initial (FCFA) *</FormLabel>
+                  <FormControl>
+                    <Input type="number" step="0.01" {...field} placeholder="0" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={onClose}>
+                Annuler
+              </Button>
+              <Button type="submit">
+                {ligne ? 'Modifier' : 'Créer'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
