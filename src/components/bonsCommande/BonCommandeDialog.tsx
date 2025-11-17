@@ -104,7 +104,18 @@ export const BonCommandeDialog = ({
   useEffect(() => {
     if (open && !bonCommande && !selectedEngagement) {
       onGenererNumero().then((numero) => {
-        form.setValue('numero', numero);
+        form.reset({
+          numero: numero,
+          dateCommande: format(new Date(), 'yyyy-MM-dd'),
+          fournisseurId: '',
+          engagementId: '',
+          projetId: '',
+          objet: '',
+          montant: '',
+          dateLivraisonPrevue: '',
+          conditionsLivraison: '',
+          observations: '',
+        });
       });
     }
   }, [open, bonCommande, selectedEngagement, onGenererNumero, form]);
