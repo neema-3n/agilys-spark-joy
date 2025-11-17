@@ -90,8 +90,9 @@ export const FactureTable = ({
 
   return (
     <>
-      <div className="rounded-md border max-h-[600px] overflow-auto">
-        <Table>
+      <div className="rounded-md border">
+        <div className="max-h-[600px] overflow-y-auto overflow-x-auto">
+          <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Numéro</TableHead>
@@ -179,7 +180,8 @@ export const FactureTable = ({
             ))
           )}
         </TableBody>
-        </Table>
+          </Table>
+        </div>
       </div>
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
