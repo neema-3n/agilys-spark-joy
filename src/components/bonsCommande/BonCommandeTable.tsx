@@ -40,6 +40,18 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 
+// Helper function to safely format dates
+const formatDate = (dateString?: string | null): string => {
+  if (!dateString) return '-';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '-';
+    return format(date, 'dd/MM/yyyy', { locale: fr });
+  } catch {
+    return '-';
+  }
+};
+
 interface BonCommandeTableProps {
   bonsCommande: BonCommande[];
   onEdit: (bonCommande: BonCommande) => void;
@@ -174,7 +186,7 @@ export const BonCommandeTable = ({
                 <TableRow key={bc.id}>
                   <TableCell className="font-medium">{bc.numero}</TableCell>
                   <TableCell>
-                    {format(new Date(bc.dateCommande), 'dd/MM/yyyy', { locale: fr })}
+                    {formatDate(bc.dateCommande)}
                   </TableCell>
                   <TableCell>{bc.fournisseur?.nom || '-'}</TableCell>
                   <TableCell>
@@ -202,7 +214,7 @@ export const BonCommandeTable = ({
                           ? getRetardColorClass('pending_late')
                           : ''
                       }>
-                        {format(new Date(bc.dateLivraisonPrevue), 'dd/MM/yyyy', { locale: fr })}
+                        {formatDate(bc.dateLivraisonPrevue)}
                       </span>
                     ) : (
                       '-'
@@ -211,7 +223,7 @@ export const BonCommandeTable = ({
                   <TableCell>
                     {bc.dateLivraisonReelle ? (
                       <span className={getRetardColorClass(getRetardStatus(bc))}>
-                        {format(new Date(bc.dateLivraisonReelle), 'dd/MM/yyyy', { locale: fr })}
+                        {formatDate(bc.dateLivraisonReelle)}
                       </span>
                     ) : (
                       '-'
