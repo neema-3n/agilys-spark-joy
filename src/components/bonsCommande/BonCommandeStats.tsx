@@ -13,6 +13,17 @@ export const BonCommandeStats = ({ bonsCommande }: BonCommandeStatsProps) => {
     valide: bonsCommande.filter(bc => bc.statut === 'valide' || bc.statut === 'en_cours').length,
     receptionne: bonsCommande.filter(bc => bc.statut === 'receptionne').length,
     montantTotal: bonsCommande.reduce((sum, bc) => sum + bc.montant, 0),
+    montantBrouillon: bonsCommande.filter(bc => bc.statut === 'brouillon').reduce((sum, bc) => sum + bc.montant, 0),
+    montantValide: bonsCommande.filter(bc => bc.statut === 'valide' || bc.statut === 'en_cours').reduce((sum, bc) => sum + bc.montant, 0),
+    montantReceptionne: bonsCommande.filter(bc => bc.statut === 'receptionne').reduce((sum, bc) => sum + bc.montant, 0),
+  };
+
+  const formatMontant = (montant: number) => {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'XAF',
+      minimumFractionDigits: 0,
+    }).format(montant);
   };
 
   return (
@@ -22,24 +33,31 @@ export const BonCommandeStats = ({ bonsCommande }: BonCommandeStatsProps) => {
         value={stats.total.toString()}
         icon={FileText}
         color="text-primary"
+        trend={formatMontant(stats.montantTotal)}
+        trendUp={true}
       />
       <StatsCard
         title="En brouillon"
         value={stats.brouillon.toString()}
         icon={Clock}
         color="text-muted-foreground"
+        trend={formatMontant(stats.montantBrouillon)}
       />
       <StatsCard
         title="Validés / En cours"
         value={stats.valide.toString()}
         icon={CheckCircle}
         color="text-secondary"
+        trend={formatMontant(stats.montantValide)}
+        trendUp={true}
       />
       <StatsCard
         title="Réceptionnés"
         value={stats.receptionne.toString()}
         icon={Package}
         color="text-accent"
+        trend={formatMontant(stats.montantReceptionne)}
+        trendUp={true}
       />
     </div>
   );
