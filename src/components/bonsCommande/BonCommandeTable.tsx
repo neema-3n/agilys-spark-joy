@@ -16,7 +16,8 @@ import {
   Truck,
   Package,
   XCircle,
-  Trash2
+  Trash2,
+  Eye
 } from 'lucide-react';
 import { BonCommande } from '@/types/bonCommande.types';
 import { format } from 'date-fns';
@@ -178,45 +179,49 @@ export const BonCommandeTable = ({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => onEdit(bc)}>
+                          <Eye className="h-4 w-4 mr-2" />
+                          Voir les détails
+                        </DropdownMenuItem>
+                        
                         {bc.statut === 'brouillon' && (
                           <>
-                            <DropdownMenuItem onClick={() => onEdit(bc)}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Modifier
-                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => onValider(bc.id)}>
                               <CheckCircle className="h-4 w-4 mr-2" />
                               Valider
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator />
                           </>
                         )}
                         
                         {bc.statut === 'valide' && (
                           <>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => onMettreEnCours(bc.id)}>
                               <Truck className="h-4 w-4 mr-2" />
                               Mettre en cours
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator />
                           </>
                         )}
                         
                         {bc.statut === 'en_cours' && (
                           <>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => onReceptionner(bc.id)}>
                               <Package className="h-4 w-4 mr-2" />
                               Réceptionner
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator />
                           </>
                         )}
                         
                         {bc.statut !== 'receptionne' && bc.statut !== 'annule' && (
-                          <DropdownMenuItem onClick={() => onAnnuler(bc.id)}>
-                            <XCircle className="h-4 w-4 mr-2" />
-                            Annuler
-                          </DropdownMenuItem>
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => onAnnuler(bc.id)}>
+                              <XCircle className="h-4 w-4 mr-2" />
+                              Annuler
+                            </DropdownMenuItem>
+                          </>
                         )}
                         
                         {bc.statut === 'brouillon' && (
