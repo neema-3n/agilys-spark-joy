@@ -179,7 +179,7 @@ export const FactureDialog = ({
     const currentValue = form.getValues('montantTTC');
     if (!isNaN(ttc) && currentValue !== ttcFormatted) {
       form.setValue('montantTTC', ttcFormatted, { 
-        shouldValidate: false,
+        shouldValidate: true,
         shouldDirty: false,
         shouldTouch: false
       });
