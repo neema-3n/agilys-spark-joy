@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import {
   Dialog,
   DialogContent,
@@ -8,7 +11,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -18,13 +20,24 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
 import { useFournisseurs } from '@/hooks/useFournisseurs';
 import { useProjets } from '@/hooks/useProjets';
 import { useEngagements } from '@/hooks/useEngagements';
-import { supabase } from '@/integrations/supabase/client';
 import type { Engagement, EngagementFormData } from '@/types/engagement.types';
 import type { ReservationCredit } from '@/types/reservation.types';
+
+const engagementSchema = z.object({
+  ligneBudgetaireId: z.string().min(1, 'Veuillez sélectionner une ligne budgétaire'),
+  objet: z.string().min(1, "L'objet est requis").max(500, "L'objet ne peut dépasser 500 caractères"),
+  montant: z.coerce.number().positive('Le montant doit être supérieur à 0'),
+  fournisseurId: z.string().optional(),
+  beneficiaire: z.string().optional(),
+  projetId: z.string().optional(),
+  observations: z.string().optional(),
+  reservationCreditId: z.string().optional(),
+});
 
 interface EngagementDialogProps {
   open: boolean;
