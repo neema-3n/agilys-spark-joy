@@ -129,7 +129,7 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation, pre
             <p className="text-sm text-blue-900 dark:text-blue-100">
               <strong>Ligne budgétaire :</strong> {preSelectedLigneBudgetaire.libelle}
               <br />
-              <strong>Disponible :</strong> {preSelectedLigneBudgetaire.disponible.toLocaleString('fr-FR')} FCFA
+              <strong>Disponible :</strong> {preSelectedLigneBudgetaire.disponible.toLocaleString('fr-FR')}
             </p>
           </div>
         )}
