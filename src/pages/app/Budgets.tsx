@@ -155,10 +155,13 @@ const Budgets = () => {
       loadData();
     } catch (error) {
       toast({
-        title: 'Erreur',
-        description: 'Impossible de supprimer la ligne budgétaire',
+        title: 'Suppression impossible',
+        description: error instanceof Error 
+          ? error.message 
+          : 'Impossible de supprimer la ligne budgétaire',
         variant: 'destructive',
       });
+      setDeleteDialogOpen(false);
     }
   };
 
@@ -514,7 +517,22 @@ const Budgets = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
             <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer cette ligne budgétaire ? Cette action est irréversible.
+              {(() => {
+                const ligne = lignes.find(l => l.id === ligneToDelete);
+                if (ligne && ligne.montantReserve && ligne.montantReserve > 0) {
+                  return (
+                    <div className="space-y-2">
+                      <p className="text-amber-600 font-medium">
+                        ⚠️ Cette ligne a {formatMontant(ligne.montantReserve)} de crédits réservés.
+                      </p>
+                      <p>
+                        Vous devez d'abord supprimer ou libérer les réservations avant de pouvoir supprimer cette ligne budgétaire.
+                      </p>
+                    </div>
+                  );
+                }
+                return "Êtes-vous sûr de vouloir supprimer cette ligne budgétaire ? Cette action est irréversible.";
+              })()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
