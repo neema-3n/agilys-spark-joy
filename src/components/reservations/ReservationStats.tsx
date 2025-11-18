@@ -40,7 +40,7 @@ export const ReservationStats = ({ reservations }: ReservationStatsProps) => {
       />
       <StatsCard
         title="Montant Actif"
-        value={`${formatCurrency(stats.montantActif)} FCFA`}
+        value={formatCurrency(stats.montantActif)}
         icon={DollarSign}
         color="text-secondary"
         trend="En réservation active"
@@ -48,10 +48,10 @@ export const ReservationStats = ({ reservations }: ReservationStatsProps) => {
       />
       <StatsCard
         title="Montant Utilisé"
-        value={`${formatCurrency(stats.montantUtilise)} FCFA`}
+        value={formatCurrency(stats.montantUtilise)}
         icon={CheckCircle}
         color="text-accent"
-        trend="FCFA consommés"
+        trend="Consommés"
         trendUp={true}
       />
       <StatsCard

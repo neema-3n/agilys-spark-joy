@@ -91,7 +91,7 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation }: R
     const ligneBudgetaire = lignesActives.find(l => l.id === values.ligneBudgetaireId);
     if (ligneBudgetaire && values.montant > ligneBudgetaire.disponible) {
       form.setError('montant', {
-        message: `Le montant dépasse le disponible de la ligne (${ligneBudgetaire.disponible.toLocaleString('fr-FR')} FCFA)`
+        message: `Le montant dépasse le disponible de la ligne (${ligneBudgetaire.disponible.toLocaleString('fr-FR')})`
       });
       return;
     }
@@ -141,7 +141,7 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation }: R
                     <SelectContent>
                       {lignesActives.map((ligne) => (
                         <SelectItem key={ligne.id} value={ligne.id}>
-                          {ligne.libelle} - Disponible : {ligne.disponible.toLocaleString('fr-FR')} FCFA
+                          {ligne.libelle} - Disponible : {ligne.disponible.toLocaleString('fr-FR')}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -156,7 +156,7 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation }: R
               name="montant"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Montant (FCFA) *</FormLabel>
+                  <FormLabel>Montant *</FormLabel>
                   <FormControl>
                     <Input type="number" step="0.01" {...field} placeholder="0" />
                   </FormControl>

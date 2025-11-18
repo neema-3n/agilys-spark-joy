@@ -264,7 +264,7 @@ export const LigneBudgetaireDialog = ({
               name="montantInitial"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Montant initial (FCFA) *</FormLabel>
+                  <FormLabel>Montant initial *</FormLabel>
                   <FormControl>
                     <Input type="number" step="0.01" {...field} placeholder="0" />
                   </FormControl>

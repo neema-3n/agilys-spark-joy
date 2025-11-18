@@ -113,7 +113,7 @@ export const ReservationTable = ({
                   )}
                 </TableCell>
                 <TableCell className="text-right font-medium">
-                  {formatCurrency(reservation.montant)} FCFA
+                  {formatCurrency(reservation.montant)}
                 </TableCell>
                 <TableCell className="text-right">
                   {(() => {
@@ -123,7 +123,7 @@ export const ReservationTable = ({
                     
                     return (
                       <span className={`font-medium ${isEpuise ? 'text-destructive' : isPartiel ? 'text-orange-600' : 'text-green-600'}`}>
-                        {formatCurrency(solde)} FCFA
+                        {formatCurrency(solde)}
                       </span>
                     );
                   })()}
