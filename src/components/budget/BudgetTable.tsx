@@ -141,6 +141,7 @@ export const BudgetTable = ({
             <TableHead className="w-[350px] font-semibold">Libellé</TableHead>
             <TableHead className="text-right font-semibold">Montant Initial</TableHead>
             <TableHead className="text-right font-semibold">Montant Modifié</TableHead>
+            <TableHead className="text-right font-semibold">Réservé</TableHead>
             <TableHead className="text-right font-semibold">Engagé</TableHead>
             <TableHead className="text-right font-semibold">Payé</TableHead>
             <TableHead className="text-right font-semibold">Disponible</TableHead>
@@ -174,7 +175,7 @@ export const BudgetTable = ({
                       </Button>
                     </div>
                   </TableCell>
-                  <TableCell colSpan={7} />
+                  <TableCell colSpan={8} />
                 </TableRow>
 
                 {isExpanded && sectionProgrammes.map((programme) => {
@@ -202,7 +203,7 @@ export const BudgetTable = ({
                             </Button>
                           </div>
                         </TableCell>
-                        <TableCell colSpan={7} />
+                        <TableCell colSpan={8} />
                       </TableRow>
 
                       {isProgrammeExpanded && programmeActions.map((action) => {
@@ -216,8 +217,8 @@ export const BudgetTable = ({
                                   <Zap className="h-4 w-4 mr-2 text-amber-600 dark:text-amber-400" />
                                   {action.code} - {action.libelle}
                                 </div>
-                              </TableCell>
-                              <TableCell colSpan={7} />
+                            </TableCell>
+                            <TableCell colSpan={8} />
                             </TableRow>
 
                             {actionLignes.map((ligne) => {
@@ -247,7 +248,10 @@ export const BudgetTable = ({
                                   <TableCell className="text-right text-sm font-medium">
                                     {formatMontant(ligne.montantModifie)}
                                   </TableCell>
-                                  <TableCell className="text-right text-sm">
+                                  <TableCell className="text-right text-sm text-purple-600 dark:text-purple-400">
+                                    {formatMontant(ligne.montantReserve || 0)}
+                                  </TableCell>
+                                  <TableCell className="text-right text-sm text-orange-600 dark:text-orange-400">
                                     {formatMontant(ligne.montantEngage)}
                                   </TableCell>
                                   <TableCell className="text-right text-sm">
