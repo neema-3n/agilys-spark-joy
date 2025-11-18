@@ -105,9 +105,8 @@ const Fournisseurs = () => {
                       <div className="text-right">
                         <div className="font-bold">
                           {new Intl.NumberFormat('fr-FR', {
-                            style: 'currency',
-                            currency: 'XOF',
                             minimumFractionDigits: 0,
+                            maximumFractionDigits: 0,
                           }).format(f.montantTotal)}
                         </div>
                       </div>

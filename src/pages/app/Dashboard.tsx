@@ -55,7 +55,7 @@ const Dashboard = () => {
   const stats = [
     {
       title: 'Budget Total',
-      value: '150 000 000 XOF',
+      value: '150 000 000',
       icon: DollarSign,
       trend: '+12.5% vs année précédente',
       trendUp: true,
@@ -63,7 +63,7 @@ const Dashboard = () => {
     },
     {
       title: 'Engagements',
-      value: '89 500 000 XOF',
+      value: '89 500 000',
       icon: TrendingUp,
       trend: '59.7% du budget',
       trendUp: true,
@@ -71,7 +71,7 @@ const Dashboard = () => {
     },
     {
       title: 'Factures Payées',
-      value: '56 000 000 XOF',
+      value: '56 000 000',
       icon: FileText,
       trend: '37.3% du budget',
       trendUp: false,
@@ -79,7 +79,7 @@ const Dashboard = () => {
     },
     {
       title: 'En Attente',
-      value: '33 500 000 XOF',
+      value: '33 500 000',
       icon: AlertCircle,
       trend: '22.3% à traiter',
       trendUp: false,
@@ -132,7 +132,7 @@ const Dashboard = () => {
                   tick={{ fill: 'hsl(var(--muted-foreground))' }}
                 />
                 <Tooltip 
-                  formatter={(value) => `${(value as number).toLocaleString()} XOF`}
+                  formatter={(value) => `${(value as number).toLocaleString()}`}
                   contentStyle={{
                     backgroundColor: 'hsl(var(--card))',
                     border: '1px solid hsl(var(--border))',
@@ -169,7 +169,7 @@ const Dashboard = () => {
                   </div>
                   <div className="text-right ml-4 flex-shrink-0">
                     <p className="font-semibold text-foreground whitespace-nowrap">
-                      {eng.montant.toLocaleString()} XOF
+                      {eng.montant.toLocaleString()}
                     </p>
                     <Badge variant={getStatusVariant(eng.statut)} className="mt-1">
                       {getStatusLabel(eng.statut)}
