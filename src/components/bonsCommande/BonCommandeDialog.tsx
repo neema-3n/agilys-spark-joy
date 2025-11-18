@@ -26,6 +26,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { BonCommande, CreateBonCommandeInput, UpdateBonCommandeInput } from '@/types/bonCommande.types';
 import type { Engagement } from '@/types/engagement.types';
 import { useClient } from '@/contexts/ClientContext';
@@ -187,8 +188,8 @@ export const BonCommandeDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {bonCommande ? 'Modifier le bon de commande' : 'Nouveau bon de commande'}
           </DialogTitle>
@@ -199,8 +200,9 @@ export const BonCommandeDialog = ({
           )}
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <ScrollArea className="flex-1 px-1">
+          <Form {...form}>
+          <form className="space-y-6 py-4">
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -376,18 +378,24 @@ export const BonCommandeDialog = ({
               )}
             />
 
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                {isReadOnly ? 'Fermer' : 'Annuler'}
-              </Button>
-              {!isReadOnly && (
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Enregistrement...' : bonCommande ? 'Mettre à jour' : 'Créer'}
-                </Button>
-              )}
-            </div>
-          </form>
-        </Form>
+            </form>
+          </Form>
+        </ScrollArea>
+        
+        <div className="flex justify-end gap-2 flex-shrink-0 pt-4 border-t">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            {isReadOnly ? 'Fermer' : 'Annuler'}
+          </Button>
+          {!isReadOnly && (
+            <Button 
+              type="button"
+              disabled={isSubmitting}
+              onClick={form.handleSubmit(handleSubmit)}
+            >
+              {isSubmitting ? 'Enregistrement...' : bonCommande ? 'Mettre à jour' : 'Créer'}
+            </Button>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );

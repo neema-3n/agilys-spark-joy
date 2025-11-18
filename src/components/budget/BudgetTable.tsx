@@ -12,7 +12,14 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, ChevronRight, Edit, Trash2, Layers, GitBranch, Zap } from 'lucide-react';
+import { ChevronDown, ChevronRight, Edit, Trash2, Layers, GitBranch, Zap, MoreHorizontal } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface BudgetTableProps {
   clientId: string;
@@ -124,8 +131,9 @@ export const BudgetTable = ({
   };
 
   return (
-    <div className="border rounded-lg overflow-hidden shadow-sm">
-      <Table>
+      <div className="rounded-md border max-h-[600px] overflow-auto">
+        <div className="[&>div]:max-h-none [&>div]:overflow-visible">
+          <Table>
         <TableHeader>
           <TableRow className="bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/15">
             <TableHead className="w-[350px] font-semibold">Libellé</TableHead>
@@ -261,21 +269,28 @@ export const BudgetTable = ({
                                     </Badge>
                                   </TableCell>
                                   <TableCell>
-                                    <div className="flex gap-1 justify-end">
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => onEdit(ligne)}
-                                      >
-                                        <Edit className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => onDelete(ligne.id)}
-                                      >
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                      </Button>
+                                    <div className="flex justify-end">
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button variant="ghost" size="icon">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          <DropdownMenuItem onClick={() => onEdit(ligne)}>
+                                            <Edit className="mr-2 h-4 w-4" />
+                                            Modifier
+                                          </DropdownMenuItem>
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem
+                                            onClick={() => onDelete(ligne.id)}
+                                            className="text-destructive"
+                                          >
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Supprimer
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
                                     </div>
                                   </TableCell>
                                 </TableRow>
@@ -292,6 +307,7 @@ export const BudgetTable = ({
           })}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 };

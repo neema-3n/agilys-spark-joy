@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 
 interface ReceptionnerBCDialogProps {
@@ -42,28 +43,30 @@ export const ReceptionnerBCDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Réceptionner le bon de commande</DialogTitle>
           <DialogDescription>
             Confirmez la réception du bon de commande <strong>{bonCommandeNumero}</strong>.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="dateLivraison">Date de livraison réelle *</Label>
-            <Input
-              id="dateLivraison"
-              type="date"
-              value={dateLivraisonReelle}
-              onChange={(e) => setDateLivraisonReelle(e.target.value)}
-              max={format(new Date(), 'yyyy-MM-dd')}
-            />
+        <ScrollArea className="flex-1 px-1">
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="dateLivraison">Date de livraison réelle *</Label>
+              <Input
+                id="dateLivraison"
+                type="date"
+                value={dateLivraisonReelle}
+                onChange={(e) => setDateLivraisonReelle(e.target.value)}
+                max={format(new Date(), 'yyyy-MM-dd')}
+              />
+            </div>
           </div>
-        </div>
+        </ScrollArea>
 
-        <DialogFooter>
+        <DialogFooter className="flex-shrink-0 pt-4 border-t">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}

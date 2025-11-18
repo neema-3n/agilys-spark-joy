@@ -21,6 +21,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -103,8 +104,8 @@ export function EnveloppeDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {mode === 'create' ? 'Nouvelle enveloppe' : 'Modifier l\'enveloppe'}
           </DialogTitle>
@@ -115,8 +116,9 @@ export function EnveloppeDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        <ScrollArea className="flex-1 px-1">
+          <Form {...form}>
+            <form className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -264,26 +266,27 @@ export function EnveloppeDialog({
                 )}
               />
             </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={isSubmitting}
-              >
-                Annuler
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting
-                  ? 'Enregistrement...'
-                  : mode === 'create'
-                  ? 'Créer'
-                  : 'Enregistrer'}
-              </Button>
-            </DialogFooter>
           </form>
         </Form>
+        </ScrollArea>
+
+        <DialogFooter className="flex-shrink-0 pt-4 border-t">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
+            Annuler
+          </Button>
+          <Button type="button" disabled={isSubmitting} onClick={form.handleSubmit(handleSubmit)}>
+            {isSubmitting
+              ? 'Enregistrement...'
+              : mode === 'create'
+              ? 'Créer'
+              : 'Enregistrer'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

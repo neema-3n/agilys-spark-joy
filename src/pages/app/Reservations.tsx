@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Plus } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { ReservationDialog } from '@/components/reservations/ReservationDialog';
@@ -217,15 +216,13 @@ const Reservations = () => {
       <div className="flex-1 overflow-y-auto p-8 pt-6 space-y-6">
         <ReservationStats reservations={reservations} />
 
-        <Card className="p-6">
-          <ReservationTable
-            reservations={reservations}
-            onEdit={handleEdit}
-            onCreerEngagement={handleCreerEngagement}
-            onAnnuler={handleAnnuler}
-            onDelete={handleDelete}
-          />
-        </Card>
+        <ReservationTable
+          reservations={reservations}
+          onEdit={handleEdit}
+          onCreerEngagement={handleCreerEngagement}
+          onAnnuler={handleAnnuler}
+          onDelete={handleDelete}
+        />
       </div>
 
       <ReservationDialog
@@ -246,7 +243,7 @@ const Reservations = () => {
               <ul className="mt-2 space-y-1 list-disc list-inside">
                 {pendingAnnulation?.engagements.map((eng) => (
                   <li key={eng.id} className="text-sm">
-                    {eng.numero} - {eng.montant.toLocaleString()} FCFA ({eng.statut})
+                {eng.numero} - {eng.montant.toLocaleString()} ({eng.statut})
                   </li>
                 ))}
               </ul>
@@ -276,7 +273,7 @@ const Reservations = () => {
               <ul className="mt-2 space-y-1 list-disc list-inside">
                 {pendingSuppression?.engagements.map((eng) => (
                   <li key={eng.id} className="text-sm">
-                    {eng.numero} - {eng.montant.toLocaleString()} FCFA ({eng.statut})
+                    {eng.numero} - {eng.montant.toLocaleString()} ({eng.statut})
                   </li>
                 ))}
               </ul>

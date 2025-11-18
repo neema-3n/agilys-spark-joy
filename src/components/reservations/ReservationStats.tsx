@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatsCard } from '@/components/ui/stats-card';
 import { DollarSign, Clock, CheckCircle, XCircle } from 'lucide-react';
 import type { ReservationCredit } from '@/types/reservation.types';
 
@@ -31,57 +31,36 @@ export const ReservationStats = ({ reservations }: ReservationStatsProps) => {
 
   return (
     <div className="grid gap-4 md:grid-cols-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Réservations Actives</CardTitle>
-          <Clock className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{stats.totalActives}</div>
-          <p className="text-xs text-muted-foreground">
-            En cours de validité
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Montant Actif</CardTitle>
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(stats.montantActif)}</div>
-          <p className="text-xs text-muted-foreground">
-            FCFA en réservation active
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Montant Utilisé</CardTitle>
-          <CheckCircle className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(stats.montantUtilise)}</div>
-          <p className="text-xs text-muted-foreground">
-            FCFA consommés
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Réservations Annulées</CardTitle>
-          <XCircle className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{stats.totalAnnulees}</div>
-          <p className="text-xs text-muted-foreground">
-            Réservations abandonnées
-          </p>
-        </CardContent>
-      </Card>
+      <StatsCard
+        title="Réservations Actives"
+        value={stats.totalActives.toString()}
+        icon={Clock}
+        color="text-primary"
+        trend="En cours de validité"
+      />
+      <StatsCard
+        title="Montant Actif"
+        value={formatCurrency(stats.montantActif)}
+        icon={DollarSign}
+        color="text-secondary"
+        trend="En réservation active"
+        trendUp={true}
+      />
+      <StatsCard
+        title="Montant Utilisé"
+        value={formatCurrency(stats.montantUtilise)}
+        icon={CheckCircle}
+        color="text-accent"
+        trend="Consommés"
+        trendUp={true}
+      />
+      <StatsCard
+        title="Réservations Annulées"
+        value={stats.totalAnnulees.toString()}
+        icon={XCircle}
+        color="text-muted-foreground"
+        trend="Réservations abandonnées"
+      />
     </div>
   );
 };

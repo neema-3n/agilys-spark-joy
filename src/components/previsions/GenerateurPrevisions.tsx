@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Scenario, GenerationParams } from '@/types/prevision.types';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { Loader2, Wand2 } from 'lucide-react';
@@ -52,15 +53,16 @@ export function GenerateurPrevisions({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Wand2 className="h-5 w-5" />
             Générateur de prévisions
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <ScrollArea className="flex-1 px-1">
+          <form className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="exerciceReference">Exercice de référence *</Label>
             <Select
@@ -156,31 +158,36 @@ export function GenerateurPrevisions({
               </li>
             </ul>
           </div>
+          </form>
+        </ScrollArea>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isGenerating}
-            >
-              Annuler
-            </Button>
-            <Button type="submit" disabled={isGenerating || !formData.exerciceReferenceId}>
-              {isGenerating ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Génération...
-                </>
-              ) : (
-                <>
-                  <Wand2 className="h-4 w-4 mr-2" />
-                  Générer les prévisions
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
+        <DialogFooter className="flex-shrink-0 pt-4 border-t">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isGenerating}
+          >
+            Annuler
+          </Button>
+          <Button 
+            type="button" 
+            onClick={handleSubmit} 
+            disabled={isGenerating || !formData.exerciceReferenceId}
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Génération...
+              </>
+            ) : (
+              <>
+                <Wand2 className="h-4 w-4 mr-2" />
+                Générer les prévisions
+              </>
+            )}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

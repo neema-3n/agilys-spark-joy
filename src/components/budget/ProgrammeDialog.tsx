@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -103,16 +104,16 @@ export const ProgrammeDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {programme ? 'Modifier le programme' : 'Nouveau programme'}
           </DialogTitle>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <div className="space-y-4 py-4">
+        <ScrollArea className="flex-1 px-1">
+          <Form {...form}>
+            <form className="space-y-4 py-4">
               <FormField
                 control={form.control}
                 name="section_id"
@@ -177,20 +178,24 @@ export const ProgrammeDialog = ({
                     </FormControl>
                     <FormMessage />
                   </FormItem>
-                )}
-              />
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose}>
-                Annuler
-              </Button>
-              <Button type="submit" disabled={!form.formState.isValid}>
-                {programme ? 'Modifier' : 'Créer'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+              )}
+            />
+            </form>
+          </Form>
+        </ScrollArea>
+        
+        <DialogFooter className="flex-shrink-0 pt-4 border-t">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Annuler
+          </Button>
+          <Button 
+            type="button"
+            disabled={!form.formState.isValid}
+            onClick={form.handleSubmit(handleSubmit)}
+          >
+            {programme ? 'Modifier' : 'Créer'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

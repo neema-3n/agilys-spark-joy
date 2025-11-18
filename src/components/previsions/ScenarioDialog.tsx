@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Scenario, TypeScenario } from '@/types/prevision.types';
 import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
@@ -68,12 +69,13 @@ export function ScenarioDialog({ open, onOpenChange, onSubmit, scenario }: Scena
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>{scenario ? 'Modifier le scénario' : 'Nouveau scénario'}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <ScrollArea className="flex-1 px-1">
+          <form className="space-y-4 py-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="code">Code *</Label>
@@ -160,16 +162,17 @@ export function ScenarioDialog({ open, onOpenChange, onSubmit, scenario }: Scena
               </Select>
             </div>
           </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
-            </Button>
-            <Button type="submit">
-              {scenario ? 'Mettre à jour' : 'Créer'}
-            </Button>
-          </DialogFooter>
-        </form>
+          </form>
+        </ScrollArea>
+        
+        <DialogFooter className="flex-shrink-0 pt-4 border-t">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Annuler
+          </Button>
+          <Button type="button" onClick={(e) => { e.preventDefault(); handleSubmit(e); }}>
+            {scenario ? 'Mettre à jour' : 'Créer'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

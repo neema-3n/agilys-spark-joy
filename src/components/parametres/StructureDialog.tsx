@@ -6,6 +6,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Structure } from '@/types/structure.types';
 import { useReferentiels } from '@/hooks/useReferentiels';
 
@@ -54,15 +55,16 @@ const StructureDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {structure ? 'Modifier la structure' : 'Nouvelle structure'}
           </DialogTitle>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        <ScrollArea className="flex-1 px-1">
+          <Form {...form}>
+            <form className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -169,20 +171,22 @@ const StructureDialog = ({
               )}
             />
 
-            <div className="flex justify-end gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Annuler
-              </Button>
-              <Button type="submit">
-                {structure ? 'Mettre à jour' : 'Créer'}
-              </Button>
-            </div>
-          </form>
-        </Form>
+            </form>
+          </Form>
+        </ScrollArea>
+        
+        <div className="flex justify-end gap-2 flex-shrink-0 pt-4 border-t">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
+            Annuler
+          </Button>
+          <Button type="button" onClick={form.handleSubmit(handleSubmit)}>
+            {structure ? 'Mettre à jour' : 'Créer'}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

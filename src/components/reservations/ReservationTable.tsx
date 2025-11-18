@@ -68,8 +68,9 @@ export const ReservationTable = ({
   };
 
   return (
-    <div className="rounded-md border">
-      <Table>
+    <div className="rounded-md border max-h-[600px] overflow-auto">
+      <div className="[&>div]:max-h-none [&>div]:overflow-visible">
+        <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Numéro</TableHead>
@@ -112,7 +113,7 @@ export const ReservationTable = ({
                   )}
                 </TableCell>
                 <TableCell className="text-right font-medium">
-                  {formatCurrency(reservation.montant)} FCFA
+                  {formatCurrency(reservation.montant)}
                 </TableCell>
                 <TableCell className="text-right">
                   {(() => {
@@ -122,7 +123,7 @@ export const ReservationTable = ({
                     
                     return (
                       <span className={`font-medium ${isEpuise ? 'text-destructive' : isPartiel ? 'text-orange-600' : 'text-green-600'}`}>
-                        {formatCurrency(solde)} FCFA
+                        {formatCurrency(solde)}
                       </span>
                     );
                   })()}
@@ -189,6 +190,7 @@ export const ReservationTable = ({
           )}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 };

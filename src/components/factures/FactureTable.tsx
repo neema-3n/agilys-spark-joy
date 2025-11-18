@@ -39,6 +39,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+
 interface FactureTableProps {
   factures: Facture[];
   onEdit: (facture: Facture) => void;
@@ -71,9 +72,8 @@ export const FactureTable = ({
 
   const formatMontant = (montant: number) => {
     return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'XAF',
       minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(montant);
   };
 
@@ -89,8 +89,9 @@ export const FactureTable = ({
 
   return (
     <>
-      <div className="rounded-md border">
-        <Table>
+      <div className="rounded-md border max-h-[600px] overflow-auto">
+        <div className="[&>div]:max-h-none [&>div]:overflow-visible">
+          <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Numéro</TableHead>
@@ -175,10 +176,11 @@ export const FactureTable = ({
                     )}
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+            ))
+          )}
+        </TableBody>
+          </Table>
+        </div>
       </div>
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>

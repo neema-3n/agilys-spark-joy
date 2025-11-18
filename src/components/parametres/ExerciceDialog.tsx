@@ -23,6 +23,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Calendar } from 'lucide-react';
 import { Exercice } from '@/types';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -148,14 +149,15 @@ export function ExerciceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <ScrollArea className="flex-1 px-1">
+          <Form {...form}>
+            <form className="space-y-6 py-4">
             {/* Templates rapides - seulement pour création */}
             {!exercice && (
               <div className="space-y-2">
@@ -289,21 +291,23 @@ export function ExerciceDialog({
               />
             </div>
 
-            <DialogFooter>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => onOpenChange(false)}
-                disabled={isSubmitting}
-              >
-                Annuler
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Enregistrement...' : exercice ? 'Mettre à jour' : 'Créer'}
-              </Button>
-            </DialogFooter>
           </form>
         </Form>
+        </ScrollArea>
+        
+        <DialogFooter className="flex-shrink-0 pt-4 border-t">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
+            Annuler
+          </Button>
+          <Button type="button" disabled={isSubmitting} onClick={form.handleSubmit(handleSubmit)}>
+            {isSubmitting ? 'Enregistrement...' : exercice ? 'Mettre à jour' : 'Créer'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -111,18 +112,18 @@ export const ModificationBudgetaireDialog = ({
   };
 
   const getLigneLabel = (ligne: LigneBudgetaire) => {
-    return `${ligne.libelle} (Dispo: ${new Intl.NumberFormat('fr-FR').format(ligne.disponible)} FCFA)`;
+    return `${ligne.libelle} (Dispo: ${new Intl.NumberFormat('fr-FR').format(ligne.disponible)})`;
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Nouvelle modification budgétaire</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
+        <ScrollArea className="flex-1 px-1">
+          <form className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="type">Type de modification</Label>
               <Select
@@ -191,7 +192,7 @@ export const ModificationBudgetaireDialog = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="montant">Montant (FCFA)</Label>
+              <Label htmlFor="montant">Montant</Label>
               <Input
                 id="montant"
                 type="number"
@@ -215,17 +216,21 @@ export const ModificationBudgetaireDialog = ({
                 required
               />
             </div>
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              Annuler
-            </Button>
-            <Button type="submit" disabled={!isFormValid()}>
-              Créer la modification
-            </Button>
-          </DialogFooter>
-        </form>
+          </form>
+        </ScrollArea>
+        
+        <DialogFooter className="flex-shrink-0 pt-4 border-t">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Annuler
+          </Button>
+          <Button 
+            type="button"
+            disabled={!isFormValid()}
+            onClick={(e) => { e.preventDefault(); handleSubmit(e); }}
+          >
+            Créer la modification
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
