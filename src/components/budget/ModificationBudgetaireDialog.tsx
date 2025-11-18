@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LigneBudgetaire, TypeModification } from '@/types/budget.types';
 import {
   Dialog,
@@ -32,6 +32,7 @@ interface ModificationBudgetaireDialogProps {
     motif: string;
   }) => void;
   lignes: LigneBudgetaire[];
+  initialLigneDestinationId?: string;
 }
 
 export const ModificationBudgetaireDialog = ({
@@ -39,14 +40,24 @@ export const ModificationBudgetaireDialog = ({
   onClose,
   onSubmit,
   lignes,
+  initialLigneDestinationId,
 }: ModificationBudgetaireDialogProps) => {
   const [formData, setFormData] = useState({
     type: 'augmentation' as TypeModification,
     ligneSourceId: '',
-    ligneDestinationId: '',
+    ligneDestinationId: initialLigneDestinationId || '',
     montant: '',
     motif: '',
   });
+
+  useEffect(() => {
+    if (open && initialLigneDestinationId) {
+      setFormData(prev => ({
+        ...prev,
+        ligneDestinationId: initialLigneDestinationId
+      }));
+    }
+  }, [open, initialLigneDestinationId]);
 
   const isFormValid = () => {
     return (
