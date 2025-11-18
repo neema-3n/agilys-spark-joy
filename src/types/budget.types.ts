@@ -50,6 +50,7 @@ export interface LigneBudgetaire {
   libelle: string;
   montantInitial: number;
   montantModifie: number;
+  montantReserve?: number;
   montantEngage: number;
   montantPaye: number;
   disponible: number;

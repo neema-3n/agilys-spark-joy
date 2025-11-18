@@ -33,11 +33,11 @@ const engagementSchema = z.object({
   ligneBudgetaireId: z.string().min(1, 'Veuillez sélectionner une ligne budgétaire'),
   objet: z.string().min(1, "L'objet est requis").max(500, "L'objet ne peut dépasser 500 caractères"),
   montant: z.coerce.number().positive('Le montant doit être supérieur à 0'),
-  fournisseurId: z.string().optional(),
-  beneficiaire: z.string().optional(),
-  projetId: z.string().optional(),
-  observations: z.string().optional(),
-  reservationCreditId: z.string().optional(),
+  fournisseurId: z.string().optional().or(z.literal('')),
+  beneficiaire: z.string().optional().or(z.literal('')),
+  projetId: z.string().optional().or(z.literal('')),
+  observations: z.string().optional().or(z.literal('')),
+  reservationCreditId: z.string().optional().or(z.literal('')),
 });
 
 interface EngagementDialogProps {
@@ -74,11 +74,11 @@ export const EngagementDialog = ({
       ligneBudgetaireId: '',
       objet: '',
       montant: 0,
-      fournisseurId: undefined,
-      beneficiaire: undefined,
-      projetId: undefined,
+      fournisseurId: '',
+      beneficiaire: '',
+      projetId: '',
       observations: '',
-      reservationCreditId: undefined,
+      reservationCreditId: '',
     },
   });
 
@@ -96,8 +96,8 @@ export const EngagementDialog = ({
         ligneBudgetaireId: reservation.ligneBudgetaireId,
         objet: reservation.objet,
         montant: montantDisponible,
-        beneficiaire: reservation.beneficiaire,
-        projetId: reservation.projetId,
+        beneficiaire: reservation.beneficiaire || '',
+        projetId: reservation.projetId || '',
         observations: '',
       });
       
@@ -109,10 +109,10 @@ export const EngagementDialog = ({
         ligneBudgetaireId: engagement.ligneBudgetaireId,
         objet: engagement.objet,
         montant: engagement.montant,
-        fournisseurId: engagement.fournisseurId,
-        beneficiaire: engagement.beneficiaire,
-        projetId: engagement.projetId,
-        observations: engagement.observations,
+        fournisseurId: engagement.fournisseurId || '',
+        beneficiaire: engagement.beneficiaire || '',
+        projetId: engagement.projetId || '',
+        observations: engagement.observations || '',
       });
       setTypeBeneficiaire(engagement.fournisseurId ? 'fournisseur' : 'direct');
       setMontantDisponibleReservation(null);
@@ -121,11 +121,11 @@ export const EngagementDialog = ({
         ligneBudgetaireId: '',
         objet: '',
         montant: 0,
-        fournisseurId: undefined,
-        beneficiaire: undefined,
-        projetId: undefined,
+        fournisseurId: '',
+        beneficiaire: '',
+        projetId: '',
         observations: '',
-        reservationCreditId: undefined,
+        reservationCreditId: '',
       });
       setTypeBeneficiaire('fournisseur');
       setMontantDisponibleReservation(null);
