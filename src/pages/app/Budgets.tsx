@@ -63,6 +63,7 @@ const Budgets = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [reservationDialogOpen, setReservationDialogOpen] = useState(false);
   const [ligneForReservation, setLigneForReservation] = useState<LigneBudgetaire | null>(null);
+  const [ligneForModification, setLigneForModification] = useState<LigneBudgetaire | null>(null);
   const [ligneToDelete, setLigneToDelete] = useState<string | null>(null);
   
   const [searchParams, setSearchParams] = useSearchParams();
@@ -247,6 +248,11 @@ const Budgets = () => {
     setReservationDialogOpen(true);
   };
 
+  const handleCreateModificationFromLigne = (ligne: LigneBudgetaire) => {
+    setLigneForModification(ligne);
+    setModificationDialogOpen(true);
+  };
+
   const handleSaveReservation = async (data: any) => {
     try {
       await createReservation(data);
@@ -366,6 +372,7 @@ const Budgets = () => {
                   setDeleteDialogOpen(true);
                 }}
                 onReserver={handleReserverCredit}
+                onCreateModification={handleCreateModificationFromLigne}
               />
             </CardContent>
           </Card>
@@ -507,9 +514,13 @@ const Budgets = () => {
 
       <ModificationBudgetaireDialog
         open={modificationDialogOpen}
-        onClose={() => setModificationDialogOpen(false)}
+        onClose={() => {
+          setModificationDialogOpen(false);
+          setLigneForModification(null);
+        }}
         onSubmit={handleCreateModification}
         lignes={lignes}
+        initialLigneDestinationId={ligneForModification?.id}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

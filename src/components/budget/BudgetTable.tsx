@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, ChevronRight, Edit, Trash2, Layers, GitBranch, Zap, MoreHorizontal, BookmarkPlus, LayoutList, Building2, Wallet } from 'lucide-react';
+import { ChevronDown, ChevronRight, Edit, Trash2, Layers, GitBranch, Zap, MoreHorizontal, BookmarkPlus, LayoutList, Building2, Wallet, FileEdit } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -40,6 +40,7 @@ interface BudgetTableProps {
   onEdit: (ligne: LigneBudgetaire) => void;
   onDelete: (id: string) => void;
   onReserver: (ligne: LigneBudgetaire) => void;
+  onCreateModification: (ligne: LigneBudgetaire) => void;
 }
 
 // Helper functions pour localStorage
@@ -99,6 +100,7 @@ export const BudgetTable = ({
   onEdit,
   onDelete,
   onReserver,
+  onCreateModification,
 }: BudgetTableProps) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     () => getInitialExpandedState(clientId, exerciceId, 'sections', sections)
@@ -401,6 +403,10 @@ export const BudgetTable = ({
               <DropdownMenuItem onClick={() => onEdit(ligne)}>
                 <Edit className="mr-2 h-4 w-4" />
                 Modifier
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onCreateModification(ligne)}>
+                <FileEdit className="mr-2 h-4 w-4" />
+                Créer modification budgétaire
               </DropdownMenuItem>
               {ligne.disponible > 0 && (
                 <DropdownMenuItem onClick={() => onReserver(ligne)}>
