@@ -680,6 +680,7 @@ export type Database = {
           montant_initial: number
           montant_modifie: number
           montant_paye: number
+          montant_reserve: number
           statut: string
           updated_at: string
         }
@@ -698,6 +699,7 @@ export type Database = {
           montant_initial?: number
           montant_modifie?: number
           montant_paye?: number
+          montant_reserve?: number
           statut?: string
           updated_at?: string
         }
@@ -716,6 +718,7 @@ export type Database = {
           montant_initial?: number
           montant_modifie?: number
           montant_paye?: number
+          montant_reserve?: number
           statut?: string
           updated_at?: string
         }
@@ -1388,6 +1391,10 @@ export type Database = {
         Returns: undefined
       }
       recalculate_montant_paye: {
+        Args: { p_ligne_budgetaire_id: string }
+        Returns: undefined
+      }
+      recalculate_montant_reserve: {
         Args: { p_ligne_budgetaire_id: string }
         Returns: undefined
       }
