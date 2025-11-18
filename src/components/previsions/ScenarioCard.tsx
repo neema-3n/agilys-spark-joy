@@ -133,7 +133,7 @@ export function ScenarioCard({
         <div className="pt-2 border-t">
           <p className="text-xs text-muted-foreground">Montant total prévu</p>
           <p className="text-xl font-bold">
-            {montantTotal.toLocaleString('fr-FR')} FCFA
+            {montantTotal.toLocaleString('fr-FR')}
           </p>
         </div>
 

@@ -243,7 +243,7 @@ const Reservations = () => {
               <ul className="mt-2 space-y-1 list-disc list-inside">
                 {pendingAnnulation?.engagements.map((eng) => (
                   <li key={eng.id} className="text-sm">
-                    {eng.numero} - {eng.montant.toLocaleString()} FCFA ({eng.statut})
+                {eng.numero} - {eng.montant.toLocaleString()} ({eng.statut})
                   </li>
                 ))}
               </ul>
@@ -273,7 +273,7 @@ const Reservations = () => {
               <ul className="mt-2 space-y-1 list-disc list-inside">
                 {pendingSuppression?.engagements.map((eng) => (
                   <li key={eng.id} className="text-sm">
-                    {eng.numero} - {eng.montant.toLocaleString()} FCFA ({eng.statut})
+                    {eng.numero} - {eng.montant.toLocaleString()} ({eng.statut})
                   </li>
                 ))}
               </ul>

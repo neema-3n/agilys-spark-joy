@@ -20,9 +20,8 @@ export const FactureStats = ({ factures }: FactureStatsProps) => {
 
   const formatMontant = (montant: number) => {
     return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'XAF',
       minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(montant);
   };
 

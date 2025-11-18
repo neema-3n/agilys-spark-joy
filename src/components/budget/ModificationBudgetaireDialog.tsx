@@ -112,7 +112,7 @@ export const ModificationBudgetaireDialog = ({
   };
 
   const getLigneLabel = (ligne: LigneBudgetaire) => {
-    return `${ligne.libelle} (Dispo: ${new Intl.NumberFormat('fr-FR').format(ligne.disponible)} FCFA)`;
+    return `${ligne.libelle} (Dispo: ${new Intl.NumberFormat('fr-FR').format(ligne.disponible)})`;
   };
 
   return (
@@ -192,7 +192,7 @@ export const ModificationBudgetaireDialog = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="montant">Montant (FCFA)</Label>
+              <Label htmlFor="montant">Montant</Label>
               <Input
                 id="montant"
                 type="number"

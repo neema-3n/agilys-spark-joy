@@ -145,14 +145,14 @@ export const EngagementDialog = ({
     const ligneBudgetaire = lignesActives.find(l => l.id === values.ligneBudgetaireId);
     if (ligneBudgetaire && values.montant > ligneBudgetaire.disponible) {
       form.setError('montant', { 
-        message: `Le montant dépasse le disponible de la ligne (${ligneBudgetaire.disponible.toLocaleString('fr-FR')} FCFA)` 
+        message: `Le montant dépasse le disponible de la ligne (${ligneBudgetaire.disponible.toLocaleString('fr-FR')})` 
       });
       return;
     }
 
     if (montantDisponibleReservation !== null && values.montant > montantDisponibleReservation) {
       form.setError('montant', { 
-        message: `Le montant dépasse le disponible de la réservation (${montantDisponibleReservation.toLocaleString('fr-FR')} FCFA)` 
+        message: `Le montant dépasse le disponible de la réservation (${montantDisponibleReservation.toLocaleString('fr-FR')})` 
       });
       return;
     }
@@ -202,11 +202,11 @@ export const EngagementDialog = ({
               <div className="p-4 bg-muted rounded-lg space-y-2">
                 <p className="text-sm font-medium">Engagement depuis la réservation : {reservation.numero}</p>
                 <p className="text-sm text-muted-foreground">
-                  Montant réservé : {reservation.montant.toLocaleString('fr-FR')} FCFA
+                  Montant réservé : {reservation.montant.toLocaleString('fr-FR')}
                 </p>
                 {montantDisponibleReservation !== null && (
                   <p className="text-sm text-muted-foreground">
-                    Montant disponible : {montantDisponibleReservation.toLocaleString('fr-FR')} FCFA
+                    Montant disponible : {montantDisponibleReservation.toLocaleString('fr-FR')}
                   </p>
                 )}
               </div>
@@ -227,7 +227,7 @@ export const EngagementDialog = ({
                     <SelectContent>
                       {lignesActives.map((ligne) => (
                         <SelectItem key={ligne.id} value={ligne.id}>
-                          {ligne.libelle} - Disponible : {ligne.disponible.toLocaleString('fr-FR')} FCFA
+                          {ligne.libelle} - Disponible : {ligne.disponible.toLocaleString('fr-FR')}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -256,7 +256,7 @@ export const EngagementDialog = ({
               name="montant"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Montant (FCFA) *</FormLabel>
+                  <FormLabel>Montant *</FormLabel>
                   <FormControl>
                     <Input type="number" step="0.01" {...field} placeholder="0" />
                   </FormControl>
