@@ -1,93 +1,39 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useClient } from '@/contexts/ClientContext';
-import { useExercice } from '@/contexts/ExerciceContext';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Wallet, FileText, Receipt, Building2, BarChart3, Settings, LogOut, ChevronDown, Menu, X, Users, FileCheck, CreditCard, Wallet2, BookOpen, ShieldCheck, LineChart, TrendingUp, BookmarkCheck, ShoppingCart, Briefcase, CalendarDays, DollarSign, FolderKanban, Layers } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
-import { useState } from 'react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { LayoutDashboard, Wallet, FileText, Receipt, BarChart3, Settings, ChevronLeft, ChevronRight, ChevronDown, Users, CreditCard, Wallet2, ShieldCheck, LineChart, TrendingUp, BookmarkCheck, ShoppingCart, DollarSign, FolderKanban, Layers, PlayCircle, Target, Building2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { AppHeader } from '@/components/app/AppHeader';
 const AppLayout = () => {
-  const {
-    user,
-    logout
-  } = useAuth();
-  const {
-    currentClient,
-    clients,
-    setCurrentClient
-  } = useClient();
-  const {
-    currentExercice,
-    exercices,
-    setCurrentExercice
-  } = useExercice();
+  const { user } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    'Gestion': true,
+    'Fournisseurs': true,
     'Budget': true,
     'Opérations': true,
     'Trésorerie': true,
-    'Comptabilité': true,
     'Conformité': true,
     'Analyse': true,
     'Système': true
   });
-  const toggleSection = (sectionTitle: string) => {
-    setOpenSections(prev => ({
-      ...prev,
-      [sectionTitle]: !prev[sectionTitle]
-    }));
-  };
-  // Color mapping for each section
-  const sectionColors: Record<string, { bg: string; border: string; text: string; hover: string }> = {
-    'Fournisseurs': { 
-      bg: 'bg-gradient-to-r from-blue-50/50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/30', 
-      border: 'border-l-blue-500', 
-      text: 'text-blue-700 dark:text-blue-300',
-      hover: 'hover:bg-blue-50/80 dark:hover:bg-blue-950/50'
+
+  // Groupes principaux inspirés d'AirBooks
+  const menuGroups = {
+    operationnel: {
+      label: 'Opérationnel',
+      icon: PlayCircle,
+      sections: ['Fournisseurs', 'Budget', 'Opérations', 'Trésorerie']
     },
-    'Budget': { 
-      bg: 'bg-gradient-to-r from-purple-50/50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/30', 
-      border: 'border-l-purple-500', 
-      text: 'text-purple-700 dark:text-purple-300',
-      hover: 'hover:bg-purple-50/80 dark:hover:bg-purple-950/50'
-    },
-    'Opérations': { 
-      bg: 'bg-gradient-to-r from-amber-50/50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/30', 
-      border: 'border-l-amber-500', 
-      text: 'text-amber-700 dark:text-amber-300',
-      hover: 'hover:bg-amber-50/80 dark:hover:bg-amber-950/50'
-    },
-    'Trésorerie': { 
-      bg: 'bg-gradient-to-r from-green-50/50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/30', 
-      border: 'border-l-green-500', 
-      text: 'text-green-700 dark:text-green-300',
-      hover: 'hover:bg-green-50/80 dark:hover:bg-green-950/50'
-    },
-    'Conformité': { 
-      bg: 'bg-gradient-to-r from-red-50/50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/30', 
-      border: 'border-l-red-500', 
-      text: 'text-red-700 dark:text-red-300',
-      hover: 'hover:bg-red-50/80 dark:hover:bg-red-950/50'
-    },
-    'Analyse': { 
-      bg: 'bg-gradient-to-r from-indigo-50/50 to-indigo-100/50 dark:from-indigo-950/30 dark:to-indigo-900/30', 
-      border: 'border-l-indigo-500', 
-      text: 'text-indigo-700 dark:text-indigo-300',
-      hover: 'hover:bg-indigo-50/80 dark:hover:bg-indigo-950/50'
-    },
-    'Système': { 
-      bg: 'bg-gradient-to-r from-slate-50/50 to-slate-100/50 dark:from-slate-950/30 dark:to-slate-900/30', 
-      border: 'border-l-slate-500', 
-      text: 'text-slate-700 dark:text-slate-300',
-      hover: 'hover:bg-slate-50/80 dark:hover:bg-slate-950/50'
+    pilotage: {
+      label: 'Pilotage & Contrôle',
+      icon: Target,
+      sections: ['Conformité', 'Analyse', 'Système']
     }
   };
 
-  const navigationSections = [{
+  const allNavigationSections = [{
     title: 'Fournisseurs',
     icon: Users,
     items: [{
@@ -113,7 +59,7 @@ const AppLayout = () => {
     }]
   }, {
     title: 'Opérations',
-    icon: FileCheck,
+    icon: FileText,
     items: [{
       name: 'Réservation De Crédits',
       href: '/app/reservations',
@@ -184,118 +130,139 @@ const AppLayout = () => {
       icon: Settings
     }]
   }];
-  const handleLogout = async () => {
-    await logout();
+
+  // Fonction pour déterminer le groupe actif basé sur le pathname
+  const getGroupFromPath = (pathname: string): 'operationnel' | 'pilotage' => {
+    // Chercher la section qui contient cette route
+    const section = allNavigationSections.find(s => 
+      s.items.some(item => item.href === pathname)
+    );
+    
+    if (!section) return 'operationnel'; // Par défaut
+    
+    // Vérifier dans quel groupe se trouve cette section
+    if (menuGroups.pilotage.sections.includes(section.title)) {
+      return 'pilotage';
+    }
+    
+    return 'operationnel';
   };
+
+  const [activeGroup, setActiveGroup] = useState<'operationnel' | 'pilotage'>(
+    () => getGroupFromPath(location.pathname)
+  );
+
+  const toggleSection = (sectionTitle: string) => {
+    setOpenSections(prev => ({
+      ...prev,
+      [sectionTitle]: !prev[sectionTitle]
+    }));
+  };
+
+  // Synchroniser le groupe actif avec la route actuelle
+  useEffect(() => {
+    const group = getGroupFromPath(location.pathname);
+    setActiveGroup(group);
+  }, [location.pathname]);
+
+  // Filtrer les sections selon le groupe actif
+  const navigationSections = allNavigationSections.filter(section => 
+    menuGroups[activeGroup].sections.includes(section.title)
+  );
+  
   return <div className="min-h-screen bg-background flex w-full">
       {/* Sidebar */}
-      <aside className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-card border-r border-border transition-all duration-300 flex flex-col h-screen`}>
-        {/* Header Sidebar - FIXE */}
-        <div className="flex-shrink-0 p-4 border-b border-border flex items-center justify-between bg-gradient-to-r from-primary/5 to-primary/10">
+      <aside className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-card border-r border-sidebar-border transition-all duration-300 flex flex-col h-screen`}>
+        {/* Header Sidebar - Style AirBooks */}
+        <div className="flex-shrink-0 p-4 border-b border-sidebar-border flex items-center justify-between bg-primary">
           {sidebarOpen && <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center shadow-md">
-                <span className="text-sm font-bold text-primary-foreground">A</span>
+              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-md">
+                <span className="text-sm font-bold text-primary">A</span>
               </div>
-              <span className="font-bold text-lg bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">AGILYS</span>
+              <span className="font-bold text-lg text-white">AGILYS</span>
             </div>}
-          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)} className="ml-auto hover:bg-primary/10">
-            {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-          </Button>
+          {!sidebarOpen && <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-md mx-auto">
+            <span className="text-sm font-bold text-primary">A</span>
+          </div>}
         </div>
 
-        {/* Sélecteurs - FIXES */}
-        {sidebarOpen && <div className="flex-shrink-0 p-4 space-y-3 border-b border-border bg-gradient-to-b from-muted/20 to-transparent">
-            {/* Sélecteur de client */}
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1.5 block uppercase tracking-wide">Client</label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between text-sm hover:bg-accent/50 transition-colors">
-                    <span className="truncate font-medium">{currentClient?.nom || 'Sélectionner'}</span>
-                    <ChevronDown className="h-4 w-4 ml-2 flex-shrink-0" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56">
-                  {clients.map(client => <DropdownMenuItem key={client.id} onClick={() => setCurrentClient(client)}>
-                      {client.nom}
-                    </DropdownMenuItem>)}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+        {/* Sélecteur de groupe (style AirBooks avec 2 icônes en haut) */}
+        {sidebarOpen && <div className="flex-shrink-0 p-3 border-b border-sidebar-border bg-sidebar-accent">
+          <div className="flex gap-2">
+            <Button
+              variant={activeGroup === 'operationnel' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveGroup('operationnel')}
+              className="flex-1 justify-start gap-2"
+            >
+              <PlayCircle className="h-4 w-4" />
+              <span className="text-xs font-medium">Opérationnel</span>
+            </Button>
+            <Button
+              variant={activeGroup === 'pilotage' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveGroup('pilotage')}
+              className="flex-1 justify-start gap-2"
+            >
+              <Target className="h-4 w-4" />
+              <span className="text-xs font-medium">Pilotage</span>
+            </Button>
+          </div>
+        </div>}
 
-            {/* Sélecteur d'exercice */}
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1.5 block uppercase tracking-wide">Exercice</label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between text-sm hover:bg-accent/50 transition-colors">
-                    <span className="font-medium">{currentExercice?.libelle || 'Sélectionner'}</span>
-                    <ChevronDown className="h-4 w-4 ml-2" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56">
-                  {exercices.map(exercice => <DropdownMenuItem key={exercice.id} onClick={() => setCurrentExercice(exercice)}>
-                      {exercice.libelle} ({exercice.statut})
-                    </DropdownMenuItem>)}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>}
 
-        {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+        {/* Navigation - Style AirBooks */}
+        <nav className="flex-1 p-3 space-y-2 overflow-y-auto">
           {navigationSections.map((section, sectionIndex) => {
             const isSingleItem = section.items.length === 1;
             const SectionIcon = section.icon;
-            const colors = sectionColors[section.title];
             
             if (isSingleItem) {
-              // Pour les sections avec un seul item, afficher directement sans collapsible
+              // Pour les sections avec un seul item, afficher directement
               const item = section.items[0];
               const isActive = location.pathname === item.href;
               const Icon = item.icon;
               
               return (
                 <div key={section.title} className="space-y-1">
+                  {sidebarOpen && (
+                    <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      {section.title}
+                    </div>
+                  )}
                   <NavLink
                     to={item.href}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 border-l-4 ${
+                    className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm transition-all duration-200 ${
                       isActive
-                        ? `${colors.border} ${colors.bg} ${colors.text} font-semibold shadow-sm`
-                        : `border-l-transparent text-muted-foreground ${colors.hover}`
+                        ? 'bg-primary text-primary-foreground font-medium'
+                        : 'text-foreground hover:bg-sidebar-accent'
                     }`}
                   >
-                    <Icon className={`h-4 w-4 flex-shrink-0 transition-transform duration-200 ${isActive ? 'scale-110' : ''}`} />
+                    <Icon className="h-4 w-4 flex-shrink-0" />
                     {sidebarOpen && <span>{item.name}</span>}
                   </NavLink>
-                  {sidebarOpen && sectionIndex < navigationSections.length - 1 && (
-                    <div className="my-3 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
-                  )}
                 </div>
               );
             }
             
-            // Pour les sections avec plusieurs items, utiliser le collapsible
+            // Pour les sections avec plusieurs items
             return (
               <Collapsible key={section.title} open={openSections[section.title]} onOpenChange={() => toggleSection(section.title)} className="space-y-1">
-                {/* Section Header - Cliquable pour toggle */}
+                {/* Section Header */}
                 {sidebarOpen && (
                   <CollapsibleTrigger 
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-bold tracking-wider transition-all duration-200 border-l-4 ${colors.border} ${colors.bg} ${colors.text} ${colors.hover} shadow-sm group`}
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
                   >
                     <div className="flex items-center gap-2">
-                      <SectionIcon className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
+                      <SectionIcon className="h-4 w-4" />
                       <span>{section.title}</span>
-                      <span className="ml-1 px-1.5 py-0.5 text-[10px] rounded-full bg-background/50 text-muted-foreground font-medium">
-                        {section.items.length}
-                      </span>
                     </div>
-                    <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${openSections[section.title] ? 'rotate-0' : '-rotate-90'}`} />
+                    <ChevronDown className={`h-3 w-3 transition-transform duration-300 ${openSections[section.title] ? 'rotate-0' : '-rotate-90'}`} />
                   </CollapsibleTrigger>
                 )}
                 
-                {/* Section Items - Collapsible */}
-                <CollapsibleContent className="space-y-1 pt-1">
+                {/* Section Items avec indentation visible */}
+                <CollapsibleContent className="space-y-1">
                   {section.items.map(item => {
                     const isActive = location.pathname === item.href;
                     const Icon = item.icon;
@@ -304,50 +271,47 @@ const AppLayout = () => {
                       <NavLink
                         key={item.href}
                         to={item.href}
-                        className={`flex items-center gap-3 px-3 py-2 ml-2 rounded-lg text-sm transition-all duration-200 border-l-3 ${
+                        className={`flex items-center gap-3 ml-6 pl-4 py-3 rounded-lg text-sm transition-all duration-200 border-l-2 ${
                           isActive
-                            ? `${colors.border} ${colors.bg} ${colors.text} font-semibold shadow-sm`
-                            : `border-l-transparent text-muted-foreground ${colors.hover}`
+                            ? 'bg-primary/10 text-primary border-l-primary font-medium'
+                            : 'border-l-sidebar-border text-foreground hover:bg-sidebar-accent hover:border-l-primary/50'
                         }`}
                       >
-                        <Icon className={`h-4 w-4 flex-shrink-0 transition-transform duration-200 ${isActive ? 'scale-110' : ''}`} />
+                        <Icon className="h-4 w-4 flex-shrink-0" />
                         {sidebarOpen && <span>{item.name}</span>}
                       </NavLink>
                     );
                   })}
                 </CollapsibleContent>
-                
-                {/* Separator entre sections sauf la dernière */}
-                {sidebarOpen && sectionIndex < navigationSections.length - 1 && (
-                  <div className="my-3 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
-                )}
               </Collapsible>
             );
           })}
         </nav>
 
-        {/* User Menu - FIXE */}
-        <div className="flex-shrink-0 p-4 border-t border-border bg-gradient-to-t from-muted/20 to-transparent">
-          {sidebarOpen ? <div className="flex items-center gap-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate">
-                  {user?.prenom} {user?.nom}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-              </div>
-              <Button variant="ghost" size="icon" onClick={handleLogout} className="hover:bg-destructive/10 hover:text-destructive">
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </div> : <Button variant="ghost" size="icon" onClick={handleLogout} className="w-full hover:bg-destructive/10 hover:text-destructive">
-              <LogOut className="h-4 w-4" />
-            </Button>}
+        {/* Toggle button + User Menu - Style AirBooks */}
+        <div className="flex-shrink-0 border-t border-sidebar-border bg-sidebar-background">
+          {/* Toggle button en bas */}
+          <div className="p-3 flex justify-center border-b border-sidebar-border">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="hover:bg-sidebar-accent"
+            >
+              {sidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </Button>
+          </div>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 h-screen overflow-hidden">
-        <Outlet />
-      </main>
+      {/* Main Content with Header */}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+        <AppHeader />
+        <main className="flex-1 overflow-auto">
+          <Outlet />
+        </main>
+      </div>
     </div>;
 };
+
 export default AppLayout;
