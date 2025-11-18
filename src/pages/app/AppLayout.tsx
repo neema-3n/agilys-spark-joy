@@ -5,10 +5,13 @@ import { LayoutDashboard, Wallet, FileText, Receipt, BarChart3, Settings, Chevro
 import { useState, useEffect } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AppHeader } from '@/components/app/AppHeader';
+import { useIsMobile } from '@/hooks/use-mobile';
+
 const AppLayout = () => {
   const { user } = useAuth();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     'Fournisseurs': true,
     'Budget': true,
@@ -165,14 +168,34 @@ const AppLayout = () => {
     setActiveGroup(group);
   }, [location.pathname]);
 
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  }, [isMobile]);
+
   // Filtrer les sections selon le groupe actif
   const navigationSections = allNavigationSections.filter(section => 
     menuGroups[activeGroup].sections.includes(section.title)
   );
   
   return <div className="min-h-screen bg-background flex w-full">
+      {/* Overlay backdrop for mobile */}
+      {isMobile && sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-card border-r border-sidebar-border transition-all duration-300 flex flex-col h-screen`}>
+      <aside className={`${
+        sidebarOpen ? 'w-64' : 'w-16'
+      } ${
+        isMobile && sidebarOpen ? 'fixed inset-y-0 left-0 z-50 shadow-lg' : ''
+      } ${
+        isMobile && !sidebarOpen ? 'hidden' : ''
+      } bg-card border-r border-sidebar-border transition-all duration-300 flex flex-col h-screen`}>
         {/* Header Sidebar - Style AirBooks */}
         <div className="flex-shrink-0 p-4 border-b border-sidebar-border flex items-center justify-between bg-primary">
           {sidebarOpen && <div className="flex items-center gap-2">
@@ -306,7 +329,7 @@ const AppLayout = () => {
 
       {/* Main Content with Header */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        <AppHeader />
+        <AppHeader onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
         <main className="flex-1 overflow-auto">
           <Outlet />
         </main>
