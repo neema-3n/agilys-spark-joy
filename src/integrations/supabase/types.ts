@@ -1325,6 +1325,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_montant_reserve: {
+        Args: { p_ligne_budgetaire_id: string }
+        Returns: number
+      }
       create_engagement_with_numero: {
         Args: {
           p_beneficiaire: string
@@ -1374,6 +1378,18 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      recalculate_ligne_disponible: {
+        Args: { p_ligne_budgetaire_id: string }
+        Returns: undefined
+      }
+      recalculate_montant_engage: {
+        Args: { p_ligne_budgetaire_id: string }
+        Returns: undefined
+      }
+      recalculate_montant_paye: {
+        Args: { p_ligne_budgetaire_id: string }
+        Returns: undefined
       }
     }
     Enums: {
