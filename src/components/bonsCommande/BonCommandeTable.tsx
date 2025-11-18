@@ -21,6 +21,7 @@ import {
   FileText
 } from 'lucide-react';
 import { BonCommande } from '@/types/bonCommande.types';
+import { Progress } from '@/components/ui/progress';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
@@ -171,6 +172,7 @@ export const BonCommandeTable = ({
               <TableHead>Engagement</TableHead>
               <TableHead>Objet</TableHead>
               <TableHead className="text-right">Montant</TableHead>
+              <TableHead>Facturé</TableHead>
               <TableHead>Statut</TableHead>
               <TableHead>Livraison prévue</TableHead>
               <TableHead>Livraison effective</TableHead>
@@ -204,6 +206,26 @@ export const BonCommandeTable = ({
                   <TableCell className="max-w-xs truncate">{bc.objet}</TableCell>
                   <TableCell className="text-right font-medium">
                     {formatCurrency(bc.montant)}
+                  </TableCell>
+                  <TableCell>
+                    {bc.montantFacture !== undefined && bc.montantFacture > 0 ? (
+                      <div className="space-y-1 min-w-[120px]">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            {((bc.montantFacture / bc.montant) * 100).toFixed(0)}%
+                          </span>
+                          <span className="font-medium">
+                            {formatCurrency(bc.montantFacture)}
+                          </span>
+                        </div>
+                        <Progress 
+                          value={(bc.montantFacture / bc.montant) * 100} 
+                          className="h-1"
+                        />
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">Non facturé</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge className={getStatutColor(bc.statut)}>

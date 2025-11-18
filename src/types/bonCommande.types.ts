@@ -40,6 +40,9 @@ export interface BonCommande {
     id: string;
     nom: string;
   };
+  
+  // Montant facturé (calculé)
+  montantFacture?: number;
 }
 
 export type CreateBonCommandeInput = Omit<
