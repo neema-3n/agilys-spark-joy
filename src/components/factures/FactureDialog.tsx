@@ -53,13 +53,24 @@ interface FactureDialogProps {
   facture?: Facture;
   onSubmit: (data: CreateFactureInput) => Promise<void>;
   fournisseurs: Array<{ id: string; nom: string; code: string }>;
-  bonsCommande: Array<{ id: string; numero: string }>;
+  bonsCommande: Array<{ 
+    id: string; 
+    numero: string; 
+    statut: string;
+    fournisseur_id?: string;
+    engagement_id?: string;
+    ligne_budgetaire_id?: string;
+    projet_id?: string;
+    objet?: string;
+    montant?: number;
+  }>;
   engagements: Array<{ id: string; numero: string }>;
   lignesBudgetaires: Array<{ id: string; libelle: string }>;
   projets: Array<{ id: string; nom: string; code: string }>;
   currentClientId: string;
   currentExerciceId: string;
   onGenererNumero: () => Promise<string>;
+  initialBonCommandeId?: string;
 }
 
 export const FactureDialog = ({
@@ -75,6 +86,7 @@ export const FactureDialog = ({
   currentClientId,
   currentExerciceId,
   onGenererNumero,
+  initialBonCommandeId,
 }: FactureDialogProps) => {
   const isReadOnly = facture && (facture.statut === 'payee' || facture.statut === 'annulee');
 
@@ -101,19 +113,28 @@ export const FactureDialog = ({
   useEffect(() => {
     if (open && !facture) {
       onGenererNumero().then((numero) => {
+        // Pré-remplir depuis un BC si fourni
+        const selectedBC = initialBonCommandeId 
+          ? bonsCommande.find(bc => bc.id === initialBonCommandeId)
+          : undefined;
+
+        const montantHT = selectedBC?.montant ? (selectedBC.montant / 1.2).toFixed(2) : '';
+        const montantTVA = selectedBC?.montant ? ((selectedBC.montant / 1.2) * 0.2).toFixed(2) : '';
+        const montantTTC = selectedBC?.montant?.toFixed(2) || '';
+
         form.reset({
           numero: numero,
           dateFacture: format(new Date(), 'yyyy-MM-dd'),
-          fournisseurId: '',
-          bonCommandeId: 'none',
-          engagementId: 'none',
-          ligneBudgetaireId: 'none',
-          projetId: 'none',
-          objet: '',
+          fournisseurId: selectedBC?.fournisseur_id || '',
+          bonCommandeId: selectedBC?.id || 'none',
+          engagementId: selectedBC?.engagement_id || 'none',
+          ligneBudgetaireId: selectedBC?.ligne_budgetaire_id || 'none',
+          projetId: selectedBC?.projet_id || 'none',
+          objet: selectedBC?.objet || '',
           numeroFactureFournisseur: '',
-          montantHT: '',
-          montantTVA: '',
-          montantTTC: '',
+          montantHT,
+          montantTVA,
+          montantTTC,
           dateEcheance: '',
           observations: '',
         });
@@ -137,7 +158,7 @@ export const FactureDialog = ({
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, facture, onGenererNumero]);
+  }, [open, facture, onGenererNumero, initialBonCommandeId]);
 
   const handleSubmit = async (values: z.infer<typeof factureSchema>) => {
     try {
