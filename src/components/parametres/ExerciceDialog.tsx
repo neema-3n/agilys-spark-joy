@@ -155,7 +155,7 @@ export function ExerciceDialog({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-1 min-h-0">
+        <div className="flex-1 overflow-y-auto px-4 min-h-0">
           <Form {...form}>
             <form className="space-y-6 py-4">
             {/* Templates rapides - seulement pour création */}
@@ -293,7 +293,7 @@ export function ExerciceDialog({
 
           </form>
         </Form>
-        </ScrollArea>
+        </div>
         
         <DialogFooter className="flex-shrink-0 pt-4 border-t">
           <Button 
