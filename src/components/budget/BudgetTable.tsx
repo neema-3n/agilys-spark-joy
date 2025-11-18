@@ -670,6 +670,7 @@ export const BudgetTable = ({
                 <TableHead className="text-right font-semibold">Payé</TableHead>
                 <TableHead className="text-right font-semibold">Disponible</TableHead>
                 <TableHead className="text-center font-semibold">Taux Exec.</TableHead>
+                <TableHead className="text-center font-semibold">Statut</TableHead>
                 <TableHead className="text-right w-[100px] font-semibold">Actions</TableHead>
               </TableRow>
             </TableHeader>
