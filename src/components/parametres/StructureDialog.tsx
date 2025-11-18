@@ -55,14 +55,14 @@ const StructureDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {structure ? 'Modifier la structure' : 'Nouvelle structure'}
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-1">
+        <div className="flex-1 overflow-y-auto px-4 min-h-0">
           <Form {...form}>
             <form className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
@@ -173,7 +173,7 @@ const StructureDialog = ({
 
             </form>
           </Form>
-        </ScrollArea>
+        </div>
         
         <div className="flex justify-end gap-2 flex-shrink-0 pt-4 border-t">
           <Button

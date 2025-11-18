@@ -69,12 +69,12 @@ export function ScenarioDialog({ open, onOpenChange, onSubmit, scenario }: Scena
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>{scenario ? 'Modifier le scénario' : 'Nouveau scénario'}</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-1">
+        <div className="flex-1 overflow-y-auto px-4 min-h-0">
           <form className="space-y-4 py-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -163,7 +163,7 @@ export function ScenarioDialog({ open, onOpenChange, onSubmit, scenario }: Scena
             </div>
           </div>
           </form>
-        </ScrollArea>
+        </div>
         
         <DialogFooter className="flex-shrink-0 pt-4 border-t">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
