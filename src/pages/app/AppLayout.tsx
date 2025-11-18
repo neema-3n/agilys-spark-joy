@@ -2,14 +2,33 @@ import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { LayoutDashboard, Wallet, FileText, Receipt, BarChart3, Settings, ChevronLeft, ChevronRight, ChevronDown, Users, CreditCard, Wallet2, ShieldCheck, LineChart, TrendingUp, BookmarkCheck, ShoppingCart, DollarSign, FolderKanban, Layers, PlayCircle, Target, Building2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AppHeader } from '@/components/app/AppHeader';
 const AppLayout = () => {
   const { user } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeGroup, setActiveGroup] = useState<'operationnel' | 'pilotage'>('operationnel');
+  // Fonction pour déterminer le groupe actif basé sur le pathname
+  const getGroupFromPath = (pathname: string): 'operationnel' | 'pilotage' => {
+    // Chercher la section qui contient cette route
+    const section = allNavigationSections.find(s => 
+      s.items.some(item => item.href === pathname)
+    );
+    
+    if (!section) return 'operationnel'; // Par défaut
+    
+    // Vérifier dans quel groupe se trouve cette section
+    if (menuGroups.pilotage.sections.includes(section.title)) {
+      return 'pilotage';
+    }
+    
+    return 'operationnel';
+  };
+
+  const [activeGroup, setActiveGroup] = useState<'operationnel' | 'pilotage'>(
+    () => getGroupFromPath(location.pathname)
+  );
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     'Fournisseurs': true,
     'Budget': true,
@@ -25,6 +44,12 @@ const AppLayout = () => {
       [sectionTitle]: !prev[sectionTitle]
     }));
   };
+
+  // Synchroniser le groupe actif avec la route actuelle
+  useEffect(() => {
+    const group = getGroupFromPath(location.pathname);
+    setActiveGroup(group);
+  }, [location.pathname]);
 
   // Groupes principaux inspirés d'AirBooks
   const menuGroups = {
