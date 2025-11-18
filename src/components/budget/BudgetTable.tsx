@@ -139,7 +139,7 @@ export const BudgetTable = ({
         <TableHeader>
           <TableRow className="bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/15">
             <TableHead className="w-[350px] font-semibold">Libellé</TableHead>
-            <TableHead className="text-right font-semibold">Initial</TableHead>
+            <TableHead className="text-right font-semibold">Montant Initial</TableHead>
             <TableHead className="text-right font-semibold">Modifié</TableHead>
             <TableHead className="text-right font-semibold">Réservé</TableHead>
             <TableHead className="text-right font-semibold">Engagé</TableHead>
