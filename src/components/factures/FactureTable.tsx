@@ -99,9 +99,9 @@ export const FactureTable = ({
               <TableHead>Fournisseur</TableHead>
               <TableHead>Objet</TableHead>
               <TableHead>Bon de commande</TableHead>
-              <TableHead className="text-right">Montant HT</TableHead>
-              <TableHead className="text-right">TVA</TableHead>
-              <TableHead className="text-right">Montant TTC</TableHead>
+              <TableHead className="text-right">Montant (TTC)</TableHead>
+              <TableHead className="text-right">Payé</TableHead>
+              <TableHead className="text-right">Solde</TableHead>
               <TableHead>Statut</TableHead>
               <TableHead className="w-[70px]"></TableHead>
             </TableRow>
@@ -123,10 +123,16 @@ export const FactureTable = ({
                     {facture.objet}
                   </TableCell>
                   <TableCell>{facture.bonCommande?.numero || '-'}</TableCell>
-                  <TableCell className="text-right">{formatMontant(facture.montantHT)}</TableCell>
-                  <TableCell className="text-right">{formatMontant(facture.montantTVA)}</TableCell>
                   <TableCell className="text-right font-medium">
                     {formatMontant(facture.montantTTC)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatMontant(facture.montantPaye || 0)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <span className={facture.montantTTC - (facture.montantPaye || 0) > 0 ? 'text-orange-600 font-medium' : 'text-green-600'}>
+                      {formatMontant(facture.montantTTC - (facture.montantPaye || 0))}
+                    </span>
                   </TableCell>
                   <TableCell>{getStatutBadge(facture.statut)}</TableCell>
                   <TableCell>

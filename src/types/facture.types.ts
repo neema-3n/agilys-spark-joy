@@ -17,6 +17,7 @@ export interface Facture {
   montantHT: number;
   montantTVA: number;
   montantTTC: number;
+  montantPaye: number;
   statut: StatutFacture;
   dateValidation?: string;
   observations?: string;
