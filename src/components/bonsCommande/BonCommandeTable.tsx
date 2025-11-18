@@ -75,6 +75,8 @@ const getStatutColor = (statut: string) => {
       return 'bg-primary text-primary-foreground';
     case 'receptionne':
       return 'bg-accent text-accent-foreground';
+    case 'facture':
+      return 'bg-green-600 text-white';
     case 'annule':
       return 'bg-destructive text-destructive-foreground';
     default:
@@ -92,6 +94,8 @@ const getStatutLabel = (statut: string) => {
       return 'En cours';
     case 'receptionne':
       return 'Réceptionné';
+    case 'facture':
+      return 'Facturé';
     case 'annule':
       return 'Annulé';
     default:
@@ -307,7 +311,7 @@ export const BonCommandeTable = ({
                           </>
                         )}
                         
-                        {bc.statut !== 'receptionne' && bc.statut !== 'annule' && (
+                        {bc.statut !== 'receptionne' && bc.statut !== 'facture' && bc.statut !== 'annule' && (
                           <>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => onAnnuler(bc.id)}>
