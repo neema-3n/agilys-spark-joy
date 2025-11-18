@@ -47,6 +47,7 @@ const factureSchema = z.object({
   montantHT: z.string().min(1, 'Le montant HT est requis'),
   montantTVA: z.string().min(1, 'Le montant TVA est requis'),
   montantTTC: z.string().min(1, 'Le montant TTC est requis'),
+  montantPaye: z.string().optional(),
   observations: z.string().optional(),
 });
 
@@ -112,6 +113,7 @@ export const FactureDialog = ({
       montantHT: '',
       montantTVA: '',
       montantTTC: '',
+      montantPaye: '0',
       dateEcheance: '',
       observations: '',
     },
@@ -139,11 +141,12 @@ export const FactureDialog = ({
           projetId: selectedBC?.projet_id || 'none',
           objet: selectedBC?.objet || '',
           numeroFactureFournisseur: '',
-          montantHT,
-          montantTVA,
-          montantTTC,
-          dateEcheance: '',
-          observations: '',
+        montantHT,
+        montantTVA,
+        montantTTC,
+        montantPaye: '0',
+        dateEcheance: '',
+        observations: '',
         });
       });
     } else if (open && facture) {
@@ -161,6 +164,7 @@ export const FactureDialog = ({
         montantHT: facture.montantHT.toString(),
         montantTVA: facture.montantTVA.toString(),
         montantTTC: facture.montantTTC.toString(),
+        montantPaye: (facture.montantPaye || 0).toString(),
         observations: facture.observations || '',
       });
     }
@@ -185,6 +189,7 @@ export const FactureDialog = ({
         montantHT: parseFloat(values.montantHT),
         montantTVA: parseFloat(values.montantTVA),
         montantTTC: parseFloat(values.montantTTC),
+        montantPaye: parseFloat(values.montantPaye || '0'),
         statut: 'brouillon',
         observations: values.observations || undefined,
       };
@@ -454,6 +459,26 @@ export const FactureDialog = ({
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="montantPaye"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Montant payé</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      step="0.01" 
+                      {...field} 
+                      disabled={isReadOnly}
+                      placeholder="0.00"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
