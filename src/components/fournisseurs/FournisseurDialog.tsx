@@ -179,7 +179,7 @@ export const FournisseurDialog = ({ open, onOpenChange, onSubmit, fournisseur }:
           </DialogTitle>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 px-1 min-h-0">
+        <div className="flex-1 overflow-y-auto px-4 min-h-0">
           <Form {...form}>
           <form className="space-y-4 py-4">
             <Tabs defaultValue="general">
@@ -660,7 +660,7 @@ export const FournisseurDialog = ({ open, onOpenChange, onSubmit, fournisseur }:
 
             </form>
           </Form>
-        </ScrollArea>
+        </div>
         
         <DialogFooter className="flex-shrink-0 pt-4 border-t">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

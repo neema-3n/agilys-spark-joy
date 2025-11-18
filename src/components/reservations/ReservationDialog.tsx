@@ -9,7 +9,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
 import { useProjets } from '@/hooks/useProjets';
 import { useExercice } from '@/contexts/ExerciceContext';
@@ -123,7 +122,7 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation }: R
           </DialogTitle>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 px-1 min-h-0">
+        <div className="flex-1 overflow-y-auto px-4 min-h-0">
           <Form {...form}>
           <form className="space-y-4 py-4">
             <FormField
@@ -251,9 +250,9 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation }: R
             />
             )}
 
-            </form>
+          </form>
           </Form>
-        </ScrollArea>
+        </div>
         
         <DialogFooter className="flex-shrink-0 pt-4 border-t">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

@@ -122,7 +122,7 @@ export const ModificationBudgetaireDialog = ({
           <DialogTitle>Nouvelle modification budgétaire</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-1 min-h-0">
+        <div className="flex-1 overflow-y-auto px-4 min-h-0">
           <form className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="type">Type de modification</Label>
@@ -217,7 +217,7 @@ export const ModificationBudgetaireDialog = ({
               />
             </div>
           </form>
-        </ScrollArea>
+        </div>
         
         <DialogFooter className="flex-shrink-0 pt-4 border-t">
           <Button type="button" variant="outline" onClick={onClose}>
