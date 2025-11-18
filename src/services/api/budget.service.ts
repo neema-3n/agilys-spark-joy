@@ -96,7 +96,16 @@ export const budgetService = {
       .delete()
       .eq('id', id);
 
-    if (error) throw error;
+    if (error) {
+      // Détecter l'erreur de contrainte de clé étrangère (code PostgreSQL 23503)
+      if (error.code === '23503' && error.message.includes('reservations_credits')) {
+        throw new Error(
+          'Cette ligne budgétaire ne peut pas être supprimée car elle est utilisée par une ou plusieurs réservations de crédits. ' +
+          'Veuillez d\'abord supprimer ou libérer les réservations associées.'
+        );
+      }
+      throw error;
+    }
   },
 
   // Récupérer les modifications budgétaires
