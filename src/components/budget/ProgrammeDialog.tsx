@@ -104,14 +104,14 @@ export const ProgrammeDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {programme ? 'Modifier le programme' : 'Nouveau programme'}
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-1">
+        <ScrollArea className="flex-1 px-1 min-h-0">
           <Form {...form}>
             <form className="space-y-4 py-4">
               <FormField

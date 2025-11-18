@@ -172,14 +172,14 @@ export const FournisseurDialog = ({ open, onOpenChange, onSubmit, fournisseur }:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {fournisseur ? 'Modifier le fournisseur' : 'Créer un fournisseur'}
           </DialogTitle>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 px-1">
+        <ScrollArea className="flex-1 px-1 min-h-0">
           <Form {...form}>
           <form className="space-y-4 py-4">
             <Tabs defaultValue="general">

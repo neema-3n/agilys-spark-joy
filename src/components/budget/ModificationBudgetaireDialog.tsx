@@ -117,12 +117,12 @@ export const ModificationBudgetaireDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>Nouvelle modification budgétaire</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-1">
+        <ScrollArea className="flex-1 px-1 min-h-0">
           <form className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="type">Type de modification</Label>
