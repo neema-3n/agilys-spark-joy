@@ -12,7 +12,13 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, ChevronRight, Edit, Trash2, Layers, GitBranch, Zap, MoreHorizontal, BookmarkPlus, LayoutList } from 'lucide-react';
+import { ChevronDown, ChevronRight, Edit, Trash2, Layers, GitBranch, Zap, MoreHorizontal, BookmarkPlus, LayoutList, Building2, Wallet } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
@@ -189,22 +195,115 @@ export const BudgetTable = ({
 
     return filteredLignes.map(({ ligne, section, programme, action }) => {
       const tauxExecution = getTauxExecution(ligne);
+      const compte = getCompteDisplay(ligne.compteId);
+      const enveloppe = getEnveloppeDisplay(ligne.enveloppeId);
       
       return (
         <TableRow key={ligne.id} className="hover:bg-accent/50">
-          <TableCell className="text-sm">
-            <div className="flex items-center gap-1">
-              <span className="text-blue-600 dark:text-blue-400 font-medium">{section?.code}</span>
-              <ChevronRight className="h-3 w-3 text-muted-foreground" />
-              <span className="text-purple-600 dark:text-purple-400 font-medium">{programme?.code}</span>
-              <ChevronRight className="h-3 w-3 text-muted-foreground" />
-              <span className="text-amber-600 dark:text-amber-400 font-medium">{action?.code}</span>
-              <span className="mx-2 text-muted-foreground">|</span>
-              <span className="font-normal">{ligne.libelle}</span>
+          <TableCell className="min-w-[300px] max-w-[500px]">
+            <div className="flex items-start gap-2">
+              {/* Badges hiérarchiques compacts avec tooltips */}
+              <TooltipProvider delayDuration={300}>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge 
+                        variant="secondary" 
+                        className="bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:hover:bg-blue-900/70 text-xs px-1.5 py-0 cursor-help transition-colors"
+                      >
+                        {section?.code || 'N/A'}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-sm">
+                      <p className="text-sm font-medium">{section?.code}</p>
+                      <p className="text-xs text-muted-foreground">{section?.libelle}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  
+                  <ChevronRight className="h-3 w-3 text-gray-300 dark:text-gray-600" />
+                  
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge 
+                        variant="secondary" 
+                        className="bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/50 dark:text-purple-300 dark:hover:bg-purple-900/70 text-xs px-1.5 py-0 cursor-help transition-colors"
+                      >
+                        {programme?.code || 'N/A'}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-sm">
+                      <p className="text-sm font-medium">{programme?.code}</p>
+                      <p className="text-xs text-muted-foreground">{programme?.libelle}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  
+                  <ChevronRight className="h-3 w-3 text-gray-300 dark:text-gray-600" />
+                  
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge 
+                        variant="secondary" 
+                        className="bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/50 dark:text-amber-300 dark:hover:bg-amber-900/70 text-xs px-1.5 py-0 cursor-help transition-colors"
+                      >
+                        {action?.code || 'N/A'}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-sm">
+                      <p className="text-sm font-medium">{action?.code}</p>
+                      <p className="text-xs text-muted-foreground">{action?.libelle}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </TooltipProvider>
+              
+              {/* Libellé de la ligne avec tooltip si texte long */}
+              <div className="flex-1 min-w-0">
+                <TooltipProvider delayDuration={500}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="font-medium text-sm text-foreground leading-tight line-clamp-2 cursor-help">
+                        {ligne.libelle}
+                      </div>
+                    </TooltipTrigger>
+                    {ligne.libelle.length > 50 && (
+                      <TooltipContent side="top" className="max-w-sm">
+                        <p className="text-sm">{ligne.libelle}</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
-            <div className="text-xs text-muted-foreground mt-1">
-              Compte: {getCompteDisplay(ligne.compteId)}
-              {ligne.enveloppeId && ` • Enveloppe: ${getEnveloppeDisplay(ligne.enveloppeId)}`}
+            
+            {/* Informations secondaires avec badges et icônes */}
+            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+              <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant="outline" className="text-xs font-normal px-1.5 py-0.5 cursor-help">
+                      <Building2 className="h-3 w-3 mr-1" />
+                      <span className="max-w-[150px] truncate">{compte}</span>
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-sm">
+                    <p className="text-xs">Compte: {compte}</p>
+                  </TooltipContent>
+                </Tooltip>
+                
+                {ligne.enveloppeId && enveloppe && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant="outline" className="text-xs font-normal px-1.5 py-0.5 cursor-help">
+                        <Wallet className="h-3 w-3 mr-1" />
+                        <span className="max-w-[150px] truncate">{enveloppe}</span>
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-sm">
+                      <p className="text-xs">Enveloppe: {enveloppe}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </TooltipProvider>
             </div>
           </TableCell>
           <TableCell className="text-right text-sm">
