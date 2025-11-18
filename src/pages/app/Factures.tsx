@@ -123,7 +123,7 @@ export default function Factures() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-8">
       <PageHeader
         title="Gestion des Factures"
         description="Gérez les factures fournisseurs"
