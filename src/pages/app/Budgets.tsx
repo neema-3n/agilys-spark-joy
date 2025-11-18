@@ -9,6 +9,7 @@ import { useProgrammes } from '@/hooks/useProgrammes';
 import { useActions } from '@/hooks/useActions';
 import { useComptes } from '@/hooks/useComptes';
 import { useEnveloppes } from '@/hooks/useEnveloppes';
+import { useReservations } from '@/hooks/useReservations';
 import { LigneBudgetaire, ModificationBudgetaire } from '@/types/budget.types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,7 @@ import { Plus, FileEdit, CheckCircle, XCircle, Clock, Send, ArrowDown } from 'lu
 import { BudgetTable } from '@/components/budget/BudgetTable';
 import { LigneBudgetaireDialog } from '@/components/budget/LigneBudgetaireDialog';
 import { ModificationBudgetaireDialog } from '@/components/budget/ModificationBudgetaireDialog';
+import { ReservationDialog } from '@/components/reservations/ReservationDialog';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -49,6 +51,7 @@ const Budgets = () => {
   const { actions, isLoading: loadingActions } = useActions();
   const { comptes, isLoading: loadingComptes } = useComptes();
   const { enveloppes, isLoading: loadingEnveloppes } = useEnveloppes();
+  const { createReservation } = useReservations();
 
   const [lignes, setLignes] = useState<LigneBudgetaire[]>([]);
   const [modifications, setModifications] = useState<ModificationBudgetaire[]>([]);
@@ -58,6 +61,8 @@ const Budgets = () => {
   const [modificationDialogOpen, setModificationDialogOpen] = useState(false);
   const [selectedLigne, setSelectedLigne] = useState<LigneBudgetaire | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [reservationDialogOpen, setReservationDialogOpen] = useState(false);
+  const [ligneForReservation, setLigneForReservation] = useState<LigneBudgetaire | null>(null);
   const [ligneToDelete, setLigneToDelete] = useState<string | null>(null);
   
   const [searchParams, setSearchParams] = useSearchParams();
@@ -232,6 +237,31 @@ const Budgets = () => {
     }
   };
 
+  const handleReserverCredit = (ligne: LigneBudgetaire) => {
+    setLigneForReservation(ligne);
+    setReservationDialogOpen(true);
+  };
+
+  const handleSaveReservation = async (data: any) => {
+    try {
+      await createReservation(data);
+      toast({
+        title: 'Succès',
+        description: 'Réservation de crédit créée avec succès',
+      });
+      setReservationDialogOpen(false);
+      setLigneForReservation(null);
+      loadData();
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de créer la réservation',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
   const formatMontant = (montant: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -331,6 +361,7 @@ const Budgets = () => {
                   setLigneToDelete(id);
                   setDeleteDialogOpen(true);
                 }}
+                onReserver={handleReserverCredit}
               />
             </CardContent>
           </Card>
@@ -493,6 +524,14 @@ const Budgets = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ReservationDialog
+        open={reservationDialogOpen}
+        onOpenChange={setReservationDialogOpen}
+        onSave={handleSaveReservation}
+        reservation={undefined}
+        preSelectedLigneBudgetaire={ligneForReservation}
+      />
     </div>
   );
 };

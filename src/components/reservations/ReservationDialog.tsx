@@ -13,6 +13,7 @@ import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
 import { useProjets } from '@/hooks/useProjets';
 import { useExercice } from '@/contexts/ExerciceContext';
 import type { ReservationCredit, ReservationCreditFormData } from '@/types/reservation.types';
+import type { LigneBudgetaire } from '@/types/budget.types';
 
 const reservationSchema = z.object({
   ligneBudgetaireId: z.string().min(1, 'Veuillez sélectionner une ligne budgétaire'),
@@ -28,9 +29,10 @@ interface ReservationDialogProps {
   onOpenChange: (open: boolean) => void;
   onSave: (data: ReservationCreditFormData) => Promise<void>;
   reservation?: ReservationCredit;
+  preSelectedLigneBudgetaire?: LigneBudgetaire | null;
 }
 
-export const ReservationDialog = ({ open, onOpenChange, onSave, reservation }: ReservationDialogProps) => {
+export const ReservationDialog = ({ open, onOpenChange, onSave, reservation, preSelectedLigneBudgetaire }: ReservationDialogProps) => {
   const { lignes: lignesBudgetaires = [] } = useLignesBudgetaires();
   const { projets = [] } = useProjets();
   const { currentExercice } = useExercice();
@@ -67,7 +69,7 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation }: R
     } else {
       setTypeBeneficiaire('projet');
       form.reset({
-        ligneBudgetaireId: '',
+        ligneBudgetaireId: preSelectedLigneBudgetaire?.id || '',
         montant: 0,
         objet: '',
         beneficiaire: '',
@@ -75,7 +77,7 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation }: R
         dateExpiration: currentExercice?.dateFin || '',
       });
     }
-  }, [reservation, open, currentExercice]);
+  }, [reservation, open, currentExercice, preSelectedLigneBudgetaire]);
 
   const handleSubmit = async (values: z.infer<typeof reservationSchema>) => {
     if (typeBeneficiaire === 'projet' && !values.projetId) {
@@ -122,6 +124,16 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation }: R
           </DialogTitle>
         </DialogHeader>
         
+        {preSelectedLigneBudgetaire && !reservation && (
+          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mx-4 mt-4">
+            <p className="text-sm text-blue-900 dark:text-blue-100">
+              <strong>Ligne budgétaire :</strong> {preSelectedLigneBudgetaire.libelle}
+              <br />
+              <strong>Disponible :</strong> {preSelectedLigneBudgetaire.disponible.toLocaleString('fr-FR')} FCFA
+            </p>
+          </div>
+        )}
+        
         <div className="flex-1 overflow-y-auto px-4 min-h-0">
           <Form {...form}>
           <form className="space-y-4 py-4">
@@ -131,7 +143,11 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation }: R
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Ligne budgétaire *</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    value={field.value}
+                    disabled={!!preSelectedLigneBudgetaire && !reservation}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionner une ligne budgétaire" />
