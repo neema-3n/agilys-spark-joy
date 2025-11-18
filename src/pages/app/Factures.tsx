@@ -123,7 +123,7 @@ export default function Factures() {
   }
 
   return (
-    <div className="space-y-6 p-8">
+    <div className="space-y-6">
       <PageHeader
         title="Gestion des Factures"
         description="Gérez les factures fournisseurs"
@@ -135,16 +135,18 @@ export default function Factures() {
         }
       />
 
-      <FactureStats factures={factures} />
+      <div className="px-8 space-y-6">
+        <FactureStats factures={factures} />
 
-      <FactureTable
-        factures={factures}
-        onEdit={handleEdit}
-        onDelete={deleteFacture}
-        onValider={validerFacture}
-        onMarquerPayee={marquerPayee}
-        onAnnuler={handleAnnuler}
-      />
+        <FactureTable
+          factures={factures}
+          onEdit={handleEdit}
+          onDelete={deleteFacture}
+          onValider={validerFacture}
+          onMarquerPayee={marquerPayee}
+          onAnnuler={handleAnnuler}
+        />
+      </div>
 
       <FactureDialog
         open={dialogOpen}
