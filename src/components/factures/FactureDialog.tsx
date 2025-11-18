@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -29,6 +29,9 @@ import {
 } from '@/components/ui/select';
 import { Facture, CreateFactureInput } from '@/types/facture.types';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const factureSchema = z.object({
   numero: z.string().min(1, 'Le numéro est requis'),
@@ -89,6 +92,10 @@ export const FactureDialog = ({
   initialBonCommandeId,
 }: FactureDialogProps) => {
   const isReadOnly = facture && (facture.statut === 'payee' || facture.statut === 'annulee');
+
+  const [montantDisponibleBC, setMontantDisponibleBC] = useState<number | null>(null);
+  const [montantBC, setMontantBC] = useState<number | null>(null);
+  const [montantDejaFacture, setMontantDejaFacture] = useState<number>(0);
 
   const form = useForm<z.infer<typeof factureSchema>>({
     resolver: zodResolver(factureSchema),
@@ -211,6 +218,33 @@ export const FactureDialog = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchMontantHT, watchMontantTVA]);
 
+  // Calculer le montant disponible sur le BC
+  useEffect(() => {
+    const bonCommandeId = form.watch('bonCommandeId');
+    
+    if (bonCommandeId && bonCommandeId !== 'none') {
+      const bc = bonsCommande.find(b => b.id === bonCommandeId);
+      if (bc && bc.montant) {
+        supabase
+          .from('factures')
+          .select('montant_ttc')
+          .eq('bon_commande_id', bonCommandeId)
+          .neq('statut', 'annulee')
+          .neq('id', facture?.id || '00000000-0000-0000-0000-000000000000')
+          .then(({ data }) => {
+            const dejaFacture = data?.reduce((sum, f) => sum + parseFloat(f.montant_ttc.toString()), 0) || 0;
+            setMontantBC(bc.montant);
+            setMontantDejaFacture(dejaFacture);
+            setMontantDisponibleBC(bc.montant - dejaFacture);
+          });
+      }
+    } else {
+      setMontantDisponibleBC(null);
+      setMontantBC(null);
+      setMontantDejaFacture(0);
+    }
+  }, [form.watch('bonCommandeId'), bonsCommande, facture?.id]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
@@ -305,19 +339,51 @@ export const FactureDialog = ({
                           <SelectValue placeholder="Sélectionner un BC" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">-- Aucun --</SelectItem>
-                        {bonsCommande.map((bc) => (
-                          <SelectItem key={bc.id} value={bc.id}>
-                            {bc.numero}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
+                  <SelectContent>
+                    <SelectItem value="none">-- Aucun --</SelectItem>
+                    {bonsCommande.map((bc) => (
+                      <SelectItem key={bc.id} value={bc.id}>
+                        {bc.numero}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {montantDisponibleBC !== null && (
+                  <Alert className={montantDisponibleBC <= 0 ? 'border-destructive' : 'border-primary'}>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="font-medium">Montant du BC :</span>
+                          <span>{montantBC?.toLocaleString('fr-FR')} €</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium">Déjà facturé :</span>
+                          <span>{montantDejaFacture.toLocaleString('fr-FR')} €</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className={`font-semibold ${montantDisponibleBC <= 0 ? 'text-destructive' : 'text-primary'}`}>
+                            Disponible :
+                          </span>
+                          <span className={`font-semibold ${montantDisponibleBC <= 0 ? 'text-destructive' : 'text-primary'}`}>
+                            {montantDisponibleBC.toLocaleString('fr-FR')} €
+                          </span>
+                        </div>
+                        {montantDisponibleBC <= 0 && (
+                          <p className="mt-2 text-xs text-destructive font-medium">
+                            ⚠️ Ce bon de commande est entièrement facturé
+                          </p>
+                        )}
+                      </div>
+                    </AlertDescription>
+                  </Alert>
                 )}
-              />
+                
+                <FormMessage />
+              </FormItem>
+            )}
+          />
               <FormField
                 control={form.control}
                 name="dateEcheance"

@@ -80,7 +80,31 @@ export const bonsCommandeService = {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data.map(mapBonCommandeFromDB);
+
+    if (!data) return [];
+
+    // Récupérer les montants facturés pour chaque BC
+    const bcIds = data.map(bc => bc.id);
+    const { data: facturesData } = await supabase
+      .from('factures')
+      .select('bon_commande_id, montant_ttc')
+      .in('bon_commande_id', bcIds)
+      .neq('statut', 'annulee');
+
+    // Calculer le montant facturé par BC
+    const montantsFactures = new Map<string, number>();
+    facturesData?.forEach(facture => {
+      const current = montantsFactures.get(facture.bon_commande_id) || 0;
+      montantsFactures.set(
+        facture.bon_commande_id, 
+        current + parseFloat(facture.montant_ttc.toString())
+      );
+    });
+
+    return data.map(item => ({
+      ...mapBonCommandeFromDB(item),
+      montantFacture: montantsFactures.get(item.id) || 0,
+    }));
   },
 
   async getById(id: string): Promise<BonCommande> {
