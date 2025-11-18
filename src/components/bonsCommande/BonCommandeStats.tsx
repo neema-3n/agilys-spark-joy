@@ -1,5 +1,5 @@
 import { StatsCard } from '@/components/ui/stats-card';
-import { FileText, CheckCircle, Clock, Package } from 'lucide-react';
+import { FileText, CheckCircle, Clock, Package, DollarSign } from 'lucide-react';
 import { BonCommande } from '@/types/bonCommande.types';
 
 interface BonCommandeStatsProps {
@@ -12,10 +12,12 @@ export const BonCommandeStats = ({ bonsCommande }: BonCommandeStatsProps) => {
     brouillon: bonsCommande.filter(bc => bc.statut === 'brouillon').length,
     valide: bonsCommande.filter(bc => bc.statut === 'valide' || bc.statut === 'en_cours').length,
     receptionne: bonsCommande.filter(bc => bc.statut === 'receptionne').length,
+    facture: bonsCommande.filter(bc => bc.statut === 'facture').length,
     montantTotal: bonsCommande.reduce((sum, bc) => sum + bc.montant, 0),
     montantBrouillon: bonsCommande.filter(bc => bc.statut === 'brouillon').reduce((sum, bc) => sum + bc.montant, 0),
     montantValide: bonsCommande.filter(bc => bc.statut === 'valide' || bc.statut === 'en_cours').reduce((sum, bc) => sum + bc.montant, 0),
     montantReceptionne: bonsCommande.filter(bc => bc.statut === 'receptionne').reduce((sum, bc) => sum + bc.montant, 0),
+    montantFacture: bonsCommande.filter(bc => bc.statut === 'facture').reduce((sum, bc) => sum + bc.montant, 0),
   };
 
   const formatMontant = (montant: number) => {
@@ -26,7 +28,7 @@ export const BonCommandeStats = ({ bonsCommande }: BonCommandeStatsProps) => {
   };
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
       <StatsCard
         title="Total des BC"
         value={stats.total.toString()}
@@ -56,6 +58,14 @@ export const BonCommandeStats = ({ bonsCommande }: BonCommandeStatsProps) => {
         icon={Package}
         color="text-accent"
         trend={formatMontant(stats.montantReceptionne)}
+        trendUp={true}
+      />
+      <StatsCard
+        title="Facturés"
+        value={stats.facture.toString()}
+        icon={DollarSign}
+        color="text-green-600"
+        trend={formatMontant(stats.montantFacture)}
         trendUp={true}
       />
     </div>
