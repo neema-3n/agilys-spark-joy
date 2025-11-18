@@ -87,7 +87,9 @@ const Budgets = () => {
           budgetService.getModifications(currentExercice.id, currentClient.id),
         ]);
 
-      // Calculer les montants réservés pour chaque ligne
+      // Les montants (engagé, payé, disponible) sont maintenant calculés automatiquement 
+      // par les triggers PostgreSQL - on utilise directement les valeurs de la base de données
+      // On calcule uniquement montantReserve côté frontend pour l'affichage
       const lignesAvecReservations = lignesData.map(ligne => {
         const montantReserve = reservations
           .filter(r => r.ligneBudgetaireId === ligne.id && r.statut === 'active')
@@ -96,7 +98,6 @@ const Budgets = () => {
         return {
           ...ligne,
           montantReserve,
-          disponible: ligne.montantModifie - ligne.montantEngage - montantReserve,
         };
       });
 
