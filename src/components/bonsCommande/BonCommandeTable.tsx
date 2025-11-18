@@ -17,7 +17,8 @@ import {
   Package,
   XCircle,
   Trash2,
-  Eye
+  Eye,
+  FileText
 } from 'lucide-react';
 import { BonCommande } from '@/types/bonCommande.types';
 import { format } from 'date-fns';
@@ -60,6 +61,7 @@ interface BonCommandeTableProps {
   onReceptionner: (id: string) => void;
   onAnnuler: (id: string) => void;
   onDelete: (id: string) => void;
+  onCreateFacture?: (bonCommande: BonCommande) => void;
 }
 
 const getStatutColor = (statut: string) => {
@@ -138,6 +140,7 @@ export const BonCommandeTable = ({
   onReceptionner,
   onAnnuler,
   onDelete,
+  onCreateFacture,
 }: BonCommandeTableProps) => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -268,6 +271,16 @@ export const BonCommandeTable = ({
                             <DropdownMenuItem onClick={() => onReceptionner(bc.id)}>
                               <Package className="h-4 w-4 mr-2" />
                               Réceptionner
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                        
+                        {bc.statut === 'receptionne' && onCreateFacture && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => onCreateFacture(bc)}>
+                              <FileText className="h-4 w-4 mr-2" />
+                              Créer facture
                             </DropdownMenuItem>
                           </>
                         )}

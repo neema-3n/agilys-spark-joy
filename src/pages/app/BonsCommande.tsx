@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -14,6 +14,7 @@ import { BonCommande, CreateBonCommandeInput, UpdateBonCommandeInput } from '@/t
 import type { Engagement } from '@/types/engagement.types';
 
 const BonsCommande = () => {
+  const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
   const [receptionnerDialogOpen, setReceptionnerDialogOpen] = useState(false);
@@ -118,6 +119,10 @@ const BonsCommande = () => {
     }
   };
 
+  const handleCreateFacture = (bonCommande: BonCommande) => {
+    navigate(`/app/factures?from_bon_commande=${bonCommande.id}`);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -149,6 +154,7 @@ const BonsCommande = () => {
           onReceptionner={handleReceptionner}
           onAnnuler={handleAnnuler}
           onDelete={handleDelete}
+          onCreateFacture={handleCreateFacture}
         />
       </div>
 
