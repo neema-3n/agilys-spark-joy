@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { useTheme } from 'next-themes';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Bell,
   ChevronDown,
@@ -13,6 +14,7 @@ import {
   Sun,
   User,
   HelpCircle,
+  Menu,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,11 +28,16 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 
-export const AppHeader = () => {
+interface AppHeaderProps {
+  onMenuClick?: () => void;
+}
+
+export const AppHeader = ({ onMenuClick }: AppHeaderProps) => {
   const { user, logout } = useAuth();
   const { currentClient, clients, setCurrentClient } = useClient();
   const { currentExercice, exercices, setCurrentExercice } = useExercice();
   const { theme, setTheme } = useTheme();
+  const isMobile = useIsMobile();
   const [notificationCount] = useState(3); // Mock notifications
 
   const handleLogout = async () => {
@@ -39,24 +46,36 @@ export const AppHeader = () => {
 
   return (
     <header className="sticky top-0 z-40 h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="flex h-full items-center justify-between px-4 gap-4">
+      <div className="flex h-full items-center justify-between px-4 gap-2 md:gap-4">
+        {/* Bouton menu mobile */}
+        {isMobile && onMenuClick && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onMenuClick}
+            className="shrink-0"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        )}
+
         {/* Zone gauche/centre: Sélecteurs */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
           {/* Sélecteur CLIENT */}
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          <div className="flex flex-col gap-1 min-w-0">
+            <label className="hidden md:block text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               CLIENT
             </label>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
-                  className="min-w-[180px] justify-between bg-card hover:bg-accent h-9"
+                  className="min-w-[100px] md:min-w-[180px] justify-between bg-card hover:bg-accent h-9"
                 >
-                  <span className="truncate text-sm">
-                    {currentClient?.nom || 'Sélectionner...'}
+                  <span className="truncate text-xs md:text-sm">
+                    {currentClient?.nom || 'Client'}
                   </span>
-                  <ChevronDown className="ml-2 h-4 w-4 shrink-0" />
+                  <ChevronDown className="ml-1 md:ml-2 h-3 w-3 md:h-4 md:w-4 shrink-0" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-[200px]">
@@ -78,20 +97,20 @@ export const AppHeader = () => {
           </div>
 
           {/* Sélecteur EXERCICE */}
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          <div className="flex flex-col gap-1 min-w-0">
+            <label className="hidden md:block text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               EXERCICE
             </label>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
-                  className="min-w-[180px] justify-between bg-card hover:bg-accent h-9"
+                  className="min-w-[100px] md:min-w-[180px] justify-between bg-card hover:bg-accent h-9"
                 >
-                  <span className="truncate text-sm">
-                    {currentExercice?.libelle || 'Sélectionner...'}
+                  <span className="truncate text-xs md:text-sm">
+                    {currentExercice?.libelle || 'Exercice'}
                   </span>
-                  <ChevronDown className="ml-2 h-4 w-4 shrink-0" />
+                  <ChevronDown className="ml-1 md:ml-2 h-3 w-3 md:h-4 md:w-4 shrink-0" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-[200px]">
@@ -120,15 +139,15 @@ export const AppHeader = () => {
           </div>
         </div>
 
-        {/* Zone droite: Recherche + Actions */}
-        <div className="flex items-center gap-2">
-          {/* Barre de recherche (masquée sur mobile) */}
-          <div className="relative hidden md:block">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        {/* Zone droite: Recherche et actions */}
+        <div className="flex items-center gap-1 md:gap-2 shrink-0">
+          {/* Barre de recherche - masquée sur petits écrans */}
+          <div className="relative hidden lg:block">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Rechercher..."
-              className="w-[200px] lg:w-[300px] pl-9 bg-card"
+              className="pl-9 w-[200px] lg:w-[300px] h-9 bg-card"
             />
           </div>
 
