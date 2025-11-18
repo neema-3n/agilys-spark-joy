@@ -12,7 +12,8 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, ChevronRight, Edit, Trash2, Layers, GitBranch, Zap, MoreHorizontal, BookmarkPlus } from 'lucide-react';
+import { ChevronDown, ChevronRight, Edit, Trash2, Layers, GitBranch, Zap, MoreHorizontal, BookmarkPlus, LayoutList } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -64,6 +65,22 @@ const saveExpandedState = (clientId: string, exerciceId: string, type: 'sections
   localStorage.setItem(key, JSON.stringify([...state]));
 };
 
+// View mode localStorage helpers
+const getViewModeKey = (clientId: string, exerciceId: string) => {
+  return `budget_view_mode_${clientId}_${exerciceId}`;
+};
+
+const getInitialViewMode = (clientId: string, exerciceId: string): 'hierarchical' | 'compact' => {
+  const key = getViewModeKey(clientId, exerciceId);
+  const stored = localStorage.getItem(key);
+  return (stored === 'compact' ? 'compact' : 'hierarchical') as 'hierarchical' | 'compact';
+};
+
+const saveViewMode = (clientId: string, exerciceId: string, mode: 'hierarchical' | 'compact') => {
+  const key = getViewModeKey(clientId, exerciceId);
+  localStorage.setItem(key, mode);
+};
+
 export const BudgetTable = ({
   clientId,
   exerciceId,
@@ -83,6 +100,10 @@ export const BudgetTable = ({
   const [expandedProgrammes, setExpandedProgrammes] = useState<Set<string>>(
     () => getInitialExpandedState(clientId, exerciceId, 'programmes', programmes)
   );
+  const [viewMode, setViewMode] = useState<'hierarchical' | 'compact'>(
+    () => getInitialViewMode(clientId, exerciceId)
+  );
+  const [searchFilter, setSearchFilter] = useState('');
 
   const formatMontant = (montant: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -132,183 +153,285 @@ export const BudgetTable = ({
     return `${enveloppe.code} - ${enveloppe.nom}`;
   };
 
-  return (
-      <div className="rounded-md border max-h-[600px] overflow-auto">
-        <div className="[&>div]:max-h-none [&>div]:overflow-visible">
-          <Table>
-        <TableHeader>
-          <TableRow className="bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/15">
-            <TableHead className="w-[350px] font-semibold">Libellé</TableHead>
-            <TableHead className="text-right font-semibold">Montant Initial</TableHead>
-            <TableHead className="text-right font-semibold">Modifié</TableHead>
-            <TableHead className="text-right font-semibold">Réservé</TableHead>
-            <TableHead className="text-right font-semibold">Engagé</TableHead>
-            <TableHead className="text-right font-semibold">Payé</TableHead>
-            <TableHead className="text-right font-semibold">Disponible</TableHead>
-            <TableHead className="text-center font-semibold">Taux Exec.</TableHead>
-            <TableHead className="text-right w-[100px] font-semibold">Actions</TableHead>
+  const handleViewModeChange = (mode: 'hierarchical' | 'compact') => {
+    setViewMode(mode);
+    saveViewMode(clientId, exerciceId, mode);
+  };
+
+  const renderCompactView = () => {
+    const allLignesWithHierarchy = lignes.map(ligne => {
+      const action = actions.find(a => a.id === ligne.actionId);
+      const programme = action ? programmes.find(p => p.id === action.programme_id) : null;
+      const section = programme ? sections.find(s => s.id === programme.section_id) : null;
+      
+      return {
+        ligne,
+        section,
+        programme,
+        action
+      };
+    });
+
+    const filteredLignes = searchFilter
+      ? allLignesWithHierarchy.filter(item => {
+          const searchLower = searchFilter.toLowerCase();
+          return (
+            item.ligne.libelle.toLowerCase().includes(searchLower) ||
+            item.section?.code.toLowerCase().includes(searchLower) ||
+            item.section?.libelle.toLowerCase().includes(searchLower) ||
+            item.programme?.code.toLowerCase().includes(searchLower) ||
+            item.programme?.libelle.toLowerCase().includes(searchLower) ||
+            item.action?.code.toLowerCase().includes(searchLower) ||
+            item.action?.libelle.toLowerCase().includes(searchLower)
+          );
+        })
+      : allLignesWithHierarchy;
+
+    return filteredLignes.map(({ ligne, section, programme, action }) => {
+      const tauxExecution = getTauxExecution(ligne);
+      
+      return (
+        <TableRow key={ligne.id} className="hover:bg-accent/50">
+          <TableCell className="text-sm">
+            <div className="flex items-center gap-1">
+              <span className="text-blue-600 dark:text-blue-400 font-medium">{section?.code}</span>
+              <ChevronRight className="h-3 w-3 text-muted-foreground" />
+              <span className="text-purple-600 dark:text-purple-400 font-medium">{programme?.code}</span>
+              <ChevronRight className="h-3 w-3 text-muted-foreground" />
+              <span className="text-amber-600 dark:text-amber-400 font-medium">{action?.code}</span>
+              <span className="mx-2 text-muted-foreground">|</span>
+              <span className="font-normal">{ligne.libelle}</span>
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Compte: {getCompteDisplay(ligne.compteId)}
+              {ligne.enveloppeId && ` • Enveloppe: ${getEnveloppeDisplay(ligne.enveloppeId)}`}
+            </div>
+          </TableCell>
+          <TableCell className="text-right text-sm">
+            {formatMontant(ligne.montantInitial)}
+          </TableCell>
+          <TableCell className="text-right text-sm font-medium">
+            {formatMontant(ligne.montantModifie)}
+          </TableCell>
+          <TableCell className="text-right text-sm text-purple-600 dark:text-purple-400">
+            {formatMontant(ligne.montantReserve || 0)}
+          </TableCell>
+          <TableCell className="text-right text-sm text-orange-600 dark:text-orange-400">
+            {formatMontant(ligne.montantEngage)}
+          </TableCell>
+          <TableCell className="text-right text-sm">
+            {formatMontant(ligne.montantPaye)}
+          </TableCell>
+          <TableCell className="text-right text-sm font-medium">
+            {formatMontant(ligne.disponible)}
+          </TableCell>
+          <TableCell className="text-center">
+            <Badge
+              className="font-semibold"
+              variant={
+                tauxExecution >= 80
+                  ? 'destructive'
+                  : tauxExecution >= 50
+                  ? 'default'
+                  : 'outline'
+              }
+            >
+              {tauxExecution}%
+            </Badge>
+          </TableCell>
+          <TableCell>
+            <div className="flex justify-end">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => onEdit(ligne)}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Modifier
+                  </DropdownMenuItem>
+                  {ligne.disponible > 0 && (
+                    <DropdownMenuItem onClick={() => onReserver(ligne)}>
+                      <BookmarkPlus className="mr-2 h-4 w-4" />
+                      Réserver crédit
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => onDelete(ligne.id)}
+                    className="text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Supprimer
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </TableCell>
+        </TableRow>
+      );
+    });
+  };
+
+  const renderHierarchicalView = () => {
+    return sections.map((section) => {
+      const isExpanded = expandedSections.has(section.id);
+      const sectionProgrammes = programmes.filter(p => p.section_id === section.id);
+      
+      return (
+        <React.Fragment key={section.id}>
+          <TableRow className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 hover:from-blue-100 hover:to-blue-200 dark:hover:from-blue-900 dark:hover:to-blue-800 border-l-4 border-l-blue-500">
+            <TableCell>
+              <div className="flex items-center">
+                <Layers className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleSection(section.id)}
+                  className="p-0 h-auto hover:bg-transparent font-bold text-base"
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="h-5 w-5 mr-2" />
+                  ) : (
+                    <ChevronRight className="h-5 w-5 mr-2" />
+                  )}
+                  {section.code} - {section.libelle}
+                </Button>
+              </div>
+            </TableCell>
+            <TableCell colSpan={8} />
           </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sections.map((section) => {
-            const isExpanded = expandedSections.has(section.id);
-            const sectionProgrammes = programmes.filter(p => p.section_id === section.id);
+
+          {isExpanded && sectionProgrammes.map((programme) => {
+            const isProgrammeExpanded = expandedProgrammes.has(programme.id);
+            const programmeActions = actions.filter(a => a.programme_id === programme.id);
             
             return (
-              <React.Fragment key={section.id}>
-                <TableRow className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 hover:from-blue-100 hover:to-blue-200 dark:hover:from-blue-900 dark:hover:to-blue-800 border-l-4 border-l-blue-500">
-                  <TableCell>
+              <React.Fragment key={programme.id}>
+                <TableRow className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 hover:from-purple-100 hover:to-purple-200 dark:hover:from-purple-900 dark:hover:to-purple-800 border-l-4 border-l-purple-400">
+                  <TableCell className="pl-8">
                     <div className="flex items-center">
-                      <Layers className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
+                      <GitBranch className="h-4 w-4 mr-2 text-purple-600 dark:text-purple-400" />
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => toggleSection(section.id)}
-                        className="p-0 h-auto hover:bg-transparent font-bold text-base"
+                        onClick={() => toggleProgramme(programme.id)}
+                        className="p-0 h-auto hover:bg-transparent font-semibold"
                       >
-                        {isExpanded ? (
-                          <ChevronDown className="h-5 w-5 mr-2" />
+                        {isProgrammeExpanded ? (
+                          <ChevronDown className="h-4 w-4 mr-2" />
                         ) : (
-                          <ChevronRight className="h-5 w-5 mr-2" />
+                          <ChevronRight className="h-4 w-4 mr-2" />
                         )}
-                        {section.code} - {section.libelle}
+                        {programme.code} - {programme.libelle}
                       </Button>
                     </div>
                   </TableCell>
                   <TableCell colSpan={8} />
                 </TableRow>
 
-                {isExpanded && sectionProgrammes.map((programme) => {
-                  const isProgrammeExpanded = expandedProgrammes.has(programme.id);
-                  const programmeActions = actions.filter(a => a.programme_id === programme.id);
+                {isProgrammeExpanded && programmeActions.map((action) => {
+                  const actionLignes = lignes.filter(l => l.actionId === action.id);
                   
                   return (
-                    <React.Fragment key={programme.id}>
-                      <TableRow className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 hover:from-purple-100 hover:to-purple-200 dark:hover:from-purple-900 dark:hover:to-purple-800 border-l-4 border-l-purple-400">
-                        <TableCell className="pl-8">
-                          <div className="flex items-center">
-                            <GitBranch className="h-4 w-4 mr-2 text-purple-600 dark:text-purple-400" />
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleProgramme(programme.id)}
-                              className="p-0 h-auto hover:bg-transparent font-semibold"
-                            >
-                              {isProgrammeExpanded ? (
-                                <ChevronDown className="h-4 w-4 mr-2" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4 mr-2" />
-                              )}
-                              {programme.code} - {programme.libelle}
-                            </Button>
+                    <React.Fragment key={action.id}>
+                      <TableRow className="bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-950 dark:to-amber-900 hover:from-amber-100 hover:to-amber-200 dark:hover:from-amber-900 dark:hover:to-amber-800 border-l-4 border-l-amber-300">
+                        <TableCell className="pl-16">
+                          <div className="flex items-center font-medium">
+                            <Zap className="h-4 w-4 mr-2 text-amber-600 dark:text-amber-400" />
+                            {action.code} - {action.libelle}
                           </div>
-                        </TableCell>
-                        <TableCell colSpan={8} />
+                      </TableCell>
+                      <TableCell colSpan={8} />
                       </TableRow>
 
-                      {isProgrammeExpanded && programmeActions.map((action) => {
-                        const actionLignes = lignes.filter(l => l.actionId === action.id);
+                      {actionLignes.map((ligne) => {
+                        const tauxExecution = getTauxExecution(ligne);
                         
                         return (
-                          <React.Fragment key={action.id}>
-                            <TableRow className="bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-950 dark:to-amber-900 hover:from-amber-100 hover:to-amber-200 dark:hover:from-amber-900 dark:hover:to-amber-800 border-l-4 border-l-amber-300">
-                              <TableCell className="pl-16">
-                                <div className="flex items-center font-medium">
-                                  <Zap className="h-4 w-4 mr-2 text-amber-600 dark:text-amber-400" />
-                                  {action.code} - {action.libelle}
+                          <TableRow key={ligne.id} className="hover:bg-accent/50 bg-white dark:bg-gray-950 border-l-2 border-l-gray-300 dark:border-l-gray-700">
+                             <TableCell className="pl-24 text-sm">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-green-500" />
+                                <div>
+                                  {ligne.libelle}
+                                  <div className="text-xs text-muted-foreground mt-0.5">
+                                    Compte: {getCompteDisplay(ligne.compteId)}
+                                  </div>
+                                  {ligne.enveloppeId && (
+                                    <div className="text-xs text-primary/80 mt-0.5">
+                                      Enveloppe: {getEnveloppeDisplay(ligne.enveloppeId)}
+                                    </div>
+                                  )}
                                 </div>
+                              </div>
                             </TableCell>
-                            <TableCell colSpan={8} />
-                            </TableRow>
-
-                            {actionLignes.map((ligne) => {
-                              const tauxExecution = getTauxExecution(ligne);
-                              
-                              return (
-                                <TableRow key={ligne.id} className="hover:bg-accent/50 bg-white dark:bg-gray-950 border-l-2 border-l-gray-300 dark:border-l-gray-700">
-                                   <TableCell className="pl-24 text-sm">
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-2 h-2 rounded-full bg-green-500" />
-                                      <div>
-                                        {ligne.libelle}
-                                        <div className="text-xs text-muted-foreground mt-0.5">
-                                          Compte: {getCompteDisplay(ligne.compteId)}
-                                        </div>
-                                        {ligne.enveloppeId && (
-                                          <div className="text-xs text-primary/80 mt-0.5">
-                                            Enveloppe: {getEnveloppeDisplay(ligne.enveloppeId)}
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-right text-sm">
-                                    {formatMontant(ligne.montantInitial)}
-                                  </TableCell>
-                                  <TableCell className="text-right text-sm font-medium">
-                                    {formatMontant(ligne.montantModifie)}
-                                  </TableCell>
-                                  <TableCell className="text-right text-sm text-purple-600 dark:text-purple-400">
-                                    {formatMontant(ligne.montantReserve || 0)}
-                                  </TableCell>
-                                  <TableCell className="text-right text-sm text-orange-600 dark:text-orange-400">
-                                    {formatMontant(ligne.montantEngage)}
-                                  </TableCell>
-                                  <TableCell className="text-right text-sm">
-                                    {formatMontant(ligne.montantPaye)}
-                                  </TableCell>
-                                  <TableCell className="text-right text-sm font-medium">
-                                    {formatMontant(ligne.disponible)}
-                                  </TableCell>
-                                  <TableCell className="text-center">
-                                    <Badge
-                                      className="font-semibold"
-                                      variant={
-                                        tauxExecution >= 80
-                                          ? 'destructive'
-                                          : tauxExecution >= 50
-                                          ? 'default'
-                                          : 'outline'
-                                      }
+                            <TableCell className="text-right text-sm">
+                              {formatMontant(ligne.montantInitial)}
+                            </TableCell>
+                            <TableCell className="text-right text-sm font-medium">
+                              {formatMontant(ligne.montantModifie)}
+                            </TableCell>
+                            <TableCell className="text-right text-sm text-purple-600 dark:text-purple-400">
+                              {formatMontant(ligne.montantReserve || 0)}
+                            </TableCell>
+                            <TableCell className="text-right text-sm text-orange-600 dark:text-orange-400">
+                              {formatMontant(ligne.montantEngage)}
+                            </TableCell>
+                            <TableCell className="text-right text-sm">
+                              {formatMontant(ligne.montantPaye)}
+                            </TableCell>
+                            <TableCell className="text-right text-sm font-medium">
+                              {formatMontant(ligne.disponible)}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge
+                                className="font-semibold"
+                                variant={
+                                  tauxExecution >= 80
+                                    ? 'destructive'
+                                    : tauxExecution >= 50
+                                    ? 'default'
+                                    : 'outline'
+                                }
+                              >
+                                {tauxExecution}%
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex justify-end">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => onEdit(ligne)}>
+                                      <Edit className="mr-2 h-4 w-4" />
+                                      Modifier
+                                    </DropdownMenuItem>
+                                    {ligne.disponible > 0 && (
+                                      <DropdownMenuItem onClick={() => onReserver(ligne)}>
+                                        <BookmarkPlus className="mr-2 h-4 w-4" />
+                                        Réserver crédit
+                                      </DropdownMenuItem>
+                                    )}
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() => onDelete(ligne.id)}
+                                      className="text-destructive"
                                     >
-                                      {tauxExecution}%
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex justify-end">
-                                      <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                          <Button variant="ghost" size="icon">
-                                            <MoreHorizontal className="h-4 w-4" />
-                                          </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                          <DropdownMenuItem onClick={() => onEdit(ligne)}>
-                                            <Edit className="mr-2 h-4 w-4" />
-                                            Modifier
-                                          </DropdownMenuItem>
-                                          {ligne.disponible > 0 && (
-                                            <DropdownMenuItem onClick={() => onReserver(ligne)}>
-                                              <BookmarkPlus className="mr-2 h-4 w-4" />
-                                              Réserver crédit
-                                            </DropdownMenuItem>
-                                          )}
-                                          <DropdownMenuSeparator />
-                                          <DropdownMenuItem
-                                            onClick={() => onDelete(ligne.id)}
-                                            className="text-destructive"
-                                          >
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                            Supprimer
-                                          </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                      </DropdownMenu>
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })}
-                          </React.Fragment>
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Supprimer
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </TableCell>
+                          </TableRow>
                         );
                       })}
                     </React.Fragment>
@@ -317,8 +440,65 @@ export const BudgetTable = ({
               </React.Fragment>
             );
           })}
-        </TableBody>
-      </Table>
+        </React.Fragment>
+      );
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Toggle and Search Bar */}
+      <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg border">
+        <div className="flex gap-2">
+          <Button
+            variant={viewMode === 'hierarchical' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => handleViewModeChange('hierarchical')}
+          >
+            <Layers className="h-4 w-4 mr-2" />
+            Vue hiérarchique
+          </Button>
+          <Button
+            variant={viewMode === 'compact' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => handleViewModeChange('compact')}
+          >
+            <LayoutList className="h-4 w-4 mr-2" />
+            Vue compacte
+          </Button>
+        </div>
+        {viewMode === 'compact' && (
+          <Input
+            placeholder="Rechercher une ligne..."
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+            className="max-w-xs"
+          />
+        )}
+      </div>
+
+      {/* Table */}
+      <div className="rounded-md border max-h-[600px] overflow-auto">
+        <div className="[&>div]:max-h-none [&>div]:overflow-visible">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/15">
+                <TableHead className="w-[350px] font-semibold">Libellé</TableHead>
+                <TableHead className="text-right font-semibold">Montant Initial</TableHead>
+                <TableHead className="text-right font-semibold">Modifié</TableHead>
+                <TableHead className="text-right font-semibold">Réservé</TableHead>
+                <TableHead className="text-right font-semibold">Engagé</TableHead>
+                <TableHead className="text-right font-semibold">Payé</TableHead>
+                <TableHead className="text-right font-semibold">Disponible</TableHead>
+                <TableHead className="text-center font-semibold">Taux Exec.</TableHead>
+                <TableHead className="text-right w-[100px] font-semibold">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {viewMode === 'hierarchical' ? renderHierarchicalView() : renderCompactView()}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   );
