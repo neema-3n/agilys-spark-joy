@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, ChevronRight, Edit, Trash2, Layers, GitBranch, Zap, MoreHorizontal } from 'lucide-react';
+import { ChevronDown, ChevronRight, Edit, Trash2, Layers, GitBranch, Zap, MoreHorizontal, BookmarkPlus } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +32,7 @@ interface BudgetTableProps {
   enveloppes: Enveloppe[];
   onEdit: (ligne: LigneBudgetaire) => void;
   onDelete: (id: string) => void;
+  onReserver: (ligne: LigneBudgetaire) => void;
 }
 
 // Helper functions pour localStorage
@@ -74,6 +75,7 @@ export const BudgetTable = ({
   enveloppes,
   onEdit,
   onDelete,
+  onReserver,
 }: BudgetTableProps) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     () => getInitialExpandedState(clientId, exerciceId, 'sections', sections)
@@ -281,6 +283,12 @@ export const BudgetTable = ({
                                             <Edit className="mr-2 h-4 w-4" />
                                             Modifier
                                           </DropdownMenuItem>
+                                          {ligne.disponible > 0 && (
+                                            <DropdownMenuItem onClick={() => onReserver(ligne)}>
+                                              <BookmarkPlus className="mr-2 h-4 w-4" />
+                                              Réserver crédit
+                                            </DropdownMenuItem>
+                                          )}
                                           <DropdownMenuSeparator />
                                           <DropdownMenuItem
                                             onClick={() => onDelete(ligne.id)}
