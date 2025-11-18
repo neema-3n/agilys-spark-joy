@@ -1,27 +1,12 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useClient } from '@/contexts/ClientContext';
-import { useExercice } from '@/contexts/ExerciceContext';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Wallet, FileText, Receipt, BarChart3, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Users, CreditCard, Wallet2, ShieldCheck, LineChart, TrendingUp, BookmarkCheck, ShoppingCart, DollarSign, FolderKanban, Layers, PlayCircle, Target } from 'lucide-react';
+import { LayoutDashboard, Wallet, FileText, Receipt, BarChart3, Settings, ChevronLeft, ChevronRight, ChevronDown, Users, CreditCard, Wallet2, ShieldCheck, LineChart, TrendingUp, BookmarkCheck, ShoppingCart, DollarSign, FolderKanban, Layers, PlayCircle, Target, Building2 } from 'lucide-react';
 import { useState } from 'react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { AppHeader } from '@/components/app/AppHeader';
 const AppLayout = () => {
-  const {
-    user,
-    logout
-  } = useAuth();
-  const {
-    currentClient,
-    clients,
-    setCurrentClient
-  } = useClient();
-  const {
-    currentExercice,
-    exercices,
-    setCurrentExercice
-  } = useExercice();
+  const { user } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeGroup, setActiveGroup] = useState<'operationnel' | 'pilotage'>('operationnel');
@@ -157,9 +142,7 @@ const AppLayout = () => {
   const navigationSections = allNavigationSections.filter(section => 
     menuGroups[activeGroup].sections.includes(section.title)
   );
-  const handleLogout = async () => {
-    await logout();
-  };
+  
   return <div className="min-h-screen bg-background flex w-full">
       {/* Sidebar */}
       <aside className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-card border-r border-sidebar-border transition-all duration-300 flex flex-col h-screen`}>
@@ -200,44 +183,6 @@ const AppLayout = () => {
           </div>
         </div>}
 
-        {/* Sélecteurs - FIXES */}
-        {sidebarOpen && <div className="flex-shrink-0 p-3 space-y-2 border-b border-sidebar-border bg-sidebar-background">
-            {/* Sélecteur de client */}
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Client</label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between text-sm hover:bg-sidebar-accent transition-colors">
-                    <span className="truncate font-medium">{currentClient?.nom || 'Sélectionner'}</span>
-                    <ChevronDown className="h-4 w-4 ml-2 flex-shrink-0" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56">
-                  {clients.map(client => <DropdownMenuItem key={client.id} onClick={() => setCurrentClient(client)}>
-                      {client.nom}
-                    </DropdownMenuItem>)}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            {/* Sélecteur d'exercice */}
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Exercice</label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between text-sm hover:bg-sidebar-accent transition-colors">
-                    <span className="font-medium">{currentExercice?.libelle || 'Sélectionner'}</span>
-                    <ChevronDown className="h-4 w-4 ml-2" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56">
-                  {exercices.map(exercice => <DropdownMenuItem key={exercice.id} onClick={() => setCurrentExercice(exercice)}>
-                      {exercice.libelle} ({exercice.statut})
-                    </DropdownMenuItem>)}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>}
 
         {/* Navigation - Style AirBooks */}
         <nav className="flex-1 p-3 space-y-2 overflow-y-auto">
@@ -329,30 +274,17 @@ const AppLayout = () => {
               {sidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             </Button>
           </div>
-          
-          {/* User info */}
-          <div className="p-3">
-            {sidebarOpen ? <div className="flex items-center gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate">
-                    {user?.prenom} {user?.nom}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-                </div>
-                <Button variant="ghost" size="icon" onClick={handleLogout} className="hover:bg-destructive/10 hover:text-destructive">
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </div> : <Button variant="ghost" size="icon" onClick={handleLogout} className="w-full hover:bg-destructive/10 hover:text-destructive">
-                <LogOut className="h-4 w-4" />
-              </Button>}
-          </div>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 h-screen overflow-hidden">
-        <Outlet />
-      </main>
+      {/* Main Content with Header */}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+        <AppHeader />
+        <main className="flex-1 overflow-auto">
+          <Outlet />
+        </main>
+      </div>
     </div>;
 };
+
 export default AppLayout;
