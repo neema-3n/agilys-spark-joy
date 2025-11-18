@@ -51,7 +51,7 @@ const Budgets = () => {
   const { actions, isLoading: loadingActions } = useActions();
   const { comptes, isLoading: loadingComptes } = useComptes();
   const { enveloppes, isLoading: loadingEnveloppes } = useEnveloppes();
-  const { createReservation } = useReservations();
+  const { reservations, createReservation } = useReservations();
 
   const [lignes, setLignes] = useState<LigneBudgetaire[]>([]);
   const [modifications, setModifications] = useState<ModificationBudgetaire[]>([]);
@@ -87,7 +87,20 @@ const Budgets = () => {
           budgetService.getModifications(currentExercice.id, currentClient.id),
         ]);
 
-      setLignes(lignesData);
+      // Calculer les montants réservés pour chaque ligne
+      const lignesAvecReservations = lignesData.map(ligne => {
+        const montantReserve = reservations
+          .filter(r => r.ligneBudgetaireId === ligne.id && r.statut === 'active')
+          .reduce((sum, r) => sum + r.montant, 0);
+        
+        return {
+          ...ligne,
+          montantReserve,
+          disponible: ligne.montantModifie - ligne.montantEngage - montantReserve,
+        };
+      });
+
+      setLignes(lignesAvecReservations);
       setModifications(modificationsData);
     } catch (error) {
       toast({
