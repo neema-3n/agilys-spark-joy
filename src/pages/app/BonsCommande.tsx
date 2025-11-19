@@ -127,7 +127,7 @@ const BonsCommande = () => {
       setReceptionnerDialogOpen(false);
       setSelectedBonCommande(undefined);
     }
-  }, [selectedBonCommande, receptionnerBonCommande]);
+  }, [receptionnerBonCommande]);
 
   const handleAnnuler = useCallback((bc: BonCommande) => {
     setSelectedBonCommande(bc);
@@ -140,7 +140,7 @@ const BonsCommande = () => {
       setAnnulerDialogOpen(false);
       setSelectedBonCommande(undefined);
     }
-  }, [selectedBonCommande, annulerBonCommande]);
+  }, [annulerBonCommande]);
 
   const handleCreateFacture = useCallback((bonCommande: BonCommande) => {
     setSelectedBonCommande(bonCommande);
@@ -174,7 +174,7 @@ const BonsCommande = () => {
       });
       throw error;
     }
-  }, [selectedBonCommande, createFacture, navigate, toast]);
+  }, [createFacture, navigate, toast]);
 
   if (isLoading) {
     return (
