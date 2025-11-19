@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { ClientContextType, Client } from '@/types';
 import { clientsService } from '@/services/api/clients.service';
 import { useAuth } from './AuthContext';
@@ -10,13 +10,7 @@ export const ClientProvider = ({ children }: { children: ReactNode }) => {
   const [clients, setClients] = useState<Client[]>([]);
   const [currentClient, setCurrentClient] = useState<Client | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      loadClients();
-    }
-  }, [user]);
-
-  const loadClients = async () => {
+  const loadClients = useCallback(async () => {
     const allClients = await clientsService.getAll();
     setClients(allClients);
     
@@ -30,10 +24,22 @@ export const ClientProvider = ({ children }: { children: ReactNode }) => {
       const userClient = allClients.find(c => c.id === user?.clientId);
       setCurrentClient(userClient || null);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadClients();
+    }
+  }, [user, loadClients]);
+
+  const contextValue = useMemo(() => ({
+    currentClient,
+    clients,
+    setCurrentClient
+  }), [currentClient, clients]);
 
   return (
-    <ClientContext.Provider value={{ currentClient, clients, setCurrentClient }}>
+    <ClientContext.Provider value={contextValue}>
       {children}
     </ClientContext.Provider>
   );
