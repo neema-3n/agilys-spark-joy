@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
+import { PageHeader } from '@/components/PageHeader';
 import { useSections } from '@/hooks/useSections';
 import { useProgrammes } from '@/hooks/useProgrammes';
 import { useActions } from '@/hooks/useActions';
@@ -123,19 +124,15 @@ const StructureBudgetaire = () => {
   }
 
   return (
-    <div className="space-y-6 p-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Structure Budgétaire</h1>
-          <p className="text-muted-foreground">
-            Gestion de la nomenclature budgétaire (Sections &gt; Programmes &gt; Actions)
-          </p>
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+    <div className="space-y-6">
+      <PageHeader
+        title="Structure Budgétaire"
+        description="Gestion de la nomenclature budgétaire (Sections > Programmes > Actions)"
+      />
+      <div className="px-8">
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium">Sections</CardTitle>
             <Layers className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -160,10 +157,10 @@ const StructureBudgetaire = () => {
           <CardContent>
             <div className="text-2xl font-bold">{actions.length}</div>
           </CardContent>
-        </Card>
-      </div>
+          </Card>
+        </div>
 
-      <Tabs defaultValue="sections" className="space-y-4">
+        <Tabs defaultValue="sections" className="space-y-4">
         <TabsList>
           <TabsTrigger value="sections">Sections</TabsTrigger>
           <TabsTrigger value="programmes">Programmes</TabsTrigger>
@@ -342,7 +339,8 @@ const StructureBudgetaire = () => {
             </CardContent>
           </Card>
         </TabsContent>
-      </Tabs>
+        </Tabs>
+      </div>
 
       <SectionDialog
         open={sectionDialogOpen}

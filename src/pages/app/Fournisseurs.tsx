@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -55,21 +56,18 @@ const Fournisseurs = () => {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Gestion des Fournisseurs</h1>
-            <p className="text-muted-foreground">
-              Référentiel fournisseurs et suivi des contrats
-            </p>
-          </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Gestion des Fournisseurs"
+        description="Référentiel fournisseurs et suivi des contrats"
+        actions={
           <Button onClick={() => setDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Nouveau fournisseur
           </Button>
-        </div>
-      </div>
+        }
+      />
+      <div className="px-8">
 
       <Tabs defaultValue="vue-ensemble" className="space-y-6">
         <TabsList>
@@ -142,6 +140,8 @@ const Fournisseurs = () => {
           />
         </TabsContent>
       </Tabs>
+
+      </div>
 
       <FournisseurDialog
         open={dialogOpen}
