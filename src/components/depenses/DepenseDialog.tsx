@@ -38,17 +38,47 @@ import type { Facture } from '@/types/facture.types';
 import { format } from 'date-fns';
 
 const depenseSchema = z.object({
-  // Champs optionnels - accepter undefined ou string vide
-  engagementId: z.string().nullish().transform(val => val || undefined),
-  reservationCreditId: z.string().nullish().transform(val => val || undefined),
-  ligneBudgetaireId: z.string().nullish().transform(val => val || undefined),
-  factureId: z.string().nullish().transform(val => val || undefined),
-  fournisseurId: z.string().nullish().transform(val => val || undefined),
-  beneficiaire: z.string().nullish().transform(val => val || undefined),
-  projetId: z.string().nullish().transform(val => val || undefined),
-  modePaiement: z.string().nullish().transform(val => val || undefined),
-  referencePaiement: z.string().nullish().transform(val => val || undefined),
-  observations: z.string().nullish().transform(val => val || undefined),
+  // Champs optionnels - préprocesser pour convertir les strings vides en undefined
+  engagementId: z.preprocess(
+    (val) => !val || val === '' ? undefined : val,
+    z.string().optional()
+  ),
+  reservationCreditId: z.preprocess(
+    (val) => !val || val === '' ? undefined : val,
+    z.string().optional()
+  ),
+  ligneBudgetaireId: z.preprocess(
+    (val) => !val || val === '' ? undefined : val,
+    z.string().optional()
+  ),
+  factureId: z.preprocess(
+    (val) => !val || val === '' ? undefined : val,
+    z.string().optional()
+  ),
+  fournisseurId: z.preprocess(
+    (val) => !val || val === '' ? undefined : val,
+    z.string().optional()
+  ),
+  beneficiaire: z.preprocess(
+    (val) => !val || val === '' ? undefined : val,
+    z.string().optional()
+  ),
+  projetId: z.preprocess(
+    (val) => !val || val === '' ? undefined : val,
+    z.string().optional()
+  ),
+  modePaiement: z.preprocess(
+    (val) => !val || val === '' ? undefined : val,
+    z.string().optional()
+  ),
+  referencePaiement: z.preprocess(
+    (val) => !val || val === '' ? undefined : val,
+    z.string().optional()
+  ),
+  observations: z.preprocess(
+    (val) => !val || val === '' ? undefined : val,
+    z.string().optional()
+  ),
   
   // Champs obligatoires
   objet: z.string().min(1, "L'objet est requis"),
