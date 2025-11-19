@@ -46,7 +46,7 @@ export const AppHeader = ({ onMenuClick }: AppHeaderProps) => {
 
   return (
     <header className="sticky top-0 z-40 h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="flex h-full items-center justify-between px-4 gap-2 md:gap-4">
+      <div className="flex h-full items-center justify-between px-2 md:px-4 gap-1 md:gap-2 lg:gap-4">
         {/* Bouton menu mobile */}
         {isMobile && onMenuClick && (
           <Button
@@ -60,7 +60,7 @@ export const AppHeader = ({ onMenuClick }: AppHeaderProps) => {
         )}
 
         {/* Zone gauche/centre: Sélecteurs */}
-        <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
+        <div className="flex items-center gap-1 md:gap-2 lg:gap-3 flex-1 min-w-0">
           {/* Sélecteur CLIENT */}
           <div className="flex flex-col gap-1 min-w-0">
             <label className="hidden md:block text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -70,7 +70,7 @@ export const AppHeader = ({ onMenuClick }: AppHeaderProps) => {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
-                  className="min-w-[100px] md:min-w-[180px] justify-between bg-card hover:bg-accent h-9"
+                  className="min-w-[90px] md:min-w-[140px] lg:min-w-[180px] justify-between bg-card hover:bg-accent h-9"
                 >
                   <span className="truncate text-xs md:text-sm">
                     {currentClient?.nom || 'Client'}
@@ -105,7 +105,7 @@ export const AppHeader = ({ onMenuClick }: AppHeaderProps) => {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
-                  className="min-w-[100px] md:min-w-[180px] justify-between bg-card hover:bg-accent h-9"
+                  className="min-w-[90px] md:min-w-[140px] lg:min-w-[180px] justify-between bg-card hover:bg-accent h-9"
                 >
                   <span className="truncate text-xs md:text-sm">
                     {currentExercice?.libelle || 'Exercice'}
@@ -142,7 +142,7 @@ export const AppHeader = ({ onMenuClick }: AppHeaderProps) => {
         {/* Zone droite: Recherche et actions */}
         <div className="flex items-center gap-1 md:gap-2 shrink-0">
           {/* Barre de recherche - masquée sur petits écrans */}
-          <div className="relative hidden lg:block">
+          <div className="relative hidden xl:block">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
@@ -187,14 +187,14 @@ export const AppHeader = ({ onMenuClick }: AppHeaderProps) => {
           {/* Profil utilisateur */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="gap-2 pl-2">
+              <Button variant="ghost" className="gap-1 md:gap-2 pl-1 md:pl-2">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
                     {user?.prenom?.[0]?.toUpperCase()}
                     {user?.nom?.[0]?.toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <span className="hidden lg:block text-sm font-medium">
+                <span className="hidden xl:block text-sm font-medium">
                   {user?.prenom} {user?.nom}
                 </span>
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
