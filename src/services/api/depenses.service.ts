@@ -18,7 +18,7 @@ const toCamelCase = (obj: any): any => {
 const toSnakeCase = (obj: any): any => {
   if (Array.isArray(obj)) {
     return obj.map(v => toSnakeCase(v));
-  } else if (obj !== null && obj.constructor === Object) {
+  } else if (obj != null && typeof obj === 'object' && obj.constructor === Object) {
     return Object.keys(obj).reduce((result, key) => {
       const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
       result[snakeKey] = toSnakeCase(obj[key]);
