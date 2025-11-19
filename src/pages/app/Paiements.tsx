@@ -1,25 +1,30 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PageHeader } from '@/components/PageHeader';
+import { Card, CardContent } from '@/components/ui/card';
+import { Construction } from 'lucide-react';
 
 const Paiements = () => {
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Gestion des Paiements</h1>
-        <p className="text-muted-foreground">
-          Exécution des paiements et rapprochements bancaires
-        </p>
+    <div className="space-y-6">
+      <PageHeader
+        title="Gestion des Paiements"
+        description="Exécution des paiements et rapprochements bancaires"
+      />
+      
+      <div className="px-8">
+        <Card>
+          <CardContent className="py-12">
+            <div className="text-center space-y-4">
+              <Construction className="h-16 w-16 mx-auto text-muted-foreground" />
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Module en construction</h3>
+                <p className="text-muted-foreground">
+                  Le module de gestion des paiements sera développé prochainement.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Module en construction</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            Le module de gestion des paiements sera développé prochainement.
-          </p>
-        </CardContent>
-      </Card>
     </div>
   );
 };
