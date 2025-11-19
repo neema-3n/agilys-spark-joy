@@ -4,11 +4,41 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { DepenseStatsCards } from '@/components/depenses/DepensesStats';
 import { DepenseTable } from '@/components/depenses/DepenseTable';
+import { DepenseDialog } from '@/components/depenses/DepenseDialog';
 import { useDepenses } from '@/hooks/useDepenses';
+import type { DepenseFormData, Depense } from '@/types/depense.types';
+import { toast } from '@/hooks/use-toast';
 
 const Depenses = () => {
-  const { depenses, isLoading } = useDepenses();
+  const { depenses, isLoading, createDepense, updateDepense } = useDepenses();
   const [depenseDialogOpen, setDepenseDialogOpen] = useState(false);
+  const [selectedDepense, setSelectedDepense] = useState<Depense | undefined>();
+
+  const handleSaveDepense = async (data: DepenseFormData) => {
+    try {
+      if (selectedDepense) {
+        await updateDepense({ id: selectedDepense.id, updates: data });
+        toast({
+          title: 'Succès',
+          description: 'Dépense modifiée avec succès',
+        });
+      } else {
+        await createDepense(data);
+        toast({
+          title: 'Succès',
+          description: 'Dépense créée avec succès',
+        });
+      }
+      setDepenseDialogOpen(false);
+      setSelectedDepense(undefined);
+    } catch (error: any) {
+      toast({
+        title: 'Erreur',
+        description: error.message || 'Une erreur est survenue',
+        variant: 'destructive',
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -37,6 +67,16 @@ const Depenses = () => {
 
       <DepenseStatsCards depenses={depenses} />
       <DepenseTable depenses={depenses} />
+      
+      <DepenseDialog
+        open={depenseDialogOpen}
+        onOpenChange={(open) => {
+          setDepenseDialogOpen(open);
+          if (!open) setSelectedDepense(undefined);
+        }}
+        onSave={handleSaveDepense}
+        depense={selectedDepense}
+      />
     </div>
   );
 };
