@@ -63,6 +63,12 @@ const Depenses = () => {
       <PageHeader
         title="Gestion des Dépenses"
         description="Ordonnancement et liquidation des dépenses"
+        actions={
+          <Button onClick={() => setDepenseDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nouvelle dépense
+          </Button>
+        }
       />
 
       <DepenseStatsCards depenses={depenses} />
