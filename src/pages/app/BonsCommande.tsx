@@ -159,6 +159,7 @@ const BonsCommande = () => {
   const handleSaveFacture = useCallback(async (data: CreateFactureInput) => {
     try {
       await createFacture({ facture: data, skipToast: true });
+      // Fermer le dialog et afficher le toast de succès seulement si ça a réussi
       setFactureDialogOpen(false);
       setFactureBonCommandeId(undefined);
       
@@ -173,10 +174,10 @@ const BonsCommande = () => {
       });
     } catch (error) {
       // L'erreur est déjà gérée par le hook useFactures qui affiche le message détaillé
-      // Ne pas relancer l'erreur pour éviter le message "The app encountered an error"
+      // Le dialog reste ouvert pour permettre la correction
       console.error('Erreur lors de la création de la facture:', error);
     }
-  }, [createFacture, navigate, toast]);
+  }, [createFacture, navigate]);
 
   const handleGenererNumero = useCallback(async () => {
     if (!currentClient || !currentExercice) return '';
