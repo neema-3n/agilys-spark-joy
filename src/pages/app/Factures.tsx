@@ -1,5 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useState, useCallback } from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -32,7 +31,6 @@ import { Label } from '@/components/ui/label';
 export default function Factures() {
   const { currentClient } = useClient();
   const { currentExercice } = useExercice();
-  const [searchParams, setSearchParams] = useSearchParams();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedFacture, setSelectedFacture] = useState<Facture | undefined>();
   const [selectedBonCommandeId, setSelectedBonCommandeId] = useState<string | undefined>();
@@ -80,19 +78,6 @@ export default function Factures() {
     },
     enabled: !!currentClient,
   });
-
-  // Gérer la création depuis un BC via query param
-  useEffect(() => {
-    const bonCommandeId = searchParams.get('from_bon_commande');
-    if (bonCommandeId && bonsCommande.length > 0 && !dialogOpen) {
-      const bonCommande = bonsCommande.find(bc => bc.id === bonCommandeId);
-      if (bonCommande) {
-        setSelectedBonCommandeId(bonCommandeId);
-        setDialogOpen(true);
-        setSearchParams({});
-      }
-    }
-  }, [searchParams, bonsCommande, dialogOpen, setSearchParams]);
 
   const handleCreate = () => {
     setSelectedFacture(undefined);
