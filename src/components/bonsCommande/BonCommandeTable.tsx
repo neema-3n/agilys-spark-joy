@@ -311,7 +311,7 @@ export const BonCommandeTable = ({
                           </>
                         )}
                         
-                        {bc.statut !== 'receptionne' && bc.statut !== 'facture' && bc.statut !== 'annule' && (
+                        {bc.statut !== 'facture' && bc.statut !== 'annule' && (
                           <>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => onAnnuler(bc)}>
