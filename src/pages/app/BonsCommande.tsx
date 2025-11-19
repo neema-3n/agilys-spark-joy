@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -54,6 +54,12 @@ const BonsCommande = () => {
   const { projets } = useProjets();
   const { lignes: lignesBudgetaires } = useLignesBudgetaires();
   const { engagements } = useEngagements();
+
+  // Stabiliser genererNumero avec useRef pour éviter les boucles infinies
+  const genererNumeroRef = useRef(genererNumero);
+  useEffect(() => {
+    genererNumeroRef.current = genererNumero;
+  }, [genererNumero]);
 
   const { data: bonsCommandeReceptionnes = [] } = useQuery({
     queryKey: ['bons-commande-receptionnes', currentClient?.id, currentExercice?.id],
@@ -140,8 +146,8 @@ const BonsCommande = () => {
   }, [selectedBonCommande, annulerBonCommande]);
 
   const handleGenererNumero = useCallback(async () => {
-    return genererNumero();
-  }, [genererNumero]);
+    return genererNumeroRef.current();
+  }, []);
 
   const handleCreateFacture = useCallback((bonCommande: BonCommande) => {
     setSelectedBonCommande(bonCommande);
