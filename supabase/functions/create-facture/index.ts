@@ -89,7 +89,50 @@ Deno.serve(async (req) => {
 
     if (error) {
       console.error('Database error:', error);
-      throw new Error(error.message);
+      
+      // Transformer les erreurs techniques en messages clairs
+      let userMessage = error.message;
+      
+      // Erreur de dépassement du BC
+      if (error.message.includes('dépasse le montant du bon de commande')) {
+        const match = error.message.match(/\(([0-9.]+)\).*\(([0-9.]+)\)/);
+        if (match) {
+          const totalFacture = parseFloat(match[1]);
+          const montantBC = parseFloat(match[2]);
+          const deja = totalFacture - body.montantTTC;
+          const disponible = montantBC - deja;
+          
+          userMessage = `⚠️ Montant insuffisant sur le bon de commande\n\n` +
+                       `• Montant du BC : ${montantBC.toFixed(2)} €\n` +
+                       `• Déjà facturé : ${deja.toFixed(2)} €\n` +
+                       `• Disponible : ${disponible.toFixed(2)} €\n` +
+                       `• Vous tentez de facturer : ${body.montantTTC.toFixed(2)} €\n\n` +
+                       `💡 Réduisez le montant à ${disponible.toFixed(2)} € maximum`;
+        }
+      }
+      
+      // Erreur de dépassement de l'engagement
+      if (error.message.includes('dépasse le montant de l\'engagement')) {
+        const match = error.message.match(/\(([0-9.]+)\).*\(([0-9.]+)\)/);
+        if (match) {
+          const totalFacture = parseFloat(match[1]);
+          const montantEng = parseFloat(match[2]);
+          const disponible = montantEng - (totalFacture - body.montantTTC);
+          
+          userMessage = `⚠️ Montant insuffisant sur l'engagement\n\n` +
+                       `• Montant de l'engagement : ${montantEng.toFixed(2)} €\n` +
+                       `• Disponible : ${disponible.toFixed(2)} €\n\n` +
+                       `💡 Réduisez le montant ou augmentez l'engagement`;
+        }
+      }
+      
+      // Erreur de budget insuffisant
+      if (error.message.includes('Budget insuffisant')) {
+        userMessage = `⚠️ Budget insuffisant sur la ligne budgétaire\n\n` +
+                     `💡 Vérifiez le budget disponible ou créez une modification budgétaire`;
+      }
+      
+      throw new Error(userMessage);
     }
 
     // Convert snake_case to camelCase
