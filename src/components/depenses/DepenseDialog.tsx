@@ -38,19 +38,19 @@ import type { Facture } from '@/types/facture.types';
 import { format } from 'date-fns';
 
 const depenseSchema = z.object({
-  engagementId: z.string().optional().or(z.literal('')),
-  reservationCreditId: z.string().optional().or(z.literal('')),
-  ligneBudgetaireId: z.string().optional().or(z.literal('')),
-  factureId: z.string().optional().or(z.literal('')),
-  fournisseurId: z.string().optional().or(z.literal('')),
-  beneficiaire: z.string().optional().or(z.literal('')),
-  projetId: z.string().optional().or(z.literal('')),
+  engagementId: z.string(),
+  reservationCreditId: z.string(),
+  ligneBudgetaireId: z.string(),
+  factureId: z.string(),
+  fournisseurId: z.string(),
+  beneficiaire: z.string(),
+  projetId: z.string(),
   objet: z.string().min(1, "L'objet est requis").max(500, "L'objet ne peut dépasser 500 caractères"),
   montant: z.coerce.number().positive('Le montant doit être supérieur à 0'),
   dateDepense: z.string().min(1, 'La date est requise'),
-  modePaiement: z.string().optional().or(z.literal('')),
-  referencePaiement: z.string().optional().or(z.literal('')),
-  observations: z.string().optional().or(z.literal('')),
+  modePaiement: z.string(),
+  referencePaiement: z.string(),
+  observations: z.string(),
 }).refine(
   (data) => data.engagementId || data.reservationCreditId || data.ligneBudgetaireId || data.factureId,
   { message: 'Au moins une imputation budgétaire est requise', path: ['ligneBudgetaireId'] }
@@ -411,7 +411,7 @@ export const DepenseDialog = ({
                             field.onChange(value);
                             handleEngagementChange(value);
                           }}
-                          value={field.value}
+                          value={field.value || ''}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -444,7 +444,7 @@ export const DepenseDialog = ({
                             field.onChange(value);
                             handleReservationChange(value);
                           }}
-                          value={field.value}
+                          value={field.value || ''}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -477,7 +477,7 @@ export const DepenseDialog = ({
                             field.onChange(value);
                             handleFactureChange(value);
                           }}
-                          value={field.value}
+                          value={field.value || ''}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -510,7 +510,7 @@ export const DepenseDialog = ({
                             field.onChange(value);
                             handleLigneDirecteChange(value);
                           }}
-                          value={field.value}
+                          value={field.value || ''}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -590,14 +590,14 @@ export const DepenseDialog = ({
                     control={form.control}
                     name="fournisseurId"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Fournisseur</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Sélectionner un fournisseur" />
-                            </SelectTrigger>
-                          </FormControl>
+                  <FormItem>
+                    <FormLabel>Fournisseur</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner un fournisseur" />
+                        </SelectTrigger>
+                      </FormControl>
                           <SelectContent>
                             {fournisseursActifs.map((f) => (
                               <SelectItem key={f.id} value={f.id}>
@@ -746,7 +746,7 @@ export const DepenseDialog = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Projet (optionnel)</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Sélectionner un projet" />
@@ -773,7 +773,7 @@ export const DepenseDialog = ({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Mode de paiement (optionnel)</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Sélectionner" />
