@@ -43,16 +43,10 @@ const Depenses = () => {
   if (isLoading) {
     return (
       <div className="space-y-6">
-      <PageHeader
-        title="Gestion des Dépenses"
-        description="Ordonnancement et liquidation des dépenses"
-        actions={
-          <Button onClick={() => setDepenseDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nouvelle dépense
-          </Button>
-        }
-      />
+        <PageHeader
+          title="Gestion des Dépenses"
+          description="Ordonnancement et liquidation des dépenses"
+        />
         <p className="text-center text-muted-foreground">Chargement...</p>
       </div>
     );
