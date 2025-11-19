@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, ChevronRight, Edit, Trash2, Layers, GitBranch, Zap, MoreHorizontal, BookmarkPlus, LayoutList, Building2, Wallet, FileEdit } from 'lucide-react';
+import { ChevronDown, ChevronRight, Edit, Trash2, Layers, GitBranch, Zap, MoreHorizontal, BookmarkPlus, LayoutList, Building2, Wallet, FileEdit, Activity } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -27,6 +27,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { DepensesStats } from '@/components/depenses/DepensesStats';
+import { DepensesTable as DepensesMonitoringTable } from '@/components/depenses/DepensesTable';
 
 interface BudgetTableProps {
   clientId: string;
@@ -77,13 +79,14 @@ const getViewModeKey = (clientId: string, exerciceId: string) => {
   return `budget_view_mode_${clientId}_${exerciceId}`;
 };
 
-const getInitialViewMode = (clientId: string, exerciceId: string): 'hierarchical' | 'compact' => {
+const getInitialViewMode = (clientId: string, exerciceId: string): 'hierarchical' | 'compact' | 'monitoring' => {
   const key = getViewModeKey(clientId, exerciceId);
   const stored = localStorage.getItem(key);
-  return (stored === 'compact' ? 'compact' : 'hierarchical') as 'hierarchical' | 'compact';
+  if (stored === 'compact' || stored === 'monitoring') return stored as 'compact' | 'monitoring';
+  return 'hierarchical';
 };
 
-const saveViewMode = (clientId: string, exerciceId: string, mode: 'hierarchical' | 'compact') => {
+const saveViewMode = (clientId: string, exerciceId: string, mode: 'hierarchical' | 'compact' | 'monitoring') => {
   const key = getViewModeKey(clientId, exerciceId);
   localStorage.setItem(key, mode);
 };
@@ -108,7 +111,7 @@ export const BudgetTable = ({
   const [expandedProgrammes, setExpandedProgrammes] = useState<Set<string>>(
     () => getInitialExpandedState(clientId, exerciceId, 'programmes', programmes)
   );
-  const [viewMode, setViewMode] = useState<'hierarchical' | 'compact'>(
+  const [viewMode, setViewMode] = useState<'hierarchical' | 'compact' | 'monitoring'>(
     () => getInitialViewMode(clientId, exerciceId)
   );
   const [searchFilter, setSearchFilter] = useState('');
@@ -160,7 +163,7 @@ export const BudgetTable = ({
     return `${enveloppe.code} - ${enveloppe.nom}`;
   };
 
-  const handleViewModeChange = (mode: 'hierarchical' | 'compact') => {
+  const handleViewModeChange = (mode: 'hierarchical' | 'compact' | 'monitoring') => {
     setViewMode(mode);
     saveViewMode(clientId, exerciceId, mode);
   };
@@ -651,6 +654,14 @@ export const BudgetTable = ({
             <LayoutList className="h-4 w-4 mr-2" />
             Vue compacte
           </Button>
+          <Button
+            variant={viewMode === 'monitoring' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => handleViewModeChange('monitoring')}
+          >
+            <Activity className="h-4 w-4 mr-2" />
+            Vue suivi
+          </Button>
         </div>
         {viewMode === 'compact' && (
           <Input
@@ -662,30 +673,38 @@ export const BudgetTable = ({
         )}
       </div>
 
-      {/* Table */}
-      <div className="rounded-md border max-h-[600px] overflow-auto">
-        <div className="[&>div]:max-h-none [&>div]:overflow-visible">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/15">
-                <TableHead className="w-[350px] font-semibold">Libellé</TableHead>
-                <TableHead className="text-right font-semibold">Montant Initial</TableHead>
-                <TableHead className="text-right font-semibold">Modifié</TableHead>
-                <TableHead className="text-right font-semibold">Réservé</TableHead>
-                <TableHead className="text-right font-semibold">Engagé</TableHead>
-                <TableHead className="text-right font-semibold">Payé</TableHead>
-                <TableHead className="text-right font-semibold">Disponible</TableHead>
-                <TableHead className="text-center font-semibold">Taux Exec.</TableHead>
-                <TableHead className="text-center font-semibold">Statut</TableHead>
-                <TableHead className="text-right w-[100px] font-semibold">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {viewMode === 'hierarchical' ? renderHierarchicalView() : renderCompactView()}
-            </TableBody>
-          </Table>
+      {/* Conditional Rendering based on viewMode */}
+      {viewMode === 'monitoring' ? (
+        <div className="space-y-6">
+          <DepensesStats lignesBudgetaires={lignes} />
+          <DepensesMonitoringTable lignesBudgetaires={lignes} />
         </div>
-      </div>
+      ) : (
+        /* Table */
+        <div className="rounded-md border max-h-[600px] overflow-auto">
+          <div className="[&>div]:max-h-none [&>div]:overflow-visible">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/15">
+                  <TableHead className="w-[350px] font-semibold">Libellé</TableHead>
+                  <TableHead className="text-right font-semibold">Montant Initial</TableHead>
+                  <TableHead className="text-right font-semibold">Modifié</TableHead>
+                  <TableHead className="text-right font-semibold">Réservé</TableHead>
+                  <TableHead className="text-right font-semibold">Engagé</TableHead>
+                  <TableHead className="text-right font-semibold">Payé</TableHead>
+                  <TableHead className="text-right font-semibold">Disponible</TableHead>
+                  <TableHead className="text-center font-semibold">Taux Exec.</TableHead>
+                  <TableHead className="text-center font-semibold">Statut</TableHead>
+                  <TableHead className="text-right w-[100px] font-semibold">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {viewMode === 'hierarchical' ? renderHierarchicalView() : renderCompactView()}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
