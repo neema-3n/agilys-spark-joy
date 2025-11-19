@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -31,8 +32,10 @@ import { Label } from '@/components/ui/label';
 export default function Factures() {
   const { currentClient } = useClient();
   const { currentExercice } = useExercice();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedFacture, setSelectedFacture] = useState<Facture | undefined>();
+  const [selectedBonCommandeId, setSelectedBonCommandeId] = useState<string | undefined>();
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
   const [factureToAnnuler, setFactureToAnnuler] = useState<string | null>(null);
   const [motifAnnulation, setMotifAnnulation] = useState('');
@@ -54,16 +57,17 @@ export default function Factures() {
   const { lignes: lignesBudgetaires } = useLignesBudgetaires();
   const { engagements } = useEngagements();
 
-  // Récupérer les bons de commande
+  // Récupérer les bons de commande réceptionnés
   const { data: bonsCommande = [] } = useQuery({
-    queryKey: ['bons-commande', currentClient?.id, currentExercice?.id],
+    queryKey: ['bons-commande-receptionnes', currentClient?.id, currentExercice?.id],
     queryFn: async () => {
       if (!currentClient) return [];
       
       let query = supabase
         .from('bons_commande')
-        .select('id, numero')
+        .select('id, numero, statut, fournisseur_id, engagement_id, ligne_budgetaire_id, projet_id, objet, montant')
         .eq('client_id', currentClient.id)
+        .eq('statut', 'receptionne')
         .order('numero', { ascending: false });
 
       if (currentExercice) {
@@ -77,9 +81,31 @@ export default function Factures() {
     enabled: !!currentClient,
   });
 
+  // Gérer la création depuis un BC via query param
+  useEffect(() => {
+    const bonCommandeId = searchParams.get('from_bon_commande');
+    if (bonCommandeId && bonsCommande.length > 0 && !dialogOpen) {
+      const bonCommande = bonsCommande.find(bc => bc.id === bonCommandeId);
+      if (bonCommande) {
+        setSelectedBonCommandeId(bonCommandeId);
+        setDialogOpen(true);
+        setSearchParams({});
+      }
+    }
+  }, [searchParams, bonsCommande, dialogOpen, setSearchParams]);
+
   const handleCreate = () => {
     setSelectedFacture(undefined);
+    setSelectedBonCommandeId(undefined);
     setDialogOpen(true);
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      setSelectedFacture(undefined);
+      setSelectedBonCommandeId(undefined);
+    }
   };
 
   const handleEdit = (facture: Facture) => {
@@ -150,7 +176,7 @@ export default function Factures() {
 
       <FactureDialog
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        onOpenChange={handleDialogClose}
         facture={selectedFacture}
         onSubmit={handleSubmit}
         fournisseurs={fournisseurs}
@@ -161,6 +187,7 @@ export default function Factures() {
         currentClientId={currentClient?.id || ''}
         currentExerciceId={currentExercice?.id || ''}
         onGenererNumero={handleGenererNumero}
+        initialBonCommandeId={selectedBonCommandeId}
       />
 
       <AlertDialog open={annulerDialogOpen} onOpenChange={setAnnulerDialogOpen}>

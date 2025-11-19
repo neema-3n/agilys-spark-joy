@@ -19,6 +19,7 @@ function mapFactureFromDB(data: any): Facture {
     montantHT: parseFloat(data.montant_ht) || 0,
     montantTVA: parseFloat(data.montant_tva) || 0,
     montantTTC: parseFloat(data.montant_ttc) || 0,
+    montantPaye: parseFloat(data.montant_paye) || 0,
     statut: data.statut,
     dateValidation: data.date_validation,
     observations: data.observations,
@@ -66,6 +67,7 @@ function mapFactureToDB(data: CreateFactureInput | UpdateFactureInput) {
     montant_ht: data.montantHT,
     montant_tva: data.montantTVA,
     montant_ttc: data.montantTTC,
+    montant_paye: 'montantPaye' in data ? data.montantPaye : 0,
     statut: data.statut,
     date_validation: data.dateValidation || null,
     observations: data.observations || null,
@@ -118,6 +120,44 @@ export const facturesService = {
   async create(facture: CreateFactureInput): Promise<Facture> {
     const { data: { user } } = await supabase.auth.getUser();
     
+    // Vérifier le montant si un BC est lié
+    if (facture.bonCommandeId) {
+      // 1. Récupérer le montant du BC
+      const { data: bc, error: bcError } = await supabase
+        .from('bons_commande')
+        .select('montant')
+        .eq('id', facture.bonCommandeId)
+        .single();
+      
+      if (bcError) throw bcError;
+      
+      // 2. Calculer le montant déjà facturé sur ce BC (hors factures annulées)
+      const { data: facturesExistantes, error: facturesError } = await supabase
+        .from('factures')
+        .select('montant_ttc')
+        .eq('bon_commande_id', facture.bonCommandeId)
+        .neq('statut', 'annulee');
+      
+      if (facturesError) throw facturesError;
+      
+      const montantDejaFacture = facturesExistantes?.reduce(
+        (sum, f) => sum + parseFloat(f.montant_ttc.toString()), 
+        0
+      ) || 0;
+      
+      // 3. Vérifier que le total ne dépasse pas le montant du BC
+      const montantTotal = montantDejaFacture + facture.montantTTC;
+      
+      if (montantTotal > bc.montant) {
+        throw new Error(
+          `Le montant total des factures (${montantTotal.toLocaleString('fr-FR')} €) ` +
+          `dépasserait le montant du bon de commande (${bc.montant.toLocaleString('fr-FR')} €). ` +
+          `Montant déjà facturé : ${montantDejaFacture.toLocaleString('fr-FR')} €. ` +
+          `Montant disponible : ${(bc.montant - montantDejaFacture).toLocaleString('fr-FR')} €.`
+        );
+      }
+    }
+    
     const { data, error } = await supabase
       .from('factures')
       .insert({
@@ -142,7 +182,7 @@ export const facturesService = {
     // Vérifier que la facture est en brouillon avant modification
     const { data: currentFacture, error: fetchError } = await supabase
       .from('factures')
-      .select('statut')
+      .select('statut, bon_commande_id, montant_ttc')
       .eq('id', id)
       .single();
 
@@ -150,6 +190,51 @@ export const facturesService = {
     
     if (currentFacture.statut !== 'brouillon' && currentFacture.statut !== 'validee') {
       throw new Error('Seules les factures en brouillon ou validées peuvent être modifiées');
+    }
+
+    // Vérifier le montant si un BC est lié (dans l'ancienne OU la nouvelle facture)
+    const bonCommandeId = facture.bonCommandeId || currentFacture.bon_commande_id;
+    
+    if (bonCommandeId) {
+      // 1. Récupérer le montant du BC
+      const { data: bc, error: bcError } = await supabase
+        .from('bons_commande')
+        .select('montant')
+        .eq('id', bonCommandeId)
+        .single();
+      
+      if (bcError) throw bcError;
+      
+      // 2. Calculer le montant déjà facturé (hors facture actuelle et hors annulées)
+      const { data: facturesExistantes, error: facturesError } = await supabase
+        .from('factures')
+        .select('montant_ttc')
+        .eq('bon_commande_id', bonCommandeId)
+        .neq('statut', 'annulee')
+        .neq('id', id);
+      
+      if (facturesError) throw facturesError;
+      
+      const montantDejaFacture = facturesExistantes?.reduce(
+        (sum, f) => sum + parseFloat(f.montant_ttc.toString()), 
+        0
+      ) || 0;
+      
+      // 3. Calculer le nouveau montant total
+      const nouveauMontant = facture.montantTTC !== undefined 
+        ? facture.montantTTC 
+        : parseFloat(currentFacture.montant_ttc.toString());
+      
+      const montantTotal = montantDejaFacture + nouveauMontant;
+      
+      if (montantTotal > bc.montant) {
+        throw new Error(
+          `Le montant total des factures (${montantTotal.toLocaleString('fr-FR')} €) ` +
+          `dépasserait le montant du bon de commande (${bc.montant.toLocaleString('fr-FR')} €). ` +
+          `Montant déjà facturé : ${montantDejaFacture.toLocaleString('fr-FR')} €. ` +
+          `Montant disponible : ${(bc.montant - montantDejaFacture).toLocaleString('fr-FR')} €.`
+        );
+      }
     }
 
     const { data, error } = await supabase

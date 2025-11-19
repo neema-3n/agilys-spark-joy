@@ -431,6 +431,7 @@ export type Database = {
           id: string
           ligne_budgetaire_id: string | null
           montant_ht: number
+          montant_paye: number
           montant_ttc: number
           montant_tva: number
           numero: string
@@ -455,6 +456,7 @@ export type Database = {
           id?: string
           ligne_budgetaire_id?: string | null
           montant_ht?: number
+          montant_paye?: number
           montant_ttc?: number
           montant_tva?: number
           numero: string
@@ -479,6 +481,7 @@ export type Database = {
           id?: string
           ligne_budgetaire_id?: string | null
           montant_ht?: number
+          montant_paye?: number
           montant_ttc?: number
           montant_tva?: number
           numero?: string

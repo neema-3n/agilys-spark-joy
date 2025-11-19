@@ -67,7 +67,7 @@ export function useLignesBudgetaires() {
     },
     onError: (error: Error) => {
       toast({
-        title: 'Erreur',
+        title: 'Suppression impossible',
         description: error.message || 'Erreur lors de la suppression de la ligne budgétaire',
         variant: 'destructive',
       });

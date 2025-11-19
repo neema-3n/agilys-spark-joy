@@ -1,4 +1,4 @@
-export type StatutBonCommande = 'brouillon' | 'valide' | 'en_cours' | 'receptionne' | 'annule';
+export type StatutBonCommande = 'brouillon' | 'valide' | 'en_cours' | 'receptionne' | 'facture' | 'annule';
 
 export interface BonCommande {
   id: string;
@@ -40,6 +40,9 @@ export interface BonCommande {
     id: string;
     nom: string;
   };
+  
+  // Montant facturé (calculé)
+  montantFacture?: number;
 }
 
 export type CreateBonCommandeInput = Omit<
@@ -55,7 +58,9 @@ export interface BonCommandeStats {
   nombreValide: number;
   nombreEnCours: number;
   nombreReceptionne: number;
+  nombreFacture: number;
   montantTotal: number;
   montantValide: number;
   montantEnCours: number;
+  montantFacture: number;
 }

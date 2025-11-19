@@ -17,9 +17,11 @@ import {
   Package,
   XCircle,
   Trash2,
-  Eye
+  Eye,
+  FileText
 } from 'lucide-react';
 import { BonCommande } from '@/types/bonCommande.types';
+import { Progress } from '@/components/ui/progress';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
@@ -60,6 +62,7 @@ interface BonCommandeTableProps {
   onReceptionner: (id: string) => void;
   onAnnuler: (id: string) => void;
   onDelete: (id: string) => void;
+  onCreateFacture?: (bonCommande: BonCommande) => void;
 }
 
 const getStatutColor = (statut: string) => {
@@ -72,6 +75,8 @@ const getStatutColor = (statut: string) => {
       return 'bg-primary text-primary-foreground';
     case 'receptionne':
       return 'bg-accent text-accent-foreground';
+    case 'facture':
+      return 'bg-green-600 text-white';
     case 'annule':
       return 'bg-destructive text-destructive-foreground';
     default:
@@ -89,6 +94,8 @@ const getStatutLabel = (statut: string) => {
       return 'En cours';
     case 'receptionne':
       return 'Réceptionné';
+    case 'facture':
+      return 'Facturé';
     case 'annule':
       return 'Annulé';
     default:
@@ -138,14 +145,14 @@ export const BonCommandeTable = ({
   onReceptionner,
   onAnnuler,
   onDelete,
+  onCreateFacture,
 }: BonCommandeTableProps) => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'XOF',
       minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(amount);
   };
 
@@ -169,6 +176,7 @@ export const BonCommandeTable = ({
               <TableHead>Engagement</TableHead>
               <TableHead>Objet</TableHead>
               <TableHead className="text-right">Montant</TableHead>
+              <TableHead>Facturé</TableHead>
               <TableHead>Statut</TableHead>
               <TableHead>Livraison prévue</TableHead>
               <TableHead>Livraison effective</TableHead>
@@ -202,6 +210,26 @@ export const BonCommandeTable = ({
                   <TableCell className="max-w-xs truncate">{bc.objet}</TableCell>
                   <TableCell className="text-right font-medium">
                     {formatCurrency(bc.montant)}
+                  </TableCell>
+                  <TableCell>
+                    {bc.montantFacture !== undefined && bc.montantFacture > 0 ? (
+                      <div className="space-y-1 min-w-[120px]">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            {((bc.montantFacture / bc.montant) * 100).toFixed(0)}%
+                          </span>
+                          <span className="font-medium">
+                            {formatCurrency(bc.montantFacture)}
+                          </span>
+                        </div>
+                        <Progress 
+                          value={(bc.montantFacture / bc.montant) * 100} 
+                          className="h-1"
+                        />
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">Non facturé</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge className={getStatutColor(bc.statut)}>
@@ -273,7 +301,17 @@ export const BonCommandeTable = ({
                           </>
                         )}
                         
-                        {bc.statut !== 'receptionne' && bc.statut !== 'annule' && (
+                        {bc.statut === 'receptionne' && onCreateFacture && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => onCreateFacture(bc)}>
+                              <FileText className="h-4 w-4 mr-2" />
+                              Créer facture
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                        
+                        {bc.statut !== 'receptionne' && bc.statut !== 'facture' && bc.statut !== 'annule' && (
                           <>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => onAnnuler(bc.id)}>

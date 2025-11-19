@@ -84,7 +84,7 @@ export const BonCommandeDialog = ({
   const { projets } = useProjets();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const isReadOnly = bonCommande && (bonCommande.statut === 'receptionne' || bonCommande.statut === 'annule');
+  const isReadOnly = bonCommande && (bonCommande.statut === 'receptionne' || bonCommande.statut === 'facture' || bonCommande.statut === 'annule');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

@@ -63,6 +63,7 @@ const Budgets = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [reservationDialogOpen, setReservationDialogOpen] = useState(false);
   const [ligneForReservation, setLigneForReservation] = useState<LigneBudgetaire | null>(null);
+  const [ligneForModification, setLigneForModification] = useState<LigneBudgetaire | null>(null);
   const [ligneToDelete, setLigneToDelete] = useState<string | null>(null);
   
   const [searchParams, setSearchParams] = useSearchParams();
@@ -155,10 +156,13 @@ const Budgets = () => {
       loadData();
     } catch (error) {
       toast({
-        title: 'Erreur',
-        description: 'Impossible de supprimer la ligne budgétaire',
+        title: 'Suppression impossible',
+        description: error instanceof Error 
+          ? error.message 
+          : 'Impossible de supprimer la ligne budgétaire',
         variant: 'destructive',
       });
+      setDeleteDialogOpen(false);
     }
   };
 
@@ -244,6 +248,11 @@ const Budgets = () => {
     setReservationDialogOpen(true);
   };
 
+  const handleCreateModificationFromLigne = (ligne: LigneBudgetaire) => {
+    setLigneForModification(ligne);
+    setModificationDialogOpen(true);
+  };
+
   const handleSaveReservation = async (data: any) => {
     try {
       await createReservation(data);
@@ -266,9 +275,8 @@ const Budgets = () => {
 
   const formatMontant = (montant: number) => {
     return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'XOF',
       minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(montant);
   };
 
@@ -364,6 +372,7 @@ const Budgets = () => {
                   setDeleteDialogOpen(true);
                 }}
                 onReserver={handleReserverCredit}
+                onCreateModification={handleCreateModificationFromLigne}
               />
             </CardContent>
           </Card>
@@ -505,9 +514,13 @@ const Budgets = () => {
 
       <ModificationBudgetaireDialog
         open={modificationDialogOpen}
-        onClose={() => setModificationDialogOpen(false)}
+        onClose={() => {
+          setModificationDialogOpen(false);
+          setLigneForModification(null);
+        }}
         onSubmit={handleCreateModification}
         lignes={lignes}
+        initialLigneDestinationId={ligneForModification?.id}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -515,7 +528,22 @@ const Budgets = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
             <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer cette ligne budgétaire ? Cette action est irréversible.
+              {(() => {
+                const ligne = lignes.find(l => l.id === ligneToDelete);
+                if (ligne && ligne.montantReserve && ligne.montantReserve > 0) {
+                  return (
+                    <div className="space-y-2">
+                      <p className="text-amber-600 font-medium">
+                        ⚠️ Cette ligne a {formatMontant(ligne.montantReserve)} de crédits réservés.
+                      </p>
+                      <p>
+                        Vous devez d'abord supprimer ou libérer les réservations avant de pouvoir supprimer cette ligne budgétaire.
+                      </p>
+                    </div>
+                  );
+                }
+                return "Êtes-vous sûr de vouloir supprimer cette ligne budgétaire ? Cette action est irréversible.";
+              })()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

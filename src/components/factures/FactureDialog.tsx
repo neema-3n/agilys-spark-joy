@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -29,6 +29,9 @@ import {
 } from '@/components/ui/select';
 import { Facture, CreateFactureInput } from '@/types/facture.types';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const factureSchema = z.object({
   numero: z.string().min(1, 'Le numéro est requis'),
@@ -44,6 +47,7 @@ const factureSchema = z.object({
   montantHT: z.string().min(1, 'Le montant HT est requis'),
   montantTVA: z.string().min(1, 'Le montant TVA est requis'),
   montantTTC: z.string().min(1, 'Le montant TTC est requis'),
+  montantPaye: z.string().optional(),
   observations: z.string().optional(),
 });
 
@@ -53,13 +57,24 @@ interface FactureDialogProps {
   facture?: Facture;
   onSubmit: (data: CreateFactureInput) => Promise<void>;
   fournisseurs: Array<{ id: string; nom: string; code: string }>;
-  bonsCommande: Array<{ id: string; numero: string }>;
+  bonsCommande: Array<{ 
+    id: string; 
+    numero: string; 
+    statut: string;
+    fournisseur_id?: string;
+    engagement_id?: string;
+    ligne_budgetaire_id?: string;
+    projet_id?: string;
+    objet?: string;
+    montant?: number;
+  }>;
   engagements: Array<{ id: string; numero: string }>;
   lignesBudgetaires: Array<{ id: string; libelle: string }>;
   projets: Array<{ id: string; nom: string; code: string }>;
   currentClientId: string;
   currentExerciceId: string;
   onGenererNumero: () => Promise<string>;
+  initialBonCommandeId?: string;
 }
 
 export const FactureDialog = ({
@@ -75,8 +90,13 @@ export const FactureDialog = ({
   currentClientId,
   currentExerciceId,
   onGenererNumero,
+  initialBonCommandeId,
 }: FactureDialogProps) => {
   const isReadOnly = facture && (facture.statut === 'payee' || facture.statut === 'annulee');
+
+  const [montantDisponibleBC, setMontantDisponibleBC] = useState<number | null>(null);
+  const [montantBC, setMontantBC] = useState<number | null>(null);
+  const [montantDejaFacture, setMontantDejaFacture] = useState<number>(0);
 
   const form = useForm<z.infer<typeof factureSchema>>({
     resolver: zodResolver(factureSchema),
@@ -93,6 +113,7 @@ export const FactureDialog = ({
       montantHT: '',
       montantTVA: '',
       montantTTC: '',
+      montantPaye: '0',
       dateEcheance: '',
       observations: '',
     },
@@ -101,21 +122,31 @@ export const FactureDialog = ({
   useEffect(() => {
     if (open && !facture) {
       onGenererNumero().then((numero) => {
+        // Pré-remplir depuis un BC si fourni
+        const selectedBC = initialBonCommandeId 
+          ? bonsCommande.find(bc => bc.id === initialBonCommandeId)
+          : undefined;
+
+        const montantHT = selectedBC?.montant ? (selectedBC.montant / 1.2).toFixed(2) : '';
+        const montantTVA = selectedBC?.montant ? ((selectedBC.montant / 1.2) * 0.2).toFixed(2) : '';
+        const montantTTC = selectedBC?.montant?.toFixed(2) || '';
+
         form.reset({
           numero: numero,
           dateFacture: format(new Date(), 'yyyy-MM-dd'),
-          fournisseurId: '',
-          bonCommandeId: 'none',
-          engagementId: 'none',
-          ligneBudgetaireId: 'none',
-          projetId: 'none',
-          objet: '',
+          fournisseurId: selectedBC?.fournisseur_id || '',
+          bonCommandeId: selectedBC?.id || 'none',
+          engagementId: selectedBC?.engagement_id || 'none',
+          ligneBudgetaireId: selectedBC?.ligne_budgetaire_id || 'none',
+          projetId: selectedBC?.projet_id || 'none',
+          objet: selectedBC?.objet || '',
           numeroFactureFournisseur: '',
-          montantHT: '',
-          montantTVA: '',
-          montantTTC: '',
-          dateEcheance: '',
-          observations: '',
+        montantHT,
+        montantTVA,
+        montantTTC,
+        montantPaye: '0',
+        dateEcheance: '',
+        observations: '',
         });
       });
     } else if (open && facture) {
@@ -133,11 +164,12 @@ export const FactureDialog = ({
         montantHT: facture.montantHT.toString(),
         montantTVA: facture.montantTVA.toString(),
         montantTTC: facture.montantTTC.toString(),
+        montantPaye: (facture.montantPaye || 0).toString(),
         observations: facture.observations || '',
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, facture, onGenererNumero]);
+  }, [open, facture, onGenererNumero, initialBonCommandeId]);
 
   const handleSubmit = async (values: z.infer<typeof factureSchema>) => {
     try {
@@ -157,6 +189,7 @@ export const FactureDialog = ({
         montantHT: parseFloat(values.montantHT),
         montantTVA: parseFloat(values.montantTVA),
         montantTTC: parseFloat(values.montantTTC),
+        montantPaye: parseFloat(values.montantPaye || '0'),
         statut: 'brouillon',
         observations: values.observations || undefined,
       };
@@ -189,6 +222,33 @@ export const FactureDialog = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchMontantHT, watchMontantTVA]);
+
+  // Calculer le montant disponible sur le BC
+  useEffect(() => {
+    const bonCommandeId = form.watch('bonCommandeId');
+    
+    if (bonCommandeId && bonCommandeId !== 'none') {
+      const bc = bonsCommande.find(b => b.id === bonCommandeId);
+      if (bc && bc.montant) {
+        supabase
+          .from('factures')
+          .select('montant_ttc')
+          .eq('bon_commande_id', bonCommandeId)
+          .neq('statut', 'annulee')
+          .neq('id', facture?.id || '00000000-0000-0000-0000-000000000000')
+          .then(({ data }) => {
+            const dejaFacture = data?.reduce((sum, f) => sum + parseFloat(f.montant_ttc.toString()), 0) || 0;
+            setMontantBC(bc.montant);
+            setMontantDejaFacture(dejaFacture);
+            setMontantDisponibleBC(bc.montant - dejaFacture);
+          });
+      }
+    } else {
+      setMontantDisponibleBC(null);
+      setMontantBC(null);
+      setMontantDejaFacture(0);
+    }
+  }, [form.watch('bonCommandeId'), bonsCommande, facture?.id]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -284,19 +344,51 @@ export const FactureDialog = ({
                           <SelectValue placeholder="Sélectionner un BC" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">-- Aucun --</SelectItem>
-                        {bonsCommande.map((bc) => (
-                          <SelectItem key={bc.id} value={bc.id}>
-                            {bc.numero}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
+                  <SelectContent>
+                    <SelectItem value="none">-- Aucun --</SelectItem>
+                    {bonsCommande.map((bc) => (
+                      <SelectItem key={bc.id} value={bc.id}>
+                        {bc.numero}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {montantDisponibleBC !== null && (
+                  <Alert className={montantDisponibleBC <= 0 ? 'border-destructive' : 'border-primary'}>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="font-medium">Montant du BC :</span>
+                          <span>{montantBC?.toLocaleString('fr-FR')} €</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium">Déjà facturé :</span>
+                          <span>{montantDejaFacture.toLocaleString('fr-FR')} €</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className={`font-semibold ${montantDisponibleBC <= 0 ? 'text-destructive' : 'text-primary'}`}>
+                            Disponible :
+                          </span>
+                          <span className={`font-semibold ${montantDisponibleBC <= 0 ? 'text-destructive' : 'text-primary'}`}>
+                            {montantDisponibleBC.toLocaleString('fr-FR')} €
+                          </span>
+                        </div>
+                        {montantDisponibleBC <= 0 && (
+                          <p className="mt-2 text-xs text-destructive font-medium">
+                            ⚠️ Ce bon de commande est entièrement facturé
+                          </p>
+                        )}
+                      </div>
+                    </AlertDescription>
+                  </Alert>
                 )}
-              />
+                
+                <FormMessage />
+              </FormItem>
+            )}
+          />
               <FormField
                 control={form.control}
                 name="dateEcheance"
@@ -367,6 +459,26 @@ export const FactureDialog = ({
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="montantPaye"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Montant payé</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      step="0.01" 
+                      {...field} 
+                      disabled={isReadOnly}
+                      placeholder="0.00"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
