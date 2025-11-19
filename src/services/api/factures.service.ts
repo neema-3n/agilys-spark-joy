@@ -147,18 +147,24 @@ export const facturesService = {
         // Extraire le vrai message d'erreur depuis l'edge function
         let errorMessage = error.message;
         
+        console.log('Error from edge function:', error);
+        console.log('Error has context?', !!error.context);
+        
         // Si c'est une FunctionsHttpError, extraire le body JSON
         if (error.context) {
           try {
             const errorBody = await error.context.json();
-            if (errorBody.error) {
+            console.log('Error body from context:', errorBody);
+            if (errorBody && errorBody.error) {
               errorMessage = errorBody.error;
+              console.log('Extracted error message:', errorMessage);
             }
           } catch (e) {
             console.error('Impossible de parser l\'erreur:', e);
           }
         }
         
+        console.log('Final error message to throw:', errorMessage);
         throw new Error(errorMessage);
       }
       if (!data) throw new Error('Facture non créée');
