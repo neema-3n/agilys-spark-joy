@@ -195,10 +195,11 @@ export const FactureDialog = ({
       };
 
       await onSubmit(factureData);
+      // Fermer le dialog seulement si la création a réussi
       onOpenChange(false);
     } catch (error) {
       // L'erreur est gérée par le hook useFactures qui affiche le message détaillé
-      // Ne pas relancer l'erreur pour éviter le message "The app encountered an error"
+      // Le dialog reste ouvert pour permettre la correction
       console.error('Erreur lors de la soumission:', error);
     }
   };
