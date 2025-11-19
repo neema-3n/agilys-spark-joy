@@ -489,7 +489,7 @@ export const BudgetTable = ({
                 </Button>
               </div>
             </TableCell>
-            <TableCell colSpan={8} />
+            <TableCell colSpan={9} />
           </TableRow>
 
           {isExpanded && sectionProgrammes.map((programme) => {
@@ -517,7 +517,7 @@ export const BudgetTable = ({
                       </Button>
                     </div>
                   </TableCell>
-                  <TableCell colSpan={8} />
+                  <TableCell colSpan={9} />
                 </TableRow>
 
                 {isProgrammeExpanded && programmeActions.map((action) => {
@@ -532,7 +532,7 @@ export const BudgetTable = ({
                             {action.code} - {action.libelle}
                           </div>
                       </TableCell>
-                      <TableCell colSpan={8} />
+                      <TableCell colSpan={9} />
                       </TableRow>
 
                       {actionLignes.map((ligne) => {
