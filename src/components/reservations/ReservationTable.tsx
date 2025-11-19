@@ -1,8 +1,8 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Edit, CheckCircle, XCircle, Trash } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { MoreHorizontal, Edit, CheckCircle, XCircle, Trash, AlertOctagon } from 'lucide-react';
 import type { ReservationCredit } from '@/types/reservation.types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -13,6 +13,7 @@ interface ReservationTableProps {
   onCreerEngagement: (reservation: ReservationCredit) => void;
   onAnnuler: (id: string, motif: string) => void;
   onDelete: (id: string) => void;
+  onCreerDepenseUrgence: (reservation: ReservationCredit) => void;
 }
 
 export const ReservationTable = ({
@@ -21,6 +22,7 @@ export const ReservationTable = ({
   onCreerEngagement,
   onAnnuler,
   onDelete,
+  onCreerDepenseUrgence,
 }: ReservationTableProps) => {
   const calculerSolde = (reservation: ReservationCredit): number => {
     if (!reservation.engagements || reservation.engagements.length === 0) {
@@ -164,6 +166,15 @@ export const ReservationTable = ({
                                 Solde épuisé
                               </Badge>
                             )}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => onCreerDepenseUrgence(reservation)}
+                            className="text-orange-600"
+                            disabled={calculerSolde(reservation) === 0}
+                          >
+                            <AlertOctagon className="h-4 w-4 mr-2" />
+                            Dépense urgente
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleAnnuler(reservation.id)}>
                             <XCircle className="h-4 w-4 mr-2" />
