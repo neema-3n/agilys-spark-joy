@@ -144,20 +144,18 @@ export const facturesService = {
       });
 
       if (error) {
-        // Extraire le vrai message d'erreur depuis le body de la réponse
+        // Extraire le vrai message d'erreur depuis l'edge function
         let errorMessage = error.message;
         
-        // Si l'erreur contient un objet avec une propriété 'error'
-        if (error.context?.body) {
+        // Si c'est une FunctionsHttpError, extraire le body JSON
+        if (error.context) {
           try {
-            const body = typeof error.context.body === 'string' 
-              ? JSON.parse(error.context.body) 
-              : error.context.body;
-            if (body.error) {
-              errorMessage = body.error;
+            const errorBody = await error.context.json();
+            if (errorBody.error) {
+              errorMessage = errorBody.error;
             }
-          } catch {
-            // Si le parsing échoue, garder le message original
+          } catch (e) {
+            console.error('Impossible de parser l\'erreur:', e);
           }
         }
         
