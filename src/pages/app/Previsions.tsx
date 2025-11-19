@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -90,28 +91,23 @@ const Previsions = () => {
   const scenariosArchives = scenarios?.filter(s => s.statut === 'archive') || [];
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Prévisions Budgétaires</h1>
-            <p className="text-muted-foreground">
-              Projections pluriannuelles et scénarios budgétaires
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={() => {
-                setSelectedScenario(null);
-                setDialogOpen(true);
-              }}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Nouveau scénario
-            </Button>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Prévisions Budgétaires"
+        description="Projections pluriannuelles et scénarios budgétaires"
+        actions={
+          <Button
+            onClick={() => {
+              setSelectedScenario(null);
+              setDialogOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nouveau scénario
+          </Button>
+        }
+      />
+      <div className="px-8">
 
       <Tabs defaultValue="brouillon" className="space-y-6">
         <TabsList>
@@ -218,7 +214,8 @@ const Previsions = () => {
             </div>
           )}
         </TabsContent>
-      </Tabs>
+        </Tabs>
+      </div>
 
       <ScenarioDialog
         open={dialogOpen}
