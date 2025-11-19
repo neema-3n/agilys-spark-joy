@@ -660,7 +660,7 @@ export const BudgetTable = ({
             onClick={() => handleViewModeChange('monitoring')}
           >
             <Activity className="h-4 w-4 mr-2" />
-            Vue suivi
+            Suivi d'exécution
           </Button>
         </div>
         {viewMode === 'compact' && (
