@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { useClient } from '@/contexts/ClientContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { PageHeader } from '@/components/PageHeader';
+import { showNavigationToast } from '@/lib/navigation-toast';
 import { budgetService } from '@/services/api/budget.service';
 import { useSections } from '@/hooks/useSections';
 import { useProgrammes } from '@/hooks/useProgrammes';
@@ -46,6 +47,7 @@ const Budgets = () => {
   const { currentClient } = useClient();
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const { sections, isLoading: loadingSections } = useSections();
   const { programmes, isLoading: loadingProgrammes } = useProgrammes();
@@ -171,17 +173,27 @@ const Budgets = () => {
     if (!currentExercice || !currentClient) return;
 
     try {
+      const ligne = ligneForModification;
+      
       await budgetService.createModification({
         ...data,
         exerciceId: currentExercice.id,
         statut: 'brouillon' as const,
       }, currentClient.id);
-      toast({
-        title: 'Succès',
-        description: 'Modification budgétaire créée avec succès',
-      });
+
+      setModificationDialogOpen(false);
+      setLigneForModification(null);
       loadData();
-      setSearchParams({ tab: 'modifications' });
+
+      showNavigationToast({
+        title: 'Modification budgétaire créée',
+        description: `La modification a été créée depuis la ligne ${ligne?.libelle || ''}.`,
+        targetPage: {
+          name: 'Onglet Modifications',
+          path: '/app/budgets?tab=modifications',
+        },
+        navigate,
+      });
     } catch (error) {
       toast({
         title: 'Erreur',
@@ -256,14 +268,22 @@ const Budgets = () => {
 
   const handleSaveReservation = async (data: any) => {
     try {
+      const ligne = ligneForReservation;
       await createReservation(data);
-      toast({
-        title: 'Succès',
-        description: 'Réservation de crédit créée avec succès',
-      });
+      
       setReservationDialogOpen(false);
       setLigneForReservation(null);
       loadData();
+      
+      showNavigationToast({
+        title: 'Réservation créée',
+        description: `La réservation a été créée depuis la ligne budgétaire ${ligne?.libelle || ''}.`,
+        targetPage: {
+          name: 'Réservations',
+          path: '/app/reservations',
+        },
+        navigate,
+      });
     } catch (error) {
       toast({
         title: 'Erreur',
