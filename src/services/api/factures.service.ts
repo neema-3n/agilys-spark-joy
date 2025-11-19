@@ -51,27 +51,34 @@ function mapFactureFromDB(data: any): Facture {
 }
 
 function mapFactureToDB(data: CreateFactureInput | UpdateFactureInput) {
-  return {
-    client_id: 'clientId' in data ? data.clientId : undefined,
-    exercice_id: 'exerciceId' in data ? data.exerciceId : undefined,
-    numero: data.numero,
-    date_facture: data.dateFacture,
-    date_echeance: data.dateEcheance || null,
-    fournisseur_id: data.fournisseurId,
-    bon_commande_id: data.bonCommandeId || null,
-    engagement_id: data.engagementId || null,
-    ligne_budgetaire_id: data.ligneBudgetaireId || null,
-    projet_id: data.projetId || null,
-    objet: data.objet,
-    numero_facture_fournisseur: data.numeroFactureFournisseur || null,
-    montant_ht: data.montantHT,
-    montant_tva: data.montantTVA,
-    montant_ttc: data.montantTTC,
-    montant_paye: 'montantPaye' in data ? data.montantPaye : 0,
-    statut: data.statut,
-    date_validation: data.dateValidation || null,
-    observations: data.observations || null,
-  };
+  const result: any = {};
+  
+  // Champs obligatoires toujours présents
+  if ('clientId' in data && data.clientId !== undefined) result.client_id = data.clientId;
+  if ('exerciceId' in data && data.exerciceId !== undefined) result.exercice_id = data.exerciceId;
+  if (data.numero !== undefined) result.numero = data.numero;
+  if (data.dateFacture !== undefined) result.date_facture = data.dateFacture;
+  if (data.fournisseurId !== undefined) result.fournisseur_id = data.fournisseurId;
+  if (data.objet !== undefined) result.objet = data.objet;
+  if (data.statut !== undefined) result.statut = data.statut;
+  
+  // Champs optionnels - inclure seulement s'ils sont définis (même si null)
+  if (data.dateEcheance !== undefined) result.date_echeance = data.dateEcheance || null;
+  if (data.bonCommandeId !== undefined) result.bon_commande_id = data.bonCommandeId || null;
+  if (data.engagementId !== undefined) result.engagement_id = data.engagementId || null;
+  if (data.ligneBudgetaireId !== undefined) result.ligne_budgetaire_id = data.ligneBudgetaireId || null;
+  if (data.projetId !== undefined) result.projet_id = data.projetId || null;
+  if (data.numeroFactureFournisseur !== undefined) result.numero_facture_fournisseur = data.numeroFactureFournisseur || null;
+  if (data.dateValidation !== undefined) result.date_validation = data.dateValidation || null;
+  if (data.observations !== undefined) result.observations = data.observations || null;
+  
+  // Champs numériques
+  if (data.montantHT !== undefined) result.montant_ht = data.montantHT;
+  if (data.montantTVA !== undefined) result.montant_tva = data.montantTVA;
+  if (data.montantTTC !== undefined) result.montant_ttc = data.montantTTC;
+  if ('montantPaye' in data && data.montantPaye !== undefined) result.montant_paye = data.montantPaye;
+  
+  return result;
 }
 
 export const facturesService = {
