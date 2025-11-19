@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -78,79 +78,79 @@ const BonsCommande = () => {
     enabled: !!currentClient,
   });
 
-  const handleEdit = (bonCommande: BonCommande) => {
+  const handleEdit = useCallback((bonCommande: BonCommande) => {
     setSelectedBonCommande(bonCommande);
     setDialogOpen(true);
-  };
+  }, []);
 
-  const handleCreate = () => {
+  const handleCreate = useCallback(() => {
     setSelectedBonCommande(undefined);
     setDialogOpen(true);
-  };
+  }, []);
 
-  const handleDialogClose = (open: boolean) => {
+  const handleDialogClose = useCallback((open: boolean) => {
     setDialogOpen(open);
     if (!open) {
       setSelectedBonCommande(undefined);
     }
-  };
+  }, []);
 
-  const handleSubmit = async (data: CreateBonCommandeInput | UpdateBonCommandeInput) => {
+  const handleSubmit = useCallback(async (data: CreateBonCommandeInput | UpdateBonCommandeInput) => {
     if (selectedBonCommande) {
       await updateBonCommande({ id: selectedBonCommande.id, data });
     } else {
       await createBonCommande(data as CreateBonCommandeInput);
     }
-  };
+  }, [selectedBonCommande, updateBonCommande, createBonCommande]);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     await deleteBonCommande(id);
-  };
+  }, [deleteBonCommande]);
 
-  const handleValider = async (id: string) => {
+  const handleValider = useCallback(async (id: string) => {
     await validerBonCommande(id);
-  };
+  }, [validerBonCommande]);
 
-  const handleMettreEnCours = async (id: string) => {
+  const handleMettreEnCours = useCallback(async (id: string) => {
     await mettreEnCours(id);
-  };
+  }, [mettreEnCours]);
 
-  const handleReceptionner = (id: string) => {
+  const handleReceptionner = useCallback((id: string) => {
     const bc = bonsCommande.find(b => b.id === id);
     if (bc) {
       setSelectedBonCommande(bc);
       setReceptionnerDialogOpen(true);
     }
-  };
+  }, [bonsCommande]);
 
-  const handleReceptionnerConfirm = async (dateLivraisonReelle: string) => {
+  const handleReceptionnerConfirm = useCallback(async (dateLivraisonReelle: string) => {
     if (selectedBonCommande) {
       await receptionnerBonCommande({ id: selectedBonCommande.id, date: dateLivraisonReelle });
       setSelectedBonCommande(undefined);
     }
-  };
+  }, [selectedBonCommande, receptionnerBonCommande]);
 
-  const handleAnnuler = (id: string) => {
+  const handleAnnuler = useCallback((id: string) => {
     const bc = bonsCommande.find(b => b.id === id);
     if (bc) {
       setSelectedBonCommande(bc);
       setAnnulerDialogOpen(true);
     }
-  };
+  }, [bonsCommande]);
 
-  const handleAnnulerConfirm = async (motif: string) => {
+  const handleAnnulerConfirm = useCallback(async (motif: string) => {
     if (selectedBonCommande) {
       await annulerBonCommande({ id: selectedBonCommande.id, motif });
       setSelectedBonCommande(undefined);
     }
-  };
+  }, [selectedBonCommande, annulerBonCommande]);
 
-  const handleCreateFacture = (bonCommande: BonCommande) => {
+  const handleCreateFacture = useCallback((bonCommande: BonCommande) => {
     setBonCommandeSourceId(bonCommande.id);
     setFactureDialogOpen(true);
-  };
+  }, []);
 
-  const handleSaveFacture = async (data: CreateFactureInput) => {
+  const handleSaveFacture = useCallback(async (data: CreateFactureInput) => {
     try {
       const bonCommande = bonsCommande.find(bc => bc.id === bonCommandeSourceId);
       
@@ -176,7 +176,7 @@ const BonsCommande = () => {
       });
       throw error;
     }
-  };
+  }, [bonsCommande, bonCommandeSourceId, createFacture, navigate, toast]);
 
   if (isLoading) {
     return (
