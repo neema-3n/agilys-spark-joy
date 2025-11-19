@@ -172,12 +172,8 @@ const BonsCommande = () => {
         navigate,
       });
     } catch (error) {
+      // L'erreur est déjà gérée par le hook useFactures qui affiche le message détaillé
       console.error('Erreur lors de la création de la facture:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Erreur',
-        description: 'Une erreur est survenue lors de la création de la facture.',
-      });
       throw error;
     }
   }, [createFacture, navigate, toast]);
