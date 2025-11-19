@@ -1,52 +1,40 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, TrendingDown, TrendingUp, Wallet } from 'lucide-react';
+import { Wallet, CheckCircle, FileCheck, Banknote, AlertCircle } from 'lucide-react';
 import { useMemo } from 'react';
-import type { LigneBudgetaire } from '@/types/budget.types';
+import type { Depense } from '@/types/depense.types';
 
-interface DepensesStatsProps {
-  lignesBudgetaires: LigneBudgetaire[];
+interface DepenseStatsCardsProps {
+  depenses: Depense[];
 }
 
-export const DepensesStats = ({ lignesBudgetaires }: DepensesStatsProps) => {
+export const DepenseStatsCards = ({ depenses }: DepenseStatsCardsProps) => {
   const stats = useMemo(() => {
-    const totalBudget = lignesBudgetaires.reduce((sum, ligne) => 
-      sum + (ligne.montantModifie || ligne.montantInitial), 0
-    );
-    const totalEngage = lignesBudgetaires.reduce((sum, ligne) => 
-      sum + ligne.montantEngage, 0
-    );
-    const totalPaye = lignesBudgetaires.reduce((sum, ligne) => 
-      sum + ligne.montantPaye, 0
-    );
-    const totalDisponible = lignesBudgetaires.reduce((sum, ligne) => 
-      sum + ligne.disponible, 0
-    );
-
-    // Lignes en alerte (disponible < 10% du budget)
-    const lignesEnAlerte = lignesBudgetaires.filter(ligne => {
-      const budget = ligne.montantModifie || ligne.montantInitial;
-      return budget > 0 && (ligne.disponible / budget) < 0.1;
-    });
-
-    // Lignes en dépassement (disponible < 0)
-    const lignesEnDepassement = lignesBudgetaires.filter(ligne => 
-      ligne.disponible < 0
-    );
-
-    const tauxEngagement = totalBudget > 0 ? (totalEngage / totalBudget) * 100 : 0;
-    const tauxExecution = totalBudget > 0 ? (totalPaye / totalBudget) * 100 : 0;
+    const total = depenses.length;
+    const brouillon = depenses.filter(d => d.statut === 'brouillon').length;
+    const validee = depenses.filter(d => d.statut === 'validee').length;
+    const ordonnancee = depenses.filter(d => d.statut === 'ordonnancee').length;
+    const payee = depenses.filter(d => d.statut === 'payee').length;
+    
+    const montantTotal = depenses.reduce((sum, d) => sum + d.montant, 0);
+    const montantBrouillon = depenses.filter(d => d.statut === 'brouillon').reduce((sum, d) => sum + d.montant, 0);
+    const montantValidee = depenses.filter(d => d.statut === 'validee').reduce((sum, d) => sum + d.montant, 0);
+    const montantOrdonnancee = depenses.filter(d => d.statut === 'ordonnancee').reduce((sum, d) => sum + d.montant, 0);
+    const montantPayee = depenses.filter(d => d.statut === 'payee').reduce((sum, d) => sum + d.montant, 0);
 
     return {
-      totalBudget,
-      totalEngage,
-      totalPaye,
-      totalDisponible,
-      tauxEngagement,
-      tauxExecution,
-      lignesEnAlerte: lignesEnAlerte.length,
-      lignesEnDepassement: lignesEnDepassement.length,
+      total,
+      brouillon,
+      validee,
+      ordonnancee,
+      payee,
+      montantTotal,
+      montantBrouillon,
+      montantValidee,
+      montantOrdonnancee,
+      montantPayee,
+      tauxExecution: montantTotal > 0 ? (montantPayee / montantTotal) * 100 : 0,
     };
-  }, [lignesBudgetaires]);
+  }, [depenses]);
 
   const formatMontant = (montant: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -57,18 +45,18 @@ export const DepensesStats = ({ lignesBudgetaires }: DepensesStatsProps) => {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
       <Card className="hover:shadow-primary transition-shadow">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
-            Budget Total
+            Total Dépenses
           </CardTitle>
           <Wallet className="h-5 w-5 text-primary" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold mb-1">{formatMontant(stats.totalBudget)}</div>
+          <div className="text-2xl font-bold mb-1">{formatMontant(stats.montantTotal)}</div>
           <p className="text-xs text-muted-foreground">
-            Disponible: {formatMontant(stats.totalDisponible)}
+            {stats.total} dépense{stats.total > 1 ? 's' : ''}
           </p>
         </CardContent>
       </Card>
@@ -76,14 +64,14 @@ export const DepensesStats = ({ lignesBudgetaires }: DepensesStatsProps) => {
       <Card className="hover:shadow-primary transition-shadow">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
-            Engagé
+            Validées
           </CardTitle>
-          <TrendingUp className="h-5 w-5 text-secondary" />
+          <CheckCircle className="h-5 w-5 text-secondary" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold mb-1">{formatMontant(stats.totalEngage)}</div>
+          <div className="text-2xl font-bold mb-1">{formatMontant(stats.montantValidee)}</div>
           <p className="text-xs text-secondary">
-            {stats.tauxEngagement.toFixed(1)}% du budget
+            {stats.validee} dépense{stats.validee > 1 ? 's' : ''}
           </p>
         </CardContent>
       </Card>
@@ -91,14 +79,14 @@ export const DepensesStats = ({ lignesBudgetaires }: DepensesStatsProps) => {
       <Card className="hover:shadow-primary transition-shadow">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
-            Payé
+            Ordonnancées
           </CardTitle>
-          <TrendingDown className="h-5 w-5 text-accent" />
+          <FileCheck className="h-5 w-5 text-accent" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold mb-1">{formatMontant(stats.totalPaye)}</div>
+          <div className="text-2xl font-bold mb-1">{formatMontant(stats.montantOrdonnancee)}</div>
           <p className="text-xs text-accent">
-            {stats.tauxExecution.toFixed(1)}% du budget
+            {stats.ordonnancee} dépense{stats.ordonnancee > 1 ? 's' : ''}
           </p>
         </CardContent>
       </Card>
@@ -106,16 +94,29 @@ export const DepensesStats = ({ lignesBudgetaires }: DepensesStatsProps) => {
       <Card className="hover:shadow-primary transition-shadow">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
-            Alertes
+            Payées
           </CardTitle>
-          <AlertCircle className="h-5 w-5 text-destructive" />
+          <Banknote className="h-5 w-5 text-green-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold mb-1">
-            {stats.lignesEnDepassement + stats.lignesEnAlerte}
-          </div>
-          <p className="text-xs text-destructive">
-            {stats.lignesEnDepassement} dépassement{stats.lignesEnDepassement > 1 ? 's' : ''} · {stats.lignesEnAlerte} alerte{stats.lignesEnAlerte > 1 ? 's' : ''}
+          <div className="text-2xl font-bold mb-1">{formatMontant(stats.montantPayee)}</div>
+          <p className="text-xs text-green-600">
+            {stats.payee} dépense{stats.payee > 1 ? 's' : ''}
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card className="hover:shadow-primary transition-shadow">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            Taux d'exécution
+          </CardTitle>
+          <AlertCircle className="h-5 w-5 text-primary" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold mb-1">{stats.tauxExecution.toFixed(1)}%</div>
+          <p className="text-xs text-muted-foreground">
+            {stats.brouillon} en brouillon
           </p>
         </CardContent>
       </Card>
