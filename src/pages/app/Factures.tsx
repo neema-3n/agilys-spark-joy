@@ -79,32 +79,32 @@ export default function Factures() {
     enabled: !!currentClient,
   });
 
-  const handleCreate = () => {
+  const handleCreate = useCallback(() => {
     setSelectedFacture(undefined);
     setSelectedBonCommandeId(undefined);
     setDialogOpen(true);
-  };
+  }, []);
 
-  const handleDialogClose = (open: boolean) => {
+  const handleDialogClose = useCallback((open: boolean) => {
     setDialogOpen(open);
     if (!open) {
       setSelectedFacture(undefined);
       setSelectedBonCommandeId(undefined);
     }
-  };
+  }, []);
 
-  const handleEdit = (facture: Facture) => {
+  const handleEdit = useCallback((facture: Facture) => {
     setSelectedFacture(facture);
     setDialogOpen(true);
-  };
+  }, []);
 
-  const handleSubmit = async (data: CreateFactureInput) => {
+  const handleSubmit = useCallback(async (data: CreateFactureInput) => {
     if (selectedFacture) {
       await updateFacture({ id: selectedFacture.id, facture: data });
     } else {
       await createFacture(data);
     }
-  };
+  }, [updateFacture, createFacture]);
 
   const handleGenererNumero = useCallback(async () => {
     if (!currentClient || !currentExercice) return '';
@@ -114,20 +114,20 @@ export default function Factures() {
     });
   }, [currentClient, currentExercice, genererNumero]);
 
-  const handleAnnuler = (id: string) => {
+  const handleAnnuler = useCallback((id: string) => {
     setFactureToAnnuler(id);
     setMotifAnnulation('');
     setAnnulerDialogOpen(true);
-  };
+  }, []);
 
-  const handleConfirmAnnulation = async () => {
+  const handleConfirmAnnulation = useCallback(async () => {
     if (factureToAnnuler && motifAnnulation.trim()) {
       await annulerFacture({ id: factureToAnnuler, motif: motifAnnulation });
       setAnnulerDialogOpen(false);
       setFactureToAnnuler(null);
       setMotifAnnulation('');
     }
-  };
+  }, [annulerFacture]);
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-full">Chargement...</div>;
