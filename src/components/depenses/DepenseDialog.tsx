@@ -38,22 +38,40 @@ import type { Facture } from '@/types/facture.types';
 import { format } from 'date-fns';
 
 const depenseSchema = z.object({
-  engagementId: z.string(),
-  reservationCreditId: z.string(),
-  ligneBudgetaireId: z.string(),
-  factureId: z.string(),
-  fournisseurId: z.string(),
-  beneficiaire: z.string(),
-  projetId: z.string(),
+  // Relations optionnelles (champs vides autorisés)
+  engagementId: z.string().optional().or(z.literal('')),
+  reservationCreditId: z.string().optional().or(z.literal('')),
+  ligneBudgetaireId: z.string().optional().or(z.literal('')),
+  factureId: z.string().optional().or(z.literal('')),
+  
+  // Bénéficiaire (un des deux est requis)
+  fournisseurId: z.string().optional().or(z.literal('')),
+  beneficiaire: z.string().optional().or(z.literal('')),
+  
+  // Projet (optionnel)
+  projetId: z.string().optional().or(z.literal('')),
+  
+  // Informations obligatoires
   objet: z.string().min(1, "L'objet est requis").max(500, "L'objet ne peut dépasser 500 caractères"),
   montant: z.coerce.number().positive('Le montant doit être supérieur à 0'),
   dateDepense: z.string().min(1, 'La date est requise'),
-  modePaiement: z.string(),
-  referencePaiement: z.string(),
-  observations: z.string(),
+  
+  // Paiement (optionnel pour brouillon)
+  modePaiement: z.string().optional().or(z.literal('')),
+  referencePaiement: z.string().optional().or(z.literal('')),
+  observations: z.string().optional().or(z.literal('')),
 }).refine(
   (data) => data.engagementId || data.reservationCreditId || data.ligneBudgetaireId || data.factureId,
-  { message: 'Au moins une imputation budgétaire est requise', path: ['ligneBudgetaireId'] }
+  { 
+    message: 'Au moins une imputation budgétaire est requise (engagement, réservation, facture ou ligne budgétaire)', 
+    path: ['ligneBudgetaireId'] 
+  }
+).refine(
+  (data) => data.fournisseurId || data.beneficiaire,
+  { 
+    message: 'Vous devez spécifier un fournisseur ou un bénéficiaire direct', 
+    path: ['fournisseurId'] 
+  }
 );
 
 interface DepenseDialogProps {
