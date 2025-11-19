@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -12,7 +12,7 @@ import { useExercice } from '@/contexts/ExerciceContext';
 import { FactureStats } from '@/components/factures/FactureStats';
 import { FactureTable } from '@/components/factures/FactureTable';
 import { FactureDialog } from '@/components/factures/FactureDialog';
-import { Facture, CreateFactureInput } from '@/types/facture.types';
+import { CreateFactureInput } from '@/types/facture.types';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -31,11 +31,13 @@ import { Label } from '@/components/ui/label';
 export default function Factures() {
   const { currentClient } = useClient();
   const { currentExercice } = useExercice();
+  
+  // États basés sur les IDs uniquement
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedFacture, setSelectedFacture] = useState<Facture | undefined>();
+  const [editingFactureId, setEditingFactureId] = useState<string | undefined>();
   const [selectedBonCommandeId, setSelectedBonCommandeId] = useState<string | undefined>();
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
-  const [factureToAnnuler, setFactureToAnnuler] = useState<string | null>(null);
+  const [annulationFactureId, setAnnulationFactureId] = useState<string | undefined>();
   const [motifAnnulation, setMotifAnnulation] = useState('');
 
   const {
@@ -54,6 +56,12 @@ export default function Factures() {
   const { projets } = useProjets();
   const { lignes: lignesBudgetaires } = useLignesBudgetaires();
   const { engagements } = useEngagements();
+
+  // Helper pour récupérer la facture depuis l'ID (source unique de vérité)
+  const editingFacture = useMemo(
+    () => factures.find(f => f.id === editingFactureId),
+    [factures, editingFactureId]
+  );
 
   // Récupérer les bons de commande réceptionnés
   const { data: bonsCommande = [] } = useQuery({
@@ -79,8 +87,9 @@ export default function Factures() {
     enabled: !!currentClient,
   });
 
+  // Callbacks stables avec dépendances minimales
   const handleCreate = useCallback(() => {
-    setSelectedFacture(undefined);
+    setEditingFactureId(undefined);
     setSelectedBonCommandeId(undefined);
     setDialogOpen(true);
   }, []);
@@ -88,23 +97,23 @@ export default function Factures() {
   const handleDialogClose = useCallback((open: boolean) => {
     setDialogOpen(open);
     if (!open) {
-      setSelectedFacture(undefined);
+      setEditingFactureId(undefined);
       setSelectedBonCommandeId(undefined);
     }
   }, []);
 
-  const handleEdit = useCallback((facture: Facture) => {
-    setSelectedFacture(facture);
+  const handleEdit = useCallback((id: string) => {
+    setEditingFactureId(id);
     setDialogOpen(true);
   }, []);
 
   const handleSubmit = useCallback(async (data: CreateFactureInput) => {
-    if (selectedFacture) {
-      await updateFacture({ id: selectedFacture.id, facture: data });
+    if (editingFactureId) {
+      await updateFacture({ id: editingFactureId, facture: data });
     } else {
       await createFacture(data);
     }
-  }, [updateFacture, createFacture]);
+  }, [editingFactureId, updateFacture, createFacture]);
 
   const handleGenererNumero = useCallback(async () => {
     if (!currentClient || !currentExercice) return '';
@@ -115,19 +124,19 @@ export default function Factures() {
   }, [currentClient, currentExercice, genererNumero]);
 
   const handleAnnuler = useCallback((id: string) => {
-    setFactureToAnnuler(id);
+    setAnnulationFactureId(id);
     setMotifAnnulation('');
     setAnnulerDialogOpen(true);
   }, []);
 
   const handleConfirmAnnulation = useCallback(async () => {
-    if (factureToAnnuler && motifAnnulation.trim()) {
-      await annulerFacture({ id: factureToAnnuler, motif: motifAnnulation });
+    if (annulationFactureId && motifAnnulation.trim()) {
+      await annulerFacture({ id: annulationFactureId, motif: motifAnnulation });
       setAnnulerDialogOpen(false);
-      setFactureToAnnuler(null);
+      setAnnulationFactureId(undefined);
       setMotifAnnulation('');
     }
-  }, [annulerFacture]);
+  }, [annulationFactureId, motifAnnulation, annulerFacture]);
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-full">Chargement...</div>;
@@ -151,7 +160,7 @@ export default function Factures() {
 
         <FactureTable
           factures={factures}
-          onEdit={handleEdit}
+          onEdit={(facture) => handleEdit(facture.id)}
           onDelete={deleteFacture}
           onValider={validerFacture}
           onMarquerPayee={marquerPayee}
@@ -162,7 +171,7 @@ export default function Factures() {
       <FactureDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
-        facture={selectedFacture}
+        facture={editingFacture}
         onSubmit={handleSubmit}
         fournisseurs={fournisseurs}
         bonsCommande={bonsCommande}
