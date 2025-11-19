@@ -82,14 +82,14 @@ export const DepenseDialog = ({
   const { reservations } = useReservations();
   const { factures } = useFactures();
 
-  const lignesActives = lignesBudgetaires.filter(l => l.statut === 'actif');
-  const fournisseursActifs = fournisseurs.filter(f => f.statut === 'actif');
-  const projetsActifs = projets.filter(p => p.statut !== 'termine' && p.statut !== 'annule');
-  const engagementsDisponibles = engagements.filter(e => 
+  const lignesActives = (lignesBudgetaires || []).filter(l => l.statut === 'actif');
+  const fournisseursActifs = (fournisseurs || []).filter(f => f.statut === 'actif');
+  const projetsActifs = (projets || []).filter(p => p.statut !== 'termine' && p.statut !== 'annule');
+  const engagementsDisponibles = (engagements || []).filter(e => 
     e.statut !== 'annule' && (e.statut === 'valide' || e.statut === 'engage')
   );
-  const reservationsActives = reservations.filter(r => r.statut === 'active');
-  const facturesNonLiquidees = factures.filter(f => 
+  const reservationsActives = (reservations || []).filter(r => r.statut === 'active');
+  const facturesNonLiquidees = (factures || []).filter(f => 
     f.statut !== 'annulee' && f.statut === 'validee'
   );
 
@@ -179,7 +179,7 @@ export const DepenseDialog = ({
   }, [depense, open]);
 
   const handleEngagementChange = (engagementId: string) => {
-    const engagement = engagements.find(e => e.id === engagementId);
+    const engagement = (engagements || []).find(e => e.id === engagementId);
     if (!engagement) return;
 
     setSelectedEngagement(engagement);
@@ -215,13 +215,13 @@ export const DepenseDialog = ({
   };
 
   const handleReservationChange = (reservationId: string) => {
-    const reservation = reservations.find(r => r.id === reservationId);
+    const reservation = (reservations || []).find(r => r.id === reservationId);
     if (!reservation) return;
 
     setSelectedReservation(reservation);
 
     // Calculate disponible
-    const engagementsReservation = engagements.filter(
+    const engagementsReservation = (engagements || []).filter(
       e => e.reservationCreditId === reservationId && e.statut !== 'annule'
     );
     const montantEngage = engagementsReservation.reduce((sum, e) => sum + e.montant, 0);
@@ -253,7 +253,7 @@ export const DepenseDialog = ({
   };
 
   const handleFactureChange = (factureId: string) => {
-    const facture = factures.find(f => f.id === factureId);
+    const facture = (factures || []).find(f => f.id === factureId);
     if (!facture) return;
 
     setSelectedFacture(facture);
@@ -286,7 +286,7 @@ export const DepenseDialog = ({
   };
 
   const handleLigneDirecteChange = (ligneId: string) => {
-    const ligne = lignesBudgetaires.find(l => l.id === ligneId);
+    const ligne = (lignesBudgetaires || []).find(l => l.id === ligneId);
     if (!ligne) return;
 
     setMontantDisponible(ligne.disponible);
