@@ -172,11 +172,101 @@ export const useDepenses = () => {
     },
   });
 
+  const createFromFactureMutation = useMutation({
+    mutationFn: (data: any) => {
+      if (!currentExercice?.id || !currentClient?.id || !user?.id) {
+        return Promise.reject(new Error('Données requises manquantes'));
+      }
+      return depensesService.createDepenseFromFacture(
+        data,
+        currentExercice.id,
+        currentClient.id,
+        user.id
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['depenses'] });
+      queryClient.invalidateQueries({ queryKey: ['factures'] });
+      toast({
+        title: 'Succès',
+        description: 'Dépense créée depuis la facture',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const createFromEngagementMutation = useMutation({
+    mutationFn: (data: any) => {
+      if (!currentExercice?.id || !currentClient?.id || !user?.id) {
+        return Promise.reject(new Error('Données requises manquantes'));
+      }
+      return depensesService.createDepenseFromEngagement(
+        data,
+        currentExercice.id,
+        currentClient.id,
+        user.id
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['depenses'] });
+      queryClient.invalidateQueries({ queryKey: ['engagements'] });
+      toast({
+        title: 'Succès',
+        description: 'Dépense créée depuis l\'engagement',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const createFromReservationMutation = useMutation({
+    mutationFn: (data: any) => {
+      if (!currentExercice?.id || !currentClient?.id || !user?.id) {
+        return Promise.reject(new Error('Données requises manquantes'));
+      }
+      return depensesService.createDepenseFromReservation(
+        data,
+        currentExercice.id,
+        currentClient.id,
+        user.id
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['depenses'] });
+      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      toast({
+        title: 'Succès',
+        description: 'Dépense d\'urgence créée',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   return {
     depenses: query.data || [],
     isLoading: query.isLoading,
     error: query.error,
     createDepense: createMutation.mutateAsync,
+    createDepenseFromFacture: createFromFactureMutation.mutateAsync,
+    createDepenseFromEngagement: createFromEngagementMutation.mutateAsync,
+    createDepenseFromReservation: createFromReservationMutation.mutateAsync,
     updateDepense: updateMutation.mutateAsync,
     validerDepense: validerMutation.mutateAsync,
     ordonnancerDepense: ordonnancerMutation.mutateAsync,

@@ -101,3 +101,36 @@ export interface DepenseStats {
   montantOrdonnancee: number;
   montantPayee: number;
 }
+
+// Création de dépense depuis une facture
+export interface CreateDepenseFromFactureData {
+  factureId: string;
+  montant: number;
+  dateDepense: string;
+  modePaiement?: ModePaiement;
+  referencePaiement?: string;
+  observations?: string;
+}
+
+// Création de dépense depuis un engagement
+export interface CreateDepenseFromEngagementData {
+  engagementId: string;
+  montant: number;
+  dateDepense: string;
+  modePaiement?: ModePaiement;
+  referencePaiement?: string;
+  observations?: string;
+}
+
+// Création de dépense d'urgence depuis une réservation
+export interface CreateDepenseFromReservationData {
+  reservationCreditId: string;
+  montant: number;
+  objet: string;
+  dateDepense: string;
+  beneficiaire?: string;
+  modePaiement?: ModePaiement;
+  referencePaiement?: string;
+  observations?: string;
+  justificationUrgence: string;
+}

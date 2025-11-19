@@ -3,6 +3,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useFactures } from '@/hooks/useFactures';
+import { useDepenses } from '@/hooks/useDepenses';
 import { useFournisseurs } from '@/hooks/useFournisseurs';
 import { useProjets } from '@/hooks/useProjets';
 import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
@@ -12,7 +13,8 @@ import { useExercice } from '@/contexts/ExerciceContext';
 import { FactureStats } from '@/components/factures/FactureStats';
 import { FactureTable } from '@/components/factures/FactureTable';
 import { FactureDialog } from '@/components/factures/FactureDialog';
-import { CreateFactureInput } from '@/types/facture.types';
+import { CreateDepenseFromFactureDialog } from '@/components/depenses/CreateDepenseFromFactureDialog';
+import { CreateFactureInput, Facture } from '@/types/facture.types';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -38,6 +40,11 @@ export default function Factures() {
   const [selectedBonCommandeId, setSelectedBonCommandeId] = useState<string | undefined>();
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
   const [annulationFactureId, setAnnulationFactureId] = useState<string | undefined>();
+  const [annulationMotif, setAnnulationMotif] = useState('');
+  const [selectedFactureForDepense, setSelectedFactureForDepense] = useState<Facture | null>(null);
+  
+  const { factures, isLoading, createFacture, updateFacture, deleteFacture, genererNumero, validerFacture, marquerPayee, annuler } = useFactures();
+  const { createDepenseFromFacture } = useDepenses();
   const [motifAnnulation, setMotifAnnulation] = useState('');
 
   const {
@@ -165,6 +172,7 @@ export default function Factures() {
           onValider={validerFacture}
           onMarquerPayee={marquerPayee}
           onAnnuler={handleAnnuler}
+          onCreerDepense={(facture) => setSelectedFactureForDepense(facture)}
         />
       </div>
 
