@@ -38,41 +38,23 @@ import type { Facture } from '@/types/facture.types';
 import { format } from 'date-fns';
 
 const depenseSchema = z.object({
-  // Relations optionnelles (champs vides autorisés)
-  engagementId: z.string().optional().or(z.literal('')),
-  reservationCreditId: z.string().optional().or(z.literal('')),
-  ligneBudgetaireId: z.string().optional().or(z.literal('')),
-  factureId: z.string().optional().or(z.literal('')),
+  // Champs optionnels - accepter undefined ou string vide
+  engagementId: z.string().nullish().transform(val => val || undefined),
+  reservationCreditId: z.string().nullish().transform(val => val || undefined),
+  ligneBudgetaireId: z.string().nullish().transform(val => val || undefined),
+  factureId: z.string().nullish().transform(val => val || undefined),
+  fournisseurId: z.string().nullish().transform(val => val || undefined),
+  beneficiaire: z.string().nullish().transform(val => val || undefined),
+  projetId: z.string().nullish().transform(val => val || undefined),
+  modePaiement: z.string().nullish().transform(val => val || undefined),
+  referencePaiement: z.string().nullish().transform(val => val || undefined),
+  observations: z.string().nullish().transform(val => val || undefined),
   
-  // Bénéficiaire (un des deux est requis)
-  fournisseurId: z.string().optional().or(z.literal('')),
-  beneficiaire: z.string().optional().or(z.literal('')),
-  
-  // Projet (optionnel)
-  projetId: z.string().optional().or(z.literal('')),
-  
-  // Informations obligatoires
-  objet: z.string().min(1, "L'objet est requis").max(500, "L'objet ne peut dépasser 500 caractères"),
-  montant: z.coerce.number().positive('Le montant doit être supérieur à 0'),
+  // Champs obligatoires
+  objet: z.string().min(1, "L'objet est requis"),
+  montant: z.coerce.number().positive('Le montant doit être positif'),
   dateDepense: z.string().min(1, 'La date est requise'),
-  
-  // Paiement (optionnel pour brouillon)
-  modePaiement: z.string().optional().or(z.literal('')),
-  referencePaiement: z.string().optional().or(z.literal('')),
-  observations: z.string().optional().or(z.literal('')),
-}).refine(
-  (data) => data.engagementId || data.reservationCreditId || data.ligneBudgetaireId || data.factureId,
-  { 
-    message: 'Au moins une imputation budgétaire est requise (engagement, réservation, facture ou ligne budgétaire)', 
-    path: ['ligneBudgetaireId'] 
-  }
-).refine(
-  (data) => data.fournisseurId || data.beneficiaire,
-  { 
-    message: 'Vous devez spécifier un fournisseur ou un bénéficiaire direct', 
-    path: ['fournisseurId'] 
-  }
-);
+});
 
 interface DepenseDialogProps {
   open: boolean;
@@ -338,31 +320,68 @@ export const DepenseDialog = ({
   };
 
   const handleSubmit = async (data: z.infer<typeof depenseSchema>) => {
+    console.log('🔵 Formulaire soumis - Données reçues:', data);
     setIsSubmitting(true);
+    
     try {
+      // VALIDATION 1: Au moins une imputation
+      const hasImputation = data.engagementId || data.reservationCreditId || 
+                           data.ligneBudgetaireId || data.factureId;
+      
+      if (!hasImputation) {
+        console.error('❌ Validation échouée: aucune imputation budgétaire');
+        const { toast } = await import('@/hooks/use-toast');
+        toast({
+          title: 'Erreur de validation',
+          description: 'Au moins une imputation budgétaire est requise',
+          variant: 'destructive',
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // VALIDATION 2: Bénéficiaire requis
+      if (!data.fournisseurId && !data.beneficiaire) {
+        console.error('❌ Validation échouée: aucun bénéficiaire');
+        const { toast } = await import('@/hooks/use-toast');
+        toast({
+          title: 'Erreur de validation',
+          description: 'Vous devez spécifier un fournisseur ou un bénéficiaire',
+          variant: 'destructive',
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Préparer les données
       const formData: DepenseFormData = {
-        engagementId: data.engagementId || undefined,
-        reservationCreditId: data.reservationCreditId || undefined,
-        ligneBudgetaireId: data.ligneBudgetaireId || undefined,
-        factureId: data.factureId || undefined,
-        fournisseurId: data.fournisseurId || undefined,
-        beneficiaire: data.beneficiaire || undefined,
-        projetId: (data.projetId && data.projetId !== 'none') ? data.projetId : undefined,
+        engagementId: data.engagementId,
+        reservationCreditId: data.reservationCreditId,
+        ligneBudgetaireId: data.ligneBudgetaireId,
+        factureId: data.factureId,
+        fournisseurId: data.fournisseurId,
+        beneficiaire: data.beneficiaire,
+        projetId: data.projetId === 'none' ? undefined : data.projetId,
         objet: data.objet,
         montant: data.montant,
         dateDepense: data.dateDepense,
-        modePaiement: (data.modePaiement && data.modePaiement !== 'none') ? data.modePaiement as any : undefined,
-        referencePaiement: data.referencePaiement || undefined,
-        observations: data.observations || undefined,
+        modePaiement: data.modePaiement === 'none' ? undefined : data.modePaiement as any,
+        referencePaiement: data.referencePaiement,
+        observations: data.observations,
       };
 
+      console.log('📤 Données à envoyer à l\'API:', formData);
+      
       await onSave(formData);
+      
+      console.log('✅ Dépense sauvegardée avec succès');
       form.reset();
       setTypeImputation('direct');
       setTypeBeneficiaire('fournisseur');
       onOpenChange(false);
     } catch (error) {
-      console.error('Error saving depense:', error);
+      console.error('❌ Erreur lors de la sauvegarde:', error);
+      // L'erreur sera déjà affichée par le hook useDepenses
     } finally {
       setIsSubmitting(false);
     }
@@ -379,7 +398,12 @@ export const DepenseDialog = ({
 
         <ScrollArea className="max-h-[calc(90vh-180px)] pr-4">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            <form onSubmit={(e) => {
+              console.log('📋 Soumission formulaire déclenchée');
+              console.log('📊 Valeurs actuelles:', form.getValues());
+              console.log('❗ Erreurs de validation:', form.formState.errors);
+              form.handleSubmit(handleSubmit)(e);
+            }} className="space-y-6">
               {/* Section 1: Type d'imputation */}
               <div className="space-y-4">
                 <h3 className="text-sm font-medium">Type d'imputation budgétaire</h3>
