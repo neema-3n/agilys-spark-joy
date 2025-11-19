@@ -14,6 +14,7 @@ import { showNavigationToast } from '@/lib/navigation-toast';
 import type { Engagement, EngagementFormData } from '@/types/engagement.types';
 import type { CreateBonCommandeInput } from '@/types/bonCommande.types';
 
+// Engagements page - manages engagement creation and lifecycle
 const Engagements = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedEngagement, setSelectedEngagement] = useState<Engagement | undefined>();
