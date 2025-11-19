@@ -35,6 +35,7 @@ const Engagements = () => {
   const [validateDialogOpen, setValidateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [actionEngagementId, setActionEngagementId] = useState<string | null>(null);
+  const [selectedEngagementForDepense, setSelectedEngagementForDepense] = useState<Engagement | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -49,6 +50,7 @@ const Engagements = () => {
   } = useEngagements();
 
   const { createBonCommande, genererNumero } = useBonsCommande();
+  const { createDepenseFromEngagement } = useDepenses();
 
   const handleCreate = () => {
     setSelectedEngagement(undefined);
@@ -284,6 +286,15 @@ const Engagements = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CreateDepenseFromEngagementDialog
+        open={!!selectedEngagementForDepense}
+        onOpenChange={(open) => !open && setSelectedEngagementForDepense(null)}
+        engagement={selectedEngagementForDepense}
+        onSave={async (data) => {
+          await createDepenseFromEngagement(data);
+        }}
+      />
     </div>
   );
 };
