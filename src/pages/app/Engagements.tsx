@@ -11,6 +11,16 @@ import { useEngagements } from '@/hooks/useEngagements';
 import { useBonsCommande } from '@/hooks/useBonsCommande';
 import { useToast } from '@/hooks/use-toast';
 import { showNavigationToast } from '@/lib/navigation-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import type { Engagement, EngagementFormData } from '@/types/engagement.types';
 import type { CreateBonCommandeInput } from '@/types/bonCommande.types';
 
@@ -20,6 +30,9 @@ const Engagements = () => {
   const [selectedEngagement, setSelectedEngagement] = useState<Engagement | undefined>();
   const [bonCommandeDialogOpen, setBonCommandeDialogOpen] = useState(false);
   const [engagementSourceId, setEngagementSourceId] = useState<string | null>(null);
+  const [validateDialogOpen, setValidateDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [actionEngagementId, setActionEngagementId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -71,11 +84,16 @@ const Engagements = () => {
     }
   };
 
-  const handleValider = async (id: string) => {
-    if (!confirm('Confirmer la validation de cet engagement ?')) return;
+  const handleValider = (id: string) => {
+    setActionEngagementId(id);
+    setValidateDialogOpen(true);
+  };
+
+  const confirmValider = async () => {
+    if (!actionEngagementId) return;
     
     try {
-      await validerEngagement(id);
+      await validerEngagement(actionEngagementId);
       toast({
         title: 'Engagement validé',
         description: 'L\'engagement a été validé avec succès.',
@@ -86,6 +104,9 @@ const Engagements = () => {
         description: 'Une erreur est survenue lors de la validation.',
         variant: 'destructive',
       });
+    } finally {
+      setValidateDialogOpen(false);
+      setActionEngagementId(null);
     }
   };
 
@@ -105,11 +126,16 @@ const Engagements = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Confirmer la suppression de cet engagement ?')) return;
+  const handleDelete = (id: string) => {
+    setActionEngagementId(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!actionEngagementId) return;
     
     try {
-      await deleteEngagement(id);
+      await deleteEngagement(actionEngagementId);
       toast({
         title: 'Engagement supprimé',
         description: 'L\'engagement a été supprimé avec succès.',
@@ -120,6 +146,9 @@ const Engagements = () => {
         description: error.message || 'Une erreur est survenue lors de la suppression.',
         variant: 'destructive',
       });
+    } finally {
+      setDeleteDialogOpen(false);
+      setActionEngagementId(null);
     }
   };
 
@@ -214,6 +243,44 @@ const Engagements = () => {
         onSubmit={handleSaveBonCommande}
         onGenererNumero={genererNumero}
       />
+
+      <AlertDialog open={validateDialogOpen} onOpenChange={setValidateDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Valider cet engagement ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action confirmera l'engagement et permettra la création de bons de commande. 
+              L'engagement ne pourra plus être modifié après validation.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmValider}>
+              Valider l'engagement
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cet engagement ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. L'engagement et toutes ses données associées seront définitivement supprimés.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
