@@ -158,7 +158,7 @@ const BonsCommande = () => {
 
   const handleSaveFacture = useCallback(async (data: CreateFactureInput) => {
     try {
-      await createFacture(data);
+      await createFacture({ facture: data, skipToast: true });
       setFactureDialogOpen(false);
       setFactureBonCommandeId(undefined);
       
