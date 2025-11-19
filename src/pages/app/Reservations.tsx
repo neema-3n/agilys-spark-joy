@@ -9,11 +9,13 @@ import { ReservationStats } from '@/components/reservations/ReservationStats';
 import { EngagementDialog } from '@/components/engagements/EngagementDialog';
 import { useReservations } from '@/hooks/useReservations';
 import { useEngagements } from '@/hooks/useEngagements';
+import { useDepenses } from '@/hooks/useDepenses';
 import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
 import { useFournisseurs } from '@/hooks/useFournisseurs';
 import { useProjets } from '@/hooks/useProjets';
 import { useToast } from '@/hooks/use-toast';
 import { showNavigationToast } from '@/lib/navigation-toast';
+import { CreateDepenseUrgenceFromReservationDialog } from '@/components/depenses/CreateDepenseUrgenceFromReservationDialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +37,7 @@ const Reservations = () => {
   const [pendingSuppression, setPendingSuppression] = useState<{ id: string; engagements: any[] } | null>(null);
   const [engagementDialogOpen, setEngagementDialogOpen] = useState(false);
   const [reservationSourceId, setReservationSourceId] = useState<string | null>(null);
+  const [selectedReservationForDepense, setSelectedReservationForDepense] = useState<ReservationCredit | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -49,6 +52,7 @@ const Reservations = () => {
   } = useReservations();
 
   const { createEngagementFromReservation, annulerEngagement, deleteEngagement } = useEngagements();
+  const { createDepenseFromReservation } = useDepenses();
   const { lignes: lignesBudgetaires } = useLignesBudgetaires();
   const { fournisseurs } = useFournisseurs();
   const { projets } = useProjets();
@@ -91,6 +95,11 @@ const Reservations = () => {
   const handleCreerEngagement = (reservation: ReservationCredit) => {
     setReservationSourceId(reservation.id);
     setEngagementDialogOpen(true);
+  };
+
+  const handleCreerDepenseUrgence = (reservation: ReservationCredit) => {
+    console.log('💳 Création dépense urgente depuis réservation', reservation);
+    setSelectedReservationForDepense(reservation);
   };
 
   const handleSaveEngagement = async (data: any) => {
@@ -264,6 +273,7 @@ const Reservations = () => {
           onCreerEngagement={handleCreerEngagement}
           onAnnuler={handleAnnuler}
           onDelete={handleDelete}
+          onCreerDepenseUrgence={handleCreerDepenseUrgence}
         />
       </div>
 
@@ -343,6 +353,15 @@ const Reservations = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CreateDepenseUrgenceFromReservationDialog
+        open={!!selectedReservationForDepense}
+        onOpenChange={(open) => !open && setSelectedReservationForDepense(null)}
+        reservation={selectedReservationForDepense}
+        onSave={async (data) => {
+          await createDepenseFromReservation(data);
+        }}
+      />
     </div>
   );
 };
