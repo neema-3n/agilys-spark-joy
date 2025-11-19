@@ -329,11 +329,11 @@ export const DepenseDialog = ({
         factureId: data.factureId || undefined,
         fournisseurId: data.fournisseurId || undefined,
         beneficiaire: data.beneficiaire || undefined,
-        projetId: data.projetId || undefined,
+        projetId: (data.projetId && data.projetId !== 'none') ? data.projetId : undefined,
         objet: data.objet,
         montant: data.montant,
         dateDepense: data.dateDepense,
-        modePaiement: data.modePaiement as any || undefined,
+        modePaiement: (data.modePaiement && data.modePaiement !== 'none') ? data.modePaiement as any : undefined,
         referencePaiement: data.referencePaiement || undefined,
         observations: data.observations || undefined,
       };
@@ -753,7 +753,7 @@ export const DepenseDialog = ({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Aucun projet</SelectItem>
+                          <SelectItem value="none">Aucun projet</SelectItem>
                           {projetsActifs.map((p) => (
                             <SelectItem key={p.id} value={p.id}>
                               {p.code} - {p.nom}
@@ -779,8 +779,8 @@ export const DepenseDialog = ({
                               <SelectValue placeholder="Sélectionner" />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="">Non spécifié</SelectItem>
+                        <SelectContent>
+                            <SelectItem value="none">Non spécifié</SelectItem>
                             <SelectItem value="virement">Virement</SelectItem>
                             <SelectItem value="cheque">Chèque</SelectItem>
                             <SelectItem value="especes">Espèces</SelectItem>
