@@ -339,8 +339,8 @@ export const bonsCommandeService = {
       .single();
 
     if (fetchError) throw fetchError;
-    if (bc.statut === 'receptionne') {
-      throw new Error('Impossible d\'annuler un bon de commande déjà réceptionné');
+    if (bc.statut === 'facture') {
+      throw new Error('Impossible d\'annuler un bon de commande déjà facturé');
     }
     if (bc.statut === 'annule') {
       throw new Error('Ce bon de commande est déjà annulé');
