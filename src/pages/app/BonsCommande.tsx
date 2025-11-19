@@ -139,6 +139,10 @@ const BonsCommande = () => {
     }
   }, [selectedBonCommande, annulerBonCommande]);
 
+  const handleGenererNumero = useCallback(async () => {
+    return genererNumero();
+  }, [genererNumero]);
+
   const handleCreateFacture = useCallback((bonCommande: BonCommande) => {
     setSelectedBonCommande(bonCommande);
     setBonCommandeSourceId(bonCommande.id);
@@ -213,7 +217,7 @@ const BonsCommande = () => {
         onOpenChange={handleDialogClose}
         bonCommande={selectedBonCommande}
         onSubmit={handleSubmit}
-        onGenererNumero={genererNumero}
+        onGenererNumero={handleGenererNumero}
       />
 
       <FactureDialog
