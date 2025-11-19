@@ -1,7 +1,9 @@
 import { useState, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
+import { showNavigationToast } from '@/lib/navigation-toast';
 import { useFactures } from '@/hooks/useFactures';
 import { useDepenses } from '@/hooks/useDepenses';
 import { useFournisseurs } from '@/hooks/useFournisseurs';
@@ -31,6 +33,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 export default function Factures() {
+  const navigate = useNavigate();
   const { currentClient } = useClient();
   const { currentExercice } = useExercice();
   
@@ -216,7 +219,24 @@ export default function Factures() {
         onOpenChange={(open) => !open && setSelectedFactureForDepense(null)}
         facture={selectedFactureForDepense}
         onSave={async (data) => {
-          await createDepenseFromFacture(data);
+          try {
+            const facture = selectedFactureForDepense;
+            await createDepenseFromFacture(data);
+            
+            setSelectedFactureForDepense(null);
+            
+            showNavigationToast({
+              title: 'Dépense créée',
+              description: `La dépense a été créée depuis la facture ${facture?.numero || ''}.`,
+              targetPage: {
+                name: 'Dépenses',
+                path: '/app/depenses',
+              },
+              navigate,
+            });
+          } catch (error) {
+            console.error('Erreur création dépense:', error);
+          }
         }}
       />
     </div>

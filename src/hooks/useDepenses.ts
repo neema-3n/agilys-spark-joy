@@ -187,10 +187,6 @@ export const useDepenses = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depenses'] });
       queryClient.invalidateQueries({ queryKey: ['factures'] });
-      toast({
-        title: 'Succès',
-        description: 'Dépense créée depuis la facture',
-      });
     },
     onError: (error: Error) => {
       toast({
@@ -216,10 +212,6 @@ export const useDepenses = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depenses'] });
       queryClient.invalidateQueries({ queryKey: ['engagements'] });
-      toast({
-        title: 'Succès',
-        description: 'Dépense créée depuis l\'engagement',
-      });
     },
     onError: (error: Error) => {
       toast({
@@ -245,10 +237,6 @@ export const useDepenses = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depenses'] });
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
-      toast({
-        title: 'Succès',
-        description: 'Dépense d\'urgence créée',
-      });
     },
     onError: (error: Error) => {
       toast({
