@@ -118,64 +118,39 @@ export const facturesService = {
   },
 
   async create(facture: CreateFactureInput): Promise<Facture> {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    // Vérifier le montant si un BC est lié
-    if (facture.bonCommandeId) {
-      // 1. Récupérer le montant du BC
-      const { data: bc, error: bcError } = await supabase
-        .from('bons_commande')
-        .select('montant')
-        .eq('id', facture.bonCommandeId)
-        .single();
-      
-      if (bcError) throw bcError;
-      
-      // 2. Calculer le montant déjà facturé sur ce BC (hors factures annulées)
-      const { data: facturesExistantes, error: facturesError } = await supabase
-        .from('factures')
-        .select('montant_ttc')
-        .eq('bon_commande_id', facture.bonCommandeId)
-        .neq('statut', 'annulee');
-      
-      if (facturesError) throw facturesError;
-      
-      const montantDejaFacture = facturesExistantes?.reduce(
-        (sum, f) => sum + parseFloat(f.montant_ttc.toString()), 
-        0
-      ) || 0;
-      
-      // 3. Vérifier que le total ne dépasse pas le montant du BC
-      const montantTotal = montantDejaFacture + facture.montantTTC;
-      
-      if (montantTotal > bc.montant) {
-        throw new Error(
-          `Le montant total des factures (${montantTotal.toLocaleString('fr-FR')} €) ` +
-          `dépasserait le montant du bon de commande (${bc.montant.toLocaleString('fr-FR')} €). ` +
-          `Montant déjà facturé : ${montantDejaFacture.toLocaleString('fr-FR')} €. ` +
-          `Montant disponible : ${(bc.montant - montantDejaFacture).toLocaleString('fr-FR')} €.`
-        );
-      }
-    }
-    
-    const { data, error } = await supabase
-      .from('factures')
-      .insert({
-        ...mapFactureToDB(facture),
-        created_by: user?.id,
-      })
-      .select(`
-        *,
-        fournisseurs (id, nom, code),
-        bons_commande (id, numero),
-        engagements (id, numero),
-        lignes_budgetaires (id, libelle),
-        projets (id, nom)
-      `)
-      .single();
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Non authentifié');
 
-    if (error) throw error;
-    return mapFactureFromDB(data);
+      // Appeler l'edge function pour créer la facture avec numéro généré atomiquement
+      const { data, error } = await supabase.functions.invoke('create-facture', {
+        body: {
+          exerciceId: facture.exerciceId,
+          clientId: facture.clientId,
+          fournisseurId: facture.fournisseurId,
+          objet: facture.objet,
+          dateFacture: facture.dateFacture,
+          dateEcheance: facture.dateEcheance,
+          montantHT: facture.montantHT,
+          montantTVA: facture.montantTVA,
+          montantTTC: facture.montantTTC,
+          numeroFactureFournisseur: facture.numeroFactureFournisseur,
+          bonCommandeId: facture.bonCommandeId,
+          engagementId: facture.engagementId,
+          ligneBudgetaireId: facture.ligneBudgetaireId,
+          projetId: facture.projetId,
+          observations: facture.observations,
+        }
+      });
+
+      if (error) throw error;
+      if (!data) throw new Error('Facture non créée');
+
+      return data as Facture;
+    } catch (error) {
+      console.error('Erreur lors de la création de la facture:', error);
+      throw error;
+    }
   },
 
   async update(id: string, facture: UpdateFactureInput): Promise<Facture> {
