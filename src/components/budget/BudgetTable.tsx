@@ -588,6 +588,11 @@ export const BudgetTable = ({
                                 {tauxExecution}%
                               </Badge>
                             </TableCell>
+                            <TableCell className="text-center">
+                              <Badge variant={ligne.statut === 'actif' ? 'default' : 'secondary'}>
+                                {ligne.statut}
+                              </Badge>
+                            </TableCell>
                             <TableCell>
                               <div className="flex justify-end">
                                 <DropdownMenu>
