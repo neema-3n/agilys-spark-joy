@@ -218,51 +218,59 @@ const BonsCommande = () => {
         />
       </div>
 
-      <BonCommandeDialog
-        open={dialogOpen}
-        onOpenChange={handleDialogClose}
-        bonCommande={selectedBonCommande}
-        onSubmit={handleSubmit}
-        onGenererNumero={handleGenererNumero}
-      />
+      {dialogOpen && (
+        <BonCommandeDialog
+          open={dialogOpen}
+          onOpenChange={handleDialogClose}
+          bonCommande={selectedBonCommande}
+          onSubmit={handleSubmit}
+          onGenererNumero={handleGenererNumero}
+        />
+      )}
 
-      <FactureDialog
-        open={factureDialogOpen}
-        onOpenChange={(open) => {
-          setFactureDialogOpen(open);
-          if (!open) {
-            setBonCommandeSourceId(null);
-            setSelectedBonCommande(undefined);
-          }
-        }}
-        onSubmit={handleSaveFacture}
-        fournisseurs={fournisseurs}
-        bonsCommande={bonsCommandeReceptionnes}
-        engagements={engagements}
-        lignesBudgetaires={lignesBudgetaires}
-        projets={projets}
-        currentClientId={currentClient?.id || ''}
-        currentExerciceId={currentExercice?.id || ''}
-        onGenererNumero={async () => {
-          if (!currentClient || !currentExercice) return '';
-          return genererNumeroFacture({ clientId: currentClient.id, exerciceId: currentExercice.id });
-        }}
-        initialBonCommandeId={bonCommandeSourceId || undefined}
-      />
+      {factureDialogOpen && (
+        <FactureDialog
+          open={factureDialogOpen}
+          onOpenChange={(open) => {
+            setFactureDialogOpen(open);
+            if (!open) {
+              setBonCommandeSourceId(null);
+              setSelectedBonCommande(undefined);
+            }
+          }}
+          onSubmit={handleSaveFacture}
+          fournisseurs={fournisseurs}
+          bonsCommande={bonsCommandeReceptionnes}
+          engagements={engagements}
+          lignesBudgetaires={lignesBudgetaires}
+          projets={projets}
+          currentClientId={currentClient?.id || ''}
+          currentExerciceId={currentExercice?.id || ''}
+          onGenererNumero={async () => {
+            if (!currentClient || !currentExercice) return '';
+            return genererNumeroFacture({ clientId: currentClient.id, exerciceId: currentExercice.id });
+          }}
+          initialBonCommandeId={bonCommandeSourceId || undefined}
+        />
+      )}
 
-      <AnnulerBCDialog
-        open={annulerDialogOpen}
-        onOpenChange={setAnnulerDialogOpen}
-        bonCommandeNumero={selectedBonCommande?.numero || ''}
-        onConfirm={handleAnnulerConfirm}
-      />
+      {annulerDialogOpen && (
+        <AnnulerBCDialog
+          open={annulerDialogOpen}
+          onOpenChange={setAnnulerDialogOpen}
+          bonCommandeNumero={selectedBonCommande?.numero || ''}
+          onConfirm={handleAnnulerConfirm}
+        />
+      )}
 
-      <ReceptionnerBCDialog
-        open={receptionnerDialogOpen}
-        onOpenChange={setReceptionnerDialogOpen}
-        bonCommandeNumero={selectedBonCommande?.numero || ''}
-        onConfirm={handleReceptionnerConfirm}
-      />
+      {receptionnerDialogOpen && (
+        <ReceptionnerBCDialog
+          open={receptionnerDialogOpen}
+          onOpenChange={setReceptionnerDialogOpen}
+          bonCommandeNumero={selectedBonCommande?.numero || ''}
+          onConfirm={handleReceptionnerConfirm}
+        />
+      )}
     </div>
   );
 };
