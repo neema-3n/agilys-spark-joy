@@ -26,7 +26,17 @@ export const useFactures = () => {
       }
     },
     onError: (error: Error) => {
-      toast.error(`Erreur: ${error.message}`);
+      let message = error.message;
+      
+      // Fallback pour messages non transformés
+      if (message.startsWith('P0001:')) {
+        message = '❌ Une erreur s\'est produite lors de la création de la facture.\nVeuillez vérifier les montants et réessayer.';
+      }
+      
+      toast.error(message, {
+        duration: 8000,
+        style: { whiteSpace: 'pre-line', maxWidth: '500px' }
+      });
     },
   });
 
@@ -38,7 +48,16 @@ export const useFactures = () => {
       toast.success('Facture mise à jour avec succès');
     },
     onError: (error: Error) => {
-      toast.error(`Erreur: ${error.message}`);
+      let message = error.message;
+      
+      if (message.startsWith('P0001:')) {
+        message = '❌ Une erreur s\'est produite lors de la mise à jour.\nVeuillez vérifier les montants et réessayer.';
+      }
+      
+      toast.error(message, {
+        duration: 8000,
+        style: { whiteSpace: 'pre-line', maxWidth: '500px' }
+      });
     },
   });
 
