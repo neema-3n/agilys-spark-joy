@@ -282,12 +282,19 @@ export const createDepenseFromFacture = async (
     throw new Error(`Montant invalide. Solde disponible : ${soldeDisponible.toFixed(2)} €`);
   }
 
-  // 3. Construire les données
+  // 3. Vérifier qu'au moins une imputation budgétaire existe
+  if (!factureData.engagement_id && !factureData.ligne_budgetaire_id) {
+    throw new Error('La facture doit être liée à un engagement ou une ligne budgétaire pour créer une dépense');
+  }
+
+  // 4. Construire les données
   const depenseFormData = {
     factureId: data.factureId,
     engagementId: factureData.engagement_id || undefined,
+    reservationCreditId: undefined,
     ligneBudgetaireId: factureData.ligne_budgetaire_id || undefined,
     fournisseurId: factureData.fournisseur_id,
+    beneficiaire: undefined,
     projetId: factureData.projet_id || undefined,
     objet: `Liquidation facture ${factureData.numero} - ${factureData.objet}`,
     montant: data.montant,
