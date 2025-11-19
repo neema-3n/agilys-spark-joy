@@ -43,21 +43,9 @@ export default function Factures() {
   const [annulationMotif, setAnnulationMotif] = useState('');
   const [selectedFactureForDepense, setSelectedFactureForDepense] = useState<Facture | null>(null);
   
-  const { factures, isLoading, createFacture, updateFacture, deleteFacture, genererNumero, validerFacture, marquerPayee, annuler } = useFactures();
+  const { factures, isLoading, createFacture, updateFacture, deleteFacture, genererNumero, validerFacture, marquerPayee, annulerFacture } = useFactures();
   const { createDepenseFromFacture } = useDepenses();
   const [motifAnnulation, setMotifAnnulation] = useState('');
-
-  const {
-    factures,
-    isLoading,
-    createFacture,
-    updateFacture,
-    deleteFacture,
-    genererNumero,
-    validerFacture,
-    marquerPayee,
-    annulerFacture,
-  } = useFactures();
 
   const { fournisseurs } = useFournisseurs();
   const { projets } = useProjets();
@@ -222,6 +210,15 @@ export default function Factures() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CreateDepenseFromFactureDialog
+        open={!!selectedFactureForDepense}
+        onOpenChange={(open) => !open && setSelectedFactureForDepense(null)}
+        facture={selectedFactureForDepense}
+        onSave={async (data) => {
+          await createDepenseFromFacture(data);
+        }}
+      />
     </div>
   );
 }
