@@ -1,28 +1,42 @@
+import { useState } from 'react';
 import { PageHeader } from '@/components/PageHeader';
-import { Card, CardContent } from '@/components/ui/card';
-import { Construction } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
+import { DepenseStatsCards } from '@/components/depenses/DepensesStats';
+import { DepenseTable } from '@/components/depenses/DepenseTable';
+import { useDepenses } from '@/hooks/useDepenses';
 
 const Depenses = () => {
+  const { depenses, isLoading } = useDepenses();
+  const [depenseDialogOpen, setDepenseDialogOpen] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Gestion des Dépenses"
+          description="Ordonnancement et liquidation des dépenses"
+        />
+        <p className="text-center text-muted-foreground">Chargement...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Gestion des Dépenses"
-        description="Module en cours de définition"
+        description="Ordonnancement et liquidation des dépenses"
+        actions={
+          <Button onClick={() => setDepenseDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nouvelle dépense
+          </Button>
+        }
       />
-      
-      <Card>
-        <CardContent className="py-12">
-          <div className="text-center space-y-4">
-            <Construction className="h-16 w-16 mx-auto text-muted-foreground" />
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Module en construction</h3>
-              <p className="text-muted-foreground">
-                Le contenu de ce module sera défini ultérieurement.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+
+      <DepenseStatsCards depenses={depenses} />
+      <DepenseTable depenses={depenses} />
     </div>
   );
 };
