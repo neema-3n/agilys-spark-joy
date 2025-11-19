@@ -119,8 +119,7 @@ export const BonCommandeDialog = ({
         });
       });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, bonCommande, selectedEngagement, form]);
+  }, [open, bonCommande, selectedEngagement, onGenererNumero, form]);
 
   useEffect(() => {
     if (selectedEngagement && open && !bonCommande) {
@@ -137,8 +136,7 @@ export const BonCommandeDialog = ({
         });
       });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedEngagement, open, bonCommande, form]);
+  }, [selectedEngagement, open, bonCommande, onGenererNumero, form]);
 
   useEffect(() => {
     if (bonCommande && open) {
