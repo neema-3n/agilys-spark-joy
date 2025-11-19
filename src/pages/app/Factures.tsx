@@ -111,7 +111,7 @@ export default function Factures() {
     if (editingFactureId) {
       await updateFacture({ id: editingFactureId, facture: data });
     } else {
-      await createFacture(data);
+      await createFacture({ facture: data });
     }
   }, [editingFactureId, updateFacture, createFacture]);
 

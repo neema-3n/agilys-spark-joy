@@ -1,5 +1,4 @@
-import { toast } from '@/hooks/use-toast';
-import { ToastAction } from '@/components/ui/toast';
+import { toast } from 'sonner';
 import { Eye } from 'lucide-react';
 
 interface NavigationToastOptions {
@@ -18,15 +17,16 @@ export const showNavigationToast = ({
   targetPage,
   navigate,
 }: NavigationToastOptions) => {
-  toast({
-    title,
-    description,
+  toast.success(description, {
     duration: 8000,
-    action: (
-      <ToastAction altText="Voir l'élément créé" onClick={() => navigate(targetPage.path)}>
-        <Eye className="h-3 w-3 mr-1" />
-        Voir
-      </ToastAction>
-    ),
+    action: {
+      label: (
+        <span className="flex items-center gap-1">
+          <Eye className="h-3 w-3" />
+          Voir
+        </span>
+      ),
+      onClick: () => navigate(targetPage.path),
+    },
   });
 };

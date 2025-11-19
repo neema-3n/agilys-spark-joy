@@ -17,10 +17,13 @@ export const useFactures = () => {
   });
 
   const createMutation = useMutation({
-    mutationFn: (facture: CreateFactureInput) => facturesService.create(facture),
-    onSuccess: () => {
+    mutationFn: ({ facture, skipToast }: { facture: CreateFactureInput; skipToast?: boolean }) => 
+      facturesService.create(facture),
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['factures'] });
-      toast.success('Facture créée avec succès');
+      if (!variables.skipToast) {
+        toast.success('Facture créée avec succès');
+      }
     },
     onError: (error: Error) => {
       toast.error(`Erreur: ${error.message}`);
