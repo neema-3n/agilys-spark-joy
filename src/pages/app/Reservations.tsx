@@ -359,7 +359,24 @@ const Reservations = () => {
         onOpenChange={(open) => !open && setSelectedReservationForDepense(null)}
         reservation={selectedReservationForDepense}
         onSave={async (data) => {
-          await createDepenseFromReservation(data);
+          try {
+            const reservation = selectedReservationForDepense;
+            await createDepenseFromReservation(data);
+            
+            setSelectedReservationForDepense(null);
+            
+            showNavigationToast({
+              title: 'Dépense urgente créée',
+              description: `La dépense d'urgence a été créée depuis la réservation ${reservation?.numero || ''}.`,
+              targetPage: {
+                name: 'Dépenses',
+                path: '/app/depenses',
+              },
+              navigate,
+            });
+          } catch (error) {
+            console.error('Erreur création dépense urgente:', error);
+          }
         }}
       />
     </div>

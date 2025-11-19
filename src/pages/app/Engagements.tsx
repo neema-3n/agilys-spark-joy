@@ -292,7 +292,24 @@ const Engagements = () => {
         onOpenChange={(open) => !open && setSelectedEngagementForDepense(null)}
         engagement={selectedEngagementForDepense}
         onSave={async (data) => {
-          await createDepenseFromEngagement(data);
+          try {
+            const engagement = selectedEngagementForDepense;
+            await createDepenseFromEngagement(data);
+            
+            setSelectedEngagementForDepense(null);
+            
+            showNavigationToast({
+              title: 'Dépense créée',
+              description: `La dépense a été créée depuis l'engagement ${engagement?.numero || ''}.`,
+              targetPage: {
+                name: 'Dépenses',
+                path: '/app/depenses',
+              },
+              navigate,
+            });
+          } catch (error) {
+            console.error('Erreur création dépense:', error);
+          }
         }}
       />
     </div>
