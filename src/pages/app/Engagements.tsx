@@ -7,8 +7,10 @@ import { EngagementDialog } from '@/components/engagements/EngagementDialog';
 import { EngagementTable } from '@/components/engagements/EngagementTable';
 import { EngagementStats } from '@/components/engagements/EngagementStats';
 import { BonCommandeDialog } from '@/components/bonsCommande/BonCommandeDialog';
+import { CreateDepenseFromEngagementDialog } from '@/components/depenses/CreateDepenseFromEngagementDialog';
 import { useEngagements } from '@/hooks/useEngagements';
 import { useBonsCommande } from '@/hooks/useBonsCommande';
+import { useDepenses } from '@/hooks/useDepenses';
 import { useToast } from '@/hooks/use-toast';
 import { showNavigationToast } from '@/lib/navigation-toast';
 import {
@@ -223,6 +225,7 @@ const Engagements = () => {
           onAnnuler={handleAnnuler}
           onDelete={handleDelete}
           onCreerBonCommande={handleCreerBonCommande}
+          onCreerDepense={(engagement) => setSelectedEngagementForDepense(engagement)}
         />
       </div>
 
