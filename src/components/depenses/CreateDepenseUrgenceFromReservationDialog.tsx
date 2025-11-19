@@ -111,47 +111,43 @@ export const CreateDepenseUrgenceFromReservationDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-orange-600">
             <AlertTriangle className="h-5 w-5" />
-            Dépense urgente depuis la réservation {reservation.numero}
+            Dépense urgente - {reservation.numero}
           </DialogTitle>
         </DialogHeader>
 
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>⚠️ Procédure d'exception</strong>
-            <div className="mt-2 space-y-1 text-sm">
-              <div>• Cette procédure court-circuite le workflow normal (Engagement → Facture)</div>
-              <div>• À utiliser uniquement pour les urgences (frais de mission, achats urgents...)</div>
-              <div>• Limite : {LIMITE_URGENCE.toLocaleString()}€</div>
-              <div>• Justification obligatoire</div>
-            </div>
-          </AlertDescription>
-        </Alert>
+        <div className="space-y-3">
+          <Alert variant="destructive" className="py-2">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>⚠️ Procédure d'exception</strong>
+              <div className="mt-1 space-y-0.5 text-xs">
+                <div>• Court-circuite le workflow normal</div>
+                <div>• Limite : {LIMITE_URGENCE.toLocaleString()} € • Justification obligatoire</div>
+              </div>
+            </AlertDescription>
+          </Alert>
 
-        <Alert>
-          <AlertDescription>
-            <div className="space-y-1 text-sm">
-              <div><strong>Objet réservation :</strong> {reservation.objet}</div>
-              <div><strong>Montant réservé :</strong> {reservation.montant.toFixed(2)} €</div>
-              <div><strong>Solde disponible :</strong> {soldeDisponible.toFixed(2)} €</div>
-            </div>
-          </AlertDescription>
-        </Alert>
+          <Alert className="py-2">
+            <AlertDescription className="text-xs space-y-0.5">
+              <div><strong>Objet :</strong> {reservation.objet}</div>
+              <div><strong>Réservé :</strong> {reservation.montant.toFixed(2)} € • <strong>Disponible :</strong> {soldeDisponible.toFixed(2)} €</div>
+            </AlertDescription>
+          </Alert>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-3">
             <FormField
               control={form.control}
               name="objet"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Objet de la dépense * <span className="text-xs text-muted-foreground">(min 5 caractères)</span></FormLabel>
+                  <FormLabel className="text-sm">Objet de la dépense *</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Ex: Achat urgent de fournitures de bureau" />
+                    <Input {...field} placeholder="Ex: Achat urgent fournitures" className="h-9" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -163,12 +159,13 @@ export const CreateDepenseUrgenceFromReservationDialog = ({
               name="justificationUrgence"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-orange-600">Justification d'urgence * <span className="text-xs">(min 10 caractères)</span></FormLabel>
+                  <FormLabel className="text-sm text-orange-600">Justification d'urgence *</FormLabel>
                   <FormControl>
                     <Textarea 
                       {...field} 
-                      rows={3}
-                      placeholder="Expliquez pourquoi cette dépense ne peut pas suivre le workflow normal (engagement → facture)..."
+                      rows={2}
+                      placeholder="Pourquoi ne peut-on pas suivre le workflow normal..."
+                      className="text-sm"
                     />
                   </FormControl>
                   <FormMessage />
@@ -176,19 +173,20 @@ export const CreateDepenseUrgenceFromReservationDialog = ({
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <FormField
                 control={form.control}
                 name="montant"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Montant * <span className="text-xs text-muted-foreground">(max {LIMITE_URGENCE}€)</span></FormLabel>
+                    <FormLabel className="text-sm">Montant *</FormLabel>
                     <FormControl>
                       <Input 
                         type="number" 
                         step="0.01" 
                         {...field} 
                         max={Math.min(soldeDisponible, LIMITE_URGENCE)}
+                        className="h-9"
                       />
                     </FormControl>
                     <FormMessage />
@@ -201,9 +199,9 @@ export const CreateDepenseUrgenceFromReservationDialog = ({
                 name="dateDepense"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Date *</FormLabel>
+                    <FormLabel className="text-sm">Date *</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input type="date" {...field} className="h-9" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -216,24 +214,24 @@ export const CreateDepenseUrgenceFromReservationDialog = ({
               name="beneficiaire"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Bénéficiaire</FormLabel>
+                  <FormLabel className="text-sm">Bénéficiaire</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Nom du bénéficiaire" />
+                    <Input {...field} placeholder="Nom du bénéficiaire" className="h-9" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <FormField
                 control={form.control}
                 name="modePaiement"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Mode de paiement</FormLabel>
+                    <FormLabel className="text-sm">Mode de paiement</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Ex: Espèces, Carte..." />
+                      <Input {...field} placeholder="Espèces, Carte..." className="h-9" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -245,9 +243,9 @@ export const CreateDepenseUrgenceFromReservationDialog = ({
                 name="referencePaiement"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Référence</FormLabel>
+                    <FormLabel className="text-sm">Référence</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Référence paiement" />
+                      <Input {...field} placeholder="N° de référence" className="h-9" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -260,34 +258,36 @@ export const CreateDepenseUrgenceFromReservationDialog = ({
               name="observations"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Observations complémentaires</FormLabel>
+                  <FormLabel className="text-sm">Observations</FormLabel>
                   <FormControl>
-                    <Textarea {...field} rows={2} />
+                    <Textarea {...field} rows={2} className="text-sm" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <DialogFooter>
+            <DialogFooter className="gap-2 pt-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
                 disabled={isSubmitting}
+                className="h-9"
               >
                 Annuler
               </Button>
               <Button 
                 type="submit" 
                 disabled={isSubmitting}
-                className="bg-orange-600 hover:bg-orange-700"
+                className="bg-orange-600 hover:bg-orange-700 h-9"
               >
-                {isSubmitting ? 'Création...' : 'Créer la dépense urgente'}
+                {isSubmitting ? 'Création...' : 'Créer la dépense'}
               </Button>
             </DialogFooter>
           </form>
         </Form>
+        </div>
       </DialogContent>
     </Dialog>
   );
