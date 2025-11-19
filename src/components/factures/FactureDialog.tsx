@@ -197,9 +197,9 @@ export const FactureDialog = ({
       await onSubmit(factureData);
       onOpenChange(false);
     } catch (error) {
-      // Laisser l'erreur se propager pour que le hook useFactures affiche le message détaillé
+      // L'erreur est gérée par le hook useFactures qui affiche le message détaillé
+      // Ne pas relancer l'erreur pour éviter le message "The app encountered an error"
       console.error('Erreur lors de la soumission:', error);
-      throw error;
     }
   };
 

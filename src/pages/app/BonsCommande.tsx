@@ -173,8 +173,8 @@ const BonsCommande = () => {
       });
     } catch (error) {
       // L'erreur est déjà gérée par le hook useFactures qui affiche le message détaillé
+      // Ne pas relancer l'erreur pour éviter le message "The app encountered an error"
       console.error('Erreur lors de la création de la facture:', error);
-      throw error;
     }
   }, [createFacture, navigate, toast]);
 
