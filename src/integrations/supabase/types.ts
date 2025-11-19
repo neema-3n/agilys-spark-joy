@@ -1335,6 +1335,24 @@ export type Database = {
         Args: { p_ligne_budgetaire_id: string }
         Returns: number
       }
+      create_bon_commande_with_numero: {
+        Args: {
+          p_client_id: string
+          p_conditions_livraison: string
+          p_date_commande: string
+          p_date_livraison_prevue: string
+          p_engagement_id: string
+          p_exercice_id: string
+          p_fournisseur_id: string
+          p_ligne_budgetaire_id: string
+          p_montant: number
+          p_objet: string
+          p_observations: string
+          p_projet_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       create_engagement_with_numero: {
         Args: {
           p_beneficiaire: string
@@ -1347,6 +1365,27 @@ export type Database = {
           p_observations: string
           p_projet_id: string
           p_reservation_credit_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      create_facture_with_numero: {
+        Args: {
+          p_bon_commande_id: string
+          p_client_id: string
+          p_date_echeance: string
+          p_date_facture: string
+          p_engagement_id: string
+          p_exercice_id: string
+          p_fournisseur_id: string
+          p_ligne_budgetaire_id: string
+          p_montant_ht: number
+          p_montant_ttc: number
+          p_montant_tva: number
+          p_numero_facture_fournisseur: string
+          p_objet: string
+          p_observations: string
+          p_projet_id: string
           p_user_id: string
         }
         Returns: Json
