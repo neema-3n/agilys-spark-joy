@@ -125,25 +125,36 @@ export const bonsCommandeService = {
   },
 
   async create(bonCommande: CreateBonCommandeInput): Promise<BonCommande> {
-    const { data: userData } = await supabase.auth.getUser();
-    
-    const { data, error } = await supabase
-      .from('bons_commande')
-      .insert({
-        ...mapBonCommandeToDB(bonCommande),
-        created_by: userData.user?.id,
-      })
-      .select(`
-        *,
-        fournisseurs(id, nom, code),
-        engagements(id, numero),
-        lignes_budgetaires(id, libelle),
-        projets(id, nom)
-      `)
-      .single();
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Non authentifié');
 
-    if (error) throw error;
-    return mapBonCommandeFromDB(data);
+      // Appeler l'edge function pour créer le bon de commande avec numéro généré atomiquement
+      const { data, error } = await supabase.functions.invoke('create-bon-commande', {
+        body: {
+          exerciceId: bonCommande.exerciceId,
+          clientId: bonCommande.clientId,
+          fournisseurId: bonCommande.fournisseurId,
+          objet: bonCommande.objet,
+          montant: bonCommande.montant,
+          dateCommande: bonCommande.dateCommande,
+          dateLivraisonPrevue: bonCommande.dateLivraisonPrevue,
+          conditionsLivraison: bonCommande.conditionsLivraison,
+          engagementId: bonCommande.engagementId,
+          ligneBudgetaireId: bonCommande.ligneBudgetaireId,
+          projetId: bonCommande.projetId,
+          observations: bonCommande.observations,
+        }
+      });
+
+      if (error) throw error;
+      if (!data) throw new Error('Bon de commande non créé');
+
+      return data as BonCommande;
+    } catch (error) {
+      console.error('Erreur lors de la création du bon de commande:', error);
+      throw error;
+    }
   },
 
   async update(id: string, bonCommande: UpdateBonCommandeInput): Promise<BonCommande> {
