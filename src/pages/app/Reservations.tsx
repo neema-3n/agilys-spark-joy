@@ -6,9 +6,14 @@ import { PageHeader } from '@/components/PageHeader';
 import { ReservationDialog } from '@/components/reservations/ReservationDialog';
 import { ReservationTable } from '@/components/reservations/ReservationTable';
 import { ReservationStats } from '@/components/reservations/ReservationStats';
+import { EngagementDialog } from '@/components/engagements/EngagementDialog';
 import { useReservations } from '@/hooks/useReservations';
 import { useEngagements } from '@/hooks/useEngagements';
+import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
+import { useFournisseurs } from '@/hooks/useFournisseurs';
+import { useProjets } from '@/hooks/useProjets';
 import { useToast } from '@/hooks/use-toast';
+import { showNavigationToast } from '@/lib/navigation-toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +33,8 @@ const Reservations = () => {
   const [pendingAnnulation, setPendingAnnulation] = useState<{ id: string; motif: string; engagements: any[] } | null>(null);
   const [confirmDeleteDialogOpen, setConfirmDeleteDialogOpen] = useState(false);
   const [pendingSuppression, setPendingSuppression] = useState<{ id: string; engagements: any[] } | null>(null);
+  const [engagementDialogOpen, setEngagementDialogOpen] = useState(false);
+  const [reservationSourceId, setReservationSourceId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -41,7 +48,10 @@ const Reservations = () => {
     deleteReservation,
   } = useReservations();
 
-  const { annulerEngagement, deleteEngagement } = useEngagements();
+  const { createEngagementFromReservation, annulerEngagement, deleteEngagement } = useEngagements();
+  const { lignes: lignesBudgetaires } = useLignesBudgetaires();
+  const { fournisseurs } = useFournisseurs();
+  const { projets } = useProjets();
 
   const handleCreate = () => {
     setSelectedReservation(undefined);
@@ -79,7 +89,39 @@ const Reservations = () => {
   };
 
   const handleCreerEngagement = (reservation: ReservationCredit) => {
-    navigate(`/app/engagements?from_reservation=${reservation.id}`);
+    setReservationSourceId(reservation.id);
+    setEngagementDialogOpen(true);
+  };
+
+  const handleSaveEngagement = async (data: any) => {
+    try {
+      const reservation = reservations.find(r => r.id === reservationSourceId);
+      
+      await createEngagementFromReservation({ 
+        reservationId: reservationSourceId!,
+        additionalData: data 
+      });
+      
+      setEngagementDialogOpen(false);
+      setReservationSourceId(null);
+      
+      showNavigationToast({
+        title: 'Engagement créé',
+        description: `L'engagement a été créé depuis la réservation ${reservation?.numero || ''}.`,
+        targetPage: {
+          name: 'Engagements',
+          path: '/app/engagements',
+        },
+        navigate,
+      });
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Une erreur est survenue lors de la création.',
+        variant: 'destructive',
+      });
+      throw error;
+    }
   };
 
   const handleAnnuler = async (id: string, motif: string) => {
@@ -230,6 +272,16 @@ const Reservations = () => {
         onOpenChange={setDialogOpen}
         onSave={handleSave}
         reservation={selectedReservation}
+      />
+
+      <EngagementDialog
+        open={engagementDialogOpen}
+        onOpenChange={(open) => {
+          setEngagementDialogOpen(open);
+          if (!open) setReservationSourceId(null);
+        }}
+        onSave={handleSaveEngagement}
+        reservation={reservations.find(r => r.id === reservationSourceId)}
       />
 
       <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
