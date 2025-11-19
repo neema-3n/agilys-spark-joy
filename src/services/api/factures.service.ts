@@ -143,7 +143,26 @@ export const facturesService = {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        // Extraire le vrai message d'erreur depuis le body de la réponse
+        let errorMessage = error.message;
+        
+        // Si l'erreur contient un objet avec une propriété 'error'
+        if (error.context?.body) {
+          try {
+            const body = typeof error.context.body === 'string' 
+              ? JSON.parse(error.context.body) 
+              : error.context.body;
+            if (body.error) {
+              errorMessage = body.error;
+            }
+          } catch {
+            // Si le parsing échoue, garder le message original
+          }
+        }
+        
+        throw new Error(errorMessage);
+      }
       if (!data) throw new Error('Facture non créée');
 
       return data as Facture;
