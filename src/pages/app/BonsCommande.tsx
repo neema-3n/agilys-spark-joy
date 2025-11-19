@@ -1,26 +1,40 @@
-import { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useBonsCommande } from '@/hooks/useBonsCommande';
-import { useEngagements } from '@/hooks/useEngagements';
+import { useFactures } from '@/hooks/useFactures';
 import { BonCommandeStats } from '@/components/bonsCommande/BonCommandeStats';
 import { BonCommandeTable } from '@/components/bonsCommande/BonCommandeTable';
 import { BonCommandeDialog } from '@/components/bonsCommande/BonCommandeDialog';
 import { AnnulerBCDialog } from '@/components/bonsCommande/AnnulerBCDialog';
 import { ReceptionnerBCDialog } from '@/components/bonsCommande/ReceptionnerBCDialog';
+import { FactureDialog } from '@/components/factures/FactureDialog';
 import { BonCommande, CreateBonCommandeInput, UpdateBonCommandeInput } from '@/types/bonCommande.types';
-import type { Engagement } from '@/types/engagement.types';
+import { CreateFactureInput } from '@/types/facture.types';
+import { useToast } from '@/hooks/use-toast';
+import { showNavigationToast } from '@/lib/navigation-toast';
+import { useFournisseurs } from '@/hooks/useFournisseurs';
+import { useProjets } from '@/hooks/useProjets';
+import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
+import { useEngagements } from '@/hooks/useEngagements';
+import { useClient } from '@/contexts/ClientContext';
+import { useExercice } from '@/contexts/ExerciceContext';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const BonsCommande = () => {
   const navigate = useNavigate();
+  const { currentClient } = useClient();
+  const { currentExercice } = useExercice();
+  const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
   const [receptionnerDialogOpen, setReceptionnerDialogOpen] = useState(false);
+  const [factureDialogOpen, setFactureDialogOpen] = useState(false);
   const [selectedBonCommande, setSelectedBonCommande] = useState<BonCommande | undefined>();
-  const [selectedEngagement, setSelectedEngagement] = useState<Engagement | undefined>();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [bonCommandeSourceId, setBonCommandeSourceId] = useState<string | null>(null);
   
   const {
     bonsCommande,
@@ -35,20 +49,34 @@ const BonsCommande = () => {
     annulerBonCommande,
   } = useBonsCommande();
 
+  const { createFacture, genererNumero: genererNumeroFacture } = useFactures();
+  const { fournisseurs } = useFournisseurs();
+  const { projets } = useProjets();
+  const { lignes: lignesBudgetaires } = useLignesBudgetaires();
   const { engagements } = useEngagements();
 
-  // Gérer la création depuis un engagement via query param
-  useEffect(() => {
-    const engagementId = searchParams.get('from_engagement');
-    if (engagementId && engagements.length > 0 && !dialogOpen) {
-      const engagement = engagements.find(e => e.id === engagementId);
-      if (engagement && engagement.statut === 'valide') {
-        setSelectedEngagement(engagement);
-        setDialogOpen(true);
-        setSearchParams({});
+  const { data: bonsCommandeReceptionnes = [] } = useQuery({
+    queryKey: ['bons-commande-receptionnes', currentClient?.id, currentExercice?.id],
+    queryFn: async () => {
+      if (!currentClient) return [];
+      
+      let query = supabase
+        .from('bons_commande')
+        .select('id, numero, statut, fournisseur_id, engagement_id, ligne_budgetaire_id, projet_id, objet, montant')
+        .eq('client_id', currentClient.id)
+        .eq('statut', 'receptionne')
+        .order('numero', { ascending: false });
+
+      if (currentExercice) {
+        query = query.eq('exercice_id', currentExercice.id);
       }
-    }
-  }, [searchParams, engagements, dialogOpen, setSearchParams]);
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!currentClient,
+  });
 
   const handleEdit = (bonCommande: BonCommande) => {
     setSelectedBonCommande(bonCommande);
@@ -57,7 +85,6 @@ const BonsCommande = () => {
 
   const handleCreate = () => {
     setSelectedBonCommande(undefined);
-    setSelectedEngagement(undefined);
     setDialogOpen(true);
   };
 
@@ -65,7 +92,6 @@ const BonsCommande = () => {
     setDialogOpen(open);
     if (!open) {
       setSelectedBonCommande(undefined);
-      setSelectedEngagement(undefined);
     }
   };
 
@@ -120,7 +146,36 @@ const BonsCommande = () => {
   };
 
   const handleCreateFacture = (bonCommande: BonCommande) => {
-    navigate(`/app/factures?from_bon_commande=${bonCommande.id}`);
+    setBonCommandeSourceId(bonCommande.id);
+    setFactureDialogOpen(true);
+  };
+
+  const handleSaveFacture = async (data: CreateFactureInput) => {
+    try {
+      const bonCommande = bonsCommande.find(bc => bc.id === bonCommandeSourceId);
+      
+      await createFacture(data);
+      
+      setFactureDialogOpen(false);
+      setBonCommandeSourceId(null);
+      
+      showNavigationToast({
+        title: 'Facture créée',
+        description: `La facture a été créée depuis le BC ${bonCommande?.numero || ''}.`,
+        targetPage: {
+          name: 'Factures',
+          path: '/app/factures',
+        },
+        navigate,
+      });
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Une erreur est survenue lors de la création.',
+        variant: 'destructive',
+      });
+      throw error;
+    }
   };
 
   if (isLoading) {
@@ -162,9 +217,29 @@ const BonsCommande = () => {
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         bonCommande={selectedBonCommande}
-        selectedEngagement={selectedEngagement}
         onSubmit={handleSubmit}
         onGenererNumero={genererNumero}
+      />
+
+      <FactureDialog
+        open={factureDialogOpen}
+        onOpenChange={(open) => {
+          setFactureDialogOpen(open);
+          if (!open) setBonCommandeSourceId(null);
+        }}
+        onSubmit={handleSaveFacture}
+        fournisseurs={fournisseurs}
+        bonsCommande={bonsCommandeReceptionnes}
+        engagements={engagements}
+        lignesBudgetaires={lignesBudgetaires}
+        projets={projets}
+        currentClientId={currentClient?.id || ''}
+        currentExerciceId={currentExercice?.id || ''}
+        onGenererNumero={async () => {
+          if (!currentClient || !currentExercice) return '';
+          return genererNumeroFacture({ clientId: currentClient.id, exerciceId: currentExercice.id });
+        }}
+        initialBonCommandeId={bonCommandeSourceId || undefined}
       />
 
       <AnnulerBCDialog
