@@ -115,13 +115,10 @@ const BonsCommande = () => {
     await mettreEnCours(id);
   }, [mettreEnCours]);
 
-  const handleReceptionner = useCallback((id: string) => {
-    const bc = bonsCommande.find(b => b.id === id);
-    if (bc) {
-      setSelectedBonCommande(bc);
-      setReceptionnerDialogOpen(true);
-    }
-  }, [bonsCommande]);
+  const handleReceptionner = useCallback((bc: BonCommande) => {
+    setSelectedBonCommande(bc);
+    setReceptionnerDialogOpen(true);
+  }, []);
 
   const handleReceptionnerConfirm = useCallback(async (dateLivraisonReelle: string) => {
     if (selectedBonCommande) {
@@ -130,13 +127,10 @@ const BonsCommande = () => {
     }
   }, [selectedBonCommande, receptionnerBonCommande]);
 
-  const handleAnnuler = useCallback((id: string) => {
-    const bc = bonsCommande.find(b => b.id === id);
-    if (bc) {
-      setSelectedBonCommande(bc);
-      setAnnulerDialogOpen(true);
-    }
-  }, [bonsCommande]);
+  const handleAnnuler = useCallback((bc: BonCommande) => {
+    setSelectedBonCommande(bc);
+    setAnnulerDialogOpen(true);
+  }, []);
 
   const handleAnnulerConfirm = useCallback(async (motif: string) => {
     if (selectedBonCommande) {
@@ -146,22 +140,23 @@ const BonsCommande = () => {
   }, [selectedBonCommande, annulerBonCommande]);
 
   const handleCreateFacture = useCallback((bonCommande: BonCommande) => {
+    setSelectedBonCommande(bonCommande);
     setBonCommandeSourceId(bonCommande.id);
     setFactureDialogOpen(true);
   }, []);
 
   const handleSaveFacture = useCallback(async (data: CreateFactureInput) => {
-    try {
-      const bonCommande = bonsCommande.find(bc => bc.id === bonCommandeSourceId);
-      
+    try {      
       await createFacture(data);
       
+      const bcNumero = selectedBonCommande?.numero || '';
       setFactureDialogOpen(false);
       setBonCommandeSourceId(null);
+      setSelectedBonCommande(undefined);
       
       showNavigationToast({
         title: 'Facture créée',
-        description: `La facture a été créée depuis le BC ${bonCommande?.numero || ''}.`,
+        description: `La facture a été créée depuis le BC ${bcNumero}.`,
         targetPage: {
           name: 'Factures',
           path: '/app/factures',
@@ -176,7 +171,7 @@ const BonsCommande = () => {
       });
       throw error;
     }
-  }, [bonsCommande, bonCommandeSourceId, createFacture, navigate, toast]);
+  }, [selectedBonCommande, createFacture, navigate, toast]);
 
   if (isLoading) {
     return (
@@ -225,7 +220,10 @@ const BonsCommande = () => {
         open={factureDialogOpen}
         onOpenChange={(open) => {
           setFactureDialogOpen(open);
-          if (!open) setBonCommandeSourceId(null);
+          if (!open) {
+            setBonCommandeSourceId(null);
+            setSelectedBonCommande(undefined);
+          }
         }}
         onSubmit={handleSaveFacture}
         fournisseurs={fournisseurs}
