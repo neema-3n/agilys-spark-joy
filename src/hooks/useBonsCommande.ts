@@ -81,6 +81,7 @@ export const useBonsCommande = () => {
       bonsCommandeService.receptionner(id, date),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bons-commande'] });
+      queryClient.invalidateQueries({ queryKey: ['bons-commande-receptionnes'] });
       toast.success('Bon de commande réceptionné avec succès');
     },
     onError: (error: any) => {
