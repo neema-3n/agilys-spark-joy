@@ -49,6 +49,7 @@ export default function Factures() {
   
   // États pour le snapshot
   const [snapshotFactureId, setSnapshotFactureId] = useState<string | null>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
   
   const { factures, isLoading, createFacture, updateFacture, deleteFacture, genererNumero, validerFacture, marquerPayee, annulerFacture } = useFactures();
   const { createDepenseFromFacture } = useDepenses();
@@ -158,6 +159,7 @@ export default function Factures() {
 
   const handleCloseSnapshot = useCallback(() => {
     setSnapshotFactureId(null);
+    setScrollProgress(0);
   }, []);
 
   const handleNavigateSnapshot = useCallback((direction: 'prev' | 'next') => {
@@ -183,6 +185,7 @@ export default function Factures() {
       <PageHeader
         title="Gestion des Factures"
         description="Gérez les factures fournisseurs"
+        scrollProgress={snapshotFactureId ? scrollProgress : 0}
         actions={
           !snapshotFactureId && (
             <Button onClick={handleCreate}>
@@ -205,6 +208,7 @@ export default function Factures() {
             currentIndex={snapshotIndex}
             totalCount={factures.length}
             onNavigateToEntity={handleNavigateToEntity}
+            onScrollProgress={setScrollProgress}
             onValider={snapshotFacture.statut === 'brouillon' ? () => validerFacture(snapshotFacture.id) : undefined}
             onMarquerPayee={snapshotFacture.statut === 'validee' ? () => marquerPayee(snapshotFacture.id) : undefined}
             onAnnuler={snapshotFacture.statut !== 'annulee' && snapshotFacture.statut !== 'payee' ? () => handleAnnuler(snapshotFacture.id) : undefined}
