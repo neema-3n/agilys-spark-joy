@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useEffect, useRef } from 'react';
 
 interface FactureSnapshotProps {
   facture: Facture;
@@ -61,13 +62,27 @@ export const FactureSnapshot = ({
   onEdit,
   onCreerDepense,
 }: FactureSnapshotProps) => {
-  const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
-    const target = event.currentTarget;
-    const scrollTop = target.scrollTop;
-    const transitionRange = 100;
-    const progress = Math.min(scrollTop / transitionRange, 1);
-    onScrollProgress?.(progress);
-  };
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const scrollContainer = scrollAreaRef.current;
+    if (!scrollContainer) return;
+    
+    // Trouver le viewport interne de Radix UI
+    const viewport = scrollContainer.querySelector('[data-radix-scroll-area-viewport]');
+    if (!viewport) return;
+    
+    const handleScroll = () => {
+      const scrollTop = viewport.scrollTop;
+      const transitionRange = 100;
+      const progress = Math.min(scrollTop / transitionRange, 1);
+      onScrollProgress?.(progress);
+    };
+    
+    viewport.addEventListener('scroll', handleScroll);
+    return () => viewport.removeEventListener('scroll', handleScroll);
+  }, [onScrollProgress]);
+
   const formatMontant = (montant: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -188,7 +203,7 @@ export const FactureSnapshot = ({
       </div>
 
       {/* Corps scrollable */}
-      <ScrollArea className="flex-1" onScrollCapture={handleScroll}>
+      <ScrollArea ref={scrollAreaRef} className="flex-1">
         <div className="px-6 py-6 space-y-6">
           {/* Section 1: Informations principales */}
           <Card>
