@@ -226,7 +226,7 @@ export default function Factures() {
 
   return (
     <div className="space-y-6">
-      {!snapshotFactureId && pageHeaderContent}
+      {pageHeaderContent}
 
       <div className="px-8 space-y-6">
         {snapshotFactureId && snapshotFacture ? (
@@ -246,7 +246,6 @@ export default function Factures() {
             onCreerDepense={(snapshotFacture.statut === 'validee' || snapshotFacture.statut === 'payee') ? () => { setSelectedFactureForDepense(snapshotFacture); handleCloseSnapshot(); } : undefined}
           />
         ) : (
-          // Affichage normal : Stats + Table
           <>
             <FactureStats factures={factures} />
 
