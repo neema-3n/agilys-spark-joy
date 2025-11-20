@@ -28,6 +28,7 @@ interface DepenseTableProps {
   onMarquerPayee?: (id: string) => void;
   onAnnuler?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onOpenSnapshot?: (id: string) => void;
 }
 
 export const DepenseTable = ({
@@ -38,6 +39,7 @@ export const DepenseTable = ({
   onMarquerPayee,
   onAnnuler,
   onDelete,
+  onOpenSnapshot,
 }: DepenseTableProps) => {
   const [search, setSearch] = useState('');
   const [filterStatut, setFilterStatut] = useState<string>('tous');

@@ -63,6 +63,7 @@ interface BonCommandeTableProps {
   onAnnuler: (bonCommande: BonCommande) => void;
   onDelete: (id: string) => void;
   onCreateFacture?: (bonCommande: BonCommande) => void;
+  onOpenSnapshot?: (id: string) => void;
 }
 
 const getStatutColor = (statut: string) => {
@@ -146,6 +147,7 @@ export const BonCommandeTable = ({
   onAnnuler,
   onDelete,
   onCreateFacture,
+  onOpenSnapshot,
 }: BonCommandeTableProps) => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -192,7 +194,7 @@ export const BonCommandeTable = ({
               </TableRow>
             ) : (
               bonsCommande.map((bc) => (
-                <TableRow key={bc.id}>
+                <TableRow key={bc.id} className="cursor-pointer hover:bg-muted/50" onClick={() => onOpenSnapshot?.(bc.id)}>
                   <TableCell className="font-medium">{bc.numero}</TableCell>
                   <TableCell>
                     {formatDate(bc.dateCommande)}
