@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { 
   X, 
@@ -26,7 +25,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 interface FactureSnapshotProps {
   facture: Facture;
@@ -62,26 +61,13 @@ export const FactureSnapshot = ({
   onEdit,
   onCreerDepense,
 }: FactureSnapshotProps) => {
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-
+  // Scroller en haut de la page à l'ouverture du snapshot
   useEffect(() => {
-    const scrollContainer = scrollAreaRef.current;
-    if (!scrollContainer) return;
-    
-    // Trouver le viewport interne de Radix UI
-    const viewport = scrollContainer.querySelector('[data-radix-scroll-area-viewport]');
-    if (!viewport) return;
-    
-    const handleScroll = () => {
-      const scrollTop = viewport.scrollTop;
-      const transitionRange = 100;
-      const progress = Math.min(scrollTop / transitionRange, 1);
-      onScrollProgress?.(progress);
-    };
-    
-    viewport.addEventListener('scroll', handleScroll);
-    return () => viewport.removeEventListener('scroll', handleScroll);
-  }, [onScrollProgress]);
+    const mainElement = document.querySelector('main');
+    if (mainElement) {
+      mainElement.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, []);
 
   const formatMontant = (montant: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -203,10 +189,9 @@ export const FactureSnapshot = ({
       </div>
 
       {/* Corps scrollable */}
-      <ScrollArea ref={scrollAreaRef} className="flex-1">
-        <div className="px-6 py-6 space-y-6">
-          {/* Section 1: Informations principales */}
-          <Card>
+      <div className="flex-1 px-6 py-6 space-y-6 overflow-y-auto">
+        {/* Section 1: Informations principales */}
+        <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
@@ -473,7 +458,7 @@ export const FactureSnapshot = ({
             </CardContent>
           </Card>
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 };
