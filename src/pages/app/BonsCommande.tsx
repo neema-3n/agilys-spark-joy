@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
+import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { useBonsCommande } from '@/hooks/useBonsCommande';
 import { useFactures } from '@/hooks/useFactures';
 import { BonCommandeStats } from '@/components/bonsCommande/BonCommandeStats';
@@ -103,6 +104,9 @@ const BonsCommande = () => {
       }
     }
   }, [bonCommandeId, bonsCommande, snapshotBonCommandeId, navigate]);
+
+  // Gérer le scroll pour l'effet de disparition du header
+  const scrollProgress = useScrollProgress(!!snapshotBonCommandeId);
 
   const { data: bonsCommandeReceptionnes = [] } = useQuery({
     queryKey: ['bons-commande-receptionnes', currentClient?.id, currentExercice?.id],
@@ -269,6 +273,7 @@ const BonsCommande = () => {
       <PageHeader
         title="Gestion des Bons de Commande"
         description="Gérez les bons de commande et leurs statuts"
+        scrollProgress={scrollProgress}
         actions={
           <Button onClick={handleCreate}>
             <Plus className="mr-2 h-4 w-4" />
