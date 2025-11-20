@@ -28,6 +28,7 @@ interface DepenseTableProps {
   onMarquerPayee?: (id: string) => void;
   onAnnuler?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onOpenSnapshot?: (id: string) => void;
 }
 
 export const DepenseTable = ({
@@ -38,6 +39,7 @@ export const DepenseTable = ({
   onMarquerPayee,
   onAnnuler,
   onDelete,
+  onOpenSnapshot,
 }: DepenseTableProps) => {
   const [search, setSearch] = useState('');
   const [filterStatut, setFilterStatut] = useState<string>('tous');
@@ -139,7 +141,7 @@ export const DepenseTable = ({
               </TableRow>
             ) : (
               filteredDepenses.map((depense) => (
-                <TableRow key={depense.id}>
+                <TableRow key={depense.id} className="cursor-pointer hover:bg-muted/50" onClick={() => onOpenSnapshot?.(depense.id)}>
                   <TableCell className="font-medium">{depense.numero}</TableCell>
                   <TableCell>{new Date(depense.dateDepense).toLocaleDateString('fr-FR')}</TableCell>
                   <TableCell className="max-w-xs truncate">{depense.objet}</TableCell>
