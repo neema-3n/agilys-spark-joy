@@ -98,15 +98,18 @@ export default function Factures() {
       return;
     }
 
+    const mainElement = document.querySelector('main');
+    if (!mainElement) return;
+
     const handleScroll = () => {
-      const scrollY = window.scrollY;
+      const scrollTop = mainElement.scrollTop;
       const maxScroll = 100;
-      const progress = Math.min(scrollY / maxScroll, 1);
+      const progress = Math.min(scrollTop / maxScroll, 1);
       setScrollProgress(progress);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    mainElement.addEventListener('scroll', handleScroll);
+    return () => mainElement.removeEventListener('scroll', handleScroll);
   }, [snapshotFactureId]);
 
   // Récupérer les bons de commande réceptionnés
