@@ -61,6 +61,7 @@ const App = () => (
                   <Route path="depenses" element={<Depenses />} />
                   <Route path="mandats" element={<Mandats />} />
                   <Route path="factures" element={<Factures />} />
+                  <Route path="factures/:factureId" element={<Factures />} />
                   <Route path="paiements" element={<Paiements />} />
                   <Route path="tresorerie" element={<Tresorerie />} />
                   <Route path="plan-comptable" element={<PlanComptable />} />
