@@ -9,17 +9,37 @@ import { formatMontant, formatDate, formatDateTime, getEntityUrl } from '@/lib/s
 
 interface FactureSnapshotProps {
   facture: Facture;
+  /** Ferme le snapshot (via le bouton X ou Escape) */
   onClose: () => void;
+  /** Navigation entre snapshots */
   onNavigate: (direction: 'prev' | 'next') => void;
   hasPrev: boolean;
   hasNext: boolean;
   currentIndex: number;
   totalCount: number;
+  
+  /**
+   * Éditer la facture (statut brouillon uniquement).
+   * NE DOIT PAS fermer le snapshot - le dialogue d'édition s'ouvrira par-dessus.
+   */
   onEdit?: () => void;
+  
+  /** Valider la facture (change le statut en "validée") */
   onValider?: () => void;
+  
+  /** Marquer la facture comme payée */
   onMarquerPayee?: () => void;
+  
+  /** Annuler la facture */
   onAnnuler?: () => void;
+  
+  /**
+   * Créer une dépense depuis cette facture.
+   * NE DOIT PAS fermer le snapshot - le dialogue s'ouvrira par-dessus.
+   */
   onCreerDepense?: () => void;
+  
+  /** Navigation vers une entité liée */
   onNavigateToEntity?: (type: string, id: string) => void;
 }
 
@@ -39,10 +59,10 @@ export const FactureSnapshot = ({
   onNavigateToEntity,
 }: FactureSnapshotProps) => {
   const getStatutBadge = (statut: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'success' | 'destructive'> = {
-      brouillon: 'secondary',
-      validee: 'default',
-      payee: 'success',
+    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+      brouillon: 'outline',
+      validee: 'secondary',
+      payee: 'default',
       annulee: 'destructive',
     };
 

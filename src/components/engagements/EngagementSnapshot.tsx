@@ -39,11 +39,11 @@ export const EngagementSnapshot = ({
   onNavigateToEntity,
 }: EngagementSnapshotProps) => {
   const getStatutBadge = (statut: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'success' | 'destructive' | 'outline'> = {
+    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
       brouillon: 'secondary',
       valide: 'default',
       engage: 'default',
-      liquide: 'success',
+      liquide: 'default',
       annule: 'destructive',
     };
 
