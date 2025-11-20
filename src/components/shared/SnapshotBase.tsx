@@ -56,7 +56,7 @@ export const SnapshotBase = ({
       {/* En-tête du snapshot - sticky */}
       <div className="sticky top-0 z-20 bg-background border-b border-border">
         <div className="px-4 md:px-6 py-4">
-          <div className="max-w-5xl mx-auto space-y-4">
+          <div className="space-y-4">
             {/* Ligne 1: Titre et Navigation */}
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
@@ -109,7 +109,7 @@ export const SnapshotBase = ({
 
       {/* Contenu du snapshot */}
       <div className="px-4 md:px-6 py-6">
-        <div className="max-w-5xl mx-auto space-y-6">
+        <div className="space-y-6">
           {children}
         </div>
       </div>
