@@ -50,7 +50,6 @@ export default function Factures() {
   
   // États pour le snapshot
   const [snapshotFactureId, setSnapshotFactureId] = useState<string | null>(null);
-  const [scrollProgress, setScrollProgress] = useState(0);
   
   const { factures, isLoading, createFacture, updateFacture, deleteFacture, genererNumero, validerFacture, marquerPayee, annulerFacture } = useFactures();
   const { createDepenseFromFacture } = useDepenses();
@@ -90,25 +89,6 @@ export default function Factures() {
       }
     }
   }, [factureId, factures, snapshotFactureId, navigate]);
-
-  // Écouter le scroll du main parent pour l'effet poussoir
-  useEffect(() => {
-    const mainElement = document.querySelector('main');
-    if (!mainElement || !snapshotFactureId) {
-      setScrollProgress(0);
-      return;
-    }
-    
-    const handleScroll = () => {
-      const scrollTop = mainElement.scrollTop;
-      const transitionRange = 100;
-      const progress = Math.min(scrollTop / transitionRange, 1);
-      setScrollProgress(progress);
-    };
-    
-    mainElement.addEventListener('scroll', handleScroll);
-    return () => mainElement.removeEventListener('scroll', handleScroll);
-  }, [snapshotFactureId]);
 
   // Récupérer les bons de commande réceptionnés
   const { data: bonsCommande = [] } = useQuery({
@@ -193,7 +173,6 @@ export default function Factures() {
 
   const handleCloseSnapshot = useCallback(() => {
     setSnapshotFactureId(null);
-    setScrollProgress(0);
     navigate('/app/factures');
   }, [navigate]);
 
@@ -265,8 +244,6 @@ export default function Factures() {
             onAnnuler={snapshotFacture.statut !== 'annulee' && snapshotFacture.statut !== 'payee' ? () => handleAnnuler(snapshotFacture.id) : undefined}
             onEdit={snapshotFacture.statut === 'brouillon' ? () => { handleEdit(snapshotFacture.id); handleCloseSnapshot(); } : undefined}
             onCreerDepense={(snapshotFacture.statut === 'validee' || snapshotFacture.statut === 'payee') ? () => { setSelectedFactureForDepense(snapshotFacture); handleCloseSnapshot(); } : undefined}
-            pageHeaderClone={pageHeaderContent}
-            scrollProgress={scrollProgress}
           />
         ) : (
           // Affichage normal : Stats + Table
