@@ -1,11 +1,12 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { EngagementDialog } from '@/components/engagements/EngagementDialog';
 import { EngagementTable } from '@/components/engagements/EngagementTable';
 import { EngagementStats } from '@/components/engagements/EngagementStats';
+import { EngagementSnapshot } from '@/components/engagements/EngagementSnapshot';
 import { BonCommandeDialog } from '@/components/bonsCommande/BonCommandeDialog';
 import { CreateDepenseFromEngagementDialog } from '@/components/depenses/CreateDepenseFromEngagementDialog';
 import { useEngagements } from '@/hooks/useEngagements';
@@ -28,6 +29,7 @@ import type { CreateBonCommandeInput } from '@/types/bonCommande.types';
 
 // Engagements page - manages engagement creation and lifecycle
 const Engagements = () => {
+  const { engagementId } = useParams<{ engagementId?: string }>();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedEngagement, setSelectedEngagement] = useState<Engagement | undefined>();
   const [bonCommandeDialogOpen, setBonCommandeDialogOpen] = useState(false);
@@ -196,11 +198,63 @@ const Engagements = () => {
     }
   };
 
+  // Navigation pour le snapshot
+  const currentEngagement = engagementId ? engagements.find(e => e.id === engagementId) : null;
+  const currentIndex = currentEngagement ? engagements.findIndex(e => e.id === engagementId) : -1;
+
+  const handleCloseSnapshot = () => {
+    navigate('/app/engagements');
+  };
+
+  const handleNavigateSnapshot = (direction: 'prev' | 'next') => {
+    const newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex >= 0 && newIndex < engagements.length) {
+      navigate(`/app/engagements/${engagements[newIndex].id}`);
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (!currentEngagement) return;
+      
+      if (e.key === 'Escape') {
+        handleCloseSnapshot();
+      } else if (e.key === 'ArrowLeft' && currentIndex > 0) {
+        handleNavigateSnapshot('prev');
+      } else if (e.key === 'ArrowRight' && currentIndex < engagements.length - 1) {
+        handleNavigateSnapshot('next');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [currentEngagement, currentIndex, engagements.length]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
+    );
+  }
+
+  // Si un engagement est sélectionné via l'URL, afficher le snapshot
+  if (currentEngagement) {
+    return (
+      <EngagementSnapshot
+        engagement={currentEngagement}
+        onClose={handleCloseSnapshot}
+        onNavigate={handleNavigateSnapshot}
+        hasPrev={currentIndex > 0}
+        hasNext={currentIndex < engagements.length - 1}
+        currentIndex={currentIndex}
+        totalCount={engagements.length}
+        onValider={currentEngagement.statut === 'brouillon' ? () => handleValider(currentEngagement.id) : undefined}
+        onAnnuler={currentEngagement.statut !== 'annule' ? () => {} : undefined}
+        onEdit={currentEngagement.statut === 'brouillon' ? () => handleEdit(currentEngagement) : undefined}
+        onCreerBonCommande={currentEngagement.statut === 'valide' ? () => handleCreerBonCommande(currentEngagement) : undefined}
+        onCreerDepense={(currentEngagement.statut === 'valide' || currentEngagement.statut === 'engage') ? () => setSelectedEngagementForDepense(currentEngagement) : undefined}
+      />
     );
   }
 
