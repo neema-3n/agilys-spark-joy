@@ -312,10 +312,9 @@ const Engagements = () => {
   }
 
   const pageHeaderContent = (
-    <PageHeader
+    <PageHeader 
       title="Gestion des Engagements"
       description="Demandes, validations et suivi des engagements"
-      sticky={!snapshotEngagementId}
       scrollProgress={snapshotEngagementId ? scrollProgress : 0}
       actions={
         <Button onClick={handleCreate}>
