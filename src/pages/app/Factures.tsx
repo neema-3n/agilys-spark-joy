@@ -209,9 +209,24 @@ export default function Factures() {
   }, [snapshotIndex, factures, navigate]);
 
   const handleNavigateToEntity = useCallback((type: string, id: string) => {
-    // Phase 3 : implémenter la navigation vers BC et Engagement snapshots
-    console.log(`Navigation vers ${type} ${id} - Sera implémenté en Phase 3`);
-  }, []);
+    switch (type) {
+      case 'fournisseur':
+        navigate(`/app/fournisseurs/${id}`);
+        break;
+      case 'bonCommande':
+        navigate(`/app/bons-commande/${id}`);
+        break;
+      case 'engagement':
+        navigate(`/app/engagements/${id}`);
+        break;
+      case 'ligneBudgetaire':
+        navigate(`/app/budgets?ligneId=${id}`);
+        break;
+      case 'projet':
+        navigate(`/app/projets/${id}`);
+        break;
+    }
+  }, [navigate]);
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-full">Chargement...</div>;
