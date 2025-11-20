@@ -232,39 +232,41 @@ export default function Factures() {
     return <div className="flex items-center justify-center h-full">Chargement...</div>;
   }
 
+  const pageHeaderContent = (
+    <PageHeader
+      title="Gestion des Factures"
+      description="Gérez les factures fournisseurs"
+      actions={
+        <Button onClick={handleCreate}>
+          <Plus className="mr-2 h-4 w-4" />
+          Nouvelle facture
+        </Button>
+      }
+    />
+  );
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Gestion des Factures"
-        description="Gérez les factures fournisseurs"
-        scrollProgress={snapshotFactureId ? scrollProgress : 0}
-        actions={
-          !snapshotFactureId && (
-            <Button onClick={handleCreate}>
-              <Plus className="mr-2 h-4 w-4" />
-              Nouvelle facture
-            </Button>
-          )
-        }
-      />
+      {!snapshotFactureId && pageHeaderContent}
 
       <div className="px-8 space-y-6">
         {snapshotFactureId && snapshotFacture ? (
-          // Afficher le snapshot (remplace Stats + Table)
           <FactureSnapshot
             facture={snapshotFacture}
-              onClose={handleCloseSnapshot}
-              onNavigate={handleNavigateSnapshot}
-              hasPrev={snapshotIndex > 0}
-              hasNext={snapshotIndex < factures.length - 1}
-              currentIndex={snapshotIndex}
-              totalCount={factures.length}
-              onNavigateToEntity={handleNavigateToEntity}
+            onClose={handleCloseSnapshot}
+            onNavigate={handleNavigateSnapshot}
+            hasPrev={snapshotIndex > 0}
+            hasNext={snapshotIndex < factures.length - 1}
+            currentIndex={snapshotIndex}
+            totalCount={factures.length}
+            onNavigateToEntity={handleNavigateToEntity}
             onValider={snapshotFacture.statut === 'brouillon' ? () => validerFacture(snapshotFacture.id) : undefined}
             onMarquerPayee={snapshotFacture.statut === 'validee' ? () => marquerPayee(snapshotFacture.id) : undefined}
             onAnnuler={snapshotFacture.statut !== 'annulee' && snapshotFacture.statut !== 'payee' ? () => handleAnnuler(snapshotFacture.id) : undefined}
             onEdit={snapshotFacture.statut === 'brouillon' ? () => { handleEdit(snapshotFacture.id); handleCloseSnapshot(); } : undefined}
             onCreerDepense={(snapshotFacture.statut === 'validee' || snapshotFacture.statut === 'payee') ? () => { setSelectedFactureForDepense(snapshotFacture); handleCloseSnapshot(); } : undefined}
+            pageHeaderClone={pageHeaderContent}
+            scrollProgress={scrollProgress}
           />
         ) : (
           // Affichage normal : Stats + Table

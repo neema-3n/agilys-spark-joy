@@ -313,25 +313,25 @@ const Engagements = () => {
     );
   }
 
+  const pageHeaderContent = (
+    <PageHeader
+      title="Gestion des Engagements"
+      description="Demandes, validations et suivi des engagements"
+      actions={
+        <Button onClick={handleCreate}>
+          <Plus className="h-4 w-4 mr-2" />
+          Nouvel engagement
+        </Button>
+      }
+    />
+  );
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Gestion des Engagements"
-        description="Demandes, validations et suivi des engagements"
-        scrollProgress={snapshotEngagementId ? scrollProgress : 0}
-        actions={
-          !snapshotEngagementId && (
-            <Button onClick={handleCreate}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nouvel engagement
-            </Button>
-          )
-        }
-      />
+      {!snapshotEngagementId && pageHeaderContent}
 
       <div className="px-8 space-y-6">
         {snapshotEngagementId && snapshotEngagement ? (
-          // Afficher le snapshot (remplace Stats + Table)
           <EngagementSnapshot
             engagement={snapshotEngagement}
             onClose={handleCloseSnapshot}
@@ -344,6 +344,8 @@ const Engagements = () => {
             onValider={snapshotEngagement.statut === 'brouillon' ? () => handleValider(snapshotEngagement.id) : undefined}
             onCreerBonCommande={snapshotEngagement.statut === 'valide' ? () => handleCreerBonCommande(snapshotEngagement) : undefined}
             onCreerDepense={snapshotEngagement.statut === 'valide' ? () => handleCreerDepense(snapshotEngagement) : undefined}
+            pageHeaderClone={pageHeaderContent}
+            scrollProgress={scrollProgress}
           />
         ) : (
           // Affichage normal : Stats + Table
