@@ -15,6 +15,7 @@ import { useExercice } from '@/contexts/ExerciceContext';
 import { FactureStats } from '@/components/factures/FactureStats';
 import { FactureTable } from '@/components/factures/FactureTable';
 import { FactureDialog } from '@/components/factures/FactureDialog';
+import { FactureSnapshot } from '@/components/factures/FactureSnapshot';
 import { CreateDepenseFromFactureDialog } from '@/components/depenses/CreateDepenseFromFactureDialog';
 import { CreateFactureInput, Facture } from '@/types/facture.types';
 import { useQuery } from '@tanstack/react-query';
@@ -46,6 +47,9 @@ export default function Factures() {
   const [annulationMotif, setAnnulationMotif] = useState('');
   const [selectedFactureForDepense, setSelectedFactureForDepense] = useState<Facture | null>(null);
   
+  // États pour le snapshot
+  const [snapshotFactureId, setSnapshotFactureId] = useState<string | null>(null);
+  
   const { factures, isLoading, createFacture, updateFacture, deleteFacture, genererNumero, validerFacture, marquerPayee, annulerFacture } = useFactures();
   const { createDepenseFromFacture } = useDepenses();
   const [motifAnnulation, setMotifAnnulation] = useState('');
@@ -59,6 +63,17 @@ export default function Factures() {
   const editingFacture = useMemo(
     () => factures.find(f => f.id === editingFactureId),
     [factures, editingFactureId]
+  );
+
+  // Snapshot helpers
+  const snapshotFacture = useMemo(
+    () => factures.find(f => f.id === snapshotFactureId),
+    [factures, snapshotFactureId]
+  );
+
+  const snapshotIndex = useMemo(
+    () => factures.findIndex(f => f.id === snapshotFactureId),
+    [factures, snapshotFactureId]
   );
 
   // Récupérer les bons de commande réceptionnés
@@ -136,6 +151,29 @@ export default function Factures() {
     }
   }, [annulationFactureId, motifAnnulation, annulerFacture]);
 
+  // Snapshot handlers
+  const handleOpenSnapshot = useCallback((factureId: string) => {
+    setSnapshotFactureId(factureId);
+  }, []);
+
+  const handleCloseSnapshot = useCallback(() => {
+    setSnapshotFactureId(null);
+  }, []);
+
+  const handleNavigateSnapshot = useCallback((direction: 'prev' | 'next') => {
+    if (snapshotIndex === -1) return;
+    
+    const newIndex = direction === 'prev' ? snapshotIndex - 1 : snapshotIndex + 1;
+    if (newIndex >= 0 && newIndex < factures.length) {
+      setSnapshotFactureId(factures[newIndex].id);
+    }
+  }, [snapshotIndex, factures]);
+
+  const handleNavigateToEntity = useCallback((type: string, id: string) => {
+    // Phase 3 : implémenter la navigation vers BC et Engagement snapshots
+    console.log(`Navigation vers ${type} ${id} - Sera implémenté en Phase 3`);
+  }, []);
+
   if (isLoading) {
     return <div className="flex items-center justify-center h-full">Chargement...</div>;
   }
@@ -146,25 +184,50 @@ export default function Factures() {
         title="Gestion des Factures"
         description="Gérez les factures fournisseurs"
         actions={
-          <Button onClick={handleCreate}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nouvelle facture
-          </Button>
+          !snapshotFactureId && (
+            <Button onClick={handleCreate}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nouvelle facture
+            </Button>
+          )
         }
       />
 
       <div className="px-8 space-y-6">
-        <FactureStats factures={factures} />
+        {snapshotFactureId && snapshotFacture ? (
+          // Afficher le snapshot (remplace Stats + Table)
+          <FactureSnapshot
+            facture={snapshotFacture}
+            onClose={handleCloseSnapshot}
+            onNavigate={handleNavigateSnapshot}
+            hasPrev={snapshotIndex > 0}
+            hasNext={snapshotIndex < factures.length - 1}
+            currentIndex={snapshotIndex}
+            totalCount={factures.length}
+            onNavigateToEntity={handleNavigateToEntity}
+            onValider={snapshotFacture.statut === 'brouillon' ? () => validerFacture(snapshotFacture.id) : undefined}
+            onMarquerPayee={snapshotFacture.statut === 'validee' ? () => marquerPayee(snapshotFacture.id) : undefined}
+            onAnnuler={snapshotFacture.statut !== 'annulee' && snapshotFacture.statut !== 'payee' ? () => handleAnnuler(snapshotFacture.id) : undefined}
+            onEdit={snapshotFacture.statut === 'brouillon' ? () => { handleEdit(snapshotFacture.id); handleCloseSnapshot(); } : undefined}
+            onCreerDepense={(snapshotFacture.statut === 'validee' || snapshotFacture.statut === 'payee') ? () => { setSelectedFactureForDepense(snapshotFacture); handleCloseSnapshot(); } : undefined}
+          />
+        ) : (
+          // Affichage normal : Stats + Table
+          <>
+            <FactureStats factures={factures} />
 
-        <FactureTable
-          factures={factures}
-          onEdit={(facture) => handleEdit(facture.id)}
-          onDelete={deleteFacture}
-          onValider={validerFacture}
-          onMarquerPayee={marquerPayee}
-          onAnnuler={handleAnnuler}
-          onCreerDepense={(facture) => setSelectedFactureForDepense(facture)}
-        />
+            <FactureTable
+              factures={factures}
+              onEdit={(facture) => handleEdit(facture.id)}
+              onDelete={deleteFacture}
+              onValider={validerFacture}
+              onMarquerPayee={marquerPayee}
+              onAnnuler={handleAnnuler}
+              onCreerDepense={(facture) => setSelectedFactureForDepense(facture)}
+              onViewDetails={handleOpenSnapshot}
+            />
+          </>
+        )}
       </div>
 
       <FactureDialog
