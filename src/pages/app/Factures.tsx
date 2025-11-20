@@ -215,6 +215,7 @@ export default function Factures() {
     <PageHeader
       title="Gestion des Factures"
       description="Gérez les factures fournisseurs"
+      sticky={!snapshotFactureId}
       actions={
         <Button onClick={handleCreate}>
           <Plus className="mr-2 h-4 w-4" />
