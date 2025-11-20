@@ -10,6 +10,7 @@ import { useFournisseurs } from '@/hooks/useFournisseurs';
 import { useProjets } from '@/hooks/useProjets';
 import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
 import { useEngagements } from '@/hooks/useEngagements';
+import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { FactureStats } from '@/components/factures/FactureStats';
@@ -50,7 +51,6 @@ export default function Factures() {
   
   // États pour le snapshot
   const [snapshotFactureId, setSnapshotFactureId] = useState<string | null>(null);
-  const [scrollProgress, setScrollProgress] = useState(0);
   
   const { factures, isLoading, createFacture, updateFacture, deleteFacture, genererNumero, validerFacture, marquerPayee, annulerFacture } = useFactures();
   const { createDepenseFromFacture } = useDepenses();
@@ -92,25 +92,7 @@ export default function Factures() {
   }, [factureId, factures, snapshotFactureId, navigate]);
 
   // Gérer le scroll pour l'effet de disparition du header
-  useEffect(() => {
-    if (!snapshotFactureId) {
-      setScrollProgress(0);
-      return;
-    }
-
-    const mainElement = document.querySelector('main');
-    if (!mainElement) return;
-
-    const handleScroll = () => {
-      const scrollTop = mainElement.scrollTop;
-      const maxScroll = 100;
-      const progress = Math.min(scrollTop / maxScroll, 1);
-      setScrollProgress(progress);
-    };
-
-    mainElement.addEventListener('scroll', handleScroll);
-    return () => mainElement.removeEventListener('scroll', handleScroll);
-  }, [snapshotFactureId]);
+  const scrollProgress = useScrollProgress(!!snapshotFactureId);
 
   // Récupérer les bons de commande réceptionnés
   const { data: bonsCommande = [] } = useQuery({
@@ -237,7 +219,7 @@ export default function Factures() {
     <PageHeader 
       title="Gestion des Factures"
       description="Gérez les factures fournisseurs"
-      scrollProgress={snapshotFactureId ? scrollProgress : 0}
+      scrollProgress={scrollProgress}
       actions={
         <Button onClick={handleCreate}>
           <Plus className="mr-2 h-4 w-4" />
