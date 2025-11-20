@@ -56,22 +56,21 @@ export const SnapshotBase = ({
       {/* En-tête du snapshot - sticky */}
       <div className="sticky top-0 z-20 bg-background border-b border-border">
         <div className="px-6 py-4">
-          <div className="max-w-5xl mx-auto">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold">{title}</h2>
+          <div className="max-w-5xl mx-auto space-y-4">
+            {/* Ligne 1: Titre et Navigation */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-2xl font-bold truncate">{title}</h2>
                 {subtitle && (
-                  <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
+                  <p className="text-sm text-muted-foreground mt-1 truncate">{subtitle}</p>
                 )}
                 <p className="text-sm text-muted-foreground mt-1">
                   Élément {currentIndex + 1} sur {totalCount}
                 </p>
               </div>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              {/* Navigation */}
-              <div className="flex items-center gap-1">
+
+              {/* Navigation et fermeture à l'extrême droite */}
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <Button
                   variant="outline"
                   size="sm"
@@ -88,28 +87,22 @@ export const SnapshotBase = ({
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClose}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-
-              {/* Actions personnalisées */}
-              {actions && (
-                <>
-                  <div className="h-6 w-px bg-border mx-2" />
-                  <div className="flex items-center gap-2 flex-1">
-                    {actions}
-                  </div>
-                </>
-              )}
-
-              {/* Bouton fermer */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                className="ml-auto"
-              >
-                <X className="h-4 w-4" />
-              </Button>
             </div>
+
+            {/* Ligne 2: Actions (si présentes) */}
+            {actions && (
+              <div className="flex items-center gap-2 pt-2 border-t">
+                {actions}
+              </div>
+            )}
           </div>
         </div>
       </div>
