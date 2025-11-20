@@ -132,7 +132,6 @@ export const EngagementSnapshot = ({
                   Engagement {currentIndex + 1} sur {totalCount}
                 </p>
               </div>
-              {getStatutBadge(engagement.statut)}
             </div>
             
             <div className="flex items-center gap-2">
@@ -201,19 +200,25 @@ export const EngagementSnapshot = ({
       {/* Contenu */}
       <div className="px-6">
         <div className="max-w-5xl mx-auto space-y-6">
-          {/* En-tête avec statut */}
+          {/* Informations principales */}
           <Card>
             <CardHeader>
               <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <CardTitle className="text-2xl">{engagement.objet}</CardTitle>
-                  <CardDescription>Engagement n° {engagement.numero}</CardDescription>
-                </div>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Informations principales
+                </CardTitle>
                 {getStatutBadge(engagement.statut)}
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Informations principales */}
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Objet</p>
+                  <p className="text-xl font-semibold">{engagement.objet}</p>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div className="space-y-1">

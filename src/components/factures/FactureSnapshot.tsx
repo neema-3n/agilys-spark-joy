@@ -133,7 +133,6 @@ export const FactureSnapshot = ({
                   Facture {currentIndex + 1} sur {totalCount}
                 </p>
               </div>
-              {getStatutBadge(facture.statut)}
             </div>
             
             <div className="flex items-center gap-2">
@@ -211,10 +210,13 @@ export const FactureSnapshot = ({
         {/* Section 1: Informations principales */}
         <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Informations principales
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Informations principales
+                </CardTitle>
+                {getStatutBadge(facture.statut)}
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
