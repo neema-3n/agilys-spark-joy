@@ -313,59 +313,55 @@ const Engagements = () => {
     );
   }
 
-  // Si un engagement est sélectionné via l'URL, afficher le snapshot avec l'effet poussoir
-  if (snapshotEngagement && snapshotIndex !== -1) {
-    return (
-      <div 
-        className="h-full"
-        style={{
-          transform: `translateY(${scrollProgress * 20}px)`,
-          transition: 'transform 0.1s ease-out'
-        }}
-      >
-        <EngagementSnapshot
-          engagement={snapshotEngagement}
-          onClose={handleCloseSnapshot}
-          onNavigate={handleNavigateSnapshot}
-          hasPrev={snapshotIndex > 0}
-          hasNext={snapshotIndex < engagements.length - 1}
-          currentIndex={snapshotIndex}
-          totalCount={engagements.length}
-          onEdit={() => handleEdit(snapshotEngagement)}
-          onValider={snapshotEngagement.statut === 'brouillon' ? () => handleValider(snapshotEngagement.id) : undefined}
-          onCreerBonCommande={snapshotEngagement.statut === 'valide' ? () => handleCreerBonCommande(snapshotEngagement) : undefined}
-          onCreerDepense={snapshotEngagement.statut === 'valide' ? () => handleCreerDepense(snapshotEngagement) : undefined}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col h-full">
       <PageHeader
         title="Gestion des Engagements"
         description="Demandes, validations et suivi des engagements"
+        scrollProgress={snapshotEngagementId ? scrollProgress : 0}
         actions={
-          <Button onClick={handleCreate}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nouvel engagement
-          </Button>
+          !snapshotEngagementId && (
+            <Button onClick={handleCreate}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nouvel engagement
+            </Button>
+          )
         }
       />
 
       <div className="flex-1 overflow-y-auto p-8 pt-6 space-y-6">
-        <EngagementStats engagements={engagements} />
+        {snapshotEngagementId && snapshotEngagement ? (
+          // Afficher le snapshot (remplace Stats + Table)
+          <EngagementSnapshot
+            engagement={snapshotEngagement}
+            onClose={handleCloseSnapshot}
+            onNavigate={handleNavigateSnapshot}
+            hasPrev={snapshotIndex > 0}
+            hasNext={snapshotIndex < engagements.length - 1}
+            currentIndex={snapshotIndex}
+            totalCount={engagements.length}
+            onEdit={() => handleEdit(snapshotEngagement)}
+            onValider={snapshotEngagement.statut === 'brouillon' ? () => handleValider(snapshotEngagement.id) : undefined}
+            onCreerBonCommande={snapshotEngagement.statut === 'valide' ? () => handleCreerBonCommande(snapshotEngagement) : undefined}
+            onCreerDepense={snapshotEngagement.statut === 'valide' ? () => handleCreerDepense(snapshotEngagement) : undefined}
+          />
+        ) : (
+          // Affichage normal : Stats + Table
+          <>
+            <EngagementStats engagements={engagements} />
 
-        <EngagementTable
-          engagements={engagements}
-          onEdit={handleEdit}
-          onValider={handleValider}
-          onAnnuler={handleAnnuler}
-          onDelete={handleDelete}
-          onCreerBonCommande={handleCreerBonCommande}
-          onCreerDepense={(engagement) => setSelectedEngagementForDepense(engagement)}
-          onViewDetails={handleOpenSnapshot}
-        />
+            <EngagementTable
+              engagements={engagements}
+              onEdit={handleEdit}
+              onValider={handleValider}
+              onAnnuler={handleAnnuler}
+              onDelete={handleDelete}
+              onCreerBonCommande={handleCreerBonCommande}
+              onCreerDepense={(engagement) => setSelectedEngagementForDepense(engagement)}
+              onViewDetails={handleOpenSnapshot}
+            />
+          </>
+        )}
       </div>
 
       <EngagementDialog

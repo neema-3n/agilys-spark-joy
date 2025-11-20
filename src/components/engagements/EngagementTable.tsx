@@ -104,12 +104,7 @@ export const EngagementTable = ({
             className="cursor-pointer hover:bg-muted/30"
           >
             <TableCell className="font-medium">
-              <Link
-                to={`/app/engagements/${engagement.id}`}
-                className="text-primary hover:underline"
-              >
-                {engagement.numero}
-              </Link>
+              {engagement.numero}
             </TableCell>
             <TableCell>
               {engagement.ligneBudgetaire?.libelle || '-'}
