@@ -120,9 +120,9 @@ export const EngagementSnapshot = ({
   const progressUtilisation = engagement.montant > 0 ? ((engagement.montant - soldeRestant) / engagement.montant) * 100 : 0;
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header fixe */}
-      <div className="sticky top-0 z-30 bg-background border-b">
+    <div className="space-y-6">
+      {/* Header non-fixe pour permettre l'effet poussoir du PageHeader */}
+      <div className="bg-background border-b">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -186,9 +186,8 @@ export const EngagementSnapshot = ({
         </div>
       </div>
 
-      {/* Contenu scrollable */}
-      <div className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-5xl mx-auto space-y-6">
+      {/* Contenu */}
+      <div className="max-w-5xl mx-auto space-y-6">
           {/* En-tête avec statut */}
           <Card>
             <CardHeader>
@@ -385,7 +384,6 @@ export const EngagementSnapshot = ({
             </CardContent>
           </Card>
         </div>
-      </div>
     </div>
   );
 };
