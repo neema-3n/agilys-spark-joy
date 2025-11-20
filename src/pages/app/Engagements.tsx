@@ -39,6 +39,7 @@ const Engagements = () => {
   const [actionEngagementId, setActionEngagementId] = useState<string | null>(null);
   const [selectedEngagementForDepense, setSelectedEngagementForDepense] = useState<Engagement | null>(null);
   const [snapshotEngagementId, setSnapshotEngagementId] = useState<string | null>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -66,6 +67,24 @@ const Engagements = () => {
       }
     }
   }, [engagementId, engagements, snapshotEngagementId, navigate]);
+
+  // Gérer le scroll pour l'effet de disparition du header
+  useEffect(() => {
+    if (!snapshotEngagementId) {
+      setScrollProgress(0);
+      return;
+    }
+
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const maxScroll = 100;
+      const progress = Math.min(scrollY / maxScroll, 1);
+      setScrollProgress(progress);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [snapshotEngagementId]);
 
   const handleCreate = () => {
     setSelectedEngagement(undefined);
@@ -297,6 +316,7 @@ const Engagements = () => {
       title="Gestion des Engagements"
       description="Demandes, validations et suivi des engagements"
       sticky={!snapshotEngagementId}
+      scrollProgress={snapshotEngagementId ? scrollProgress : 0}
       actions={
         <Button onClick={handleCreate}>
           <Plus className="h-4 w-4 mr-2" />
