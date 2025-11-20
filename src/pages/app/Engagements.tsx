@@ -307,7 +307,7 @@ const Engagements = () => {
 
   return (
     <div className="space-y-6">
-      {!snapshotEngagementId && pageHeaderContent}
+      {pageHeaderContent}
 
       <div className="px-8 space-y-6">
         {snapshotEngagementId && snapshotEngagement ? (
@@ -325,7 +325,6 @@ const Engagements = () => {
             onCreerDepense={snapshotEngagement.statut === 'valide' ? () => handleCreerDepense(snapshotEngagement) : undefined}
           />
         ) : (
-          // Affichage normal : Stats + Table
           <>
             <EngagementStats engagements={engagements} />
 
