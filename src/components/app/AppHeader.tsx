@@ -66,16 +66,14 @@ export const AppHeader = ({ onMenuClick }: AppHeaderProps) => {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
-                className="min-w-[140px] md:min-w-[180px] lg:min-w-[220px] justify-between bg-card hover:bg-accent h-10"
+                className="min-w-[140px] md:min-w-[180px] lg:min-w-[220px] justify-start bg-card hover:bg-accent h-10 px-4"
               >
-                <span className="truncate text-sm">
-                  <span className="font-semibold">Client:</span>{' '}
-                  {currentClient?.nom || 'Sélectionner'}
+                <span className="truncate text-sm font-medium">
+                  {currentClient?.nom || 'Sélectionner un client'}
                 </span>
-                <ChevronDown className="ml-2 h-4 w-4 shrink-0" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-[220px]">
+            <DropdownMenuContent align="start" className="w-full min-w-[220px]">
               {clients.map((client) => (
                 <DropdownMenuItem
                   key={client.id}
@@ -97,16 +95,14 @@ export const AppHeader = ({ onMenuClick }: AppHeaderProps) => {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
-                className="min-w-[180px] md:min-w-[220px] lg:min-w-[280px] justify-between bg-card hover:bg-accent h-10"
+                className="min-w-[180px] md:min-w-[220px] lg:min-w-[280px] justify-start bg-card hover:bg-accent h-10 px-4"
               >
-                <span className="truncate text-sm">
-                  <span className="font-semibold">Exercice:</span>{' '}
-                  {currentExercice?.libelle || 'Sélectionner'}
+                <span className="truncate text-sm font-medium">
+                  {currentExercice?.libelle || 'Sélectionner un exercice'}
                 </span>
-                <ChevronDown className="ml-2 h-4 w-4 shrink-0" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-[280px]">
+            <DropdownMenuContent align="start" className="w-full min-w-[280px]">
               {exercices.map((exercice) => (
                 <DropdownMenuItem
                   key={exercice.id}
