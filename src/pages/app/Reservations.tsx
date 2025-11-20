@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
+import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { ReservationDialog } from '@/components/reservations/ReservationDialog';
 import { ReservationTable } from '@/components/reservations/ReservationTable';
 import { ReservationStats } from '@/components/reservations/ReservationStats';
@@ -85,6 +86,9 @@ const Reservations = () => {
       }
     }
   }, [reservationId, reservations, snapshotReservationId, navigate]);
+
+  // Gérer le scroll pour l'effet de disparition du header
+  const scrollProgress = useScrollProgress(!!snapshotReservationId);
 
   const handleCreate = () => {
     setSelectedReservation(undefined);
@@ -348,6 +352,7 @@ const Reservations = () => {
       <PageHeader
         title="Réservation de Crédits"
         description="Blocage préalable avec traçabilité complète"
+        scrollProgress={scrollProgress}
         actions={
           <Button onClick={handleCreate}>
             <Plus className="h-4 w-4 mr-2" />
