@@ -56,11 +56,17 @@ const App = () => (
                   <Route path="enveloppes" element={<Enveloppes />} />
                   <Route path="previsions" element={<Previsions />} />
                   <Route path="reservations" element={<Reservations />} />
-                  <Route path="engagements" element={<Engagements />} />
+                  <Route path="engagements">
+                    <Route index element={<Engagements />} />
+                    <Route path=":engagementId" element={<Engagements />} />
+                  </Route>
                   <Route path="bons-commande" element={<BonsCommande />} />
                   <Route path="depenses" element={<Depenses />} />
                   <Route path="mandats" element={<Mandats />} />
-                  <Route path="factures" element={<Factures />} />
+                  <Route path="factures">
+                    <Route index element={<Factures />} />
+                    <Route path=":factureId" element={<Factures />} />
+                  </Route>
                   <Route path="paiements" element={<Paiements />} />
                   <Route path="tresorerie" element={<Tresorerie />} />
                   <Route path="plan-comptable" element={<PlanComptable />} />
