@@ -55,13 +55,22 @@ const App = () => (
                   <Route path="structure-budgetaire" element={<StructureBudgetaire />} />
                   <Route path="enveloppes" element={<Enveloppes />} />
                   <Route path="previsions" element={<Previsions />} />
-                  <Route path="reservations" element={<Reservations />} />
+                  <Route path="reservations">
+                    <Route index element={<Reservations />} />
+                    <Route path=":reservationId" element={<Reservations />} />
+                  </Route>
                   <Route path="engagements">
                     <Route index element={<Engagements />} />
                     <Route path=":engagementId" element={<Engagements />} />
                   </Route>
-                  <Route path="bons-commande" element={<BonsCommande />} />
-                  <Route path="depenses" element={<Depenses />} />
+                  <Route path="bons-commande">
+                    <Route index element={<BonsCommande />} />
+                    <Route path=":bonCommandeId" element={<BonsCommande />} />
+                  </Route>
+                  <Route path="depenses">
+                    <Route index element={<Depenses />} />
+                    <Route path=":depenseId" element={<Depenses />} />
+                  </Route>
                   <Route path="mandats" element={<Mandats />} />
                   <Route path="factures">
                     <Route index element={<Factures />} />
