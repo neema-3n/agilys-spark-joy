@@ -49,6 +49,7 @@ interface FactureTableProps {
   onMarquerPayee: (id: string) => void;
   onAnnuler: (id: string) => void;
   onCreerDepense: (facture: Facture) => void;
+  onViewDetails: (factureId: string) => void;
 }
 
 export const FactureTable = ({
@@ -59,6 +60,7 @@ export const FactureTable = ({
   onMarquerPayee,
   onAnnuler,
   onCreerDepense,
+  onViewDetails,
 }: FactureTableProps) => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -118,7 +120,11 @@ export const FactureTable = ({
               </TableRow>
             ) : (
               factures.map((facture) => (
-                <TableRow key={facture.id}>
+                <TableRow 
+                  key={facture.id}
+                  onDoubleClick={() => onViewDetails(facture.id)}
+                  className="cursor-pointer hover:bg-muted/30"
+                >
                   <TableCell className="font-medium">{facture.numero}</TableCell>
                   <TableCell>{formatDate(facture.dateFacture)}</TableCell>
                   <TableCell>{facture.fournisseur?.nom || '-'}</TableCell>
@@ -147,12 +153,19 @@ export const FactureTable = ({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => onEdit(facture)}>
+                          <DropdownMenuItem onClick={() => onViewDetails(facture.id)}>
                             <Eye className="mr-2 h-4 w-4" />
                             Voir les détails
                           </DropdownMenuItem>
                           
                           <DropdownMenuSeparator />
+                        {facture.statut === 'brouillon' && (
+                          <DropdownMenuItem onClick={() => onEdit(facture)}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Modifier
+                          </DropdownMenuItem>
+                        )}
+                        
                         {facture.statut === 'brouillon' && (
                           <DropdownMenuItem onClick={() => onValider(facture.id)}>
                             <CheckCircle className="mr-2 h-4 w-4" />
