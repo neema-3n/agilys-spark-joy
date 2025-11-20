@@ -126,9 +126,9 @@ Ce hook documente clairement l'intention et peut être étendu à l'avenir avec 
 
 - ✅ `src/pages/app/Factures.tsx` - Snapshots de factures
 - ✅ `src/pages/app/Engagements.tsx` - Snapshots d'engagements
-- ⏳ `src/pages/app/BonsCommande.tsx` - À implémenter
-- ⏳ `src/pages/app/Reservations.tsx` - À implémenter
-- ⏳ `src/pages/app/Depenses.tsx` - À implémenter
+- ✅ `src/pages/app/BonsCommande.tsx` - Snapshots de bons de commande
+- ✅ `src/pages/app/Reservations.tsx` - Snapshots de réservations
+- ✅ `src/pages/app/Depenses.tsx` - Snapshots de dépenses
 
 ## Checklist pour nouveaux snapshots
 
