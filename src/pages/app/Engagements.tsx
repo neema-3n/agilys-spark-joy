@@ -1,22 +1,41 @@
-import { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { EngagementDialog } from '@/components/engagements/EngagementDialog';
 import { EngagementTable } from '@/components/engagements/EngagementTable';
 import { EngagementStats } from '@/components/engagements/EngagementStats';
+import { BonCommandeDialog } from '@/components/bonsCommande/BonCommandeDialog';
+import { CreateDepenseFromEngagementDialog } from '@/components/depenses/CreateDepenseFromEngagementDialog';
 import { useEngagements } from '@/hooks/useEngagements';
-import { useReservations } from '@/hooks/useReservations';
+import { useBonsCommande } from '@/hooks/useBonsCommande';
+import { useDepenses } from '@/hooks/useDepenses';
 import { useToast } from '@/hooks/use-toast';
+import { showNavigationToast } from '@/lib/navigation-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import type { Engagement, EngagementFormData } from '@/types/engagement.types';
-import type { ReservationCredit } from '@/types/reservation.types';
+import type { CreateBonCommandeInput } from '@/types/bonCommande.types';
 
+// Engagements page - manages engagement creation and lifecycle
 const Engagements = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedEngagement, setSelectedEngagement] = useState<Engagement | undefined>();
-  const [selectedReservation, setSelectedReservation] = useState<ReservationCredit | undefined>();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [bonCommandeDialogOpen, setBonCommandeDialogOpen] = useState(false);
+  const [engagementSourceId, setEngagementSourceId] = useState<string | null>(null);
+  const [validateDialogOpen, setValidateDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [actionEngagementId, setActionEngagementId] = useState<string | null>(null);
+  const [selectedEngagementForDepense, setSelectedEngagementForDepense] = useState<Engagement | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -24,37 +43,22 @@ const Engagements = () => {
     engagements,
     isLoading,
     createEngagement,
-    createEngagementFromReservation,
     updateEngagement,
     validerEngagement,
     annulerEngagement,
     deleteEngagement,
   } = useEngagements();
 
-  const { reservations } = useReservations();
-
-  // Gérer la création depuis une réservation via query param
-  useEffect(() => {
-    const reservationId = searchParams.get('from_reservation');
-    if (reservationId && reservations.length > 0 && !dialogOpen) {
-      const reservation = reservations.find(r => r.id === reservationId);
-      if (reservation && reservation.statut === 'active') {
-        setSelectedReservation(reservation);
-        setDialogOpen(true);
-        setSearchParams({});
-      }
-    }
-  }, [searchParams, reservations, dialogOpen, setSearchParams]);
+  const { createBonCommande, genererNumero } = useBonsCommande();
+  const { createDepenseFromEngagement } = useDepenses();
 
   const handleCreate = () => {
     setSelectedEngagement(undefined);
-    setSelectedReservation(undefined);
     setDialogOpen(true);
   };
 
   const handleEdit = (engagement: Engagement) => {
     setSelectedEngagement(engagement);
-    setSelectedReservation(undefined);
     setDialogOpen(true);
   };
 
@@ -65,15 +69,6 @@ const Engagements = () => {
         toast({
           title: 'Engagement modifié',
           description: 'L\'engagement a été modifié avec succès.',
-        });
-      } else if (selectedReservation) {
-        await createEngagementFromReservation({ 
-          reservationId: selectedReservation.id, 
-          additionalData: data 
-        });
-        toast({
-          title: 'Engagement créé',
-          description: `L'engagement a été créé depuis la réservation ${selectedReservation.numero}.`,
         });
       } else {
         await createEngagement(data);
@@ -93,11 +88,16 @@ const Engagements = () => {
     }
   };
 
-  const handleValider = async (id: string) => {
-    if (!confirm('Confirmer la validation de cet engagement ?')) return;
+  const handleValider = (id: string) => {
+    setActionEngagementId(id);
+    setValidateDialogOpen(true);
+  };
+
+  const confirmValider = async () => {
+    if (!actionEngagementId) return;
     
     try {
-      await validerEngagement(id);
+      await validerEngagement(actionEngagementId);
       toast({
         title: 'Engagement validé',
         description: 'L\'engagement a été validé avec succès.',
@@ -108,6 +108,9 @@ const Engagements = () => {
         description: 'Une erreur est survenue lors de la validation.',
         variant: 'destructive',
       });
+    } finally {
+      setValidateDialogOpen(false);
+      setActionEngagementId(null);
     }
   };
 
@@ -127,11 +130,16 @@ const Engagements = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Confirmer la suppression de cet engagement ?')) return;
+  const handleDelete = (id: string) => {
+    setActionEngagementId(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!actionEngagementId) return;
     
     try {
-      await deleteEngagement(id);
+      await deleteEngagement(actionEngagementId);
       toast({
         title: 'Engagement supprimé',
         description: 'L\'engagement a été supprimé avec succès.',
@@ -142,18 +150,49 @@ const Engagements = () => {
         description: error.message || 'Une erreur est survenue lors de la suppression.',
         variant: 'destructive',
       });
+    } finally {
+      setDeleteDialogOpen(false);
+      setActionEngagementId(null);
     }
   };
 
   const handleCreerBonCommande = (engagement: Engagement) => {
-    navigate(`/app/bons-commande?from_engagement=${engagement.id}`);
+    setEngagementSourceId(engagement.id);
+    setBonCommandeDialogOpen(true);
+  };
+
+  const handleSaveBonCommande = async (data: CreateBonCommandeInput) => {
+    try {
+      const engagement = engagements.find(e => e.id === engagementSourceId);
+      
+      await createBonCommande(data);
+      
+      setBonCommandeDialogOpen(false);
+      setEngagementSourceId(null);
+      
+      showNavigationToast({
+        title: 'Bon de commande créé',
+        description: `Le BC a été créé depuis l'engagement ${engagement?.numero || ''}.`,
+        targetPage: {
+          name: 'Bons de Commande',
+          path: '/app/bons-commande',
+        },
+        navigate,
+      });
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Une erreur est survenue lors de la création.',
+        variant: 'destructive',
+      });
+      throw error;
+    }
   };
 
   const handleDialogClose = (open: boolean) => {
     setDialogOpen(open);
     if (!open) {
       setSelectedEngagement(undefined);
-      setSelectedReservation(undefined);
     }
   };
 
@@ -188,6 +227,7 @@ const Engagements = () => {
           onAnnuler={handleAnnuler}
           onDelete={handleDelete}
           onCreerBonCommande={handleCreerBonCommande}
+          onCreerDepense={(engagement) => setSelectedEngagementForDepense(engagement)}
         />
       </div>
 
@@ -196,7 +236,81 @@ const Engagements = () => {
         onOpenChange={handleDialogClose}
         onSave={handleSave}
         engagement={selectedEngagement}
-        reservation={selectedReservation}
+      />
+
+      <BonCommandeDialog
+        open={bonCommandeDialogOpen}
+        onOpenChange={(open) => {
+          setBonCommandeDialogOpen(open);
+          if (!open) setEngagementSourceId(null);
+        }}
+        selectedEngagement={engagements.find(e => e.id === engagementSourceId)}
+        onSubmit={handleSaveBonCommande}
+        onGenererNumero={genererNumero}
+      />
+
+      <AlertDialog open={validateDialogOpen} onOpenChange={setValidateDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Valider cet engagement ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action confirmera l'engagement et permettra la création de bons de commande. 
+              L'engagement ne pourra plus être modifié après validation.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmValider}>
+              Valider l'engagement
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cet engagement ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. L'engagement et toutes ses données associées seront définitivement supprimés.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <CreateDepenseFromEngagementDialog
+        open={!!selectedEngagementForDepense}
+        onOpenChange={(open) => !open && setSelectedEngagementForDepense(null)}
+        engagement={selectedEngagementForDepense}
+        onSave={async (data) => {
+          try {
+            const engagement = selectedEngagementForDepense;
+            await createDepenseFromEngagement(data);
+            
+            setSelectedEngagementForDepense(null);
+            
+            showNavigationToast({
+              title: 'Dépense créée',
+              description: `La dépense a été créée depuis l'engagement ${engagement?.numero || ''}.`,
+              targetPage: {
+                name: 'Dépenses',
+                path: '/app/depenses',
+              },
+              navigate,
+            });
+          } catch (error) {
+            console.error('Erreur création dépense:', error);
+          }
+        }}
       />
     </div>
   );

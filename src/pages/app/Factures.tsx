@@ -1,9 +1,11 @@
-import { useState, useCallback, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useState, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
+import { showNavigationToast } from '@/lib/navigation-toast';
 import { useFactures } from '@/hooks/useFactures';
+import { useDepenses } from '@/hooks/useDepenses';
 import { useFournisseurs } from '@/hooks/useFournisseurs';
 import { useProjets } from '@/hooks/useProjets';
 import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
@@ -13,7 +15,8 @@ import { useExercice } from '@/contexts/ExerciceContext';
 import { FactureStats } from '@/components/factures/FactureStats';
 import { FactureTable } from '@/components/factures/FactureTable';
 import { FactureDialog } from '@/components/factures/FactureDialog';
-import { Facture, CreateFactureInput } from '@/types/facture.types';
+import { CreateDepenseFromFactureDialog } from '@/components/depenses/CreateDepenseFromFactureDialog';
+import { CreateFactureInput, Facture } from '@/types/facture.types';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -30,32 +33,33 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 export default function Factures() {
+  const navigate = useNavigate();
   const { currentClient } = useClient();
   const { currentExercice } = useExercice();
-  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // États basés sur les IDs uniquement
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedFacture, setSelectedFacture] = useState<Facture | undefined>();
+  const [editingFactureId, setEditingFactureId] = useState<string | undefined>();
   const [selectedBonCommandeId, setSelectedBonCommandeId] = useState<string | undefined>();
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
-  const [factureToAnnuler, setFactureToAnnuler] = useState<string | null>(null);
+  const [annulationFactureId, setAnnulationFactureId] = useState<string | undefined>();
+  const [annulationMotif, setAnnulationMotif] = useState('');
+  const [selectedFactureForDepense, setSelectedFactureForDepense] = useState<Facture | null>(null);
+  
+  const { factures, isLoading, createFacture, updateFacture, deleteFacture, genererNumero, validerFacture, marquerPayee, annulerFacture } = useFactures();
+  const { createDepenseFromFacture } = useDepenses();
   const [motifAnnulation, setMotifAnnulation] = useState('');
-
-  const {
-    factures,
-    isLoading,
-    createFacture,
-    updateFacture,
-    deleteFacture,
-    genererNumero,
-    validerFacture,
-    marquerPayee,
-    annulerFacture,
-  } = useFactures();
 
   const { fournisseurs } = useFournisseurs();
   const { projets } = useProjets();
   const { lignes: lignesBudgetaires } = useLignesBudgetaires();
   const { engagements } = useEngagements();
+
+  // Helper pour récupérer la facture depuis l'ID (source unique de vérité)
+  const editingFacture = useMemo(
+    () => factures.find(f => f.id === editingFactureId),
+    [factures, editingFactureId]
+  );
 
   // Récupérer les bons de commande réceptionnés
   const { data: bonsCommande = [] } = useQuery({
@@ -81,45 +85,33 @@ export default function Factures() {
     enabled: !!currentClient,
   });
 
-  // Gérer la création depuis un BC via query param
-  useEffect(() => {
-    const bonCommandeId = searchParams.get('from_bon_commande');
-    if (bonCommandeId && bonsCommande.length > 0 && !dialogOpen) {
-      const bonCommande = bonsCommande.find(bc => bc.id === bonCommandeId);
-      if (bonCommande) {
-        setSelectedBonCommandeId(bonCommandeId);
-        setDialogOpen(true);
-        setSearchParams({});
-      }
-    }
-  }, [searchParams, bonsCommande, dialogOpen, setSearchParams]);
-
-  const handleCreate = () => {
-    setSelectedFacture(undefined);
+  // Callbacks stables avec dépendances minimales
+  const handleCreate = useCallback(() => {
+    setEditingFactureId(undefined);
     setSelectedBonCommandeId(undefined);
     setDialogOpen(true);
-  };
+  }, []);
 
-  const handleDialogClose = (open: boolean) => {
+  const handleDialogClose = useCallback((open: boolean) => {
     setDialogOpen(open);
     if (!open) {
-      setSelectedFacture(undefined);
+      setEditingFactureId(undefined);
       setSelectedBonCommandeId(undefined);
     }
-  };
+  }, []);
 
-  const handleEdit = (facture: Facture) => {
-    setSelectedFacture(facture);
+  const handleEdit = useCallback((id: string) => {
+    setEditingFactureId(id);
     setDialogOpen(true);
-  };
+  }, []);
 
-  const handleSubmit = async (data: CreateFactureInput) => {
-    if (selectedFacture) {
-      await updateFacture({ id: selectedFacture.id, facture: data });
+  const handleSubmit = useCallback(async (data: CreateFactureInput) => {
+    if (editingFactureId) {
+      await updateFacture({ id: editingFactureId, facture: data });
     } else {
-      await createFacture(data);
+      await createFacture({ facture: data });
     }
-  };
+  }, [editingFactureId, updateFacture, createFacture]);
 
   const handleGenererNumero = useCallback(async () => {
     if (!currentClient || !currentExercice) return '';
@@ -129,20 +121,20 @@ export default function Factures() {
     });
   }, [currentClient, currentExercice, genererNumero]);
 
-  const handleAnnuler = (id: string) => {
-    setFactureToAnnuler(id);
+  const handleAnnuler = useCallback((id: string) => {
+    setAnnulationFactureId(id);
     setMotifAnnulation('');
     setAnnulerDialogOpen(true);
-  };
+  }, []);
 
-  const handleConfirmAnnulation = async () => {
-    if (factureToAnnuler && motifAnnulation.trim()) {
-      await annulerFacture({ id: factureToAnnuler, motif: motifAnnulation });
+  const handleConfirmAnnulation = useCallback(async () => {
+    if (annulationFactureId && motifAnnulation.trim()) {
+      await annulerFacture({ id: annulationFactureId, motif: motifAnnulation });
       setAnnulerDialogOpen(false);
-      setFactureToAnnuler(null);
+      setAnnulationFactureId(undefined);
       setMotifAnnulation('');
     }
-  };
+  }, [annulationFactureId, motifAnnulation, annulerFacture]);
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-full">Chargement...</div>;
@@ -166,18 +158,19 @@ export default function Factures() {
 
         <FactureTable
           factures={factures}
-          onEdit={handleEdit}
+          onEdit={(facture) => handleEdit(facture.id)}
           onDelete={deleteFacture}
           onValider={validerFacture}
           onMarquerPayee={marquerPayee}
           onAnnuler={handleAnnuler}
+          onCreerDepense={(facture) => setSelectedFactureForDepense(facture)}
         />
       </div>
 
       <FactureDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
-        facture={selectedFacture}
+        facture={editingFacture}
         onSubmit={handleSubmit}
         fournisseurs={fournisseurs}
         bonsCommande={bonsCommande}
@@ -220,6 +213,32 @@ export default function Factures() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CreateDepenseFromFactureDialog
+        open={!!selectedFactureForDepense}
+        onOpenChange={(open) => !open && setSelectedFactureForDepense(null)}
+        facture={selectedFactureForDepense}
+        onSave={async (data) => {
+          try {
+            const facture = selectedFactureForDepense;
+            await createDepenseFromFacture(data);
+            
+            setSelectedFactureForDepense(null);
+            
+            showNavigationToast({
+              title: 'Dépense créée',
+              description: `La dépense a été créée depuis la facture ${facture?.numero || ''}.`,
+              targetPage: {
+                name: 'Dépenses',
+                path: '/app/depenses',
+              },
+              navigate,
+            });
+          } catch (error) {
+            console.error('Erreur création dépense:', error);
+          }
+        }}
+      />
     </div>
   );
 }

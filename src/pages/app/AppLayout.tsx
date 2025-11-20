@@ -26,7 +26,7 @@ const AppLayout = () => {
   // Groupes principaux inspirés d'AirBooks
   const menuGroups = {
     operationnel: {
-      label: 'Opérationnel',
+      label: 'Opérations',
       icon: PlayCircle,
       sections: ['Fournisseurs', 'Budget', 'Opérations', 'Trésorerie']
     },
@@ -233,26 +233,8 @@ const AppLayout = () => {
           </div>}
         </div>
 
-        {/* Toggle Button */}
-        <div className="p-2 flex justify-center border-b border-sidebar-border">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="hover:bg-sidebar-accent w-10 h-10"
-                >
-                  {sidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                {sidebarOpen ? 'Réduire' : 'Étendre'} la barre latérale
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
+        {/* Séparateur élégant */}
+        <div className="h-3 border-b border-sidebar-border/50" />
 
         {/* Group Selector */}
         {sidebarOpen ? (
@@ -262,19 +244,19 @@ const AppLayout = () => {
                 variant={activeGroup === 'operationnel' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setActiveGroup('operationnel')}
-                className="flex-1 gap-2"
+                className="flex-1 gap-2 transition-all duration-200 hover:scale-105"
               >
-                <PlayCircle className="h-4 w-4" />
-                <span className="text-xs font-medium">Opérationnel</span>
+                <PlayCircle className="h-5 w-5" />
+                <span className="text-sm font-semibold">Opérations</span>
               </Button>
               <Button
                 variant={activeGroup === 'pilotage' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setActiveGroup('pilotage')}
-                className="flex-1 gap-2"
+                className="flex-1 gap-2 transition-all duration-200 hover:scale-105"
               >
-                <Target className="h-4 w-4" />
-                <span className="text-xs font-medium">Pilotage</span>
+                <Target className="h-5 w-5" />
+                <span className="text-sm font-semibold">Pilotage</span>
               </Button>
             </div>
           </div>
@@ -292,7 +274,7 @@ const AppLayout = () => {
                     <PlayCircle className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="right">Opérationnel</TooltipContent>
+                <TooltipContent side="right">Opérations</TooltipContent>
               </Tooltip>
               
               <Tooltip>

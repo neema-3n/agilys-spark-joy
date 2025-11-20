@@ -229,6 +229,150 @@ export type Database = {
           },
         ]
       }
+      depenses: {
+        Row: {
+          beneficiaire: string | null
+          client_id: string
+          created_at: string
+          created_by: string | null
+          date_depense: string
+          date_ordonnancement: string | null
+          date_paiement: string | null
+          date_validation: string | null
+          engagement_id: string | null
+          exercice_id: string
+          facture_id: string | null
+          fournisseur_id: string | null
+          id: string
+          ligne_budgetaire_id: string | null
+          mode_paiement: string | null
+          montant: number
+          montant_paye: number
+          motif_annulation: string | null
+          numero: string
+          objet: string
+          observations: string | null
+          projet_id: string | null
+          reference_paiement: string | null
+          reservation_credit_id: string | null
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          beneficiaire?: string | null
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          date_depense?: string
+          date_ordonnancement?: string | null
+          date_paiement?: string | null
+          date_validation?: string | null
+          engagement_id?: string | null
+          exercice_id: string
+          facture_id?: string | null
+          fournisseur_id?: string | null
+          id?: string
+          ligne_budgetaire_id?: string | null
+          mode_paiement?: string | null
+          montant?: number
+          montant_paye?: number
+          motif_annulation?: string | null
+          numero: string
+          objet: string
+          observations?: string | null
+          projet_id?: string | null
+          reference_paiement?: string | null
+          reservation_credit_id?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          beneficiaire?: string | null
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          date_depense?: string
+          date_ordonnancement?: string | null
+          date_paiement?: string | null
+          date_validation?: string | null
+          engagement_id?: string | null
+          exercice_id?: string
+          facture_id?: string | null
+          fournisseur_id?: string | null
+          id?: string
+          ligne_budgetaire_id?: string | null
+          mode_paiement?: string | null
+          montant?: number
+          montant_paye?: number
+          motif_annulation?: string | null
+          numero?: string
+          objet?: string
+          observations?: string | null
+          projet_id?: string | null
+          reference_paiement?: string | null
+          reservation_credit_id?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "depenses_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "depenses_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "depenses_exercice_id_fkey"
+            columns: ["exercice_id"]
+            isOneToOne: false
+            referencedRelation: "exercices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "depenses_facture_id_fkey"
+            columns: ["facture_id"]
+            isOneToOne: false
+            referencedRelation: "factures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "depenses_fournisseur_id_fkey"
+            columns: ["fournisseur_id"]
+            isOneToOne: false
+            referencedRelation: "fournisseurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "depenses_ligne_budgetaire_id_fkey"
+            columns: ["ligne_budgetaire_id"]
+            isOneToOne: false
+            referencedRelation: "lignes_budgetaires"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "depenses_projet_id_fkey"
+            columns: ["projet_id"]
+            isOneToOne: false
+            referencedRelation: "projets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "depenses_reservation_credit_id_fkey"
+            columns: ["reservation_credit_id"]
+            isOneToOne: false
+            referencedRelation: "reservations_credits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       engagements: {
         Row: {
           beneficiaire: string | null
@@ -1335,6 +1479,45 @@ export type Database = {
         Args: { p_ligne_budgetaire_id: string }
         Returns: number
       }
+      create_bon_commande_with_numero: {
+        Args: {
+          p_client_id: string
+          p_conditions_livraison: string
+          p_date_commande: string
+          p_date_livraison_prevue: string
+          p_engagement_id: string
+          p_exercice_id: string
+          p_fournisseur_id: string
+          p_ligne_budgetaire_id: string
+          p_montant: number
+          p_objet: string
+          p_observations: string
+          p_projet_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      create_depense_with_numero: {
+        Args: {
+          p_beneficiaire: string
+          p_client_id: string
+          p_date_depense: string
+          p_engagement_id: string
+          p_exercice_id: string
+          p_facture_id: string
+          p_fournisseur_id: string
+          p_ligne_budgetaire_id: string
+          p_mode_paiement: string
+          p_montant: number
+          p_objet: string
+          p_observations: string
+          p_projet_id: string
+          p_reference_paiement: string
+          p_reservation_credit_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       create_engagement_with_numero: {
         Args: {
           p_beneficiaire: string
@@ -1347,6 +1530,27 @@ export type Database = {
           p_observations: string
           p_projet_id: string
           p_reservation_credit_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      create_facture_with_numero: {
+        Args: {
+          p_bon_commande_id: string
+          p_client_id: string
+          p_date_echeance: string
+          p_date_facture: string
+          p_engagement_id: string
+          p_exercice_id: string
+          p_fournisseur_id: string
+          p_ligne_budgetaire_id: string
+          p_montant_ht: number
+          p_montant_ttc: number
+          p_montant_tva: number
+          p_numero_facture_fournisseur: string
+          p_objet: string
+          p_observations: string
+          p_projet_id: string
           p_user_id: string
         }
         Returns: Json

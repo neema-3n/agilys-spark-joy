@@ -1,0 +1,265 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useExercice } from '@/contexts/ExerciceContext';
+import { useClient } from '@/contexts/ClientContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/hooks/use-toast';
+import * as depensesService from '@/services/api/depenses.service';
+import type { DepenseFormData } from '@/types/depense.types';
+
+export const useDepenses = () => {
+  const { currentExercice } = useExercice();
+  const { currentClient } = useClient();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
+    queryKey: ['depenses', currentExercice?.id, currentClient?.id],
+    queryFn: () => {
+      if (!currentExercice?.id || !currentClient?.id) {
+        return Promise.resolve([]);
+      }
+      return depensesService.getDepenses(currentExercice.id, currentClient.id);
+    },
+    enabled: !!currentExercice?.id && !!currentClient?.id,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: DepenseFormData) => {
+      if (!currentExercice?.id || !currentClient?.id || !user?.id) {
+        return Promise.reject(new Error('Données requises manquantes'));
+      }
+      return depensesService.createDepense(data, currentExercice.id, currentClient.id, user.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['depenses'] });
+      queryClient.invalidateQueries({ queryKey: ['engagements'] });
+      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['factures'] });
+      queryClient.invalidateQueries({ queryKey: ['lignes-budgetaires'] });
+      toast({
+        title: 'Succès',
+        description: 'Dépense créée avec succès',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<DepenseFormData> }) =>
+      depensesService.updateDepense(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['depenses'] });
+      toast({
+        title: 'Succès',
+        description: 'Dépense modifiée avec succès',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const validerMutation = useMutation({
+    mutationFn: (id: string) => depensesService.validerDepense(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['depenses'] });
+      toast({
+        title: 'Succès',
+        description: 'Dépense validée avec succès',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const ordonnancerMutation = useMutation({
+    mutationFn: (id: string) => depensesService.ordonnancerDepense(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['depenses'] });
+      toast({
+        title: 'Succès',
+        description: 'Dépense ordonnancée avec succès',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const marquerPayeeMutation = useMutation({
+    mutationFn: ({ 
+      id, 
+      datePaiement, 
+      modePaiement, 
+      referencePaiement 
+    }: { 
+      id: string; 
+      datePaiement: string; 
+      modePaiement: string; 
+      referencePaiement?: string 
+    }) => depensesService.marquerPayee(id, datePaiement, modePaiement, referencePaiement),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['depenses'] });
+      toast({
+        title: 'Succès',
+        description: 'Dépense marquée comme payée',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const annulerMutation = useMutation({
+    mutationFn: ({ id, motif }: { id: string; motif: string }) =>
+      depensesService.annulerDepense(id, motif),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['depenses'] });
+      queryClient.invalidateQueries({ queryKey: ['engagements'] });
+      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      toast({
+        title: 'Succès',
+        description: 'Dépense annulée',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => depensesService.deleteDepense(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['depenses'] });
+      toast({
+        title: 'Succès',
+        description: 'Dépense supprimée',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const createFromFactureMutation = useMutation({
+    mutationFn: (data: any) => {
+      if (!currentExercice?.id || !currentClient?.id || !user?.id) {
+        return Promise.reject(new Error('Données requises manquantes'));
+      }
+      return depensesService.createDepenseFromFacture(
+        data,
+        currentExercice.id,
+        currentClient.id,
+        user.id
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['depenses'] });
+      queryClient.invalidateQueries({ queryKey: ['factures'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const createFromEngagementMutation = useMutation({
+    mutationFn: (data: any) => {
+      if (!currentExercice?.id || !currentClient?.id || !user?.id) {
+        return Promise.reject(new Error('Données requises manquantes'));
+      }
+      return depensesService.createDepenseFromEngagement(
+        data,
+        currentExercice.id,
+        currentClient.id,
+        user.id
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['depenses'] });
+      queryClient.invalidateQueries({ queryKey: ['engagements'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const createFromReservationMutation = useMutation({
+    mutationFn: (data: any) => {
+      if (!currentExercice?.id || !currentClient?.id || !user?.id) {
+        return Promise.reject(new Error('Données requises manquantes'));
+      }
+      return depensesService.createDepenseFromReservation(
+        data,
+        currentExercice.id,
+        currentClient.id,
+        user.id
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['depenses'] });
+      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  return {
+    depenses: query.data || [],
+    isLoading: query.isLoading,
+    error: query.error,
+    createDepense: createMutation.mutateAsync,
+    createDepenseFromFacture: createFromFactureMutation.mutateAsync,
+    createDepenseFromEngagement: createFromEngagementMutation.mutateAsync,
+    createDepenseFromReservation: createFromReservationMutation.mutateAsync,
+    updateDepense: updateMutation.mutateAsync,
+    validerDepense: validerMutation.mutateAsync,
+    ordonnancerDepense: ordonnancerMutation.mutateAsync,
+    marquerPayee: marquerPayeeMutation.mutateAsync,
+    annulerDepense: annulerMutation.mutateAsync,
+    deleteDepense: deleteMutation.mutateAsync,
+  };
+};
