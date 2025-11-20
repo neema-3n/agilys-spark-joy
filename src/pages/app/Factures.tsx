@@ -1,5 +1,5 @@
-import { useState, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -35,6 +35,7 @@ import { Label } from '@/components/ui/label';
 
 export default function Factures() {
   const navigate = useNavigate();
+  const { factureId } = useParams<{ factureId: string }>();
   const { currentClient } = useClient();
   const { currentExercice } = useExercice();
   
@@ -76,6 +77,38 @@ export default function Factures() {
     () => factures.findIndex(f => f.id === snapshotFactureId),
     [factures, snapshotFactureId]
   );
+
+  // Synchroniser l'URL avec le snapshot
+  useEffect(() => {
+    if (factureId && factures.length > 0 && !snapshotFactureId) {
+      const facture = factures.find(f => f.id === factureId);
+      if (facture) {
+        setSnapshotFactureId(factureId);
+      } else {
+        // ID invalide, rediriger vers la liste
+        navigate('/app/factures', { replace: true });
+      }
+    }
+  }, [factureId, factures, snapshotFactureId, navigate]);
+
+  // Écouter le scroll du main parent pour l'effet poussoir
+  useEffect(() => {
+    const mainElement = document.querySelector('main');
+    if (!mainElement || !snapshotFactureId) {
+      setScrollProgress(0);
+      return;
+    }
+    
+    const handleScroll = () => {
+      const scrollTop = mainElement.scrollTop;
+      const transitionRange = 100;
+      const progress = Math.min(scrollTop / transitionRange, 1);
+      setScrollProgress(progress);
+    };
+    
+    mainElement.addEventListener('scroll', handleScroll);
+    return () => mainElement.removeEventListener('scroll', handleScroll);
+  }, [snapshotFactureId]);
 
   // Récupérer les bons de commande réceptionnés
   const { data: bonsCommande = [] } = useQuery({
@@ -153,23 +186,27 @@ export default function Factures() {
   }, [annulationFactureId, motifAnnulation, annulerFacture]);
 
   // Snapshot handlers
-  const handleOpenSnapshot = useCallback((factureId: string) => {
-    setSnapshotFactureId(factureId);
-  }, []);
+  const handleOpenSnapshot = useCallback((facture: Facture) => {
+    setSnapshotFactureId(facture.id);
+    navigate(`/app/factures/${facture.id}`);
+  }, [navigate]);
 
   const handleCloseSnapshot = useCallback(() => {
     setSnapshotFactureId(null);
     setScrollProgress(0);
-  }, []);
+    navigate('/app/factures');
+  }, [navigate]);
 
   const handleNavigateSnapshot = useCallback((direction: 'prev' | 'next') => {
     if (snapshotIndex === -1) return;
     
     const newIndex = direction === 'prev' ? snapshotIndex - 1 : snapshotIndex + 1;
     if (newIndex >= 0 && newIndex < factures.length) {
-      setSnapshotFactureId(factures[newIndex].id);
+      const newFacture = factures[newIndex];
+      setSnapshotFactureId(newFacture.id);
+      navigate(`/app/factures/${newFacture.id}`);
     }
-  }, [snapshotIndex, factures]);
+  }, [snapshotIndex, factures, navigate]);
 
   const handleNavigateToEntity = useCallback((type: string, id: string) => {
     // Phase 3 : implémenter la navigation vers BC et Engagement snapshots
@@ -201,14 +238,13 @@ export default function Factures() {
           // Afficher le snapshot (remplace Stats + Table)
           <FactureSnapshot
             facture={snapshotFacture}
-            onClose={handleCloseSnapshot}
-            onNavigate={handleNavigateSnapshot}
-            hasPrev={snapshotIndex > 0}
-            hasNext={snapshotIndex < factures.length - 1}
-            currentIndex={snapshotIndex}
-            totalCount={factures.length}
-            onNavigateToEntity={handleNavigateToEntity}
-            onScrollProgress={setScrollProgress}
+              onClose={handleCloseSnapshot}
+              onNavigate={handleNavigateSnapshot}
+              hasPrev={snapshotIndex > 0}
+              hasNext={snapshotIndex < factures.length - 1}
+              currentIndex={snapshotIndex}
+              totalCount={factures.length}
+              onNavigateToEntity={handleNavigateToEntity}
             onValider={snapshotFacture.statut === 'brouillon' ? () => validerFacture(snapshotFacture.id) : undefined}
             onMarquerPayee={snapshotFacture.statut === 'validee' ? () => marquerPayee(snapshotFacture.id) : undefined}
             onAnnuler={snapshotFacture.statut !== 'annulee' && snapshotFacture.statut !== 'payee' ? () => handleAnnuler(snapshotFacture.id) : undefined}
