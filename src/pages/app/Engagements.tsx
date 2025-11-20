@@ -1,11 +1,12 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { EngagementDialog } from '@/components/engagements/EngagementDialog';
 import { EngagementTable } from '@/components/engagements/EngagementTable';
 import { EngagementStats } from '@/components/engagements/EngagementStats';
+import { EngagementSnapshot } from '@/components/engagements/EngagementSnapshot';
 import { BonCommandeDialog } from '@/components/bonsCommande/BonCommandeDialog';
 import { CreateDepenseFromEngagementDialog } from '@/components/depenses/CreateDepenseFromEngagementDialog';
 import { useEngagements } from '@/hooks/useEngagements';
@@ -28,6 +29,7 @@ import type { CreateBonCommandeInput } from '@/types/bonCommande.types';
 
 // Engagements page - manages engagement creation and lifecycle
 const Engagements = () => {
+  const { engagementId } = useParams<{ engagementId?: string }>();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedEngagement, setSelectedEngagement] = useState<Engagement | undefined>();
   const [bonCommandeDialogOpen, setBonCommandeDialogOpen] = useState(false);
@@ -36,6 +38,8 @@ const Engagements = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [actionEngagementId, setActionEngagementId] = useState<string | null>(null);
   const [selectedEngagementForDepense, setSelectedEngagementForDepense] = useState<Engagement | null>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [snapshotEngagementId, setSnapshotEngagementId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -51,6 +55,37 @@ const Engagements = () => {
 
   const { createBonCommande, genererNumero } = useBonsCommande();
   const { createDepenseFromEngagement } = useDepenses();
+
+  // Synchronisation bidirectionnelle URL ↔ state
+  useEffect(() => {
+    if (engagementId && engagements.length > 0 && !snapshotEngagementId) {
+      const engagement = engagements.find(e => e.id === engagementId);
+      if (engagement) {
+        setSnapshotEngagementId(engagementId);
+      } else {
+        navigate('/app/engagements', { replace: true });
+      }
+    }
+  }, [engagementId, engagements, snapshotEngagementId, navigate]);
+
+  // Effet poussoir avec le scroll
+  useEffect(() => {
+    const mainElement = document.querySelector('main');
+    if (!mainElement || !snapshotEngagementId) {
+      setScrollProgress(0);
+      return;
+    }
+    
+    const handleScroll = () => {
+      const scrollTop = mainElement.scrollTop;
+      const transitionRange = 100;
+      const progress = Math.min(scrollTop / transitionRange, 1);
+      setScrollProgress(progress);
+    };
+    
+    mainElement.addEventListener('scroll', handleScroll);
+    return () => mainElement.removeEventListener('scroll', handleScroll);
+  }, [snapshotEngagementId]);
 
   const handleCreate = () => {
     setSelectedEngagement(undefined);
@@ -196,6 +231,80 @@ const Engagements = () => {
     }
   };
 
+  const handleCreerDepense = (engagement: Engagement) => {
+    setSelectedEngagementForDepense(engagement);
+  };
+
+  const handleOpenSnapshot = useCallback((engagementId: string) => {
+    setSnapshotEngagementId(engagementId);
+    navigate(`/app/engagements/${engagementId}`);
+  }, [navigate]);
+
+  const handleCloseSnapshot = () => {
+    setSnapshotEngagementId(null);
+    setScrollProgress(0);
+    navigate('/app/engagements');
+  };
+
+  const handleNavigateSnapshot = (direction: 'prev' | 'next') => {
+    const currentIndex = engagements.findIndex(e => e.id === snapshotEngagementId);
+    if (currentIndex === -1) return;
+    
+    const newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex >= 0 && newIndex < engagements.length) {
+      const newEngagement = engagements[newIndex];
+      setSnapshotEngagementId(newEngagement.id);
+      navigate(`/app/engagements/${newEngagement.id}`);
+    }
+  };
+
+  const handleNavigateToEntity = (type: string, id: string) => {
+    const entityRoutes: Record<string, string> = {
+      fournisseur: `/app/fournisseurs/${id}`,
+      ligneBudgetaire: `/app/budgets?ligne=${id}`,
+      projet: `/app/projets/${id}`,
+      reservationCredit: `/app/reservations/${id}`,
+    };
+    
+    const route = entityRoutes[type];
+    if (route) {
+      navigate(route);
+      showNavigationToast({
+        title: `Navigation vers ${type}`,
+        description: 'Vous avez été redirigé',
+        targetPage: { name: type, path: route },
+        navigate
+      });
+    }
+  };
+
+  const snapshotEngagement = useMemo(
+    () => engagements.find(e => e.id === snapshotEngagementId),
+    [engagements, snapshotEngagementId]
+  );
+
+  const snapshotIndex = useMemo(
+    () => engagements.findIndex(e => e.id === snapshotEngagementId),
+    [engagements, snapshotEngagementId]
+  );
+
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (!snapshotEngagementId) return;
+      
+      if (e.key === 'Escape') {
+        handleCloseSnapshot();
+      } else if (e.key === 'ArrowLeft' && snapshotIndex > 0) {
+        handleNavigateSnapshot('prev');
+      } else if (e.key === 'ArrowRight' && snapshotIndex < engagements.length - 1) {
+        handleNavigateSnapshot('next');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [snapshotEngagementId, snapshotIndex, engagements.length]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -205,30 +314,54 @@ const Engagements = () => {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="space-y-6">
       <PageHeader
         title="Gestion des Engagements"
         description="Demandes, validations et suivi des engagements"
+        scrollProgress={snapshotEngagementId ? scrollProgress : 0}
         actions={
-          <Button onClick={handleCreate}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nouvel engagement
-          </Button>
+          !snapshotEngagementId && (
+            <Button onClick={handleCreate}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nouvel engagement
+            </Button>
+          )
         }
       />
 
-      <div className="flex-1 overflow-y-auto p-8 pt-6 space-y-6">
-        <EngagementStats engagements={engagements} />
+      <div className="px-8 space-y-6">
+        {snapshotEngagementId && snapshotEngagement ? (
+          // Afficher le snapshot (remplace Stats + Table)
+          <EngagementSnapshot
+            engagement={snapshotEngagement}
+            onClose={handleCloseSnapshot}
+            onNavigate={handleNavigateSnapshot}
+            hasPrev={snapshotIndex > 0}
+            hasNext={snapshotIndex < engagements.length - 1}
+            currentIndex={snapshotIndex}
+            totalCount={engagements.length}
+            onEdit={() => handleEdit(snapshotEngagement)}
+            onValider={snapshotEngagement.statut === 'brouillon' ? () => handleValider(snapshotEngagement.id) : undefined}
+            onCreerBonCommande={snapshotEngagement.statut === 'valide' ? () => handleCreerBonCommande(snapshotEngagement) : undefined}
+            onCreerDepense={snapshotEngagement.statut === 'valide' ? () => handleCreerDepense(snapshotEngagement) : undefined}
+          />
+        ) : (
+          // Affichage normal : Stats + Table
+          <>
+            <EngagementStats engagements={engagements} />
 
-        <EngagementTable
-          engagements={engagements}
-          onEdit={handleEdit}
-          onValider={handleValider}
-          onAnnuler={handleAnnuler}
-          onDelete={handleDelete}
-          onCreerBonCommande={handleCreerBonCommande}
-          onCreerDepense={(engagement) => setSelectedEngagementForDepense(engagement)}
-        />
+            <EngagementTable
+              engagements={engagements}
+              onEdit={handleEdit}
+              onValider={handleValider}
+              onAnnuler={handleAnnuler}
+              onDelete={handleDelete}
+              onCreerBonCommande={handleCreerBonCommande}
+              onCreerDepense={(engagement) => setSelectedEngagementForDepense(engagement)}
+              onViewDetails={handleOpenSnapshot}
+            />
+          </>
+        )}
       </div>
 
       <EngagementDialog

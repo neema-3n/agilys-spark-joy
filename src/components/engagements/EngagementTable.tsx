@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Edit, CheckCircle, XCircle, Trash2, FileText, Receipt } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import type { Engagement } from '@/types/engagement.types';
 
 interface EngagementTableProps {
@@ -26,6 +27,7 @@ interface EngagementTableProps {
   onDelete: (id: string) => void;
   onCreerBonCommande: (engagement: Engagement) => void;
   onCreerDepense: (engagement: Engagement) => void;
+  onViewDetails: (engagementId: string) => void;
 }
 
 export const EngagementTable = ({
@@ -36,6 +38,7 @@ export const EngagementTable = ({
   onDelete,
   onCreerBonCommande,
   onCreerDepense,
+  onViewDetails,
 }: EngagementTableProps) => {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -95,8 +98,14 @@ export const EngagementTable = ({
       </TableHeader>
       <TableBody>
         {engagements.map((engagement) => (
-          <TableRow key={engagement.id}>
-            <TableCell className="font-medium">{engagement.numero}</TableCell>
+          <TableRow 
+            key={engagement.id}
+            onDoubleClick={() => onViewDetails(engagement.id)}
+            className="cursor-pointer hover:bg-muted/30"
+          >
+            <TableCell className="font-medium">
+              {engagement.numero}
+            </TableCell>
             <TableCell>
               {engagement.ligneBudgetaire?.libelle || '-'}
             </TableCell>
