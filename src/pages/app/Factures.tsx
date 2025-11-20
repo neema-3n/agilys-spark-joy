@@ -50,6 +50,7 @@ export default function Factures() {
   
   // États pour le snapshot
   const [snapshotFactureId, setSnapshotFactureId] = useState<string | null>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
   
   const { factures, isLoading, createFacture, updateFacture, deleteFacture, genererNumero, validerFacture, marquerPayee, annulerFacture } = useFactures();
   const { createDepenseFromFacture } = useDepenses();
@@ -89,6 +90,24 @@ export default function Factures() {
       }
     }
   }, [factureId, factures, snapshotFactureId, navigate]);
+
+  // Gérer le scroll pour l'effet de disparition du header
+  useEffect(() => {
+    if (!snapshotFactureId) {
+      setScrollProgress(0);
+      return;
+    }
+
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const maxScroll = 100;
+      const progress = Math.min(scrollY / maxScroll, 1);
+      setScrollProgress(progress);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [snapshotFactureId]);
 
   // Récupérer les bons de commande réceptionnés
   const { data: bonsCommande = [] } = useQuery({
@@ -216,6 +235,7 @@ export default function Factures() {
       title="Gestion des Factures"
       description="Gérez les factures fournisseurs"
       sticky={!snapshotFactureId}
+      scrollProgress={snapshotFactureId ? scrollProgress : 0}
       actions={
         <Button onClick={handleCreate}>
           <Plus className="mr-2 h-4 w-4" />
