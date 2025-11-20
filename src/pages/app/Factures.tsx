@@ -101,7 +101,7 @@ export default function Factures() {
     
     const handleScroll = () => {
       const scrollTop = mainElement.scrollTop;
-      const transitionRange = 100;
+      const transitionRange = 180;
       const progress = Math.min(scrollTop / transitionRange, 1);
       setScrollProgress(progress);
     };
