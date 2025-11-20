@@ -231,10 +231,9 @@ export default function Factures() {
   }
 
   const pageHeaderContent = (
-    <PageHeader
+    <PageHeader 
       title="Gestion des Factures"
       description="Gérez les factures fournisseurs"
-      sticky={!snapshotFactureId}
       scrollProgress={snapshotFactureId ? scrollProgress : 0}
       actions={
         <Button onClick={handleCreate}>
