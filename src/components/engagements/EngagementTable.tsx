@@ -27,6 +27,7 @@ interface EngagementTableProps {
   onDelete: (id: string) => void;
   onCreerBonCommande: (engagement: Engagement) => void;
   onCreerDepense: (engagement: Engagement) => void;
+  onViewDetails: (engagementId: string) => void;
 }
 
 export const EngagementTable = ({
@@ -37,6 +38,7 @@ export const EngagementTable = ({
   onDelete,
   onCreerBonCommande,
   onCreerDepense,
+  onViewDetails,
 }: EngagementTableProps) => {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -96,7 +98,11 @@ export const EngagementTable = ({
       </TableHeader>
       <TableBody>
         {engagements.map((engagement) => (
-          <TableRow key={engagement.id}>
+          <TableRow 
+            key={engagement.id}
+            onDoubleClick={() => onViewDetails(engagement.id)}
+            className="cursor-pointer hover:bg-muted/30"
+          >
             <TableCell className="font-medium">
               <Link
                 to={`/app/engagements/${engagement.id}`}
