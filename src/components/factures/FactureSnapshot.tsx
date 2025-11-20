@@ -1,4 +1,3 @@
-import { ReactNode } from 'react';
 import { FileText, Building2, ShoppingCart, FileCheck, FolderOpen, Calendar, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,8 +21,6 @@ interface FactureSnapshotProps {
   onAnnuler?: () => void;
   onCreerDepense?: () => void;
   onNavigateToEntity?: (type: string, id: string) => void;
-  pageHeaderClone: ReactNode;
-  scrollProgress: number;
 }
 
 export const FactureSnapshot = ({
@@ -40,8 +37,6 @@ export const FactureSnapshot = ({
   onAnnuler,
   onCreerDepense,
   onNavigateToEntity,
-  pageHeaderClone,
-  scrollProgress,
 }: FactureSnapshotProps) => {
   const getStatutBadge = (statut: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'success' | 'destructive'> = {
@@ -120,8 +115,6 @@ export const FactureSnapshot = ({
       onClose={onClose}
       onNavigate={onNavigate}
       actions={actions}
-      pageHeaderClone={pageHeaderClone}
-      scrollProgress={scrollProgress}
     >
       {/* Section 1: Informations principales */}
       <Card>
