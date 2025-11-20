@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Edit, CheckCircle, XCircle, Trash2, FileText, Receipt } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import type { Engagement } from '@/types/engagement.types';
 
 interface EngagementTableProps {
@@ -96,7 +97,14 @@ export const EngagementTable = ({
       <TableBody>
         {engagements.map((engagement) => (
           <TableRow key={engagement.id}>
-            <TableCell className="font-medium">{engagement.numero}</TableCell>
+            <TableCell className="font-medium">
+              <Link
+                to={`/app/engagements/${engagement.id}`}
+                className="text-primary hover:underline"
+              >
+                {engagement.numero}
+              </Link>
+            </TableCell>
             <TableCell>
               {engagement.ligneBudgetaire?.libelle || '-'}
             </TableCell>
