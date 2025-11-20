@@ -17,13 +17,26 @@ export const useFactures = () => {
   });
 
   const createMutation = useMutation({
-    mutationFn: (facture: CreateFactureInput) => facturesService.create(facture),
-    onSuccess: () => {
+    mutationFn: ({ facture, skipToast }: { facture: CreateFactureInput; skipToast?: boolean }) => 
+      facturesService.create(facture),
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['factures'] });
-      toast.success('Facture créée avec succès');
+      if (!variables.skipToast) {
+        toast.success('Facture créée avec succès');
+      }
     },
     onError: (error: Error) => {
-      toast.error(`Erreur: ${error.message}`);
+      let message = error.message;
+      
+      // Fallback pour messages non transformés
+      if (message.startsWith('P0001:')) {
+        message = '❌ Une erreur s\'est produite lors de la création de la facture.\nVeuillez vérifier les montants et réessayer.';
+      }
+      
+      toast.error(message, {
+        duration: 8000,
+        style: { whiteSpace: 'pre-line', maxWidth: '500px' }
+      });
     },
   });
 
@@ -35,7 +48,16 @@ export const useFactures = () => {
       toast.success('Facture mise à jour avec succès');
     },
     onError: (error: Error) => {
-      toast.error(`Erreur: ${error.message}`);
+      let message = error.message;
+      
+      if (message.startsWith('P0001:')) {
+        message = '❌ Une erreur s\'est produite lors de la mise à jour.\nVeuillez vérifier les montants et réessayer.';
+      }
+      
+      toast.error(message, {
+        duration: 8000,
+        style: { whiteSpace: 'pre-line', maxWidth: '500px' }
+      });
     },
   });
 

@@ -27,8 +27,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { DepensesStats } from '@/components/depenses/DepensesStats';
-import { DepensesTable as DepensesMonitoringTable } from '@/components/depenses/DepensesTable';
 
 interface BudgetTableProps {
   clientId: string;
@@ -489,7 +487,7 @@ export const BudgetTable = ({
                 </Button>
               </div>
             </TableCell>
-            <TableCell colSpan={8} />
+            <TableCell colSpan={9} />
           </TableRow>
 
           {isExpanded && sectionProgrammes.map((programme) => {
@@ -517,7 +515,7 @@ export const BudgetTable = ({
                       </Button>
                     </div>
                   </TableCell>
-                  <TableCell colSpan={8} />
+                  <TableCell colSpan={9} />
                 </TableRow>
 
                 {isProgrammeExpanded && programmeActions.map((action) => {
@@ -532,7 +530,7 @@ export const BudgetTable = ({
                             {action.code} - {action.libelle}
                           </div>
                       </TableCell>
-                      <TableCell colSpan={8} />
+                      <TableCell colSpan={9} />
                       </TableRow>
 
                       {actionLignes.map((ligne) => {
@@ -586,6 +584,11 @@ export const BudgetTable = ({
                                 }
                               >
                                 {tauxExecution}%
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge variant={ligne.statut === 'actif' ? 'default' : 'secondary'}>
+                                {ligne.statut}
                               </Badge>
                             </TableCell>
                             <TableCell>
@@ -676,8 +679,8 @@ export const BudgetTable = ({
       {/* Conditional Rendering based on viewMode */}
       {viewMode === 'monitoring' ? (
         <div className="space-y-6">
-          <DepensesStats lignesBudgetaires={lignes} />
-          <DepensesMonitoringTable lignesBudgetaires={lignes} />
+          {/* Monitoring view - to be implemented */}
+          <p className="text-center text-muted-foreground py-8">Vue de suivi en développement</p>
         </div>
       ) : (
         /* Table */

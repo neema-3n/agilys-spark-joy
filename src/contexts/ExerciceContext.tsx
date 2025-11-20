@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { ExerciceContextType, Exercice } from '@/types';
 import { exercicesService } from '@/services/api/exercices.service';
 import { useClient } from './ClientContext';
@@ -12,13 +12,7 @@ export const ExerciceProvider = ({ children }: { children: ReactNode }) => {
   const [currentExercice, setCurrentExercice] = useState<Exercice | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    if (currentClient) {
-      loadExercices();
-    }
-  }, [currentClient]);
-
-  const loadExercices = async () => {
+  const loadExercices = useCallback(async () => {
     if (!currentClient) return;
     
     setIsLoading(true);
@@ -35,9 +29,15 @@ export const ExerciceProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentClient]);
 
-  const createExercice = async (exercice: Omit<Exercice, 'id'>) => {
+  useEffect(() => {
+    if (currentClient) {
+      loadExercices();
+    }
+  }, [currentClient, loadExercices]);
+
+  const createExercice = useCallback(async (exercice: Omit<Exercice, 'id'>) => {
     try {
       const newExercice = await exercicesService.create(exercice);
       setExercices(prev => [newExercice, ...prev]);
@@ -47,9 +47,9 @@ export const ExerciceProvider = ({ children }: { children: ReactNode }) => {
       toast.error(error.message || 'Erreur lors de la création');
       throw error;
     }
-  };
+  }, []);
 
-  const updateExercice = async (id: string, updates: Partial<Omit<Exercice, 'id' | 'clientId'>>) => {
+  const updateExercice = useCallback(async (id: string, updates: Partial<Omit<Exercice, 'id' | 'clientId'>>) => {
     try {
       const updated = await exercicesService.update(id, updates);
       setExercices(prev => prev.map(ex => ex.id === id ? updated : ex));
@@ -62,9 +62,9 @@ export const ExerciceProvider = ({ children }: { children: ReactNode }) => {
       toast.error(error.message || 'Erreur lors de la mise à jour');
       throw error;
     }
-  };
+  }, [currentExercice?.id]);
 
-  const cloturerExercice = async (id: string) => {
+  const cloturerExercice = useCallback(async (id: string) => {
     try {
       const updated = await exercicesService.cloturer(id);
       setExercices(prev => prev.map(ex => ex.id === id ? updated : ex));
@@ -78,9 +78,9 @@ export const ExerciceProvider = ({ children }: { children: ReactNode }) => {
       toast.error(error.message || 'Erreur lors de la clôture');
       throw error;
     }
-  };
+  }, [currentExercice?.id, exercices]);
 
-  const deleteExercice = async (id: string) => {
+  const deleteExercice = useCallback(async (id: string) => {
     try {
       await exercicesService.delete(id);
       setExercices(prev => prev.filter(ex => ex.id !== id));
@@ -93,20 +93,22 @@ export const ExerciceProvider = ({ children }: { children: ReactNode }) => {
       toast.error(error.message || 'Erreur lors de la suppression');
       throw error;
     }
-  };
+  }, [currentExercice?.id, exercices]);
+
+  const contextValue = useMemo(() => ({
+    currentExercice,
+    exercices,
+    setCurrentExercice,
+    createExercice,
+    updateExercice,
+    cloturerExercice,
+    deleteExercice,
+    isLoading,
+    refreshExercices: loadExercices
+  }), [currentExercice, exercices, isLoading, loadExercices, createExercice, updateExercice, cloturerExercice, deleteExercice]);
 
   return (
-    <ExerciceContext.Provider value={{ 
-      currentExercice, 
-      exercices, 
-      setCurrentExercice,
-      createExercice,
-      updateExercice,
-      cloturerExercice,
-      deleteExercice,
-      isLoading,
-      refreshExercices: loadExercices
-    }}>
+    <ExerciceContext.Provider value={contextValue}>
       {children}
     </ExerciceContext.Provider>
   );

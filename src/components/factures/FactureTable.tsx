@@ -17,7 +17,8 @@ import {
   CheckCircle, 
   DollarSign,
   XCircle,
-  Eye
+  Eye,
+  FileText
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -47,6 +48,7 @@ interface FactureTableProps {
   onValider: (id: string) => void;
   onMarquerPayee: (id: string) => void;
   onAnnuler: (id: string) => void;
+  onCreerDepense: (facture: Facture) => void;
 }
 
 export const FactureTable = ({
@@ -56,6 +58,7 @@ export const FactureTable = ({
   onValider,
   onMarquerPayee,
   onAnnuler,
+  onCreerDepense,
 }: FactureTableProps) => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -157,10 +160,16 @@ export const FactureTable = ({
                           </DropdownMenuItem>
                         )}
                         {facture.statut === 'validee' && (
-                          <DropdownMenuItem onClick={() => onMarquerPayee(facture.id)}>
-                            <DollarSign className="mr-2 h-4 w-4" />
-                            Marquer payée
-                          </DropdownMenuItem>
+                          <>
+                            <DropdownMenuItem onClick={() => onMarquerPayee(facture.id)}>
+                              <DollarSign className="mr-2 h-4 w-4" />
+                              Marquer payée
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onCreerDepense(facture)}>
+                              <FileText className="mr-2 h-4 w-4" />
+                              Créer une dépense
+                            </DropdownMenuItem>
+                          </>
                         )}
                         {facture.statut !== 'payee' && facture.statut !== 'annulee' && (
                           <DropdownMenuItem onClick={() => onAnnuler(facture.id)}>

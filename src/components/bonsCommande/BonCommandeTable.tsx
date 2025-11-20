@@ -59,8 +59,8 @@ interface BonCommandeTableProps {
   onEdit: (bonCommande: BonCommande) => void;
   onValider: (id: string) => void;
   onMettreEnCours: (id: string) => void;
-  onReceptionner: (id: string) => void;
-  onAnnuler: (id: string) => void;
+  onReceptionner: (bonCommande: BonCommande) => void;
+  onAnnuler: (bonCommande: BonCommande) => void;
   onDelete: (id: string) => void;
   onCreateFacture?: (bonCommande: BonCommande) => void;
 }
@@ -294,7 +294,7 @@ export const BonCommandeTable = ({
                         {bc.statut === 'en_cours' && (
                           <>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => onReceptionner(bc.id)}>
+                            <DropdownMenuItem onClick={() => onReceptionner(bc)}>
                               <Package className="h-4 w-4 mr-2" />
                               Réceptionner
                             </DropdownMenuItem>
@@ -311,10 +311,10 @@ export const BonCommandeTable = ({
                           </>
                         )}
                         
-                        {bc.statut !== 'receptionne' && bc.statut !== 'facture' && bc.statut !== 'annule' && (
+                        {bc.statut !== 'facture' && bc.statut !== 'annule' && (
                           <>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => onAnnuler(bc.id)}>
+                            <DropdownMenuItem onClick={() => onAnnuler(bc)}>
                               <XCircle className="h-4 w-4 mr-2" />
                               Annuler
                             </DropdownMenuItem>
