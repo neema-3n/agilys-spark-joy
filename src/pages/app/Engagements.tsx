@@ -38,7 +38,6 @@ const Engagements = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [actionEngagementId, setActionEngagementId] = useState<string | null>(null);
   const [selectedEngagementForDepense, setSelectedEngagementForDepense] = useState<Engagement | null>(null);
-  const [scrollProgress, setScrollProgress] = useState(0);
   const [snapshotEngagementId, setSnapshotEngagementId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -67,25 +66,6 @@ const Engagements = () => {
       }
     }
   }, [engagementId, engagements, snapshotEngagementId, navigate]);
-
-  // Effet poussoir avec le scroll
-  useEffect(() => {
-    const mainElement = document.querySelector('main');
-    if (!mainElement || !snapshotEngagementId) {
-      setScrollProgress(0);
-      return;
-    }
-    
-    const handleScroll = () => {
-      const scrollTop = mainElement.scrollTop;
-      const transitionRange = 100;
-      const progress = Math.min(scrollTop / transitionRange, 1);
-      setScrollProgress(progress);
-    };
-    
-    mainElement.addEventListener('scroll', handleScroll);
-    return () => mainElement.removeEventListener('scroll', handleScroll);
-  }, [snapshotEngagementId]);
 
   const handleCreate = () => {
     setSelectedEngagement(undefined);
@@ -242,7 +222,6 @@ const Engagements = () => {
 
   const handleCloseSnapshot = () => {
     setSnapshotEngagementId(null);
-    setScrollProgress(0);
     navigate('/app/engagements');
   };
 
@@ -344,8 +323,6 @@ const Engagements = () => {
             onValider={snapshotEngagement.statut === 'brouillon' ? () => handleValider(snapshotEngagement.id) : undefined}
             onCreerBonCommande={snapshotEngagement.statut === 'valide' ? () => handleCreerBonCommande(snapshotEngagement) : undefined}
             onCreerDepense={snapshotEngagement.statut === 'valide' ? () => handleCreerDepense(snapshotEngagement) : undefined}
-            pageHeaderClone={pageHeaderContent}
-            scrollProgress={scrollProgress}
           />
         ) : (
           // Affichage normal : Stats + Table

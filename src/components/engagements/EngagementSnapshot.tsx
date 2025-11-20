@@ -1,4 +1,3 @@
-import { ReactNode } from 'react';
 import { FileText, Building2, FolderOpen, Calendar, AlertCircle, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,8 +21,6 @@ interface EngagementSnapshotProps {
   onCreerBonCommande?: () => void;
   onCreerDepense?: () => void;
   onNavigateToEntity?: (type: string, id: string) => void;
-  pageHeaderClone: ReactNode;
-  scrollProgress: number;
 }
 
 export const EngagementSnapshot = ({
@@ -40,8 +37,6 @@ export const EngagementSnapshot = ({
   onCreerBonCommande,
   onCreerDepense,
   onNavigateToEntity,
-  pageHeaderClone,
-  scrollProgress,
 }: EngagementSnapshotProps) => {
   const getStatutBadge = (statut: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'success' | 'destructive' | 'outline'> = {
@@ -123,8 +118,6 @@ export const EngagementSnapshot = ({
       onClose={onClose}
       onNavigate={onNavigate}
       actions={actions}
-      pageHeaderClone={pageHeaderClone}
-      scrollProgress={scrollProgress}
     >
       {/* Informations principales */}
       <Card>

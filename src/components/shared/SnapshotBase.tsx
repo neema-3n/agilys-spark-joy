@@ -14,8 +14,6 @@ interface SnapshotBaseProps {
   onNavigate: (direction: 'prev' | 'next') => void;
   actions?: ReactNode;
   children: ReactNode;
-  pageHeaderClone: ReactNode;
-  scrollProgress: number;
 }
 
 export const SnapshotBase = ({
@@ -29,8 +27,6 @@ export const SnapshotBase = ({
   onNavigate,
   actions,
   children,
-  pageHeaderClone,
-  scrollProgress,
 }: SnapshotBaseProps) => {
   // Scroll en haut à l'ouverture
   useEffect(() => {
@@ -42,17 +38,6 @@ export const SnapshotBase = ({
 
   return (
     <div className="min-h-screen">
-      {/* Clone du PageHeader - sera poussé lors du scroll */}
-      <div
-        style={{
-          transform: `translateY(${-(scrollProgress * 100)}px)`,
-          opacity: 1 - scrollProgress,
-          transition: 'transform 0.2s ease-out, opacity 0.2s ease-out',
-        }}
-      >
-        {pageHeaderClone}
-      </div>
-
       {/* En-tête du snapshot - sticky */}
       <div className="sticky top-0 z-20 bg-background border-b border-border">
         <div className="py-4">
