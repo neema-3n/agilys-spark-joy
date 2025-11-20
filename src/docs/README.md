@@ -4,7 +4,7 @@ Ce dossier contient la documentation des patterns de code utilisés dans l'appli
 
 ## 📋 Patterns Disponibles
 
-### [Snapshot Pattern](./snapshot-pattern.md) ✅ Implémenté
+### [Snapshot Pattern](./snapshot-pattern.md) ✅
 
 **Quand l'utiliser :** À chaque fois que vous créez une vue détaillée en overlay (snapshot) pour afficher les informations d'une entité.
 
@@ -20,13 +20,11 @@ Ce dossier contient la documentation des patterns de code utilisés dans l'appli
 
 ---
 
-## 🎯 Patterns Recommandés à Créer
+### [Dialog Form Pattern](./dialog-form-pattern.md) ✅
 
-### Dialog Form Pattern (Haute Priorité)
+**Quand l'utiliser :** Avant d'ajouter de nouveaux formulaires de création/édition.
 
-**Quand créer :** Avant d'ajouter de nouveaux formulaires de création/édition.
-
-**Devrait couvrir :**
+**Couvre :**
 - Structure standard des dialogues de formulaire
 - Utilisation de `react-hook-form` + Zod
 - Génération automatique de numéros (via edge functions)
@@ -34,52 +32,56 @@ Ce dossier contient la documentation des patterns de code utilisés dans l'appli
 - Calculs automatiques (montants, disponibles, etc.)
 - États conditionnels (lecture seule selon statut)
 
-**Impact :** 15+ composants de dialogue concernés
+**Composants concernés :**
+- 15+ composants de dialogue (Factures, Engagements, Dépenses, etc.)
 
 ---
 
-### Service API Pattern (Haute Priorité)
+### [Service API Pattern](./service-api-pattern.md) ✅
 
-**Quand créer :** Avant d'ajouter de nouveaux services API.
+**Quand l'utiliser :** Avant d'ajouter de nouveaux services API.
 
-**Devrait couvrir :**
+**Couvre :**
 - Structure standard d'un service (getAll, getById, create, update, delete)
 - Mappings `fromDB` / `toDB` pour transformer les données
 - Gestion des clés étrangères et relations
 - Filtrage par client et exercice
 - Gestion des erreurs standard
 
-**Impact :** Tous les services dans `src/services/api/`
+**Services concernés :**
+- Tous les services dans `src/services/api/`
 
 ---
 
-### Table Pattern (Utile)
+### [Table Pattern](./table-pattern.md) ✅
 
-**Quand créer :** Avant de créer plusieurs nouvelles tables de données.
+**Quand l'utiliser :** Avant de créer de nouvelles tables de données.
 
-**Devrait couvrir :**
+**Couvre :**
 - Structure des colonnes (helpers, formatters)
 - Tri et filtrage
 - Actions de ligne (éditer, supprimer, snapshot)
 - États de chargement et messages vides
 - Responsivité mobile
 
-**Impact :** Tous les composants `*Table.tsx`
+**Composants concernés :**
+- Tous les composants `*Table.tsx`
 
 ---
 
-### Stats Card Pattern (Utile)
+### [Stats Card Pattern](./stats-card-pattern.md) ✅
 
-**Quand créer :** Avant de créer de nouveaux tableaux de bord.
+**Quand l'utiliser :** Avant de créer de nouveaux tableaux de bord.
 
-**Devrait couvrir :**
+**Couvre :**
 - Structure des composants `*Stats.tsx`
 - Calculs d'agrégations (totaux, moyennes, compteurs)
 - Utilisation du composant `StatsCard`
 - Indicateurs de tendance
 - Gestion des états vides
 
-**Impact :** Tous les composants `*Stats.tsx`
+**Composants concernés :**
+- Tous les composants `*Stats.tsx`
 
 ---
 
