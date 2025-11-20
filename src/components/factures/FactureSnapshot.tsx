@@ -36,6 +36,7 @@ interface FactureSnapshotProps {
   currentIndex: number;
   totalCount: number;
   onNavigateToEntity: (type: 'bonCommande' | 'engagement' | 'ligneBudgetaire' | 'projet', id: string) => void;
+  onScrollProgress?: (progress: number) => void;
   // Actions disponibles
   onValider?: () => void;
   onMarquerPayee?: () => void;
@@ -53,12 +54,20 @@ export const FactureSnapshot = ({
   currentIndex,
   totalCount,
   onNavigateToEntity,
+  onScrollProgress,
   onValider,
   onMarquerPayee,
   onAnnuler,
   onEdit,
   onCreerDepense,
 }: FactureSnapshotProps) => {
+  const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    const target = event.currentTarget;
+    const scrollTop = target.scrollTop;
+    const transitionRange = 100;
+    const progress = Math.min(scrollTop / transitionRange, 1);
+    onScrollProgress?.(progress);
+  };
   const formatMontant = (montant: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -95,7 +104,7 @@ export const FactureSnapshot = ({
   return (
     <div className="flex flex-col h-full">
       {/* Header fixe */}
-      <div className="sticky top-0 z-20 bg-background border-b">
+      <div className="sticky top-0 z-30 bg-background border-b">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -179,7 +188,7 @@ export const FactureSnapshot = ({
       </div>
 
       {/* Corps scrollable */}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1" onScrollCapture={handleScroll}>
         <div className="px-6 py-6 space-y-6">
           {/* Section 1: Informations principales */}
           <Card>
