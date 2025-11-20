@@ -1,11 +1,12 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { ReservationDialog } from '@/components/reservations/ReservationDialog';
 import { ReservationTable } from '@/components/reservations/ReservationTable';
 import { ReservationStats } from '@/components/reservations/ReservationStats';
+import { ReservationSnapshot } from '@/components/reservations/ReservationSnapshot';
 import { EngagementDialog } from '@/components/engagements/EngagementDialog';
 import { useReservations } from '@/hooks/useReservations';
 import { useEngagements } from '@/hooks/useEngagements';
@@ -38,7 +39,12 @@ const Reservations = () => {
   const [engagementDialogOpen, setEngagementDialogOpen] = useState(false);
   const [reservationSourceId, setReservationSourceId] = useState<string | null>(null);
   const [selectedReservationForDepense, setSelectedReservationForDepense] = useState<ReservationCredit | null>(null);
+  
+  // États pour le snapshot
+  const [snapshotReservationId, setSnapshotReservationId] = useState<string | null>(null);
+  
   const navigate = useNavigate();
+  const { reservationId } = useParams<{ reservationId: string }>();
   const { toast } = useToast();
   
   const {
@@ -56,6 +62,29 @@ const Reservations = () => {
   const { lignes: lignesBudgetaires } = useLignesBudgetaires();
   const { fournisseurs } = useFournisseurs();
   const { projets } = useProjets();
+
+  // Snapshot helpers
+  const snapshotReservation = useMemo(
+    () => reservations.find(r => r.id === snapshotReservationId),
+    [reservations, snapshotReservationId]
+  );
+
+  const snapshotIndex = useMemo(
+    () => reservations.findIndex(r => r.id === snapshotReservationId),
+    [reservations, snapshotReservationId]
+  );
+
+  // Synchroniser l'URL avec le snapshot
+  useEffect(() => {
+    if (reservationId && reservations.length > 0 && !snapshotReservationId) {
+      const reservation = reservations.find(r => r.id === reservationId);
+      if (reservation) {
+        setSnapshotReservationId(reservationId);
+      } else {
+        navigate('/app/reservations', { replace: true });
+      }
+    }
+  }, [reservationId, reservations, snapshotReservationId, navigate]);
 
   const handleCreate = () => {
     setSelectedReservation(undefined);

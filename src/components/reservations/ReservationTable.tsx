@@ -14,6 +14,7 @@ interface ReservationTableProps {
   onAnnuler: (id: string, motif: string) => void;
   onDelete: (id: string) => void;
   onCreerDepenseUrgence: (reservation: ReservationCredit) => void;
+  onOpenSnapshot?: (id: string) => void;
 }
 
 export const ReservationTable = ({
@@ -23,6 +24,7 @@ export const ReservationTable = ({
   onAnnuler,
   onDelete,
   onCreerDepenseUrgence,
+  onOpenSnapshot,
 }: ReservationTableProps) => {
   const calculerSolde = (reservation: ReservationCredit): number => {
     if (!reservation.engagements || reservation.engagements.length === 0) {
@@ -96,7 +98,7 @@ export const ReservationTable = ({
             </TableRow>
           ) : (
             reservations.map((reservation) => (
-              <TableRow key={reservation.id}>
+              <TableRow key={reservation.id} className="cursor-pointer hover:bg-muted/50" onClick={() => onOpenSnapshot?.(reservation.id)}>
                 <TableCell className="font-medium">{reservation.numero}</TableCell>
                 <TableCell>
                   {reservation.ligneBudgetaire?.libelle || 'N/A'}
