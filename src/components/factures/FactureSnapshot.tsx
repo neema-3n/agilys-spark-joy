@@ -35,7 +35,7 @@ interface FactureSnapshotProps {
   hasNext: boolean;
   currentIndex: number;
   totalCount: number;
-  onNavigateToEntity: (type: 'bonCommande' | 'engagement' | 'ligneBudgetaire' | 'projet', id: string) => void;
+  onNavigateToEntity: (type: 'bonCommande' | 'engagement' | 'ligneBudgetaire' | 'projet' | 'fournisseur', id: string) => void;
   onScrollProgress?: (progress: number) => void;
   // Actions disponibles
   onValider?: () => void;
@@ -221,6 +221,66 @@ export const FactureSnapshot = ({
                 <p className="text-sm text-muted-foreground mb-1">Objet</p>
                 <p className="text-lg font-semibold">{facture.objet}</p>
               </div>
+
+              {/* Bon de commande lié */}
+              {facture.bonCommande && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Bon de commande</p>
+                  <button
+                    onClick={() => onNavigateToEntity('bonCommande', facture.bonCommande!.id)}
+                    className="font-medium text-primary hover:underline flex items-center gap-2 transition-colors"
+                  >
+                    <ShoppingCart className="h-4 w-4" />
+                    {facture.bonCommande.numero}
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* Engagement lié */}
+              {facture.engagement && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Engagement</p>
+                  <button
+                    onClick={() => onNavigateToEntity('engagement', facture.engagement!.id)}
+                    className="font-medium text-primary hover:underline flex items-center gap-2 transition-colors"
+                  >
+                    <FileCheck className="h-4 w-4" />
+                    {facture.engagement.numero}
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* Ligne budgétaire liée */}
+              {facture.ligneBudgetaire && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Ligne budgétaire</p>
+                  <button
+                    onClick={() => onNavigateToEntity('ligneBudgetaire', facture.ligneBudgetaire!.id)}
+                    className="font-medium text-primary hover:underline flex items-center gap-2 transition-colors"
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    {facture.ligneBudgetaire.libelle}
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* Projet lié */}
+              {facture.projet && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Projet</p>
+                  <button
+                    onClick={() => onNavigateToEntity('projet', facture.projet!.id)}
+                    className="font-medium text-primary hover:underline flex items-center gap-2 transition-colors"
+                  >
+                    <Briefcase className="h-4 w-4" />
+                    {facture.projet.nom}
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
               
               {facture.observations && (
                 <div>
@@ -243,7 +303,13 @@ export const FactureSnapshot = ({
               {facture.fournisseur ? (
                 <div className="space-y-2">
                   <div>
-                    <p className="text-lg font-semibold">{facture.fournisseur.nom}</p>
+                    <button
+                      onClick={() => onNavigateToEntity('fournisseur', facture.fournisseurId)}
+                      className="text-lg font-semibold text-primary hover:underline flex items-center gap-2 transition-colors"
+                    >
+                      {facture.fournisseur.nom}
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
                     <p className="text-sm text-muted-foreground">Code: {facture.fournisseur.code}</p>
                   </div>
                 </div>
@@ -295,119 +361,6 @@ export const FactureSnapshot = ({
             </CardContent>
           </Card>
 
-          {/* Section 4: Entités liées */}
-          <div>
-            <h3 className="text-lg font-semibold mb-3">Entités liées</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Bon de commande */}
-              {facture.bonCommande ? (
-                <Card 
-                  className="cursor-pointer hover:bg-accent/50 transition-colors"
-                  onClick={() => onNavigateToEntity('bonCommande', facture.bonCommande!.id)}
-                >
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <ShoppingCart className="h-4 w-4" />
-                          Bon de commande
-                        </CardTitle>
-                        <CardDescription>{facture.bonCommande.numero}</CardDescription>
-                      </div>
-                      <ArrowRight className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                  </CardHeader>
-                </Card>
-              ) : (
-                <Card className="opacity-50">
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <ShoppingCart className="h-4 w-4" />
-                      Bon de commande
-                    </CardTitle>
-                    <CardDescription>Non associé</CardDescription>
-                  </CardHeader>
-                </Card>
-              )}
-
-              {/* Engagement */}
-              {facture.engagement ? (
-                <Card 
-                  className="cursor-pointer hover:bg-accent/50 transition-colors"
-                  onClick={() => onNavigateToEntity('engagement', facture.engagement!.id)}
-                >
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <FileCheck className="h-4 w-4" />
-                          Engagement
-                        </CardTitle>
-                        <CardDescription>{facture.engagement.numero}</CardDescription>
-                      </div>
-                      <ArrowRight className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                  </CardHeader>
-                </Card>
-              ) : (
-                <Card className="opacity-50">
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <FileCheck className="h-4 w-4" />
-                      Engagement
-                    </CardTitle>
-                    <CardDescription>Non associé</CardDescription>
-                  </CardHeader>
-                </Card>
-              )}
-
-              {/* Ligne budgétaire */}
-              {facture.ligneBudgetaire ? (
-                <Card className="opacity-50">
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <BarChart3 className="h-4 w-4" />
-                      Ligne budgétaire
-                    </CardTitle>
-                    <CardDescription>{facture.ligneBudgetaire.libelle}</CardDescription>
-                  </CardHeader>
-                </Card>
-              ) : (
-                <Card className="opacity-50">
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <BarChart3 className="h-4 w-4" />
-                      Ligne budgétaire
-                    </CardTitle>
-                    <CardDescription>Non associé</CardDescription>
-                  </CardHeader>
-                </Card>
-              )}
-
-              {/* Projet */}
-              {facture.projet ? (
-                <Card className="opacity-50">
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Briefcase className="h-4 w-4" />
-                      Projet
-                    </CardTitle>
-                    <CardDescription>{facture.projet.nom}</CardDescription>
-                  </CardHeader>
-                </Card>
-              ) : (
-                <Card className="opacity-50">
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Briefcase className="h-4 w-4" />
-                      Projet
-                    </CardTitle>
-                    <CardDescription>Non associé</CardDescription>
-                  </CardHeader>
-                </Card>
-              )}
-            </div>
-          </div>
 
           {/* Section 5: Historique & Traçabilité */}
           <Card>
