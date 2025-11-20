@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -38,6 +38,8 @@ const Engagements = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [actionEngagementId, setActionEngagementId] = useState<string | null>(null);
   const [selectedEngagementForDepense, setSelectedEngagementForDepense] = useState<Engagement | null>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [snapshotEngagementId, setSnapshotEngagementId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -53,6 +55,37 @@ const Engagements = () => {
 
   const { createBonCommande, genererNumero } = useBonsCommande();
   const { createDepenseFromEngagement } = useDepenses();
+
+  // Synchronisation bidirectionnelle URL ↔ state
+  useEffect(() => {
+    if (engagementId && engagements.length > 0 && !snapshotEngagementId) {
+      const engagement = engagements.find(e => e.id === engagementId);
+      if (engagement) {
+        setSnapshotEngagementId(engagementId);
+      } else {
+        navigate('/app/engagements', { replace: true });
+      }
+    }
+  }, [engagementId, engagements, snapshotEngagementId, navigate]);
+
+  // Effet poussoir avec le scroll
+  useEffect(() => {
+    const mainElement = document.querySelector('main');
+    if (!mainElement || !snapshotEngagementId) {
+      setScrollProgress(0);
+      return;
+    }
+    
+    const handleScroll = () => {
+      const scrollTop = mainElement.scrollTop;
+      const transitionRange = 100;
+      const progress = Math.min(scrollTop / transitionRange, 1);
+      setScrollProgress(progress);
+    };
+    
+    mainElement.addEventListener('scroll', handleScroll);
+    return () => mainElement.removeEventListener('scroll', handleScroll);
+  }, [snapshotEngagementId]);
 
   const handleCreate = () => {
     setSelectedEngagement(undefined);
@@ -198,37 +231,79 @@ const Engagements = () => {
     }
   };
 
-  // Navigation pour le snapshot
-  const currentEngagement = engagementId ? engagements.find(e => e.id === engagementId) : null;
-  const currentIndex = currentEngagement ? engagements.findIndex(e => e.id === engagementId) : -1;
+  const handleCreerDepense = (engagement: Engagement) => {
+    setSelectedEngagementForDepense(engagement);
+  };
+
+  const handleOpenSnapshot = useCallback((engagementId: string) => {
+    setSnapshotEngagementId(engagementId);
+    navigate(`/app/engagements/${engagementId}`);
+  }, [navigate]);
 
   const handleCloseSnapshot = () => {
+    setSnapshotEngagementId(null);
+    setScrollProgress(0);
     navigate('/app/engagements');
   };
 
   const handleNavigateSnapshot = (direction: 'prev' | 'next') => {
+    const currentIndex = engagements.findIndex(e => e.id === snapshotEngagementId);
+    if (currentIndex === -1) return;
+    
     const newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
     if (newIndex >= 0 && newIndex < engagements.length) {
-      navigate(`/app/engagements/${engagements[newIndex].id}`);
+      const newEngagement = engagements[newIndex];
+      setSnapshotEngagementId(newEngagement.id);
+      navigate(`/app/engagements/${newEngagement.id}`);
     }
   };
 
+  const handleNavigateToEntity = (type: string, id: string) => {
+    const entityRoutes: Record<string, string> = {
+      fournisseur: `/app/fournisseurs/${id}`,
+      ligneBudgetaire: `/app/budgets?ligne=${id}`,
+      projet: `/app/projets/${id}`,
+      reservationCredit: `/app/reservations/${id}`,
+    };
+    
+    const route = entityRoutes[type];
+    if (route) {
+      navigate(route);
+      showNavigationToast({
+        title: `Navigation vers ${type}`,
+        description: 'Vous avez été redirigé',
+        targetPage: { name: type, path: route },
+        navigate
+      });
+    }
+  };
+
+  const snapshotEngagement = useMemo(
+    () => engagements.find(e => e.id === snapshotEngagementId),
+    [engagements, snapshotEngagementId]
+  );
+
+  const snapshotIndex = useMemo(
+    () => engagements.findIndex(e => e.id === snapshotEngagementId),
+    [engagements, snapshotEngagementId]
+  );
+
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (!currentEngagement) return;
+      if (!snapshotEngagementId) return;
       
       if (e.key === 'Escape') {
         handleCloseSnapshot();
-      } else if (e.key === 'ArrowLeft' && currentIndex > 0) {
+      } else if (e.key === 'ArrowLeft' && snapshotIndex > 0) {
         handleNavigateSnapshot('prev');
-      } else if (e.key === 'ArrowRight' && currentIndex < engagements.length - 1) {
+      } else if (e.key === 'ArrowRight' && snapshotIndex < engagements.length - 1) {
         handleNavigateSnapshot('next');
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [currentEngagement, currentIndex, engagements.length]);
+  }, [snapshotEngagementId, snapshotIndex, engagements.length]);
 
   if (isLoading) {
     return (
@@ -238,23 +313,30 @@ const Engagements = () => {
     );
   }
 
-  // Si un engagement est sélectionné via l'URL, afficher le snapshot
-  if (currentEngagement) {
+  // Si un engagement est sélectionné via l'URL, afficher le snapshot avec l'effet poussoir
+  if (snapshotEngagement && snapshotIndex !== -1) {
     return (
-      <EngagementSnapshot
-        engagement={currentEngagement}
-        onClose={handleCloseSnapshot}
-        onNavigate={handleNavigateSnapshot}
-        hasPrev={currentIndex > 0}
-        hasNext={currentIndex < engagements.length - 1}
-        currentIndex={currentIndex}
-        totalCount={engagements.length}
-        onValider={currentEngagement.statut === 'brouillon' ? () => handleValider(currentEngagement.id) : undefined}
-        onAnnuler={currentEngagement.statut !== 'annule' ? () => {} : undefined}
-        onEdit={currentEngagement.statut === 'brouillon' ? () => handleEdit(currentEngagement) : undefined}
-        onCreerBonCommande={currentEngagement.statut === 'valide' ? () => handleCreerBonCommande(currentEngagement) : undefined}
-        onCreerDepense={(currentEngagement.statut === 'valide' || currentEngagement.statut === 'engage') ? () => setSelectedEngagementForDepense(currentEngagement) : undefined}
-      />
+      <div 
+        className="h-full"
+        style={{
+          transform: `translateY(${scrollProgress * 20}px)`,
+          transition: 'transform 0.1s ease-out'
+        }}
+      >
+        <EngagementSnapshot
+          engagement={snapshotEngagement}
+          onClose={handleCloseSnapshot}
+          onNavigate={handleNavigateSnapshot}
+          hasPrev={snapshotIndex > 0}
+          hasNext={snapshotIndex < engagements.length - 1}
+          currentIndex={snapshotIndex}
+          totalCount={engagements.length}
+          onEdit={() => handleEdit(snapshotEngagement)}
+          onValider={snapshotEngagement.statut === 'brouillon' ? () => handleValider(snapshotEngagement.id) : undefined}
+          onCreerBonCommande={snapshotEngagement.statut === 'valide' ? () => handleCreerBonCommande(snapshotEngagement) : undefined}
+          onCreerDepense={snapshotEngagement.statut === 'valide' ? () => handleCreerDepense(snapshotEngagement) : undefined}
+        />
+      </div>
     );
   }
 
@@ -282,6 +364,7 @@ const Engagements = () => {
           onDelete={handleDelete}
           onCreerBonCommande={handleCreerBonCommande}
           onCreerDepense={(engagement) => setSelectedEngagementForDepense(engagement)}
+          onViewDetails={handleOpenSnapshot}
         />
       </div>
 
