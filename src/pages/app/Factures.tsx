@@ -91,21 +91,23 @@ export default function Factures() {
     }
   }, [factureId, factures, snapshotFactureId, navigate]);
 
-  // Écouter le scroll du main parent pour l'effet poussoir
+  // Gérer le scroll pour l'effet de disparition du header
   useEffect(() => {
-    const mainElement = document.querySelector('main');
-    if (!mainElement || !snapshotFactureId) {
+    if (!snapshotFactureId) {
       setScrollProgress(0);
       return;
     }
-    
+
+    const mainElement = document.querySelector('main');
+    if (!mainElement) return;
+
     const handleScroll = () => {
       const scrollTop = mainElement.scrollTop;
-      const transitionRange = 100;
-      const progress = Math.min(scrollTop / transitionRange, 1);
+      const maxScroll = 100;
+      const progress = Math.min(scrollTop / maxScroll, 1);
       setScrollProgress(progress);
     };
-    
+
     mainElement.addEventListener('scroll', handleScroll);
     return () => mainElement.removeEventListener('scroll', handleScroll);
   }, [snapshotFactureId]);
@@ -193,7 +195,6 @@ export default function Factures() {
 
   const handleCloseSnapshot = useCallback(() => {
     setSnapshotFactureId(null);
-    setScrollProgress(0);
     navigate('/app/factures');
   }, [navigate]);
 
@@ -232,34 +233,35 @@ export default function Factures() {
     return <div className="flex items-center justify-center h-full">Chargement...</div>;
   }
 
+  const pageHeaderContent = (
+    <PageHeader 
+      title="Gestion des Factures"
+      description="Gérez les factures fournisseurs"
+      scrollProgress={snapshotFactureId ? scrollProgress : 0}
+      actions={
+        <Button onClick={handleCreate}>
+          <Plus className="mr-2 h-4 w-4" />
+          Nouvelle facture
+        </Button>
+      }
+    />
+  );
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Gestion des Factures"
-        description="Gérez les factures fournisseurs"
-        scrollProgress={snapshotFactureId ? scrollProgress : 0}
-        actions={
-          !snapshotFactureId && (
-            <Button onClick={handleCreate}>
-              <Plus className="mr-2 h-4 w-4" />
-              Nouvelle facture
-            </Button>
-          )
-        }
-      />
+      {pageHeaderContent}
 
       <div className="px-8 space-y-6">
         {snapshotFactureId && snapshotFacture ? (
-          // Afficher le snapshot (remplace Stats + Table)
           <FactureSnapshot
             facture={snapshotFacture}
-              onClose={handleCloseSnapshot}
-              onNavigate={handleNavigateSnapshot}
-              hasPrev={snapshotIndex > 0}
-              hasNext={snapshotIndex < factures.length - 1}
-              currentIndex={snapshotIndex}
-              totalCount={factures.length}
-              onNavigateToEntity={handleNavigateToEntity}
+            onClose={handleCloseSnapshot}
+            onNavigate={handleNavigateSnapshot}
+            hasPrev={snapshotIndex > 0}
+            hasNext={snapshotIndex < factures.length - 1}
+            currentIndex={snapshotIndex}
+            totalCount={factures.length}
+            onNavigateToEntity={handleNavigateToEntity}
             onValider={snapshotFacture.statut === 'brouillon' ? () => validerFacture(snapshotFacture.id) : undefined}
             onMarquerPayee={snapshotFacture.statut === 'validee' ? () => marquerPayee(snapshotFacture.id) : undefined}
             onAnnuler={snapshotFacture.statut !== 'annulee' && snapshotFacture.statut !== 'payee' ? () => handleAnnuler(snapshotFacture.id) : undefined}
@@ -267,7 +269,6 @@ export default function Factures() {
             onCreerDepense={(snapshotFacture.statut === 'validee' || snapshotFacture.statut === 'payee') ? () => { setSelectedFactureForDepense(snapshotFacture); handleCloseSnapshot(); } : undefined}
           />
         ) : (
-          // Affichage normal : Stats + Table
           <>
             <FactureStats factures={factures} />
 
