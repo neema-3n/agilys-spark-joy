@@ -5,16 +5,17 @@ interface PageHeaderProps {
   description?: string;
   actions?: ReactNode;
   scrollProgress?: number;
+  sticky?: boolean;
 }
 
-export const PageHeader = ({ title, description, actions, scrollProgress = 0 }: PageHeaderProps) => {
+export const PageHeader = ({ title, description, actions, scrollProgress = 0, sticky = true }: PageHeaderProps) => {
   const scale = 1 - (scrollProgress * 0.2);
   const opacity = 1 - scrollProgress;
   const translateY = -(scrollProgress * 20);
 
   return (
     <div 
-      className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border"
+      className={`${sticky ? 'sticky' : 'relative'} top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border`}
       style={{
         transform: `translateY(${translateY}px) scale(${scale})`,
         opacity: opacity,
