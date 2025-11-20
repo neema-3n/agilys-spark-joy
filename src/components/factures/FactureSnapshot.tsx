@@ -39,10 +39,10 @@ export const FactureSnapshot = ({
   onNavigateToEntity,
 }: FactureSnapshotProps) => {
   const getStatutBadge = (statut: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'success' | 'destructive'> = {
-      brouillon: 'secondary',
-      validee: 'default',
-      payee: 'success',
+    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+      brouillon: 'outline',
+      validee: 'secondary',
+      payee: 'default',
       annulee: 'destructive',
     };
 
