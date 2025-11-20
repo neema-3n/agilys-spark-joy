@@ -296,6 +296,7 @@ const Engagements = () => {
     <PageHeader
       title="Gestion des Engagements"
       description="Demandes, validations et suivi des engagements"
+      sticky={!snapshotEngagementId}
       actions={
         <Button onClick={handleCreate}>
           <Plus className="h-4 w-4 mr-2" />
