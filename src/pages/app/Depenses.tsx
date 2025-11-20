@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
+import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { DepenseStatsCards } from '@/components/depenses/DepensesStats';
 import { DepenseTable } from '@/components/depenses/DepenseTable';
 import { DepenseDialog } from '@/components/depenses/DepenseDialog';
@@ -41,6 +42,9 @@ const Depenses = () => {
       }
     }
   }, [depenseId, depenses, snapshotDepenseId, navigate]);
+
+  // Gérer le scroll pour l'effet de disparition du header
+  const scrollProgress = useScrollProgress(!!snapshotDepenseId);
 
   const handleCreateDepense = async (data: DepenseFormData) => {
     await createDepense(data);
@@ -109,6 +113,7 @@ const Depenses = () => {
       <PageHeader
         title="Gestion des Dépenses"
         description="Ordonnancement et liquidation des dépenses"
+        scrollProgress={scrollProgress}
         actions={
           <Button onClick={() => setIsDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
