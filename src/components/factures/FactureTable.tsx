@@ -39,6 +39,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Link } from 'react-router-dom';
 
 
 interface FactureTableProps {
@@ -125,7 +126,27 @@ export const FactureTable = ({
                   onDoubleClick={() => onViewDetails(facture.id)}
                   className="cursor-pointer hover:bg-muted/30"
                 >
-                  <TableCell className="font-medium">{facture.numero}</TableCell>
+                  <TableCell className="font-medium">
+                    <Link
+                      to={`/app/factures/${facture.id}`}
+                      className="text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded"
+                      onClick={(event) => {
+                        if (
+                          event.button !== 0 ||
+                          event.metaKey ||
+                          event.ctrlKey ||
+                          event.shiftKey ||
+                          event.altKey
+                        ) {
+                          return;
+                        }
+                        event.preventDefault();
+                        onViewDetails(facture.id);
+                      }}
+                    >
+                      {facture.numero}
+                    </Link>
+                  </TableCell>
                   <TableCell>{formatDate(facture.dateFacture)}</TableCell>
                   <TableCell>{facture.fournisseur?.nom || '-'}</TableCell>
                   <TableCell className="max-w-[200px] truncate">

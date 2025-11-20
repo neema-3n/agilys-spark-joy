@@ -41,6 +41,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import { Link } from 'react-router-dom';
 
 // Helper function to safely format dates
 const formatDate = (dateString?: string | null): string => {
@@ -63,6 +64,7 @@ interface BonCommandeTableProps {
   onAnnuler: (bonCommande: BonCommande) => void;
   onDelete: (id: string) => void;
   onCreateFacture?: (bonCommande: BonCommande) => void;
+  onViewDetails?: (bonCommandeId: string) => void;
 }
 
 const getStatutColor = (statut: string) => {
@@ -146,6 +148,7 @@ export const BonCommandeTable = ({
   onAnnuler,
   onDelete,
   onCreateFacture,
+  onViewDetails,
 }: BonCommandeTableProps) => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -192,8 +195,35 @@ export const BonCommandeTable = ({
               </TableRow>
             ) : (
               bonsCommande.map((bc) => (
-                <TableRow key={bc.id}>
-                  <TableCell className="font-medium">{bc.numero}</TableCell>
+                <TableRow
+                  key={bc.id}
+                  onDoubleClick={onViewDetails ? () => onViewDetails(bc.id) : undefined}
+                  className={`${onViewDetails ? 'cursor-pointer' : ''} hover:bg-muted/30`}
+                >
+                  <TableCell className="font-medium">
+                    <Link
+                      to={`/app/bons-commande/${bc.id}`}
+                      className="text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded"
+                      onClick={(event) => {
+                        if (!onViewDetails) {
+                          return;
+                        }
+                        if (
+                          event.button !== 0 ||
+                          event.metaKey ||
+                          event.ctrlKey ||
+                          event.shiftKey ||
+                          event.altKey
+                        ) {
+                          return;
+                        }
+                        event.preventDefault();
+                        onViewDetails(bc.id);
+                      }}
+                    >
+                      {bc.numero}
+                    </Link>
+                  </TableCell>
                   <TableCell>
                     {formatDate(bc.dateCommande)}
                   </TableCell>
@@ -266,7 +296,15 @@ export const BonCommandeTable = ({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEdit(bc)}>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            if (onViewDetails) {
+                              onViewDetails(bc.id);
+                            } else {
+                              onEdit(bc);
+                            }
+                          }}
+                        >
                           <Eye className="h-4 w-4 mr-2" />
                           Voir les détails
                         </DropdownMenuItem>
