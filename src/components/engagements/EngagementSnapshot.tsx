@@ -1,32 +1,11 @@
-import { Engagement } from '@/types/engagement.types';
+import { FileText, Building2, FolderOpen, Calendar, AlertCircle, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Link } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
-import { 
-  X, 
-  ChevronLeft, 
-  ChevronRight, 
-  CheckCircle, 
-  XCircle, 
-  Pencil, 
-  FileText,
-  ArrowRight,
-  ShoppingCart,
-  BarChart3,
-  Briefcase,
-  Calendar,
-  User,
-  Clock,
-  Building2,
-  CreditCard,
-  Package
-} from 'lucide-react';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { useEffect } from 'react';
+import type { Engagement } from '@/types/engagement.types';
+import { SnapshotBase } from '@/components/shared/SnapshotBase';
+import { formatMontant, formatDate, formatDateTime, getEntityUrl } from '@/lib/snapshot-utils';
 
 interface EngagementSnapshotProps {
   engagement: Engagement;
@@ -36,13 +15,12 @@ interface EngagementSnapshotProps {
   hasNext: boolean;
   currentIndex: number;
   totalCount: number;
-  onScrollProgress?: (progress: number) => void;
-  // Actions disponibles
+  onEdit?: () => void;
   onValider?: () => void;
   onAnnuler?: () => void;
-  onEdit?: () => void;
   onCreerBonCommande?: () => void;
   onCreerDepense?: () => void;
+  onNavigateToEntity?: (type: string, id: string) => void;
 }
 
 export const EngagementSnapshot = ({
@@ -53,356 +31,300 @@ export const EngagementSnapshot = ({
   hasNext,
   currentIndex,
   totalCount,
-  onScrollProgress,
+  onEdit,
   onValider,
   onAnnuler,
-  onEdit,
   onCreerBonCommande,
   onCreerDepense,
+  onNavigateToEntity,
 }: EngagementSnapshotProps) => {
-  // Scroller en haut de la page à l'ouverture du snapshot
-  useEffect(() => {
-    const mainElement = document.querySelector('main');
-    if (mainElement) {
-      mainElement.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }, []);
-
-  const getEntityUrl = (type: string, id: string): string => {
-    switch (type) {
-      case 'fournisseur':
-        return `/app/fournisseurs/${id}`;
-      case 'reservation':
-        return `/app/reservations/${id}`;
-      case 'ligneBudgetaire':
-        return `/app/budgets?ligneId=${id}`;
-      case 'projet':
-        return `/app/projets/${id}`;
-      case 'bonCommande':
-        return `/app/bons-commande/${id}`;
-      default:
-        return '#';
-    }
-  };
-
-  const formatMontant = (montant: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(montant);
-  };
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return '-';
-    return format(new Date(dateString), 'dd/MM/yyyy', { locale: fr });
-  };
-
-  const formatDateTime = (dateString?: string) => {
-    if (!dateString) return '-';
-    return format(new Date(dateString), 'dd/MM/yyyy à HH:mm', { locale: fr });
-  };
-
   const getStatutBadge = (statut: string) => {
-    const variants: Record<string, { variant: any; label: string }> = {
-      brouillon: { variant: 'outline' as const, label: 'Brouillon' },
-      valide: { variant: 'secondary' as const, label: 'Validé' },
-      engage: { variant: 'default' as const, label: 'Engagé' },
-      liquide: { variant: 'default' as const, label: 'Liquidé' },
-      annule: { variant: 'destructive' as const, label: 'Annulé' },
+    const variants: Record<string, 'default' | 'secondary' | 'success' | 'destructive' | 'outline'> = {
+      brouillon: 'secondary',
+      valide: 'default',
+      engage: 'default',
+      liquide: 'success',
+      annule: 'destructive',
     };
-    const config = variants[statut] || variants.brouillon;
-    return <Badge variant={config.variant} className="text-sm">{config.label}</Badge>;
+
+    const labels: Record<string, string> = {
+      brouillon: 'Brouillon',
+      valide: 'Validé',
+      engage: 'Engagé',
+      liquide: 'Liquidé',
+      annule: 'Annulé',
+    };
+
+    return (
+      <Badge variant={variants[statut] || 'default'}>
+        {labels[statut] || statut}
+      </Badge>
+    );
   };
 
-  const soldeRestant = engagement.solde ?? engagement.montant;
-  const progressUtilisation = engagement.montant > 0 ? ((engagement.montant - soldeRestant) / engagement.montant) * 100 : 0;
+  const solde = engagement.solde ?? engagement.montant;
+  const montantUtilise = engagement.montant - solde;
+  const progressionUtilisation = engagement.montant > 0 
+    ? (montantUtilise / engagement.montant) * 100 
+    : 0;
+
+  const handleEntityClick = (type: string, id: string) => {
+    if (onNavigateToEntity) {
+      onNavigateToEntity(type, id);
+    } else {
+      window.location.href = getEntityUrl(type, id);
+    }
+  };
+
+  // Actions spécifiques aux engagements
+  const actions = (
+    <>
+      {engagement.statut === 'brouillon' && onEdit && (
+        <Button variant="outline" size="sm" onClick={onEdit}>
+          Modifier
+        </Button>
+      )}
+      {engagement.statut === 'brouillon' && onValider && (
+        <Button size="sm" onClick={onValider}>
+          Valider
+        </Button>
+      )}
+      {(engagement.statut === 'valide' || engagement.statut === 'engage') && onCreerBonCommande && (
+        <Button variant="outline" size="sm" onClick={onCreerBonCommande}>
+          Créer un bon de commande
+        </Button>
+      )}
+      {(engagement.statut === 'valide' || engagement.statut === 'engage') && onCreerDepense && (
+        <Button variant="outline" size="sm" onClick={onCreerDepense}>
+          Créer une dépense
+        </Button>
+      )}
+      {(engagement.statut === 'brouillon' || engagement.statut === 'valide') && onAnnuler && (
+        <Button variant="destructive" size="sm" onClick={onAnnuler}>
+          Annuler
+        </Button>
+      )}
+    </>
+  );
 
   return (
-    <div className="space-y-6">
-      {/* Header avec navigation et actions */}
-      <div className="bg-background border-b">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div>
-                <h2 className="text-2xl font-bold">{engagement.numero}</h2>
-                <p className="text-sm text-muted-foreground">
-                  Engagement {currentIndex + 1} sur {totalCount}
+    <SnapshotBase
+      title={`Engagement ${engagement.numero}`}
+      subtitle={engagement.objet}
+      currentIndex={currentIndex}
+      totalCount={totalCount}
+      hasPrev={hasPrev}
+      hasNext={hasNext}
+      onClose={onClose}
+      onNavigate={onNavigate}
+      actions={actions}
+    >
+      {/* Informations principales */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Informations principales
+            </CardTitle>
+            {getStatutBadge(engagement.statut)}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">Objet</p>
+              <p className="text-xl font-semibold">{engagement.objet}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Montant initial</p>
+                <p className="text-2xl font-bold text-primary">{formatMontant(engagement.montant)}</p>
+              </div>
+              
+              {engagement.statut !== 'brouillon' && (
+                <>
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Montant utilisé</p>
+                    <p className="text-lg font-semibold">{formatMontant(montantUtilise)}</p>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Solde disponible</p>
+                    <p className="text-lg font-semibold">{formatMontant(solde)}</p>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              {engagement.ligneBudgetaire && (
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
+                     onClick={() => handleEntityClick('ligne-budgetaire', engagement.ligneBudgetaireId)}>
+                  <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">Ligne budgétaire</p>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {engagement.ligneBudgetaire.libelle}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Disponible: {formatMontant(engagement.ligneBudgetaire.disponible)}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {engagement.beneficiaire && (
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Bénéficiaire</p>
+                  <p className="font-medium">{engagement.beneficiaire}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {engagement.statut !== 'brouillon' && (
+            <div className="pt-4 border-t">
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Progression d'utilisation</span>
+                  <span className="font-medium">{progressionUtilisation.toFixed(1)}%</span>
+                </div>
+                <Progress value={progressionUtilisation} className="h-2" />
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Entités liées */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FolderOpen className="h-5 w-5" />
+            Entités liées
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {engagement.fournisseur && (
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
+                 onClick={() => engagement.fournisseurId && handleEntityClick('fournisseur', engagement.fournisseurId)}>
+              <Building2 className="h-5 w-5 text-muted-foreground mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">Fournisseur</p>
+                <p className="text-sm text-muted-foreground truncate">
+                  {engagement.fournisseur.nom} ({engagement.fournisseur.code})
                 </p>
               </div>
             </div>
-            
-            <div className="flex items-center gap-2">
-              {/* Navigation prev/next */}
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => onNavigate('prev')}
-                disabled={!hasPrev}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => onNavigate('next')}
-                disabled={!hasNext}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              
-              <Separator orientation="vertical" className="h-8 mx-2" />
-              
-              {/* Bouton fermer */}
-              <Button variant="ghost" size="icon" onClick={onClose}>
-                <X className="h-4 w-4" />
-              </Button>
+          )}
+
+          {engagement.projet && (
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
+                 onClick={() => engagement.projetId && handleEntityClick('projet', engagement.projetId)}>
+              <FolderOpen className="h-5 w-5 text-muted-foreground mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">Projet</p>
+                <p className="text-sm text-muted-foreground truncate">
+                  {engagement.projet.code} - {engagement.projet.nom}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {engagement.reservationCredit && (
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
+                 onClick={() => engagement.reservationCreditId && handleEntityClick('reservation', engagement.reservationCreditId)}>
+              <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">Réservation de crédit</p>
+                <p className="text-sm text-muted-foreground truncate">
+                  {engagement.reservationCredit.numero}
+                </p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Dates importantes */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Dates importantes
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">Date de création</p>
+              <p className="font-medium">{formatDate(engagement.dateCreation)}</p>
+            </div>
+            {engagement.dateValidation && (
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Date de validation</p>
+                <p className="font-medium">{formatDate(engagement.dateValidation)}</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Observations */}
+      {engagement.observations && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Info className="h-5 w-5" />
+              Observations
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm whitespace-pre-wrap">{engagement.observations}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Motif d'annulation */}
+      {engagement.statut === 'annule' && engagement.motifAnnulation && (
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              Motif d'annulation
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm">{engagement.motifAnnulation}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Métadonnées */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Info className="h-5 w-5" />
+            Métadonnées
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="text-muted-foreground">Créé le :</span>
+              <span className="ml-2 font-medium">{formatDateTime(engagement.createdAt)}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Modifié le :</span>
+              <span className="ml-2 font-medium">{formatDateTime(engagement.updatedAt)}</span>
             </div>
           </div>
-        </div>
-
-        {/* Barre d'actions */}
-        <div className="px-6 pb-4">
-          <div className="flex items-center gap-2 flex-wrap">
-            {engagement.statut === 'brouillon' && onEdit && (
-              <Button variant="outline" size="sm" onClick={onEdit}>
-                <Pencil className="mr-2 h-4 w-4" />
-                Modifier
-              </Button>
-            )}
-            
-            {engagement.statut === 'brouillon' && onValider && (
-              <Button variant="default" size="sm" onClick={onValider}>
-                <CheckCircle className="mr-2 h-4 w-4" />
-                Valider
-              </Button>
-            )}
-            
-            {engagement.statut === 'valide' && onCreerBonCommande && (
-              <Button variant="default" size="sm" onClick={onCreerBonCommande}>
-                <ShoppingCart className="mr-2 h-4 w-4" />
-                Créer un BC
-              </Button>
-            )}
-            
-            {(engagement.statut === 'valide' || engagement.statut === 'engage') && onCreerDepense && (
-              <Button variant="outline" size="sm" onClick={onCreerDepense}>
-                <FileText className="mr-2 h-4 w-4" />
-                Créer une dépense
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Contenu */}
-      <div className="px-6">
-        <div className="max-w-5xl mx-auto space-y-6">
-          {/* Informations principales */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Informations principales
-                </CardTitle>
-                {getStatutBadge(engagement.statut)}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Objet</p>
-                  <p className="text-xl font-semibold">{engagement.objet}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Montant de l'engagement</p>
-                    <p className="text-3xl font-bold">{formatMontant(engagement.montant)}</p>
-                  </div>
-
-                  {engagement.ligneBudgetaire && (
-                    <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground flex items-center gap-2">
-                        <BarChart3 className="h-4 w-4" />
-                        Ligne budgétaire
-                      </p>
-                      <Link
-                        to={getEntityUrl('ligneBudgetaire', engagement.ligneBudgetaireId)}
-                        className="font-medium text-primary hover:underline flex items-center gap-2 transition-colors"
-                      >
-                        {engagement.ligneBudgetaire.libelle}
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    </div>
-                  )}
-
-                  {engagement.beneficiaire && (
-                    <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        Bénéficiaire
-                      </p>
-                      <p className="font-medium">{engagement.beneficiaire}</p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-4">
-                  {engagement.fournisseur && (
-                    <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground flex items-center gap-2">
-                        <Building2 className="h-4 w-4" />
-                        Fournisseur
-                      </p>
-                      <Link
-                        to={getEntityUrl('fournisseur', engagement.fournisseurId!)}
-                        className="font-medium text-primary hover:underline flex items-center gap-2 transition-colors"
-                      >
-                        {engagement.fournisseur.nom}
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    </div>
-                  )}
-
-                  {engagement.projet && (
-                    <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground flex items-center gap-2">
-                        <Briefcase className="h-4 w-4" />
-                        Projet
-                      </p>
-                      <Link
-                        to={getEntityUrl('projet', engagement.projetId!)}
-                        className="font-medium text-primary hover:underline flex items-center gap-2 transition-colors"
-                      >
-                        {engagement.projet.code} - {engagement.projet.nom}
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    </div>
-                  )}
-
-                  {engagement.reservationCredit && (
-                    <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground flex items-center gap-2">
-                        <CreditCard className="h-4 w-4" />
-                        Réservation de crédit
-                      </p>
-                      <Link
-                        to={getEntityUrl('reservation', engagement.reservationCreditId!)}
-                        className="font-medium text-primary hover:underline flex items-center gap-2 transition-colors"
-                      >
-                        {engagement.reservationCredit.numero}
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Progression de l'utilisation */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Utilisation de l'engagement</span>
-                  <span className="text-sm text-muted-foreground">
-                    {formatMontant(engagement.montant - soldeRestant)} / {formatMontant(engagement.montant)}
-                  </span>
-                </div>
-                <Progress value={progressUtilisation} className="h-2" />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Solde restant : {formatMontant(soldeRestant)}</span>
-                  <span>{progressUtilisation.toFixed(1)}% utilisé</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Dates importantes */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Dates importantes
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Date de création</p>
-                  <p className="font-medium flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    {formatDate(engagement.dateCreation)}
-                  </p>
-                </div>
-                {engagement.dateValidation && (
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Date de validation</p>
-                    <p className="font-medium flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      {formatDate(engagement.dateValidation)}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Observations */}
-          {engagement.observations && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Observations
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm whitespace-pre-wrap">{engagement.observations}</p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Motif d'annulation */}
-          {engagement.statut === 'annule' && engagement.motifAnnulation && (
-            <Card className="border-destructive">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2 text-destructive">
-                  <XCircle className="h-5 w-5" />
-                  Motif d'annulation
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm">{engagement.motifAnnulation}</p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Métadonnées */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Métadonnées</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Créé le : </span>
-                  <span className="font-medium">{formatDateTime(engagement.createdAt)}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Modifié le : </span>
-                  <span className="font-medium">{formatDateTime(engagement.updatedAt)}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
+        </CardContent>
+      </Card>
+    </SnapshotBase>
   );
 };

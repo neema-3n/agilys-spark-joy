@@ -38,8 +38,8 @@ const Engagements = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [actionEngagementId, setActionEngagementId] = useState<string | null>(null);
   const [selectedEngagementForDepense, setSelectedEngagementForDepense] = useState<Engagement | null>(null);
-  const [scrollProgress, setScrollProgress] = useState(0);
   const [snapshotEngagementId, setSnapshotEngagementId] = useState<string | null>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -68,21 +68,23 @@ const Engagements = () => {
     }
   }, [engagementId, engagements, snapshotEngagementId, navigate]);
 
-  // Effet poussoir avec le scroll
+  // Gérer le scroll pour l'effet de disparition du header
   useEffect(() => {
-    const mainElement = document.querySelector('main');
-    if (!mainElement || !snapshotEngagementId) {
+    if (!snapshotEngagementId) {
       setScrollProgress(0);
       return;
     }
-    
+
+    const mainElement = document.querySelector('main');
+    if (!mainElement) return;
+
     const handleScroll = () => {
       const scrollTop = mainElement.scrollTop;
-      const transitionRange = 100;
-      const progress = Math.min(scrollTop / transitionRange, 1);
+      const maxScroll = 100;
+      const progress = Math.min(scrollTop / maxScroll, 1);
       setScrollProgress(progress);
     };
-    
+
     mainElement.addEventListener('scroll', handleScroll);
     return () => mainElement.removeEventListener('scroll', handleScroll);
   }, [snapshotEngagementId]);
@@ -242,7 +244,6 @@ const Engagements = () => {
 
   const handleCloseSnapshot = () => {
     setSnapshotEngagementId(null);
-    setScrollProgress(0);
     navigate('/app/engagements');
   };
 
@@ -313,25 +314,26 @@ const Engagements = () => {
     );
   }
 
+  const pageHeaderContent = (
+    <PageHeader 
+      title="Gestion des Engagements"
+      description="Demandes, validations et suivi des engagements"
+      scrollProgress={snapshotEngagementId ? scrollProgress : 0}
+      actions={
+        <Button onClick={handleCreate}>
+          <Plus className="h-4 w-4 mr-2" />
+          Nouvel engagement
+        </Button>
+      }
+    />
+  );
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Gestion des Engagements"
-        description="Demandes, validations et suivi des engagements"
-        scrollProgress={snapshotEngagementId ? scrollProgress : 0}
-        actions={
-          !snapshotEngagementId && (
-            <Button onClick={handleCreate}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nouvel engagement
-            </Button>
-          )
-        }
-      />
+      {pageHeaderContent}
 
       <div className="px-8 space-y-6">
         {snapshotEngagementId && snapshotEngagement ? (
-          // Afficher le snapshot (remplace Stats + Table)
           <EngagementSnapshot
             engagement={snapshotEngagement}
             onClose={handleCloseSnapshot}
@@ -346,7 +348,6 @@ const Engagements = () => {
             onCreerDepense={snapshotEngagement.statut === 'valide' ? () => handleCreerDepense(snapshotEngagement) : undefined}
           />
         ) : (
-          // Affichage normal : Stats + Table
           <>
             <EngagementStats engagements={engagements} />
 
