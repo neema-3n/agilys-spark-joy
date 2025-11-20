@@ -121,31 +121,29 @@ export const EngagementSnapshot = ({
 
   return (
     <div className="space-y-6">
-      {/* Header non-fixe pour permettre l'effet poussoir du PageHeader */}
+      {/* Header avec navigation et actions */}
       <div className="bg-background border-b">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={onClose}>
-                <X className="h-5 w-5" />
-              </Button>
               <div>
-                <h2 className="text-xl font-semibold">{engagement.numero}</h2>
+                <h2 className="text-2xl font-bold">{engagement.numero}</h2>
                 <p className="text-sm text-muted-foreground">
                   Engagement {currentIndex + 1} sur {totalCount}
                 </p>
               </div>
+              {getStatutBadge(engagement.statut)}
             </div>
             
             <div className="flex items-center gap-2">
-              {/* Navigation */}
+              {/* Navigation prev/next */}
               <Button
                 variant="outline"
                 size="icon"
                 onClick={() => onNavigate('prev')}
                 disabled={!hasPrev}
               >
-                <ChevronLeft className="h-5 w-5" />
+                <ChevronLeft className="h-4 w-4" />
               </Button>
               <Button
                 variant="outline"
@@ -153,41 +151,56 @@ export const EngagementSnapshot = ({
                 onClick={() => onNavigate('next')}
                 disabled={!hasNext}
               >
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight className="h-4 w-4" />
               </Button>
-
-              {/* Actions rapides */}
-              {engagement.statut === 'brouillon' && onEdit && (
-                <Button variant="outline" onClick={onEdit}>
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Modifier
-                </Button>
-              )}
-              {engagement.statut === 'brouillon' && onValider && (
-                <Button variant="default" onClick={onValider}>
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Valider
-                </Button>
-              )}
-              {engagement.statut === 'valide' && onCreerBonCommande && (
-                <Button variant="default" onClick={onCreerBonCommande}>
-                  <ShoppingCart className="h-4 w-4 mr-2" />
-                  Créer un BC
-                </Button>
-              )}
-              {(engagement.statut === 'valide' || engagement.statut === 'engage') && onCreerDepense && (
-                <Button variant="outline" onClick={onCreerDepense}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Créer une dépense
-                </Button>
-              )}
+              
+              <Separator orientation="vertical" className="h-8 mx-2" />
+              
+              {/* Bouton fermer */}
+              <Button variant="ghost" size="icon" onClick={onClose}>
+                <X className="h-4 w-4" />
+              </Button>
             </div>
+          </div>
+        </div>
+
+        {/* Barre d'actions */}
+        <div className="px-6 pb-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            {engagement.statut === 'brouillon' && onEdit && (
+              <Button variant="outline" size="sm" onClick={onEdit}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Modifier
+              </Button>
+            )}
+            
+            {engagement.statut === 'brouillon' && onValider && (
+              <Button variant="default" size="sm" onClick={onValider}>
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Valider
+              </Button>
+            )}
+            
+            {engagement.statut === 'valide' && onCreerBonCommande && (
+              <Button variant="default" size="sm" onClick={onCreerBonCommande}>
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                Créer un BC
+              </Button>
+            )}
+            
+            {(engagement.statut === 'valide' || engagement.statut === 'engage') && onCreerDepense && (
+              <Button variant="outline" size="sm" onClick={onCreerDepense}>
+                <FileText className="mr-2 h-4 w-4" />
+                Créer une dépense
+              </Button>
+            )}
           </div>
         </div>
       </div>
 
       {/* Contenu */}
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="px-6">
+        <div className="max-w-5xl mx-auto space-y-6">
           {/* En-tête avec statut */}
           <Card>
             <CardHeader>
@@ -384,6 +397,7 @@ export const EngagementSnapshot = ({
             </CardContent>
           </Card>
         </div>
+      </div>
     </div>
   );
 };
