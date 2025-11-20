@@ -44,7 +44,6 @@ export const SnapshotBase = ({
     <div className="min-h-screen">
       {/* Clone du PageHeader - sera poussé lors du scroll */}
       <div
-        className="px-8"
         style={{
           transform: `translateY(${-(scrollProgress * 100)}px)`,
           opacity: 1 - scrollProgress,
