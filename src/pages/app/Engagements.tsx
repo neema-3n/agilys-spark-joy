@@ -314,7 +314,7 @@ const Engagements = () => {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="space-y-6">
       <PageHeader
         title="Gestion des Engagements"
         description="Demandes, validations et suivi des engagements"
@@ -329,7 +329,7 @@ const Engagements = () => {
         }
       />
 
-      <div className="flex-1 overflow-y-auto p-8 pt-6 space-y-6">
+      <div className="px-8 space-y-6">
         {snapshotEngagementId && snapshotEngagement ? (
           // Afficher le snapshot (remplace Stats + Table)
           <EngagementSnapshot
