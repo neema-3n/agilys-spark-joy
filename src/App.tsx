@@ -60,7 +60,10 @@ const App = () => (
                     <Route index element={<Engagements />} />
                     <Route path=":engagementId" element={<Engagements />} />
                   </Route>
-                  <Route path="bons-commande" element={<BonsCommande />} />
+                  <Route path="bons-commande">
+                    <Route index element={<BonsCommande />} />
+                    <Route path=":bonCommandeId" element={<BonsCommande />} />
+                  </Route>
                   <Route path="depenses" element={<Depenses />} />
                   <Route path="mandats" element={<Mandats />} />
                   <Route path="factures">
