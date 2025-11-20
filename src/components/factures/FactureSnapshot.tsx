@@ -1,6 +1,7 @@
 import { Facture } from '@/types/facture.types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
@@ -68,6 +69,23 @@ export const FactureSnapshot = ({
       mainElement.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, []);
+
+  const getEntityUrl = (type: string, id: string): string => {
+    switch (type) {
+      case 'fournisseur':
+        return `/app/fournisseurs/${id}`;
+      case 'bonCommande':
+        return `/app/bons-commande/${id}`;
+      case 'engagement':
+        return `/app/engagements/${id}`;
+      case 'ligneBudgetaire':
+        return `/app/budgets?ligneId=${id}`;
+      case 'projet':
+        return `/app/projets/${id}`;
+      default:
+        return '#';
+    }
+  };
 
   const formatMontant = (montant: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -226,14 +244,14 @@ export const FactureSnapshot = ({
               {facture.bonCommande && (
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Bon de commande</p>
-                  <button
-                    onClick={() => onNavigateToEntity('bonCommande', facture.bonCommande!.id)}
+                  <Link
+                    to={getEntityUrl('bonCommande', facture.bonCommande.id)}
                     className="font-medium text-primary hover:underline flex items-center gap-2 transition-colors"
                   >
                     <ShoppingCart className="h-4 w-4" />
                     {facture.bonCommande.numero}
                     <ArrowRight className="h-4 w-4" />
-                  </button>
+                  </Link>
                 </div>
               )}
 
@@ -241,14 +259,14 @@ export const FactureSnapshot = ({
               {facture.engagement && (
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Engagement</p>
-                  <button
-                    onClick={() => onNavigateToEntity('engagement', facture.engagement!.id)}
+                  <Link
+                    to={getEntityUrl('engagement', facture.engagement.id)}
                     className="font-medium text-primary hover:underline flex items-center gap-2 transition-colors"
                   >
                     <FileCheck className="h-4 w-4" />
                     {facture.engagement.numero}
                     <ArrowRight className="h-4 w-4" />
-                  </button>
+                  </Link>
                 </div>
               )}
 
@@ -256,14 +274,14 @@ export const FactureSnapshot = ({
               {facture.ligneBudgetaire && (
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Ligne budgétaire</p>
-                  <button
-                    onClick={() => onNavigateToEntity('ligneBudgetaire', facture.ligneBudgetaire!.id)}
+                  <Link
+                    to={getEntityUrl('ligneBudgetaire', facture.ligneBudgetaire.id)}
                     className="font-medium text-primary hover:underline flex items-center gap-2 transition-colors"
                   >
                     <BarChart3 className="h-4 w-4" />
                     {facture.ligneBudgetaire.libelle}
                     <ArrowRight className="h-4 w-4" />
-                  </button>
+                  </Link>
                 </div>
               )}
 
@@ -271,14 +289,14 @@ export const FactureSnapshot = ({
               {facture.projet && (
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Projet</p>
-                  <button
-                    onClick={() => onNavigateToEntity('projet', facture.projet!.id)}
+                  <Link
+                    to={getEntityUrl('projet', facture.projet.id)}
                     className="font-medium text-primary hover:underline flex items-center gap-2 transition-colors"
                   >
                     <Briefcase className="h-4 w-4" />
                     {facture.projet.nom}
                     <ArrowRight className="h-4 w-4" />
-                  </button>
+                  </Link>
                 </div>
               )}
               
@@ -303,13 +321,13 @@ export const FactureSnapshot = ({
               {facture.fournisseur ? (
                 <div className="space-y-2">
                   <div>
-                    <button
-                      onClick={() => onNavigateToEntity('fournisseur', facture.fournisseurId)}
+                    <Link
+                      to={getEntityUrl('fournisseur', facture.fournisseurId)}
                       className="text-lg font-semibold text-primary hover:underline flex items-center gap-2 transition-colors"
                     >
                       {facture.fournisseur.nom}
                       <ArrowRight className="h-4 w-4" />
-                    </button>
+                    </Link>
                     <p className="text-sm text-muted-foreground">Code: {facture.fournisseur.code}</p>
                   </div>
                 </div>
