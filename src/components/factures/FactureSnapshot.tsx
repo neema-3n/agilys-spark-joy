@@ -459,6 +459,5 @@ export const FactureSnapshot = ({
           </Card>
         </div>
       </div>
-    </div>
   );
 };

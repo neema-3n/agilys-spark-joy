@@ -186,9 +186,9 @@ export default function Factures() {
   }, [annulationFactureId, motifAnnulation, annulerFacture]);
 
   // Snapshot handlers
-  const handleOpenSnapshot = useCallback((facture: Facture) => {
-    setSnapshotFactureId(facture.id);
-    navigate(`/app/factures/${facture.id}`);
+  const handleOpenSnapshot = useCallback((factureId: string) => {
+    setSnapshotFactureId(factureId);
+    navigate(`/app/factures/${factureId}`);
   }, [navigate]);
 
   const handleCloseSnapshot = useCallback(() => {
