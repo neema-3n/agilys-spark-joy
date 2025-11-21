@@ -59,11 +59,14 @@ export const FactureTable = ({
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const getStatutBadge = (statut: string) => {
-    const variants: Record<string, any> = {
-      brouillon: { variant: 'outline' as const, label: 'Brouillon' },
-      validee: { variant: 'secondary' as const, label: 'Validée' },
-      payee: { variant: 'default' as const, label: 'Payée' },
-      annulee: { variant: 'destructive' as const, label: 'Annulée' },
+    const variants: Record<
+      string,
+      { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }
+    > = {
+      brouillon: { variant: 'outline', label: 'Brouillon' },
+      validee: { variant: 'secondary', label: 'Validée' },
+      payee: { variant: 'default', label: 'Payée' },
+      annulee: { variant: 'destructive', label: 'Annulée' },
     };
     const config = variants[statut] || variants.brouillon;
     return <Badge variant={config.variant}>{config.label}</Badge>;

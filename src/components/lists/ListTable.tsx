@@ -27,7 +27,7 @@ interface ListTableProps<T> {
   stickyHeader?: boolean;
 }
 
-const getAlignClass = (align?: ListColumn<any>['align']) => {
+const getAlignClass = (align?: ListColumn<unknown>['align']) => {
   if (align === 'right') return 'text-right';
   if (align === 'center') return 'text-center';
   return '';

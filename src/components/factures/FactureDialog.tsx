@@ -168,7 +168,6 @@ export const FactureDialog = ({
         observations: facture.observations || '',
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, facture, onGenererNumero, initialBonCommandeId]);
 
   const handleSubmit = async (values: z.infer<typeof factureSchema>) => {
@@ -223,7 +222,6 @@ export const FactureDialog = ({
         shouldTouch: false
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchMontantHT, watchMontantTVA]);
 
   // Calculer le montant disponible sur le BC
