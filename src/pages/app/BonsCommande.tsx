@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,7 @@ import { useExercice } from '@/contexts/ExerciceContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
+import { useSnapshotState } from '@/hooks/useSnapshotState';
 
 const BonsCommande = () => {
   const navigate = useNavigate();
@@ -43,7 +44,6 @@ const BonsCommande = () => {
   const [receptionBonCommandeId, setReceptionBonCommandeId] = useState<string | undefined>();
   const [annulationBonCommandeId, setAnnulationBonCommandeId] = useState<string | undefined>();
   const [factureBonCommandeId, setFactureBonCommandeId] = useState<string | undefined>();
-  const [snapshotBonCommandeId, setSnapshotBonCommandeId] = useState<string | null>(null);
   
   const {
     bonsCommande,
@@ -80,35 +80,22 @@ const BonsCommande = () => {
     [bonsCommande, annulationBonCommandeId]
   );
 
-  const snapshotBonCommande = useMemo(
-    () => bonsCommande.find(bc => bc.id === snapshotBonCommandeId),
-    [bonsCommande, snapshotBonCommandeId]
-  );
-
-  const snapshotIndex = useMemo(
-    () => bonsCommande.findIndex(bc => bc.id === snapshotBonCommandeId),
-    [bonsCommande, snapshotBonCommandeId]
-  );
-
+  const {
+    snapshotId: snapshotBonCommandeId,
+    snapshotItem: snapshotBonCommande,
+    snapshotIndex,
+    isSnapshotOpen,
+    openSnapshot: handleOpenSnapshot,
+    closeSnapshot: handleCloseSnapshot,
+    navigateSnapshot: handleNavigateSnapshot,
+  } = useSnapshotState({
+    items: bonsCommande,
+    getId: bc => bc.id,
+    initialId: bonCommandeId,
+    onNavigateToId: id => navigate(id ? `/app/bons-commande/${id}` : '/app/bons-commande'),
+    onMissingId: () => navigate('/app/bons-commande', { replace: true }),
+  });
   const scrollProgress = useScrollProgress(!!snapshotBonCommandeId);
-  const isSnapshotOpen = !!(snapshotBonCommandeId && snapshotBonCommande);
-
-  useEffect(() => {
-    if (bonCommandeId && bonsCommande.length > 0 && !snapshotBonCommandeId) {
-      const bc = bonsCommande.find(item => item.id === bonCommandeId);
-      if (bc) {
-        setSnapshotBonCommandeId(bonCommandeId);
-      } else {
-        navigate('/app/bons-commande', { replace: true });
-      }
-    }
-  }, [bonCommandeId, bonsCommande, snapshotBonCommandeId, navigate]);
-
-  useEffect(() => {
-    if (snapshotBonCommandeId && !bonsCommande.some(bc => bc.id === snapshotBonCommandeId)) {
-      setSnapshotBonCommandeId(null);
-    }
-  }, [snapshotBonCommandeId, bonsCommande]);
 
   const { data: bonsCommandeReceptionnes = [] } = useQuery({
     queryKey: ['bons-commande-receptionnes', currentClient?.id, currentExercice?.id],
@@ -242,22 +229,6 @@ const BonsCommande = () => {
       navigate(`/app/bons-commande/${target.id}`);
     }
   }, [snapshotIndex, bonsCommande, navigate]);
-
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      if (!snapshotBonCommandeId) return;
-      if (event.key === 'Escape') {
-        handleCloseSnapshot();
-      } else if (event.key === 'ArrowLeft' && snapshotIndex > 0) {
-        handleNavigateSnapshot('prev');
-      } else if (event.key === 'ArrowRight' && snapshotIndex < bonsCommande.length - 1) {
-        handleNavigateSnapshot('next');
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [snapshotBonCommandeId, snapshotIndex, bonsCommande.length, handleCloseSnapshot, handleNavigateSnapshot]);
 
   const handleNavigateToEntity = useCallback((type: string, id: string) => {
     switch (type) {

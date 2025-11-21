@@ -16,6 +16,7 @@ import { useFournisseurs } from '@/hooks/useFournisseurs';
 import { useProjets } from '@/hooks/useProjets';
 import { useToast } from '@/hooks/use-toast';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
+import { useSnapshotState } from '@/hooks/useSnapshotState';
 import { showNavigationToast } from '@/lib/navigation-toast';
 import { CreateDepenseUrgenceFromReservationDialog } from '@/components/depenses/CreateDepenseUrgenceFromReservationDialog';
 import {
@@ -40,7 +41,6 @@ const Reservations = () => {
   const [engagementDialogOpen, setEngagementDialogOpen] = useState(false);
   const [reservationSourceId, setReservationSourceId] = useState<string | null>(null);
   const [selectedReservationForDepense, setSelectedReservationForDepense] = useState<ReservationCredit | null>(null);
-  const [snapshotReservationId, setSnapshotReservationId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { reservationId } = useParams<{ reservationId?: string }>();
   const { toast } = useToast();
@@ -107,58 +107,23 @@ const Reservations = () => {
   };
 
   // Synchroniser l'URL avec l'état du snapshot
-  useEffect(() => {
-    if (reservationId && reservations.length > 0 && !snapshotReservationId) {
-      const reservation = reservations.find((r) => r.id === reservationId);
-      if (reservation) {
-        setSnapshotReservationId(reservationId);
-      } else {
-        setSnapshotReservationId(null);
-        navigate('/app/reservations', { replace: true });
-      }
-    } else if (!reservationId && snapshotReservationId) {
-      setSnapshotReservationId(null);
-    }
-  }, [reservationId, reservations, snapshotReservationId, navigate]);
-
-  const snapshotReservation = useMemo(
-    () => reservations.find((r) => r.id === snapshotReservationId),
-    [reservations, snapshotReservationId]
-  );
-
-  const snapshotIndex = useMemo(
-    () => reservations.findIndex((r) => r.id === snapshotReservationId),
-    [reservations, snapshotReservationId]
-  );
+  const {
+    snapshotId: snapshotReservationId,
+    snapshotItem: snapshotReservation,
+    snapshotIndex,
+    isSnapshotOpen,
+    openSnapshot: handleOpenSnapshot,
+    closeSnapshot: handleCloseSnapshot,
+    navigateSnapshot: handleNavigateSnapshot,
+  } = useSnapshotState({
+    items: reservations,
+    getId: (r) => r.id,
+    initialId: reservationId,
+    onNavigateToId: (id) => navigate(id ? `/app/reservations/${id}` : '/app/reservations'),
+    onMissingId: () => navigate('/app/reservations', { replace: true }),
+  });
 
   const scrollProgress = useScrollProgress(!!snapshotReservationId);
-  const isSnapshotOpen = !!(snapshotReservationId && snapshotReservation);
-
-  const handleOpenSnapshot = useCallback(
-    (id: string) => {
-      setSnapshotReservationId(id);
-      navigate(`/app/reservations/${id}`);
-    },
-    [navigate]
-  );
-
-  const handleCloseSnapshot = useCallback(() => {
-    setSnapshotReservationId(null);
-    navigate('/app/reservations');
-  }, [navigate]);
-
-  const handleNavigateSnapshot = useCallback(
-    (direction: 'prev' | 'next') => {
-      if (snapshotIndex === -1) return;
-      const newIndex = direction === 'prev' ? snapshotIndex - 1 : snapshotIndex + 1;
-      if (newIndex >= 0 && newIndex < reservations.length) {
-        const target = reservations[newIndex];
-        setSnapshotReservationId(target.id);
-        navigate(`/app/reservations/${target.id}`);
-      }
-    },
-    [snapshotIndex, reservations, navigate]
-  );
 
   const handleNavigateToEntity = useCallback(
     (type: string, id: string) => {

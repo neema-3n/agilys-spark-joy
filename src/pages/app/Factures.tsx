@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { useProjets } from '@/hooks/useProjets';
 import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
 import { useEngagements } from '@/hooks/useEngagements';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
+import { useSnapshotState } from '@/hooks/useSnapshotState';
 import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { FactureStats } from '@/components/factures/FactureStats';
@@ -49,9 +50,6 @@ export default function Factures() {
   const [annulationMotif, setAnnulationMotif] = useState('');
   const [selectedFactureForDepense, setSelectedFactureForDepense] = useState<Facture | null>(null);
   
-  // États pour le snapshot
-  const [snapshotFactureId, setSnapshotFactureId] = useState<string | null>(null);
-  
   const { factures, isLoading, createFacture, updateFacture, deleteFacture, genererNumero, validerFacture, marquerPayee, annulerFacture } = useFactures();
   const { createDepenseFromFacture } = useDepenses();
   const [motifAnnulation, setMotifAnnulation] = useState('');
@@ -67,33 +65,24 @@ export default function Factures() {
     [factures, editingFactureId]
   );
 
-  // Snapshot helpers
-  const snapshotFacture = useMemo(
-    () => factures.find(f => f.id === snapshotFactureId),
-    [factures, snapshotFactureId]
-  );
-
-  const snapshotIndex = useMemo(
-    () => factures.findIndex(f => f.id === snapshotFactureId),
-    [factures, snapshotFactureId]
-  );
-
-  // Synchroniser l'URL avec le snapshot
-  useEffect(() => {
-    if (factureId && factures.length > 0 && !snapshotFactureId) {
-      const facture = factures.find(f => f.id === factureId);
-      if (facture) {
-        setSnapshotFactureId(factureId);
-      } else {
-        // ID invalide, rediriger vers la liste
-        navigate('/app/factures', { replace: true });
-      }
-    }
-  }, [factureId, factures, snapshotFactureId, navigate]);
+  const {
+    snapshotId: snapshotFactureId,
+    snapshotItem: snapshotFacture,
+    snapshotIndex,
+    isSnapshotOpen,
+    openSnapshot: handleOpenSnapshot,
+    closeSnapshot: handleCloseSnapshot,
+    navigateSnapshot: handleNavigateSnapshot,
+  } = useSnapshotState({
+    items: factures,
+    getId: f => f.id,
+    initialId: factureId,
+    onNavigateToId: id => navigate(id ? `/app/factures/${id}` : '/app/factures'),
+    onMissingId: () => navigate('/app/factures', { replace: true }),
+  });
 
   // Gérer le scroll pour l'effet de disparition du header
   const scrollProgress = useScrollProgress(!!snapshotFactureId);
-  const isSnapshotOpen = !!(snapshotFactureId && snapshotFacture);
 
   // Récupérer les bons de commande réceptionnés
   const { data: bonsCommande = [] } = useQuery({
@@ -169,28 +158,6 @@ export default function Factures() {
       setMotifAnnulation('');
     }
   }, [annulationFactureId, motifAnnulation, annulerFacture]);
-
-  // Snapshot handlers
-  const handleOpenSnapshot = useCallback((factureId: string) => {
-    setSnapshotFactureId(factureId);
-    navigate(`/app/factures/${factureId}`);
-  }, [navigate]);
-
-  const handleCloseSnapshot = useCallback(() => {
-    setSnapshotFactureId(null);
-    navigate('/app/factures');
-  }, [navigate]);
-
-  const handleNavigateSnapshot = useCallback((direction: 'prev' | 'next') => {
-    if (snapshotIndex === -1) return;
-    
-    const newIndex = direction === 'prev' ? snapshotIndex - 1 : snapshotIndex + 1;
-    if (newIndex >= 0 && newIndex < factures.length) {
-      const newFacture = factures[newIndex];
-      setSnapshotFactureId(newFacture.id);
-      navigate(`/app/factures/${newFacture.id}`);
-    }
-  }, [snapshotIndex, factures, navigate]);
 
   const handleNavigateToEntity = useCallback((type: string, id: string) => {
     switch (type) {

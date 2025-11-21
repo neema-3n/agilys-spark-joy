@@ -124,6 +124,30 @@ const handlers = useSnapshotHandlers({
 
 Ce hook documente clairement l'intention et peut être étendu à l'avenir avec des validations supplémentaires.
 
+### Hook de gestion d'état : `useSnapshotState`
+
+- Emplacement : `src/hooks/useSnapshotState.ts`
+- Responsabilités : conserver l'ID actuel, fournir `open/close`, navigation prev/next, reset si l’élément disparaît, synchroniser l’URL via `onNavigateToId`.
+- Exemple minimal :
+
+```ts
+const {
+  snapshotId,
+  snapshotItem,
+  snapshotIndex,
+  isSnapshotOpen,
+  openSnapshot,
+  closeSnapshot,
+  navigateSnapshot,
+} = useSnapshotState({
+  items: factures,
+  getId: f => f.id,
+  initialId: factureId, // param route
+  onNavigateToId: id => navigate(id ? `/app/factures/${id}` : '/app/factures'),
+  onMissingId: () => navigate('/app/factures', { replace: true }),
+});
+```
+
 ## Pages implémentant ce pattern
 
 - ✅ `src/pages/app/Factures.tsx` - Snapshots de factures
@@ -144,3 +168,4 @@ Lors de la création d'un nouveau snapshot, vérifier :
 - [ ] Le dialogue et le snapshot coexistent visuellement (z-index)
 - [ ] La navigation entre snapshots fonctionne pendant qu'un dialogue est ouvert
 - [ ] L’état/URL sont synchronisés (paramètre d’ID ou query param)
+- [ ] Quand c’est possible, mutualiser l’état avec `useSnapshotState` (id, navigation, reset, sync URL)
