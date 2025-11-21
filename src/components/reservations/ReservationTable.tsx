@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +15,7 @@ interface ReservationTableProps {
   onAnnuler: (id: string, motif: string) => void;
   onDelete: (id: string) => void;
   onCreerDepenseUrgence: (reservation: ReservationCredit) => void;
+  onViewDetails?: (id: string) => void;
 }
 
 export const ReservationTable = ({
@@ -23,6 +25,7 @@ export const ReservationTable = ({
   onAnnuler,
   onDelete,
   onCreerDepenseUrgence,
+  onViewDetails,
 }: ReservationTableProps) => {
   const calculerSolde = (reservation: ReservationCredit): number => {
     if (!reservation.engagements || reservation.engagements.length === 0) {
@@ -96,8 +99,33 @@ export const ReservationTable = ({
             </TableRow>
           ) : (
             reservations.map((reservation) => (
-              <TableRow key={reservation.id}>
-                <TableCell className="font-medium">{reservation.numero}</TableCell>
+              <TableRow
+                key={reservation.id}
+                onDoubleClick={onViewDetails ? () => onViewDetails(reservation.id) : undefined}
+                className={`${onViewDetails ? 'cursor-pointer' : ''} hover:bg-muted/30`}
+              >
+                <TableCell className="font-medium">
+                  <Link
+                    to={`/app/reservations/${reservation.id}`}
+                    className="text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded"
+                    onClick={(event) => {
+                      if (!onViewDetails) return;
+                      if (
+                        event.button !== 0 ||
+                        event.metaKey ||
+                        event.ctrlKey ||
+                        event.shiftKey ||
+                        event.altKey
+                      ) {
+                        return;
+                      }
+                      event.preventDefault();
+                      onViewDetails(reservation.id);
+                    }}
+                  >
+                    {reservation.numero}
+                  </Link>
+                </TableCell>
                 <TableCell>
                   {reservation.ligneBudgetaire?.libelle || 'N/A'}
                 </TableCell>

@@ -91,6 +91,7 @@ const BonsCommande = () => {
   );
 
   const scrollProgress = useScrollProgress(!!snapshotBonCommandeId);
+  const isSnapshotOpen = !!(snapshotBonCommandeId && snapshotBonCommande);
 
   useEffect(() => {
     if (bonCommandeId && bonsCommande.length > 0 && !snapshotBonCommandeId) {
@@ -282,20 +283,22 @@ const BonsCommande = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Gestion des Bons de Commande"
-        description="Gérez les bons de commande et leurs statuts"
-        scrollProgress={snapshotBonCommandeId ? scrollProgress : 0}
-        actions={
-          <Button onClick={handleCreate}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nouveau BC
-          </Button>
-        }
-      />
+      {!isSnapshotOpen && (
+        <PageHeader
+          title="Gestion des Bons de Commande"
+          description="Gérez les bons de commande et leurs statuts"
+          scrollProgress={snapshotBonCommandeId ? scrollProgress : 0}
+          actions={
+            <Button onClick={handleCreate}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nouveau BC
+            </Button>
+          }
+        />
+      )}
 
       <div className="px-8 space-y-6">
-        {snapshotBonCommandeId && snapshotBonCommande ? (
+        {isSnapshotOpen && snapshotBonCommande ? (
           <BonCommandeSnapshot
             bonCommande={snapshotBonCommande}
             onClose={handleCloseSnapshot}

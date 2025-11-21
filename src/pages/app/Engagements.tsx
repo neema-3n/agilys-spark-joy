@@ -270,6 +270,7 @@ const Engagements = () => {
     () => engagements.findIndex(e => e.id === snapshotEngagementId),
     [engagements, snapshotEngagementId]
   );
+  const isSnapshotOpen = !!(snapshotEngagementId && snapshotEngagement);
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -312,10 +313,10 @@ const Engagements = () => {
 
   return (
     <div className="space-y-6">
-      {pageHeaderContent}
+      {!isSnapshotOpen && pageHeaderContent}
 
       <div className="px-8 space-y-6">
-        {snapshotEngagementId && snapshotEngagement ? (
+        {isSnapshotOpen && snapshotEngagement ? (
           <EngagementSnapshot
             engagement={snapshotEngagement}
             onClose={handleCloseSnapshot}

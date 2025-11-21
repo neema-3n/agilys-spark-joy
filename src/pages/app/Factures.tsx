@@ -93,6 +93,7 @@ export default function Factures() {
 
   // Gérer le scroll pour l'effet de disparition du header
   const scrollProgress = useScrollProgress(!!snapshotFactureId);
+  const isSnapshotOpen = !!(snapshotFactureId && snapshotFacture);
 
   // Récupérer les bons de commande réceptionnés
   const { data: bonsCommande = [] } = useQuery({
@@ -231,10 +232,10 @@ export default function Factures() {
 
   return (
     <div className="space-y-6">
-      {pageHeaderContent}
+      {!isSnapshotOpen && pageHeaderContent}
 
       <div className="px-8 space-y-6">
-        {snapshotFactureId && snapshotFacture ? (
+        {isSnapshotOpen && snapshotFacture ? (
           <FactureSnapshot
             facture={snapshotFacture}
             onClose={handleCloseSnapshot}

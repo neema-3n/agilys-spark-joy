@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,7 @@ interface DepenseTableProps {
   onMarquerPayee?: (id: string) => void;
   onAnnuler?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onViewDetails?: (depenseId: string) => void;
 }
 
 export const DepenseTable = ({
@@ -38,6 +40,7 @@ export const DepenseTable = ({
   onMarquerPayee,
   onAnnuler,
   onDelete,
+  onViewDetails,
 }: DepenseTableProps) => {
   const [search, setSearch] = useState('');
   const [filterStatut, setFilterStatut] = useState<string>('tous');
@@ -139,8 +142,33 @@ export const DepenseTable = ({
               </TableRow>
             ) : (
               filteredDepenses.map((depense) => (
-                <TableRow key={depense.id}>
-                  <TableCell className="font-medium">{depense.numero}</TableCell>
+                <TableRow
+                  key={depense.id}
+                  onDoubleClick={onViewDetails ? () => onViewDetails(depense.id) : undefined}
+                  className={`${onViewDetails ? 'cursor-pointer' : ''} hover:bg-muted/30`}
+                >
+                  <TableCell className="font-medium">
+                    <Link
+                      to={`/app/depenses/${depense.id}`}
+                      className="text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded"
+                      onClick={(event) => {
+                        if (!onViewDetails) return;
+                        if (
+                          event.button !== 0 ||
+                          event.metaKey ||
+                          event.ctrlKey ||
+                          event.shiftKey ||
+                          event.altKey
+                        ) {
+                          return;
+                        }
+                        event.preventDefault();
+                        onViewDetails(depense.id);
+                      }}
+                    >
+                      {depense.numero}
+                    </Link>
+                  </TableCell>
                   <TableCell>{new Date(depense.dateDepense).toLocaleDateString('fr-FR')}</TableCell>
                   <TableCell className="max-w-xs truncate">{depense.objet}</TableCell>
                   <TableCell>
