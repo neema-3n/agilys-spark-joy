@@ -3,6 +3,8 @@
 ## Règle d'or
 
 **Les handlers passés aux composants Snapshot ne doivent JAMAIS appeler `handleCloseSnapshot()`.**
+**Le header du snapshot doit être sticky en haut (pas d'espace vide au scroll).**
+**L’URL/state doivent rester synchronisés (ex: `/app/depenses/:id`, `/app/reservations/:id`, `/app/budgets?ligneId=...`).**
 
 ## Pourquoi cette règle ?
 
@@ -126,9 +128,10 @@ Ce hook documente clairement l'intention et peut être étendu à l'avenir avec 
 
 - ✅ `src/pages/app/Factures.tsx` - Snapshots de factures
 - ✅ `src/pages/app/Engagements.tsx` - Snapshots d'engagements
-- ⏳ `src/pages/app/BonsCommande.tsx` - À implémenter
-- ⏳ `src/pages/app/Reservations.tsx` - À implémenter
-- ⏳ `src/pages/app/Depenses.tsx` - À implémenter
+- ✅ `src/pages/app/BonsCommande.tsx` - Snapshot BC + navigation
+- ✅ `src/pages/app/Depenses.tsx` - Snapshot dépense + navigation
+- ✅ `src/pages/app/Reservations.tsx` - Snapshot réservation + navigation + prompt annulation
+- ✅ `src/pages/app/Budgets.tsx` - Snapshot ligne budgétaire + navigation (via query param `ligneId`)
 
 ## Checklist pour nouveaux snapshots
 
@@ -137,5 +140,7 @@ Lors de la création d'un nouveau snapshot, vérifier :
 - [ ] Les handlers ne ferment jamais le snapshot
 - [ ] L'interface contient des JSDoc pour documenter le comportement
 - [ ] Les raccourcis clavier (Escape, flèches) fonctionnent correctement
+- [ ] Le header du snapshot est sticky/plein écran (pas d’espace vide en haut)
 - [ ] Le dialogue et le snapshot coexistent visuellement (z-index)
 - [ ] La navigation entre snapshots fonctionne pendant qu'un dialogue est ouvert
+- [ ] L’état/URL sont synchronisés (paramètre d’ID ou query param)
