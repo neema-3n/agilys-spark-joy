@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
@@ -7,6 +7,7 @@ import { ReservationDialog } from '@/components/reservations/ReservationDialog';
 import { ReservationTable } from '@/components/reservations/ReservationTable';
 import { ReservationStats } from '@/components/reservations/ReservationStats';
 import { EngagementDialog } from '@/components/engagements/EngagementDialog';
+import { ReservationSnapshot } from '@/components/reservations/ReservationSnapshot';
 import { useReservations } from '@/hooks/useReservations';
 import { useEngagements } from '@/hooks/useEngagements';
 import { useDepenses } from '@/hooks/useDepenses';
@@ -14,6 +15,7 @@ import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
 import { useFournisseurs } from '@/hooks/useFournisseurs';
 import { useProjets } from '@/hooks/useProjets';
 import { useToast } from '@/hooks/use-toast';
+import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { showNavigationToast } from '@/lib/navigation-toast';
 import { CreateDepenseUrgenceFromReservationDialog } from '@/components/depenses/CreateDepenseUrgenceFromReservationDialog';
 import {
@@ -38,7 +40,9 @@ const Reservations = () => {
   const [engagementDialogOpen, setEngagementDialogOpen] = useState(false);
   const [reservationSourceId, setReservationSourceId] = useState<string | null>(null);
   const [selectedReservationForDepense, setSelectedReservationForDepense] = useState<ReservationCredit | null>(null);
+  const [snapshotReservationId, setSnapshotReservationId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { reservationId } = useParams<{ reservationId?: string }>();
   const { toast } = useToast();
   
   const {
@@ -101,6 +105,77 @@ const Reservations = () => {
     console.log('💳 Création dépense urgente depuis réservation', reservation);
     setSelectedReservationForDepense(reservation);
   };
+
+  // Synchroniser l'URL avec l'état du snapshot
+  useEffect(() => {
+    if (reservationId && reservations.length > 0 && !snapshotReservationId) {
+      const reservation = reservations.find((r) => r.id === reservationId);
+      if (reservation) {
+        setSnapshotReservationId(reservationId);
+      } else {
+        setSnapshotReservationId(null);
+        navigate('/app/reservations', { replace: true });
+      }
+    } else if (!reservationId && snapshotReservationId) {
+      setSnapshotReservationId(null);
+    }
+  }, [reservationId, reservations, snapshotReservationId, navigate]);
+
+  const snapshotReservation = useMemo(
+    () => reservations.find((r) => r.id === snapshotReservationId),
+    [reservations, snapshotReservationId]
+  );
+
+  const snapshotIndex = useMemo(
+    () => reservations.findIndex((r) => r.id === snapshotReservationId),
+    [reservations, snapshotReservationId]
+  );
+
+  const scrollProgress = useScrollProgress(!!snapshotReservationId);
+  const isSnapshotOpen = !!(snapshotReservationId && snapshotReservation);
+
+  const handleOpenSnapshot = useCallback(
+    (id: string) => {
+      setSnapshotReservationId(id);
+      navigate(`/app/reservations/${id}`);
+    },
+    [navigate]
+  );
+
+  const handleCloseSnapshot = useCallback(() => {
+    setSnapshotReservationId(null);
+    navigate('/app/reservations');
+  }, [navigate]);
+
+  const handleNavigateSnapshot = useCallback(
+    (direction: 'prev' | 'next') => {
+      if (snapshotIndex === -1) return;
+      const newIndex = direction === 'prev' ? snapshotIndex - 1 : snapshotIndex + 1;
+      if (newIndex >= 0 && newIndex < reservations.length) {
+        const target = reservations[newIndex];
+        setSnapshotReservationId(target.id);
+        navigate(`/app/reservations/${target.id}`);
+      }
+    },
+    [snapshotIndex, reservations, navigate]
+  );
+
+  const handleNavigateToEntity = useCallback(
+    (type: string, id: string) => {
+      switch (type) {
+        case 'engagement':
+          navigate(`/app/engagements/${id}`);
+          break;
+        case 'ligne-budgetaire':
+          navigate(`/app/budgets?ligneId=${id}`);
+          break;
+        case 'projet':
+          navigate(`/app/projets/${id}`);
+          break;
+      }
+    },
+    [navigate]
+  );
 
   const handleSaveEngagement = async (data: any) => {
     try {
@@ -178,6 +253,16 @@ const Reservations = () => {
     }
   };
 
+  const handleAnnulerFromSnapshot = useCallback(
+    (id: string) => {
+      const motif = prompt("Motif d'annulation :");
+      if (motif) {
+        handleAnnuler(id, motif);
+      }
+    },
+    [handleAnnuler]
+  );
+
   const confirmCascadeAnnulation = async () => {
     if (pendingAnnulation) {
       await executeAnnulation(
@@ -253,29 +338,51 @@ const Reservations = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader
-        title="Réservation de Crédits"
-        description="Blocage préalable avec traçabilité complète"
-        actions={
-          <Button onClick={handleCreate}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nouvelle réservation
-          </Button>
-        }
-      />
-
-      <div className="flex-1 overflow-y-auto p-8 pt-6 space-y-6">
-        <ReservationStats reservations={reservations} />
-
-        <ReservationTable
-          reservations={reservations}
-          onEdit={handleEdit}
-          onCreerEngagement={handleCreerEngagement}
-          onAnnuler={handleAnnuler}
-          onDelete={handleDelete}
-          onCreerDepenseUrgence={handleCreerDepenseUrgence}
+      {!isSnapshotOpen && (
+        <PageHeader
+          title="Réservation de Crédits"
+          description="Blocage préalable avec traçabilité complète"
+          scrollProgress={scrollProgress}
+          actions={
+            <Button onClick={handleCreate}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nouvelle réservation
+            </Button>
+          }
         />
-      </div>
+      )}
+
+      {isSnapshotOpen && snapshotReservation ? (
+        <div className={`flex-1 overflow-y-auto p-8 ${isSnapshotOpen ? 'pt-0' : 'pt-6'} space-y-6`}>
+          <ReservationSnapshot
+            reservation={snapshotReservation}
+            onClose={handleCloseSnapshot}
+            onNavigate={handleNavigateSnapshot}
+            hasPrev={snapshotIndex > 0}
+            hasNext={snapshotIndex < reservations.length - 1}
+            currentIndex={snapshotIndex}
+            totalCount={reservations.length}
+            onCreerEngagement={() => handleCreerEngagement(snapshotReservation)}
+            onCreerDepenseUrgence={() => handleCreerDepenseUrgence(snapshotReservation)}
+            onAnnuler={() => handleAnnulerFromSnapshot(snapshotReservation.id)}
+            onNavigateToEntity={handleNavigateToEntity}
+          />
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto p-8 pt-6 space-y-6">
+          <ReservationStats reservations={reservations} />
+
+          <ReservationTable
+            reservations={reservations}
+            onEdit={handleEdit}
+            onCreerEngagement={handleCreerEngagement}
+            onAnnuler={handleAnnuler}
+            onDelete={handleDelete}
+            onCreerDepenseUrgence={handleCreerDepenseUrgence}
+            onViewDetails={handleOpenSnapshot}
+          />
+        </div>
+      )}
 
       <ReservationDialog
         open={dialogOpen}
