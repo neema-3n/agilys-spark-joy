@@ -27,6 +27,9 @@ interface FactureSnapshotProps {
   /** Valider la facture (change le statut en "validée") */
   onValider?: () => void;
   
+  /** Marquer la facture comme payée (statut validée → payée) */
+  onMarquerPayee?: () => void;
+  
   /** Annuler la facture */
   onAnnuler?: () => void;
   
@@ -50,6 +53,7 @@ export const FactureSnapshot = ({
   totalCount,
   onEdit,
   onValider,
+  onMarquerPayee,
   onAnnuler,
   onCreerDepense,
   onNavigateToEntity,
@@ -105,6 +109,11 @@ export const FactureSnapshot = ({
       {facture.statut === 'validee' && onCreerDepense && (
         <Button variant="outline" size="sm" onClick={onCreerDepense}>
           Créer une dépense
+        </Button>
+      )}
+      {facture.statut === 'validee' && onMarquerPayee && (
+        <Button size="sm" onClick={onMarquerPayee}>
+          Marquer comme payée
         </Button>
       )}
       {(facture.statut === 'brouillon' || facture.statut === 'validee') && onAnnuler && (
