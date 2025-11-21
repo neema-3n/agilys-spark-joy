@@ -37,7 +37,6 @@ export function useSnapshotState<T>({
 }: UseSnapshotStateParams<T>): UseSnapshotStateResult<T> {
   // on initialise avec initialId pour éviter tout clignotement
   const [snapshotId, setSnapshotId] = useState<string | null>(initialId || null);
-  const initialIdRef = useMemo(() => initialId, [initialId]);
   const lastSnapshotItemRef = useRef<T | undefined>(undefined);
 
   // Reset si initialId change (ex: changement de paramètre de route)
@@ -54,14 +53,16 @@ export function useSnapshotState<T>({
 
   // Si l'ID courant ne fait plus partie de la liste (refresh, suppression) une fois les données chargées
   useEffect(() => {
-    if (snapshotId && !isLoadingItems && items.length > 0 && !items.some(item => getId(item) === snapshotId)) {
-      // Si l'ID vient d'un clic (pas d'initialId), on peut retomber sur la liste
-      if (!initialIdRef) {
-        setSnapshotId(null);
-        onMissingId?.();
-      }
+    if (!snapshotId || isLoadingItems) return;
+
+    const hasSnapshotInList = items.some(item => getId(item) === snapshotId);
+    const hasItems = items.length > 0;
+
+    if (!hasSnapshotInList || !hasItems) {
+      setSnapshotId(null);
+      onMissingId?.();
     }
-  }, [snapshotId, items, getId, onMissingId, isLoadingItems, initialIdRef]);
+  }, [snapshotId, items, getId, onMissingId, isLoadingItems]);
 
   const snapshotItem = useMemo(
     () => items.find(item => getId(item) === snapshotId),
