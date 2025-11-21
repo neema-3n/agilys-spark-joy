@@ -114,7 +114,7 @@ Les collectivités locales doivent :
   - `montantModifie` : Ajustements (modifications budgétaires)
   - `montantReserve` : Crédits réservés (réservations)
   - `montantEngage` : Crédits engagés (engagements validés)
-  - `montantPaye` : Crédits payés (dépenses payées)
+- `montantLiquide` : Crédits liquidés (dépenses payées)
   - `disponible` : **Calculé automatiquement** = Initial + Modifié - Réservé - Engagé
 - `statut` : 'actif' | 'cloture'
 
@@ -240,7 +240,7 @@ Les collectivités locales doivent :
 - `montantHT` : Montant HT
 - `montantTVA` : Montant TVA
 - `montantTTC` : Montant TTC
-- `montantPaye` : Montant déjà payé (calculé)
+- `montantLiquide` : Montant déjà liquidé (calculé)
 - `statut` : 'brouillon' | 'validee' | 'partiellement_payee' | 'payee' | 'annulee'
 
 **Workflow** :
@@ -262,7 +262,7 @@ Les collectivités locales doivent :
 - `numero` : Généré auto (ex: "DEP/2024/001")
 - `objet` : Objet
 - `montant` : Montant à payer
-- `montantPaye` : Montant effectivement payé
+- `montantLiquide` : Montant effectivement liquidé
 - `beneficiaire` : Bénéficiaire
 - `fournisseurId` : Fournisseur (optionnel)
 - `engagementId` : Engagement source (optionnel)
@@ -285,7 +285,7 @@ Les collectivités locales doivent :
 5. Annulée → Dépense annulée
 
 **Impact sur ligne budgétaire** (si payée) :
-- `montantPaye` augmente
+- `montantLiquide` augmente
 
 **Types de dépenses** :
 - **Depuis engagement** : Dépense normale (engagement → dépense)

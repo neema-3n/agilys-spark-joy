@@ -12,10 +12,10 @@ export const FactureStats = ({ factures }: FactureStatsProps) => {
     brouillon: factures.filter(f => f.statut === 'brouillon').length,
     validee: factures.filter(f => f.statut === 'validee').length,
     payee: factures.filter(f => f.statut === 'payee').length,
+    montantLiquide: factures.reduce((sum, f) => sum + (f.montantLiquide || 0), 0),
     montantTotal: factures.reduce((sum, f) => sum + f.montantTTC, 0),
     montantBrouillon: factures.filter(f => f.statut === 'brouillon').reduce((sum, f) => sum + f.montantTTC, 0),
     montantValidee: factures.filter(f => f.statut === 'validee').reduce((sum, f) => sum + f.montantTTC, 0),
-    montantPayee: factures.filter(f => f.statut === 'payee').reduce((sum, f) => sum + f.montantTTC, 0),
   };
 
   const formatMontant = (montant: number) => {
@@ -51,11 +51,11 @@ export const FactureStats = ({ factures }: FactureStatsProps) => {
         trendUp={true}
       />
       <StatsCard
-        title="Payées"
+        title="Liquidé"
         value={stats.payee.toString()}
         icon={DollarSign}
         color="text-accent"
-        trend={formatMontant(stats.montantPayee)}
+        trend={formatMontant(stats.montantLiquide)}
         trendUp={true}
       />
     </div>
