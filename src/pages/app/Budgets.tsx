@@ -365,8 +365,9 @@ const Budgets = () => {
   } = useSnapshotState({
     items: activeTab === 'lignes' ? lignes : [],
     getId: l => l.id,
-    initialId: activeTab === 'lignes' ? ligneIdParam : null,
-    onNavigateToId: id => navigateToLigneId(id),
+    initialId: activeTab === 'lignes' ? (ligneIdParam || null) : null,
+    onNavigateToId: id => navigateToLigneId(id ?? null),
+    onMissingId: () => navigateToLigneId(null),
     isLoadingItems: loading || loadingSections || loadingProgrammes || loadingActions || loadingComptes || loadingEnveloppes,
   });
 
