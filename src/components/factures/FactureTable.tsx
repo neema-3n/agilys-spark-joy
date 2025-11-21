@@ -141,14 +141,14 @@ export const FactureTable = ({
       id: 'paye',
       header: 'Liquidé',
       align: 'right',
-      render: (facture) => formatMontant(facture.montantPaye || 0),
+      render: (facture) => formatMontant(facture.montantLiquide || 0),
     },
     {
       id: 'solde',
       header: 'Solde',
       align: 'right',
       render: (facture) => {
-        const solde = facture.montantTTC - (facture.montantPaye || 0);
+        const solde = facture.montantTTC - (facture.montantLiquide || 0);
         const soldeClass = solde > 0 ? 'text-orange-600 font-medium' : 'text-green-600';
         return <span className={soldeClass}>{formatMontant(solde)}</span>;
       },
