@@ -56,21 +56,6 @@ const Engagements = () => {
   const { createBonCommande, genererNumero } = useBonsCommande();
   const { createDepenseFromEngagement } = useDepenses();
 
-  // Synchronisation bidirectionnelle URL ↔ state
-  useEffect(() => {
-    if (engagementId && engagements.length > 0 && !snapshotEngagementId) {
-      const engagement = engagements.find(e => e.id === engagementId);
-      if (engagement) {
-        setSnapshotEngagementId(engagementId);
-      } else {
-        navigate('/app/engagements', { replace: true });
-      }
-    }
-  }, [engagementId, engagements, snapshotEngagementId, navigate]);
-
-  // Gérer le scroll pour l'effet de disparition du header
-  const scrollProgress = useScrollProgress(!!snapshotEngagementId);
-
   const handleCreate = () => {
     setSelectedEngagement(undefined);
     setDialogOpen(true);
@@ -234,6 +219,9 @@ const Engagements = () => {
     onNavigateToId: id => navigate(id ? `/app/engagements/${id}` : '/app/engagements'),
     onMissingId: () => navigate('/app/engagements', { replace: true }),
   });
+
+  // Gérer le scroll pour l'effet de disparition du header
+  const scrollProgress = useScrollProgress(!!snapshotEngagementId);
 
   const handleNavigateToEntity = (type: string, id: string) => {
     const entityRoutes: Record<string, string> = {

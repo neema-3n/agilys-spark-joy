@@ -85,7 +85,7 @@ const BonsCommande = () => {
     snapshotItem: snapshotBonCommande,
     snapshotIndex,
     isSnapshotOpen,
-    openSnapshot: handleOpenSnapshot,
+    openSnapshot: openBonCommandeSnapshot,
     closeSnapshot: handleCloseSnapshot,
     navigateSnapshot: handleNavigateSnapshot,
   } = useSnapshotState({
@@ -210,26 +210,6 @@ const BonsCommande = () => {
     return await genererNumeroFacture({ clientId: currentClient.id, exerciceId: currentExercice.id });
   }, [currentClient, currentExercice, genererNumeroFacture]);
 
-  const handleOpenSnapshot = useCallback((id: string) => {
-    setSnapshotBonCommandeId(id);
-    navigate(`/app/bons-commande/${id}`);
-  }, [navigate]);
-
-  const handleCloseSnapshot = useCallback(() => {
-    setSnapshotBonCommandeId(null);
-    navigate('/app/bons-commande');
-  }, [navigate]);
-
-  const handleNavigateSnapshot = useCallback((direction: 'prev' | 'next') => {
-    if (snapshotIndex === -1) return;
-    const newIndex = direction === 'prev' ? snapshotIndex - 1 : snapshotIndex + 1;
-    if (newIndex >= 0 && newIndex < bonsCommande.length) {
-      const target = bonsCommande[newIndex];
-      setSnapshotBonCommandeId(target.id);
-      navigate(`/app/bons-commande/${target.id}`);
-    }
-  }, [snapshotIndex, bonsCommande, navigate]);
-
   const handleNavigateToEntity = useCallback((type: string, id: string) => {
     switch (type) {
       case 'fournisseur':
@@ -299,7 +279,7 @@ const BonsCommande = () => {
               onReceptionner={(bc) => handleReceptionner(bc.id)}
               onAnnuler={(bc) => handleAnnuler(bc.id)}
               onCreateFacture={(bc) => handleCreateFacture(bc.id)}
-              onViewDetails={handleOpenSnapshot}
+              onViewDetails={openBonCommandeSnapshot}
             />
           </>
         )}
