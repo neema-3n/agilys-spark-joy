@@ -19,7 +19,7 @@ import { FactureTable } from '@/components/factures/FactureTable';
 import { FactureDialog } from '@/components/factures/FactureDialog';
 import { FactureSnapshot } from '@/components/factures/FactureSnapshot';
 import { CreateDepenseFromFactureDialog } from '@/components/depenses/CreateDepenseFromFactureDialog';
-import { CreateFactureInput, Facture } from '@/types/facture.types';
+import { CreateFactureInput, Facture, StatutFacture } from '@/types/facture.types';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -34,6 +34,14 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ListLayout } from '@/components/lists/ListLayout';
+import { ListToolbar } from '@/components/lists/ListToolbar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export default function Factures() {
   const navigate = useNavigate();
@@ -47,8 +55,9 @@ export default function Factures() {
   const [selectedBonCommandeId, setSelectedBonCommandeId] = useState<string | undefined>();
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
   const [annulationFactureId, setAnnulationFactureId] = useState<string | undefined>();
-  const [annulationMotif, setAnnulationMotif] = useState('');
   const [selectedFactureForDepense, setSelectedFactureForDepense] = useState<Facture | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statutFilter, setStatutFilter] = useState<'tous' | StatutFacture>('tous');
   
   const { factures, isLoading, createFacture, updateFacture, deleteFacture, genererNumero, validerFacture, marquerPayee, annulerFacture } = useFactures();
   const { createDepenseFromFacture } = useDepenses();
@@ -64,6 +73,26 @@ export default function Factures() {
     () => factures.find(f => f.id === editingFactureId),
     [factures, editingFactureId]
   );
+
+  const filteredFactures = useMemo(() => {
+    const searchLower = searchTerm.trim().toLowerCase();
+
+    return factures
+      .filter((facture) => (statutFilter === 'tous' ? true : facture.statut === statutFilter))
+      .filter((facture) => {
+        if (!searchLower) return true;
+
+        return (
+          facture.numero.toLowerCase().includes(searchLower) ||
+          facture.objet?.toLowerCase().includes(searchLower) ||
+          facture.fournisseur?.nom.toLowerCase().includes(searchLower) ||
+          facture.bonCommande?.numero?.toLowerCase().includes(searchLower)
+        );
+      })
+      .sort(
+        (a, b) => new Date(b.dateFacture).getTime() - new Date(a.dateFacture).getTime()
+      );
+  }, [factures, searchTerm, statutFilter]);
 
   const {
     snapshotId: snapshotFactureId,
@@ -199,6 +228,17 @@ export default function Factures() {
     />
   );
 
+  const statutOptions: { value: 'tous' | StatutFacture; label: string }[] = [
+    { value: 'tous', label: 'Tous' },
+    { value: 'brouillon', label: 'Brouillon' },
+    { value: 'validee', label: 'Validée' },
+    { value: 'payee', label: 'Payée' },
+    { value: 'annulee', label: 'Annulée' },
+  ];
+
+  const activeStatutLabel =
+    statutOptions.find((option) => option.value === statutFilter)?.label || 'Tous';
+
   return (
     <div className="space-y-6">
       {!isSnapshotOpen && pageHeaderContent}
@@ -226,16 +266,45 @@ export default function Factures() {
           <>
             <FactureStats factures={factures} />
 
-            <FactureTable
-              factures={factures}
-              onEdit={(facture) => handleEdit(facture.id)}
-              onDelete={deleteFacture}
-              onValider={validerFacture}
-              onMarquerPayee={marquerPayee}
-              onAnnuler={handleAnnuler}
-              onCreerDepense={(facture) => setSelectedFactureForDepense(facture)}
-              onViewDetails={handleOpenSnapshot}
-            />
+            <ListLayout
+              title="Liste des factures"
+              description="Visualisez, filtrez et gérez vos factures fournisseurs"
+              toolbar={
+                <ListToolbar
+                  searchValue={searchTerm}
+                  onSearchChange={setSearchTerm}
+                  searchPlaceholder="Rechercher par numéro, objet, fournisseur..."
+                  filters={[
+                    <DropdownMenu key="statut">
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline">Statut: {activeStatutLabel}</Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {statutOptions.map((option) => (
+                          <DropdownMenuItem
+                            key={option.value}
+                            onClick={() => setStatutFilter(option.value)}
+                          >
+                            {option.label}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>,
+                  ]}
+                />
+              }
+            >
+              <FactureTable
+                factures={filteredFactures}
+                onEdit={(facture) => handleEdit(facture.id)}
+                onDelete={deleteFacture}
+                onValider={validerFacture}
+                onMarquerPayee={marquerPayee}
+                onAnnuler={handleAnnuler}
+                onCreerDepense={(facture) => setSelectedFactureForDepense(facture)}
+                onViewDetails={handleOpenSnapshot}
+              />
+            </ListLayout>
           </>
         )}
       </div>
