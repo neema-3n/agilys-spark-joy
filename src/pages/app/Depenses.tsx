@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { DepenseDialog } from '@/components/depenses/DepenseDialog';
 import { DepenseSnapshot } from '@/components/depenses/DepenseSnapshot';
 import { useDepenses } from '@/hooks/useDepenses';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
+import { useSnapshotState } from '@/hooks/useSnapshotState';
 import type { DepenseFormData } from '@/types/depense.types';
 
 const Depenses = () => {
@@ -16,66 +17,29 @@ const Depenses = () => {
   const { depenseId } = useParams<{ depenseId?: string }>();
   const navigate = useNavigate();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [snapshotDepenseId, setSnapshotDepenseId] = useState<string | null>(null);
 
   const handleCreateDepense = async (data: DepenseFormData) => {
     await createDepense(data);
     setIsDialogOpen(false);
   };
 
-  // Synchroniser l'URL avec l'état du snapshot
-  useEffect(() => {
-    if (depenseId && depenses.length > 0 && !snapshotDepenseId) {
-      const depense = depenses.find((d) => d.id === depenseId);
-      if (depense) {
-        setSnapshotDepenseId(depenseId);
-      } else {
-        setSnapshotDepenseId(null);
-        navigate('/app/depenses', { replace: true });
-      }
-    } else if (!depenseId && snapshotDepenseId) {
-      setSnapshotDepenseId(null);
-    }
-  }, [depenseId, depenses, snapshotDepenseId, navigate]);
-
-  const snapshotDepense = useMemo(
-    () => depenses.find((d) => d.id === snapshotDepenseId),
-    [depenses, snapshotDepenseId]
-  );
-
-  const snapshotIndex = useMemo(
-    () => depenses.findIndex((d) => d.id === snapshotDepenseId),
-    [depenses, snapshotDepenseId]
-  );
+  const {
+    snapshotId: snapshotDepenseId,
+    snapshotItem: snapshotDepense,
+    snapshotIndex,
+    isSnapshotOpen,
+    openSnapshot: handleOpenSnapshot,
+    closeSnapshot: handleCloseSnapshot,
+    navigateSnapshot: handleNavigateSnapshot,
+  } = useSnapshotState({
+    items: depenses,
+    getId: (d) => d.id,
+    initialId: depenseId,
+    onNavigateToId: (id) => navigate(id ? `/app/depenses/${id}` : '/app/depenses'),
+    onMissingId: () => navigate('/app/depenses', { replace: true }),
+  });
 
   const scrollProgress = useScrollProgress(!!snapshotDepenseId);
-  const isSnapshotOpen = !!(snapshotDepenseId && snapshotDepense);
-
-  const handleOpenSnapshot = useCallback(
-    (id: string) => {
-      setSnapshotDepenseId(id);
-      navigate(`/app/depenses/${id}`);
-    },
-    [navigate]
-  );
-
-  const handleCloseSnapshot = useCallback(() => {
-    setSnapshotDepenseId(null);
-    navigate('/app/depenses');
-  }, [navigate]);
-
-  const handleNavigateSnapshot = useCallback(
-    (direction: 'prev' | 'next') => {
-      if (snapshotIndex === -1) return;
-      const newIndex = direction === 'prev' ? snapshotIndex - 1 : snapshotIndex + 1;
-      if (newIndex >= 0 && newIndex < depenses.length) {
-        const target = depenses[newIndex];
-        setSnapshotDepenseId(target.id);
-        navigate(`/app/depenses/${target.id}`);
-      }
-    },
-    [snapshotIndex, depenses, navigate]
-  );
 
   const handleNavigateToEntity = useCallback(
     (type: string, id: string) => {

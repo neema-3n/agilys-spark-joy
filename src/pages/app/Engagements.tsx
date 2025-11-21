@@ -15,6 +15,7 @@ import { useDepenses } from '@/hooks/useDepenses';
 import { useToast } from '@/hooks/use-toast';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { showNavigationToast } from '@/lib/navigation-toast';
+import { useSnapshotState } from '@/hooks/useSnapshotState';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,7 +40,6 @@ const Engagements = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [actionEngagementId, setActionEngagementId] = useState<string | null>(null);
   const [selectedEngagementForDepense, setSelectedEngagementForDepense] = useState<Engagement | null>(null);
-  const [snapshotEngagementId, setSnapshotEngagementId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -219,27 +219,21 @@ const Engagements = () => {
     setSelectedEngagementForDepense(engagement);
   };
 
-  const handleOpenSnapshot = useCallback((engagementId: string) => {
-    setSnapshotEngagementId(engagementId);
-    navigate(`/app/engagements/${engagementId}`);
-  }, [navigate]);
-
-  const handleCloseSnapshot = () => {
-    setSnapshotEngagementId(null);
-    navigate('/app/engagements');
-  };
-
-  const handleNavigateSnapshot = (direction: 'prev' | 'next') => {
-    const currentIndex = engagements.findIndex(e => e.id === snapshotEngagementId);
-    if (currentIndex === -1) return;
-    
-    const newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
-    if (newIndex >= 0 && newIndex < engagements.length) {
-      const newEngagement = engagements[newIndex];
-      setSnapshotEngagementId(newEngagement.id);
-      navigate(`/app/engagements/${newEngagement.id}`);
-    }
-  };
+  const {
+    snapshotId: snapshotEngagementId,
+    snapshotItem: snapshotEngagement,
+    snapshotIndex,
+    isSnapshotOpen,
+    openSnapshot: handleOpenSnapshot,
+    closeSnapshot: handleCloseSnapshot,
+    navigateSnapshot: handleNavigateSnapshot,
+  } = useSnapshotState({
+    items: engagements,
+    getId: e => e.id,
+    initialId: engagementId,
+    onNavigateToId: id => navigate(id ? `/app/engagements/${id}` : '/app/engagements'),
+    onMissingId: () => navigate('/app/engagements', { replace: true }),
+  });
 
   const handleNavigateToEntity = (type: string, id: string) => {
     const entityRoutes: Record<string, string> = {
@@ -260,17 +254,6 @@ const Engagements = () => {
       });
     }
   };
-
-  const snapshotEngagement = useMemo(
-    () => engagements.find(e => e.id === snapshotEngagementId),
-    [engagements, snapshotEngagementId]
-  );
-
-  const snapshotIndex = useMemo(
-    () => engagements.findIndex(e => e.id === snapshotEngagementId),
-    [engagements, snapshotEngagementId]
-  );
-  const isSnapshotOpen = !!(snapshotEngagementId && snapshotEngagement);
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
