@@ -25,6 +25,7 @@ import { ModificationBudgetaireDialog } from '@/components/budget/ModificationBu
 import { ReservationDialog } from '@/components/reservations/ReservationDialog';
 import { useToast } from '@/hooks/use-toast';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
+import { useSnapshotState } from '@/hooks/useSnapshotState';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -70,7 +71,6 @@ const Budgets = () => {
   const [ligneForReservation, setLigneForReservation] = useState<LigneBudgetaire | null>(null);
   const [ligneForModification, setLigneForModification] = useState<LigneBudgetaire | null>(null);
   const [ligneToDelete, setLigneToDelete] = useState<string | null>(null);
-  const [snapshotLigneId, setSnapshotLigneId] = useState<string | null>(null);
   
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'lignes';
@@ -80,7 +80,6 @@ const Budgets = () => {
     params.set('tab', value);
     if (value !== 'lignes') {
       params.delete('ligneId');
-      setSnapshotLigneId(null);
     }
     setSearchParams(params);
   };
@@ -114,24 +113,6 @@ const Budgets = () => {
       setLoading(false);
     }
   };
-
-  // Synchroniser ligneId param avec l'état snapshot
-  useEffect(() => {
-    const ligneIdParam = searchParams.get('ligneId');
-    if (ligneIdParam && lignes.length > 0 && !snapshotLigneId) {
-      const ligne = lignes.find(l => l.id === ligneIdParam);
-      if (ligne) {
-        setSnapshotLigneId(ligneIdParam);
-      } else {
-        setSnapshotLigneId(null);
-        const params = new URLSearchParams(searchParams);
-        params.delete('ligneId');
-        setSearchParams(params);
-      }
-    } else if (!ligneIdParam && snapshotLigneId) {
-      setSnapshotLigneId(null);
-    }
-  }, [searchParams, lignes, snapshotLigneId, setSearchParams]);
 
   const handleCreateLigne = async (data: Partial<LigneBudgetaire>) => {
     if (!currentClient || !user) return;
@@ -359,15 +340,35 @@ const Budgets = () => {
 
   const envelopeOrNull = (id?: string) => (id ? enveloppes.find(e => e.id === id) || null : null);
 
-  const snapshotLigne = useMemo(
-    () => lignes.find(l => l.id === snapshotLigneId),
-    [lignes, snapshotLigneId]
-  );
+  const ligneIdParam = searchParams.get('ligneId');
 
-  const snapshotIndex = useMemo(
-    () => lignes.findIndex(l => l.id === snapshotLigneId),
-    [lignes, snapshotLigneId]
-  );
+  const navigateToLigneId = useCallback((id?: string | null) => {
+    const params = new URLSearchParams(searchParams);
+    if (id) {
+      params.set('tab', 'lignes');
+      params.set('ligneId', id);
+    } else {
+      params.delete('ligneId');
+    }
+    setSearchParams(params);
+  }, [searchParams, setSearchParams]);
+
+  const {
+    snapshotId: snapshotLigneId,
+    snapshotItem: snapshotLigne,
+    snapshotIndex,
+    isSnapshotOpen,
+    isSnapshotLoading,
+    openSnapshot: openLigneSnapshot,
+    closeSnapshot: closeLigneSnapshot,
+    navigateSnapshot: navigateLigneSnapshot,
+  } = useSnapshotState({
+    items: activeTab === 'lignes' ? lignes : [],
+    getId: l => l.id,
+    initialId: activeTab === 'lignes' ? ligneIdParam : null,
+    onNavigateToId: id => navigateToLigneId(id),
+    isLoadingItems: loading || loadingSections || loadingProgrammes || loadingActions || loadingComptes || loadingEnveloppes,
+  });
 
   const snapshotContext = useMemo(() => {
     if (!snapshotLigne) return null;
@@ -380,31 +381,6 @@ const Budgets = () => {
   }, [snapshotLigne, actions, programmes, sections, comptes, enveloppes]);
 
   const scrollProgress = useScrollProgress(!!snapshotLigneId);
-  const isSnapshotOpen = !!(snapshotLigneId && snapshotLigne && activeTab === 'lignes');
-
-  const handleOpenSnapshot = useCallback((ligne: LigneBudgetaire) => {
-    const params = new URLSearchParams(searchParams);
-    params.set('tab', 'lignes');
-    params.set('ligneId', ligne.id);
-    setSearchParams(params);
-    setSnapshotLigneId(ligne.id);
-  }, [searchParams, setSearchParams]);
-
-  const handleCloseSnapshot = useCallback(() => {
-    const params = new URLSearchParams(searchParams);
-    params.delete('ligneId');
-    setSearchParams(params);
-    setSnapshotLigneId(null);
-  }, [searchParams, setSearchParams]);
-
-  const handleNavigateSnapshot = useCallback((direction: 'prev' | 'next') => {
-    if (snapshotIndex === -1) return;
-    const newIndex = direction === 'prev' ? snapshotIndex - 1 : snapshotIndex + 1;
-    if (newIndex >= 0 && newIndex < lignes.length) {
-      const target = lignes[newIndex];
-      handleOpenSnapshot(target);
-    }
-  }, [snapshotIndex, lignes, handleOpenSnapshot]);
 
   if (loading || loadingSections || loadingProgrammes || loadingActions || loadingComptes || loadingEnveloppes) {
     return (
@@ -450,8 +426,8 @@ const Budgets = () => {
               action={snapshotContext.action}
               compte={snapshotContext.compte}
               enveloppe={snapshotContext.enveloppe}
-              onClose={handleCloseSnapshot}
-              onNavigate={handleNavigateSnapshot}
+              onClose={closeLigneSnapshot}
+              onNavigate={navigateLigneSnapshot}
               hasPrev={snapshotIndex > 0}
               hasNext={snapshotIndex < lignes.length - 1}
               currentIndex={snapshotIndex}
@@ -467,6 +443,8 @@ const Budgets = () => {
                 setDeleteDialogOpen(true);
               }}
             />
+          ) : isSnapshotOpen && isSnapshotLoading ? (
+            <div className="py-12 text-center text-muted-foreground">Chargement du snapshot...</div>
           ) : (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
@@ -496,7 +474,7 @@ const Budgets = () => {
                   }}
                   onReserver={handleReserverCredit}
                   onCreateModification={handleCreateModificationFromLigne}
-                  onViewDetails={handleOpenSnapshot}
+                  onViewDetails={(ligne) => openLigneSnapshot(ligne.id)}
                 />
               </CardContent>
             </Card>
