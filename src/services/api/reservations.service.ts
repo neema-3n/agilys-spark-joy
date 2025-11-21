@@ -79,6 +79,35 @@ export const getReservations = async (
   return toCamelCase(data);
 };
 
+export const getReservationById = async (id: string): Promise<ReservationCredit | null> => {
+  const { data, error } = await supabase
+    .from('reservations_credits')
+    .select(`
+      *,
+      ligne_budgetaire:lignes_budgetaires!ligne_budgetaire_id (
+        libelle,
+        disponible
+      ),
+      projet:projets!fk_reservations_credits_projet (
+        id,
+        code,
+        nom,
+        statut
+      ),
+      engagements:engagements!engagements_reservation_credit_id_fkey (
+        id,
+        numero,
+        montant,
+        statut
+      )
+    `)
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ? toCamelCase(data) : null;
+};
+
 export const createReservation = async (
   reservation: ReservationCreditFormData,
   exerciceId: string,
