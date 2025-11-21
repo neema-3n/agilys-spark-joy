@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -44,14 +44,10 @@ const Reservations = () => {
   const navigate = useNavigate();
   const { reservationId } = useParams<{ reservationId?: string }>();
   const { toast } = useToast();
-  const [fallbackReservation, setFallbackReservation] = useState<ReservationCredit | null>(null);
-  const [fallbackLoading, setFallbackLoading] = useState(false);
-  const [notFound, setNotFound] = useState(false);
   
   const {
     reservations,
     isLoading,
-    fetchReservationById,
     createReservation,
     updateReservation,
     utiliserReservation,
@@ -121,37 +117,12 @@ const Reservations = () => {
     closeSnapshot: handleCloseSnapshot,
     navigateSnapshot: handleNavigateSnapshot,
   } = useSnapshotState({
-    items: reservations.length > 0 ? reservations : (fallbackReservation ? [fallbackReservation] : []),
+    items: reservations,
     getId: (r) => r.id,
     initialId: reservationId,
     onNavigateToId: (id) => navigate(id ? `/app/reservations/${id}` : '/app/reservations'),
-    isLoadingItems: isLoading || fallbackLoading,
+    isLoadingItems: isLoading,
   });
-
-  // Fetch ciblé si on navigue directement sur une réservation qui n'est pas dans la liste courante
-  useEffect(() => {
-    const shouldFetchFallback = reservationId && !isLoading && reservations.length === 0 && !fallbackReservation && !fallbackLoading && !notFound;
-    if (!shouldFetchFallback) return;
-
-    const fetchFallback = async () => {
-      try {
-        setFallbackLoading(true);
-        const data = await fetchReservationById(reservationId!);
-        if (data) {
-          setFallbackReservation(data);
-        } else {
-          setNotFound(true);
-        }
-      } catch (error) {
-        console.error('Erreur chargement réservation', error);
-        setNotFound(true);
-      } finally {
-        setFallbackLoading(false);
-      }
-    };
-
-    fetchFallback();
-  }, [reservationId, isLoading, reservations.length, fallbackReservation, fallbackLoading, fetchReservationById, notFound]);
 
   const scrollProgress = useScrollProgress(!!snapshotReservationId);
 
@@ -366,10 +337,6 @@ const Reservations = () => {
       ) : isSnapshotOpen && isSnapshotLoading ? (
         <div className="flex-1 overflow-y-auto p-8 pt-0 space-y-6">
           <div className="flex items-center justify-center py-12 text-muted-foreground">Chargement du snapshot...</div>
-        </div>
-      ) : notFound ? (
-        <div className="flex-1 overflow-y-auto p-8 pt-6 space-y-6">
-          <div className="text-center text-muted-foreground py-12">Réservation introuvable pour cet ID.</div>
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto p-8 pt-6 space-y-6">
