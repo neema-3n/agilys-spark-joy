@@ -209,6 +209,7 @@ const Engagements = () => {
     snapshotItem: snapshotEngagement,
     snapshotIndex,
     isSnapshotOpen,
+    isSnapshotLoading,
     openSnapshot: handleOpenSnapshot,
     closeSnapshot: handleCloseSnapshot,
     navigateSnapshot: handleNavigateSnapshot,
@@ -218,6 +219,7 @@ const Engagements = () => {
     initialId: engagementId,
     onNavigateToId: id => navigate(id ? `/app/engagements/${id}` : '/app/engagements'),
     onMissingId: () => navigate('/app/engagements', { replace: true }),
+    isLoadingItems: isLoading,
   });
 
   // Gérer le scroll pour l'effet de disparition du header
@@ -301,6 +303,8 @@ const Engagements = () => {
             onCreerBonCommande={snapshotEngagement.statut === 'valide' ? () => handleCreerBonCommande(snapshotEngagement) : undefined}
             onCreerDepense={snapshotEngagement.statut === 'valide' ? () => handleCreerDepense(snapshotEngagement) : undefined}
           />
+        ) : isSnapshotOpen && isSnapshotLoading ? (
+          <div className="flex items-center justify-center py-12 text-muted-foreground">Chargement du snapshot...</div>
         ) : (
           <>
             <EngagementStats engagements={engagements} />

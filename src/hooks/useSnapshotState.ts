@@ -6,6 +6,7 @@ interface UseSnapshotStateParams<T> {
   initialId?: string | null;
   onNavigateToId?: (id: string) => void; // ex: navigate(`/app/entities/${id}`)
   onMissingId?: () => void; // ex: navigate back to list
+  isLoadingItems?: boolean;
 }
 
 interface UseSnapshotStateResult<T> {
@@ -13,6 +14,7 @@ interface UseSnapshotStateResult<T> {
   snapshotItem: T | undefined;
   snapshotIndex: number;
   isSnapshotOpen: boolean;
+  isSnapshotLoading: boolean;
   openSnapshot: (id: string) => void;
   closeSnapshot: () => void;
   navigateSnapshot: (direction: 'prev' | 'next') => void;
@@ -31,6 +33,7 @@ export function useSnapshotState<T>({
   initialId = null,
   onNavigateToId,
   onMissingId,
+  isLoadingItems = false,
 }: UseSnapshotStateParams<T>): UseSnapshotStateResult<T> {
   const [snapshotId, setSnapshotId] = useState<string | null>(initialId || null);
 
@@ -52,11 +55,11 @@ export function useSnapshotState<T>({
 
   // Si l'ID courant ne fait plus partie de la liste (refresh, suppression)
   useEffect(() => {
-    if (snapshotId && !items.some(item => getId(item) === snapshotId)) {
+    if (snapshotId && !isLoadingItems && items.length > 0 && !items.some(item => getId(item) === snapshotId)) {
       setSnapshotId(null);
       onMissingId?.();
     }
-  }, [snapshotId, items, getId, onMissingId]);
+  }, [snapshotId, items, getId, onMissingId, isLoadingItems]);
 
   const snapshotItem = useMemo(
     () => items.find(item => getId(item) === snapshotId),
@@ -95,11 +98,15 @@ export function useSnapshotState<T>({
     [snapshotIndex, items, getId, onNavigateToId]
   );
 
+  const hasItems = items.length > 0;
+  const isSnapshotLoading = !!snapshotId && (!hasItems || isLoadingItems);
+
   return {
     snapshotId,
     snapshotItem,
     snapshotIndex,
-    isSnapshotOpen: !!(snapshotId && snapshotItem),
+    isSnapshotOpen: !!snapshotId && (!!snapshotItem || !hasItems || isLoadingItems),
+    isSnapshotLoading,
     openSnapshot,
     closeSnapshot,
     navigateSnapshot,

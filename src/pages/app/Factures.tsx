@@ -70,6 +70,7 @@ export default function Factures() {
     snapshotItem: snapshotFacture,
     snapshotIndex,
     isSnapshotOpen,
+    isSnapshotLoading,
     openSnapshot: handleOpenSnapshot,
     closeSnapshot: handleCloseSnapshot,
     navigateSnapshot: handleNavigateSnapshot,
@@ -79,6 +80,7 @@ export default function Factures() {
     initialId: factureId,
     onNavigateToId: id => navigate(id ? `/app/factures/${id}` : '/app/factures'),
     onMissingId: () => navigate('/app/factures', { replace: true }),
+    isLoadingItems: isLoading,
   });
 
   // Gérer le scroll pour l'effet de disparition du header
@@ -218,6 +220,8 @@ export default function Factures() {
             onEdit={snapshotFacture.statut === 'brouillon' ? () => handleEdit(snapshotFacture.id) : undefined}
             onCreerDepense={(snapshotFacture.statut === 'validee' || snapshotFacture.statut === 'payee') ? () => setSelectedFactureForDepense(snapshotFacture) : undefined}
           />
+        ) : isSnapshotOpen && isSnapshotLoading ? (
+          <div className="py-12 text-center text-muted-foreground">Chargement du snapshot...</div>
         ) : (
           <>
             <FactureStats factures={factures} />

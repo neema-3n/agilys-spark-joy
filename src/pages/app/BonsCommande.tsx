@@ -85,6 +85,7 @@ const BonsCommande = () => {
     snapshotItem: snapshotBonCommande,
     snapshotIndex,
     isSnapshotOpen,
+    isSnapshotLoading,
     openSnapshot: openBonCommandeSnapshot,
     closeSnapshot: handleCloseSnapshot,
     navigateSnapshot: handleNavigateSnapshot,
@@ -94,6 +95,7 @@ const BonsCommande = () => {
     initialId: bonCommandeId,
     onNavigateToId: id => navigate(id ? `/app/bons-commande/${id}` : '/app/bons-commande'),
     onMissingId: () => navigate('/app/bons-commande', { replace: true }),
+    isLoadingItems: isLoading,
   });
   const scrollProgress = useScrollProgress(!!snapshotBonCommandeId);
 
@@ -266,6 +268,8 @@ const BonsCommande = () => {
             onAnnuler={snapshotBonCommande.statut !== 'facture' && snapshotBonCommande.statut !== 'annule' ? () => handleAnnuler(snapshotBonCommande.id) : undefined}
             onNavigateToEntity={handleNavigateToEntity}
           />
+        ) : isSnapshotOpen && isSnapshotLoading ? (
+          <div className="py-12 text-center text-muted-foreground">Chargement du snapshot...</div>
         ) : (
           <>
             <BonCommandeStats bonsCommande={bonsCommande} />

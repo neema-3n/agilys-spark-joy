@@ -28,6 +28,7 @@ const Depenses = () => {
     snapshotItem: snapshotDepense,
     snapshotIndex,
     isSnapshotOpen,
+    isSnapshotLoading,
     openSnapshot: handleOpenSnapshot,
     closeSnapshot: handleCloseSnapshot,
     navigateSnapshot: handleNavigateSnapshot,
@@ -37,6 +38,7 @@ const Depenses = () => {
     initialId: depenseId,
     onNavigateToId: (id) => navigate(id ? `/app/depenses/${id}` : '/app/depenses'),
     onMissingId: () => navigate('/app/depenses', { replace: true }),
+    isLoadingItems: isLoading,
   });
 
   const scrollProgress = useScrollProgress(!!snapshotDepenseId);
@@ -108,6 +110,8 @@ const Depenses = () => {
             onNavigateToEntity={handleNavigateToEntity}
           />
         </div>
+      ) : isSnapshotOpen && isSnapshotLoading ? (
+        <div className="px-8 py-12 text-center text-muted-foreground">Chargement du snapshot...</div>
       ) : (
         <>
           <DepenseStatsCards depenses={depenses} />

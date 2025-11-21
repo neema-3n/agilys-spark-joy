@@ -112,6 +112,7 @@ const Reservations = () => {
     snapshotItem: snapshotReservation,
     snapshotIndex,
     isSnapshotOpen,
+    isSnapshotLoading,
     openSnapshot: handleOpenSnapshot,
     closeSnapshot: handleCloseSnapshot,
     navigateSnapshot: handleNavigateSnapshot,
@@ -121,6 +122,7 @@ const Reservations = () => {
     initialId: reservationId,
     onNavigateToId: (id) => navigate(id ? `/app/reservations/${id}` : '/app/reservations'),
     onMissingId: () => navigate('/app/reservations', { replace: true }),
+    isLoadingItems: isLoading,
   });
 
   const scrollProgress = useScrollProgress(!!snapshotReservationId);
@@ -332,6 +334,10 @@ const Reservations = () => {
             onAnnuler={() => handleAnnulerFromSnapshot(snapshotReservation.id)}
             onNavigateToEntity={handleNavigateToEntity}
           />
+        </div>
+      ) : isSnapshotOpen && isSnapshotLoading ? (
+        <div className="flex-1 overflow-y-auto p-8 pt-0 space-y-6">
+          <div className="flex items-center justify-center py-12 text-muted-foreground">Chargement du snapshot...</div>
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto p-8 pt-6 space-y-6">
