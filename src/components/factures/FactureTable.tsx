@@ -139,7 +139,7 @@ export const FactureTable = ({
     },
     {
       id: 'paye',
-      header: 'Payé',
+      header: 'Liquidé',
       align: 'right',
       render: (facture) => formatMontant(facture.montantPaye || 0),
     },
@@ -193,10 +193,6 @@ export const FactureTable = ({
             )}
             {facture.statut === 'validee' && (
               <>
-                <DropdownMenuItem onClick={() => onMarquerPayee(facture.id)}>
-                  <DollarSign className="mr-2 h-4 w-4" />
-                  Marquer payée
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onCreerDepense(facture)}>
                   <FileText className="mr-2 h-4 w-4" />
                   Créer une dépense

@@ -1,6 +1,7 @@
 import { Building2, Calendar, FileText, FolderOpen, Info, Receipt, Wallet } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { SnapshotBase } from '@/components/shared/SnapshotBase';
 import type { Depense } from '@/types/depense.types';
 import { formatMontant, formatDate, formatDateTime, getEntityUrl } from '@/lib/snapshot-utils';
@@ -14,6 +15,12 @@ interface DepenseSnapshotProps {
   currentIndex: number;
   totalCount: number;
   onNavigateToEntity?: (type: string, id: string) => void;
+  onValider?: (id: string) => void;
+  onOrdonnancer?: (id: string) => void;
+  onMarquerPayee?: (id: string) => void;
+  onAnnuler?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  disableActions?: boolean;
 }
 
 export const DepenseSnapshot = ({
@@ -25,6 +32,12 @@ export const DepenseSnapshot = ({
   currentIndex,
   totalCount,
   onNavigateToEntity,
+  onValider,
+  onOrdonnancer,
+  onMarquerPayee,
+  onAnnuler,
+  onDelete,
+  disableActions,
 }: DepenseSnapshotProps) => {
   const getStatutBadge = (statut: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -55,6 +68,80 @@ export const DepenseSnapshot = ({
     }
   };
 
+  const actionButtons = () => {
+    const buttons = [<div key="statut">{getStatutBadge(depense.statut)}</div>];
+
+    if (onValider && depense.statut === 'brouillon') {
+      buttons.push(
+        <Button
+          key="valider"
+          size="sm"
+          onClick={() => onValider(depense.id)}
+          disabled={disableActions}
+        >
+          Valider
+        </Button>
+      );
+    }
+
+    if (onOrdonnancer && depense.statut === 'validee') {
+      buttons.push(
+        <Button
+          key="ordonnancer"
+          size="sm"
+          onClick={() => onOrdonnancer(depense.id)}
+          disabled={disableActions}
+        >
+          Ordonnancer
+        </Button>
+      );
+    }
+
+    if (onMarquerPayee && depense.statut === 'ordonnancee') {
+      buttons.push(
+        <Button
+          key="payer"
+          size="sm"
+          onClick={() => onMarquerPayee(depense.id)}
+          disabled={disableActions}
+        >
+          Marquer payée
+        </Button>
+      );
+    }
+
+    if (onAnnuler && depense.statut !== 'annulee' && depense.statut !== 'payee') {
+      buttons.push(
+        <Button
+          key="annuler"
+          variant="outline"
+          size="sm"
+          onClick={() => onAnnuler(depense.id)}
+          disabled={disableActions}
+        >
+          Annuler
+        </Button>
+      );
+    }
+
+    if (onDelete && depense.statut === 'brouillon') {
+      buttons.push(
+        <Button
+          key="supprimer"
+          variant="ghost"
+          size="sm"
+          className="text-destructive"
+          onClick={() => onDelete(depense.id)}
+          disabled={disableActions}
+        >
+          Supprimer
+        </Button>
+      );
+    }
+
+    return buttons;
+  };
+
   return (
     <SnapshotBase
       title={`Dépense ${depense.numero}`}
@@ -65,6 +152,7 @@ export const DepenseSnapshot = ({
       hasNext={hasNext}
       onClose={onClose}
       onNavigate={onNavigate}
+      actions={actionButtons()}
     >
       <Card>
         <CardHeader>
