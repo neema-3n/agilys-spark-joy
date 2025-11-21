@@ -133,7 +133,7 @@ const Reservations = () => {
           navigate(`/app/engagements/${id}`);
           break;
         case 'ligne-budgetaire':
-          navigate(`/app/budgets?ligneId=${id}`);
+          navigate(`/app/budgets/${id}?tab=lignes`);
           break;
         case 'projet':
           navigate(`/app/projets/${id}`);

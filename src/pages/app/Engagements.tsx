@@ -228,7 +228,7 @@ const Engagements = () => {
   const handleNavigateToEntity = (type: string, id: string) => {
     const entityRoutes: Record<string, string> = {
       fournisseur: `/app/fournisseurs/${id}`,
-      ligneBudgetaire: `/app/budgets?ligne=${id}`,
+      ligneBudgetaire: `/app/budgets/${id}?tab=lignes`,
       projet: `/app/projets/${id}`,
       reservationCredit: `/app/reservations/${id}`,
     };

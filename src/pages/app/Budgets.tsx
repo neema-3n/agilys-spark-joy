@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { useClient } from '@/contexts/ClientContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -72,15 +72,19 @@ const Budgets = () => {
   const [ligneForModification, setLigneForModification] = useState<LigneBudgetaire | null>(null);
   const [ligneToDelete, setLigneToDelete] = useState<string | null>(null);
   
+  const { ligneId: ligneIdFromRoute } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'lignes';
   
   const handleTabChange = (value: string) => {
+    if (value !== 'lignes' && ligneIdFromRoute) {
+      const params = new URLSearchParams(searchParams);
+      params.set('tab', value);
+      navigate(`/app/budgets?${params.toString()}`);
+      return;
+    }
     const params = new URLSearchParams(searchParams);
     params.set('tab', value);
-    if (value !== 'lignes') {
-      params.delete('ligneId');
-    }
     setSearchParams(params);
   };
 
@@ -340,18 +344,19 @@ const Budgets = () => {
 
   const envelopeOrNull = (id?: string) => (id ? enveloppes.find(e => e.id === id) || null : null);
 
-  const ligneIdParam = searchParams.get('ligneId');
-
-  const navigateToLigneId = useCallback((id?: string | null) => {
+  const buildTabQuery = useCallback((tab: string) => {
     const params = new URLSearchParams(searchParams);
-    if (id) {
-      params.set('tab', 'lignes');
-      params.set('ligneId', id);
-    } else {
-      params.delete('ligneId');
-    }
-    setSearchParams(params);
-  }, [searchParams, setSearchParams]);
+    params.set('tab', tab);
+    return params.toString();
+  }, [searchParams]);
+
+  const navigateToSnapshot = useCallback((id: string) => {
+    navigate(`/app/budgets/${id}?${buildTabQuery('lignes')}`);
+  }, [navigate, buildTabQuery]);
+
+  const navigateToList = useCallback((tab: string = activeTab) => {
+    navigate(`/app/budgets?${buildTabQuery(tab)}`);
+  }, [navigate, buildTabQuery, activeTab]);
 
   const {
     snapshotId: snapshotLigneId,
@@ -365,9 +370,9 @@ const Budgets = () => {
   } = useSnapshotState({
     items: activeTab === 'lignes' ? lignes : [],
     getId: l => l.id,
-    initialId: activeTab === 'lignes' ? (ligneIdParam || null) : null,
-    onNavigateToId: id => navigateToLigneId(id ?? null),
-    onMissingId: () => navigateToLigneId(null),
+    initialId: activeTab === 'lignes' ? (ligneIdFromRoute || null) : null,
+    onNavigateToId: id => id ? navigateToSnapshot(id) : navigateToList('lignes'),
+    onMissingId: () => navigateToList('lignes'),
     isLoadingItems: loading || loadingSections || loadingProgrammes || loadingActions || loadingComptes || loadingEnveloppes,
   });
 
@@ -475,10 +480,10 @@ const Budgets = () => {
                   }}
                   onReserver={handleReserverCredit}
                   onCreateModification={handleCreateModificationFromLigne}
-                  onViewDetails={(ligne) => openLigneSnapshot(ligne.id)}
-                />
-              </CardContent>
-            </Card>
+              onViewDetails={(ligne) => openLigneSnapshot(ligne.id)}
+            />
+          </CardContent>
+        </Card>
           )}
         </TabsContent>
 

@@ -173,7 +173,7 @@ export default function Factures() {
         navigate(`/app/engagements/${id}`);
         break;
       case 'ligneBudgetaire':
-        navigate(`/app/budgets?ligneId=${id}`);
+        navigate(`/app/budgets/${id}?tab=lignes`);
         break;
       case 'projet':
         navigate(`/app/projets/${id}`);
