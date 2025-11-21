@@ -17,8 +17,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { Search, MoreVertical, CheckCircle, FileCheck, Banknote, XCircle, Trash } from 'lucide-react';
+import { Search, MoreVertical, CheckCircle, FileCheck, Banknote, XCircle, Trash, Eye } from 'lucide-react';
 import type { Depense } from '@/types/depense.types';
 
 interface DepenseTableProps {
@@ -30,6 +31,7 @@ interface DepenseTableProps {
   onAnnuler?: (id: string) => void;
   onDelete?: (id: string) => void;
   onViewDetails?: (depenseId: string) => void;
+  disableActions?: boolean;
 }
 
 export const DepenseTable = ({
@@ -41,6 +43,7 @@ export const DepenseTable = ({
   onAnnuler,
   onDelete,
   onViewDetails,
+  disableActions = false,
 }: DepenseTableProps) => {
   const [search, setSearch] = useState('');
   const [filterStatut, setFilterStatut] = useState<string>('tous');
@@ -189,41 +192,74 @@ export const DepenseTable = ({
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" disabled={disableActions}>
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        {onViewDetails && (
+                          <>
+                            <DropdownMenuItem
+                              onClick={() => onViewDetails(depense.id)}
+                              disabled={disableActions}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              Voir les détails
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                          </>
+                        )}
+
                         {depense.statut === 'brouillon' && (
                           <>
                             {onValider && (
-                              <DropdownMenuItem onClick={() => onValider(depense.id)}>
+                              <DropdownMenuItem
+                                onClick={() => onValider(depense.id)}
+                                disabled={disableActions}
+                              >
                                 <CheckCircle className="h-4 w-4 mr-2" />
                                 Valider
                               </DropdownMenuItem>
                             )}
                             {onDelete && (
-                              <DropdownMenuItem onClick={() => onDelete(depense.id)} className="text-destructive">
+                              <DropdownMenuItem
+                                onClick={() => onDelete(depense.id)}
+                                className="text-destructive"
+                                disabled={disableActions}
+                              >
                                 <Trash className="h-4 w-4 mr-2" />
                                 Supprimer
                               </DropdownMenuItem>
                             )}
                           </>
                         )}
+
                         {depense.statut === 'validee' && onOrdonnancer && (
-                          <DropdownMenuItem onClick={() => onOrdonnancer(depense.id)}>
+                          <DropdownMenuItem
+                            onClick={() => onOrdonnancer(depense.id)}
+                            disabled={disableActions}
+                          >
                             <FileCheck className="h-4 w-4 mr-2" />
                             Ordonnancer
                           </DropdownMenuItem>
                         )}
+
                         {depense.statut === 'ordonnancee' && onMarquerPayee && (
-                          <DropdownMenuItem onClick={() => onMarquerPayee(depense.id)}>
+                          <DropdownMenuItem
+                            onClick={() => onMarquerPayee(depense.id)}
+                            disabled={disableActions}
+                          >
                             <Banknote className="h-4 w-4 mr-2" />
                             Marquer payée
                           </DropdownMenuItem>
                         )}
+
                         {depense.statut !== 'annulee' && depense.statut !== 'payee' && onAnnuler && (
-                          <DropdownMenuItem onClick={() => onAnnuler(depense.id)} className="text-destructive">
+                          <DropdownMenuItem
+                            onClick={() => onAnnuler(depense.id)}
+                            className="text-destructive"
+                            disabled={disableActions}
+                          >
                             <XCircle className="h-4 w-4 mr-2" />
                             Annuler
                           </DropdownMenuItem>
