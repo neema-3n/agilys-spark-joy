@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface UseSnapshotStateParams<T> {
   items: T[];
@@ -38,14 +38,17 @@ export function useSnapshotState<T>({
   // on initialise avec initialId pour éviter tout clignotement
   const [snapshotId, setSnapshotId] = useState<string | null>(initialId || null);
   const initialIdRef = useMemo(() => initialId, [initialId]);
+  const lastSnapshotItemRef = useRef<T | undefined>(undefined);
 
   // Reset si initialId change (ex: changement de paramètre de route)
   useEffect(() => {
     // Toujours conserver l'ID de départ, même si la liste n'est pas encore chargée
     if (initialId) {
       setSnapshotId(initialId);
+      lastSnapshotItemRef.current = undefined;
     } else {
       setSnapshotId(null);
+      lastSnapshotItemRef.current = undefined;
     }
   }, [initialId]);
 
@@ -64,6 +67,17 @@ export function useSnapshotState<T>({
     () => items.find(item => getId(item) === snapshotId),
     [items, snapshotId, getId]
   );
+
+  // Mémoriser le dernier item trouvé pour cet ID pour éviter les clignotements lors des refetchs
+  useEffect(() => {
+    if (!snapshotId) {
+      lastSnapshotItemRef.current = undefined;
+      return;
+    }
+    if (snapshotItem) {
+      lastSnapshotItemRef.current = snapshotItem;
+    }
+  }, [snapshotId, snapshotItem]);
 
   const snapshotIndex = useMemo(() => {
     if (!snapshotId) return -1;
@@ -98,13 +112,15 @@ export function useSnapshotState<T>({
   );
 
   const hasItems = items.length > 0;
-  const isSnapshotLoading = !!snapshotId && (!hasItems || isLoadingItems || !snapshotItem);
+  const hasCachedItem = !!lastSnapshotItemRef.current;
+  // Snapshot en chargement uniquement si aucun item n'a encore été résolu
+  const isSnapshotLoading = !!snapshotId && !snapshotItem && !hasCachedItem && (isLoadingItems || !hasItems);
 
   return {
     snapshotId,
-    snapshotItem,
+    snapshotItem: snapshotItem || lastSnapshotItemRef.current,
     snapshotIndex,
-    isSnapshotOpen: !!snapshotId && (!!snapshotItem || isSnapshotLoading),
+    isSnapshotOpen: !!snapshotId && (!!snapshotItem || hasCachedItem || isSnapshotLoading),
     isSnapshotLoading,
     openSnapshot,
     closeSnapshot,
