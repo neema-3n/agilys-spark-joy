@@ -56,9 +56,7 @@ export function useSnapshotState<T>({
     if (!snapshotId || isLoadingItems) return;
 
     const hasSnapshotInList = items.some(item => getId(item) === snapshotId);
-    const hasItems = items.length > 0;
-
-    if (!hasSnapshotInList || !hasItems) {
+    if (!hasSnapshotInList && items.length > 0) {
       setSnapshotId(null);
       onMissingId?.();
     }

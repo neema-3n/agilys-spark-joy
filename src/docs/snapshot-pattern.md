@@ -4,7 +4,7 @@
 
 **Les handlers passés aux composants Snapshot ne doivent JAMAIS appeler `handleCloseSnapshot()`.**
 **Le header du snapshot doit être sticky en haut (pas d'espace vide au scroll).**
-**L’URL/state doivent rester synchronisés (ex: `/app/depenses/:id`, `/app/reservations/:id`, `/app/budgets?ligneId=...`).**
+**L’URL/state doivent rester synchronisés (ex: `/app/depenses/:id`, `/app/reservations/:id`, `/app/budgets/:ligneId`).**
 
 ## Pourquoi cette règle ?
 

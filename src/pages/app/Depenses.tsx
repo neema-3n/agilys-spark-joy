@@ -53,7 +53,7 @@ const Depenses = () => {
           navigate(`/app/reservations/${id}`);
           break;
         case 'ligne-budgetaire':
-          navigate(`/app/budgets?ligneId=${id}`);
+          navigate(`/app/budgets/${id}?tab=lignes`);
           break;
         case 'facture':
           navigate(`/app/factures/${id}`);
