@@ -35,25 +35,20 @@ export function useSnapshotState<T>({
   onMissingId,
   isLoadingItems = false,
 }: UseSnapshotStateParams<T>): UseSnapshotStateResult<T> {
+  // on initialise avec initialId pour éviter tout clignotement
   const [snapshotId, setSnapshotId] = useState<string | null>(initialId || null);
 
   // Reset si initialId change (ex: changement de paramètre de route)
   useEffect(() => {
-    if (initialId && items.length > 0) {
-      const exists = items.some(item => getId(item) === initialId);
-      if (exists) {
-        setSnapshotId(initialId);
-      } else {
-        setSnapshotId(null);
-        onMissingId?.();
-      }
-    }
-    if (!initialId) {
+    // Toujours conserver l'ID de départ, même si la liste n'est pas encore chargée
+    if (initialId) {
+      setSnapshotId(initialId);
+    } else {
       setSnapshotId(null);
     }
-  }, [initialId, items, getId, onMissingId]);
+  }, [initialId]);
 
-  // Si l'ID courant ne fait plus partie de la liste (refresh, suppression)
+  // Si l'ID courant ne fait plus partie de la liste (refresh, suppression) une fois les données chargées
   useEffect(() => {
     if (snapshotId && !isLoadingItems && items.length > 0 && !items.some(item => getId(item) === snapshotId)) {
       setSnapshotId(null);
@@ -99,13 +94,13 @@ export function useSnapshotState<T>({
   );
 
   const hasItems = items.length > 0;
-  const isSnapshotLoading = !!snapshotId && (!hasItems || isLoadingItems);
+  const isSnapshotLoading = !!snapshotId && (!hasItems || isLoadingItems || !snapshotItem);
 
   return {
     snapshotId,
     snapshotItem,
     snapshotIndex,
-    isSnapshotOpen: !!snapshotId && (!!snapshotItem || !hasItems || isLoadingItems),
+    isSnapshotOpen: !!snapshotId && (!!snapshotItem || isSnapshotLoading),
     isSnapshotLoading,
     openSnapshot,
     closeSnapshot,
