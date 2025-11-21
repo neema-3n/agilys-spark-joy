@@ -237,6 +237,12 @@ const Depenses = () => {
             currentIndex={snapshotIndex}
             totalCount={depenses.length}
             onNavigateToEntity={handleNavigateToEntity}
+            onValider={handleValider}
+            onOrdonnancer={handleOrdonnancer}
+            onMarquerPayee={handleOpenMarquerPayee}
+            onAnnuler={handleOpenAnnuler}
+            onDelete={handleOpenDelete}
+            disableActions={isSubmittingAction}
           />
         </div>
       ) : isSnapshotOpen && isSnapshotLoading ? (
