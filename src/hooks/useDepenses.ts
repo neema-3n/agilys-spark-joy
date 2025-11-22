@@ -140,9 +140,32 @@ export const useDepenses = () => {
       queryClient.invalidateQueries({ queryKey: ['depenses'] });
       queryClient.invalidateQueries({ queryKey: ['engagements'] });
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['paiements'] });
       toast({
-        title: 'Succès',
-        description: 'Dépense annulée',
+        title: 'Dépense annulée',
+        description: 'La dépense et ses paiements associés ont été annulés avec succès',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const annulerMultipleMutation = useMutation({
+    mutationFn: ({ ids, motif }: { ids: string[]; motif: string }) =>
+      depensesService.annulerMultipleDepenses(ids, motif),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['depenses'] });
+      queryClient.invalidateQueries({ queryKey: ['engagements'] });
+      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['paiements'] });
+      toast({
+        title: 'Dépenses annulées',
+        description: `${variables.ids.length} dépense${variables.ids.length > 1 ? 's ont' : ' a'} été annulée${variables.ids.length > 1 ? 's' : ''} avec succès`,
       });
     },
     onError: (error: Error) => {
@@ -272,6 +295,7 @@ export const useDepenses = () => {
     marquerPayee: marquerPayeeMutation.mutateAsync,
     payerDepense,
     annulerDepense: annulerMutation.mutateAsync,
+    annulerMultipleDepenses: annulerMultipleMutation.mutateAsync,
     deleteDepense: deleteMutation.mutateAsync,
   };
 };
