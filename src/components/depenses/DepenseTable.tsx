@@ -215,7 +215,7 @@ export const DepenseTable = ({
               </DropdownMenuItem>
             )}
 
-            {(depense.statut === 'ordonnancee' || depense.statut === 'validee') &&
+            {depense.statut === 'ordonnancee' &&
               depense.montant > depense.montantPaye &&
               onEnregistrerPaiement && (
                 <DropdownMenuItem
