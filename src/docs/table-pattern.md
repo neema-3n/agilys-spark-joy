@@ -42,31 +42,19 @@ type ListColumn<T> = {
 
 ### Sélection batch (optionnel)
 
-Utiliser une première colonne `Checkbox` contrôlée par le parent pour exécuter des actions en batch.
+Utiliser une première colonne `Checkbox` contrôlée par le parent pour exécuter des actions en batch. La sélection est gérée par `useListSelection` et passée au tableau (obligatoire).
 
 ```tsx
 const ids = useMemo(() => filteredItems.map((i) => i.id), [filteredItems]);
 const { selectedIds, allSelected, toggleOne, toggleAll } = useListSelection(ids);
 
 const columns: ListColumn<Facture>[] = [
-  {
-    id: 'select',
-    header: (
-      <Checkbox
-        checked={allSelected}
-        onCheckedChange={(checked) => toggleAll(Boolean(checked))}
-        aria-label="Sélectionner toutes les lignes"
-      />
-    ),
-    cellClassName: 'w-[48px]',
-    render: (facture) => (
-      <Checkbox
-        checked={selectedIds.has(facture.id)}
-        onCheckedChange={(checked) => toggleOne(facture.id, Boolean(checked))}
-        aria-label={`Sélectionner la facture ${facture.numero}`}
-      />
-    ),
-  },
+  buildSelectionColumn({
+    selection: { selectedIds, allSelected, toggleOne, toggleAll },
+    getId: (facture) => facture.id,
+    getLabel: (facture) => `Sélectionner la facture ${facture.numero}`,
+    allLabel: 'Sélectionner toutes les factures',
+  }),
   // ... autres colonnes ...
 ];
 
@@ -154,7 +142,7 @@ return (
 - [ ] `emptyMessage` renseigné
 - [ ] Navigation : lien + `onRowDoubleClick` vers snapshot, sans fermer le snapshot
 - [ ] Actions à droite via `DropdownMenu`, classes width/align cohérentes
-- [ ] Colonne `Checkbox` (si batch) contrôlée par le parent (`toggleAll`, `toggleOne`)
+- [ ] Colonne `Checkbox` (si batch) contrôlée par le parent (`toggleAll`, `toggleOne`) via `useListSelection` + `buildSelectionColumn`
 - [ ] Toolbar : input avec icône `Search`, filtres en tableau de ReactNode, `rightSlot` pour CTA
 - [ ] Respect tokens design system (aucune couleur directe)
 - [ ] Loading géré côté parent (spinner/skeleton)
