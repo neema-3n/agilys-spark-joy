@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -41,6 +41,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useListSelection } from '@/hooks/useListSelection';
+import { CTA_REVEAL_STYLES, useHeaderCtaReveal } from '@/hooks/useHeaderCtaReveal';
 
 const Depenses = () => {
   const {
@@ -75,8 +76,6 @@ const Depenses = () => {
   const [statutFilter, setStatutFilter] = useState<
     'tous' | 'brouillon' | 'validee' | 'ordonnancee' | 'payee' | 'annulee'
   >('tous');
-  const [isHeaderCtaVisible, setIsHeaderCtaVisible] = useState(true);
-  const headerCtaRef = useRef<HTMLButtonElement | null>(null);
 
   const handleCreateDepense = async (data: DepenseFormData) => {
     await createDepense(data);
@@ -125,23 +124,9 @@ const Depenses = () => {
     isLoadingItems: isLoading,
   });
 
+  const { headerCtaRef, isHeaderCtaVisible } = useHeaderCtaReveal([isSnapshotOpen]);
+
   const scrollProgress = useScrollProgress(!!snapshotDepenseId);
-
-  useEffect(() => {
-    const target = headerCtaRef.current;
-    if (!target || typeof IntersectionObserver === 'undefined') return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        setIsHeaderCtaVisible(entry.isIntersecting);
-      },
-      { root: null, threshold: 0 }
-    );
-
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, [isSnapshotOpen]);
 
   const handleNavigateToEntity = useCallback(
     (type: string, id: string) => {
@@ -311,36 +296,9 @@ const Depenses = () => {
     />
   );
 
-  const ctaAnimationStyles = `
-    @keyframes depenseCtaReveal {
-      0% {
-        filter: blur(10px);
-        background: hsl(var(--background));
-        color: hsl(var(--primary));
-        box-shadow: none;
-      }
-      60% {
-        filter: blur(3px);
-        background: hsl(var(--primary));
-        color: hsl(var(--primary-foreground));
-        box-shadow: var(--shadow-glow);
-      }
-      100% {
-        filter: blur(0);
-        background: hsl(var(--primary));
-        color: hsl(var(--primary-foreground));
-        box-shadow: var(--shadow-primary);
-      }
-    }
-    .depense-cta-appear {
-      animation: depenseCtaReveal 1.5s ease forwards;
-      will-change: transform, filter;
-    }
-  `;
-
   return (
     <div className="space-y-6">
-      <style>{ctaAnimationStyles}</style>
+      <style>{CTA_REVEAL_STYLES}</style>
       {!isSnapshotOpen && pageHeaderContent}
 
       {isSnapshotOpen && snapshotDepense ? (
@@ -373,7 +331,7 @@ const Depenses = () => {
               description="Recherche, filtres et actions groupées sur les dépenses"
               actions={
                 !isHeaderCtaVisible ? (
-                  <Button onClick={() => setIsDialogOpen(true)} className="depense-cta-appear">
+                  <Button onClick={() => setIsDialogOpen(true)} className="sticky-cta-appear">
                     <Plus className="h-4 w-4 mr-2" />
                     Nouvelle dépense
                   </Button>

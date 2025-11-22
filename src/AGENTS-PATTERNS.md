@@ -2,7 +2,7 @@
 
 > **🎯 Objectif** : Référence complète des patterns de code à suivre impérativement dans AGILYS
 > **👥 Pour qui** : Agents IA intervenant sur le code
-> **⏱️ Dernière MAJ** : 2025-01-21
+> **⏱️ Dernière MAJ** : 2025-02-06
 
 ## 📍 Navigation Rapide
 
@@ -75,6 +75,44 @@ const {
 - [ ] La navigation prev/next fonctionne
 - [ ] Escape ferme le snapshot
 - [ ] Le bouton X ferme le snapshot
+
+---
+
+### 1bis. 🎯 Sticky CTA Reveal (Listes)
+
+Objectif : garder un CTA visible quand le header sort de l'écran, sans dupliquer la logique.
+
+- Hook : `useHeaderCtaReveal()` (déplacez toujours cet appel **après** `useSnapshotState` pour éviter l'accès à `isSnapshotOpen` avant init).
+- Styles : injecter `CTA_REVEAL_STYLES` dans la page (`<style>{CTA_REVEAL_STYLES}</style>`).
+- Header : rattacher `ref={headerCtaRef}` au bouton principal.
+- Fallback : dans `ListLayout.actions`, afficher un `<Button className="sticky-cta-appear">` quand `!isHeaderCtaVisible`.
+- Animation : la classe `sticky-cta-appear` applique l'animation partagée ; ne pas recréer de CSS local.
+
+Exemple (extrait) :
+```tsx
+const { headerCtaRef, isHeaderCtaVisible } = useHeaderCtaReveal([isSnapshotOpen]);
+...
+<style>{CTA_REVEAL_STYLES}</style>
+{!isSnapshotOpen && (
+  <PageHeader
+    actions={
+      <Button ref={headerCtaRef} onClick={handleCreate}>
+        Nouvelle facture
+      </Button>
+    }
+  />
+)}
+...
+<ListLayout
+  actions={
+    !isHeaderCtaVisible ? (
+      <Button onClick={handleCreate} className="sticky-cta-appear">
+        Nouvelle facture
+      </Button>
+    ) : undefined
+  }
+>
+```
 
 ---
 
