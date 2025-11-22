@@ -77,32 +77,32 @@ export const BonCommandeSnapshot = ({
 
   const actions = (
     <div className="flex flex-wrap gap-2">
-      {onEdit && (
+      {onEdit && bonCommande.statut === 'brouillon' && (
         <Button variant="outline" size="sm" onClick={onEdit}>
           Modifier
         </Button>
       )}
-      {onValider && (
+      {onValider && bonCommande.statut === 'brouillon' && (
         <Button size="sm" onClick={onValider}>
           Valider
         </Button>
       )}
-      {onMettreEnCours && (
+      {onMettreEnCours && bonCommande.statut === 'valide' && (
         <Button size="sm" variant="secondary" onClick={onMettreEnCours}>
           Mettre en cours
         </Button>
       )}
-      {onReceptionner && (
+      {onReceptionner && bonCommande.statut === 'en_cours' && (
         <Button size="sm" variant="secondary" onClick={onReceptionner}>
           Réceptionner
         </Button>
       )}
-      {onCreateFacture && (
+      {onCreateFacture && bonCommande.statut === 'receptionne' && (
         <Button size="sm" variant="secondary" onClick={onCreateFacture}>
           Créer une facture
         </Button>
       )}
-      {onAnnuler && (
+      {onAnnuler && bonCommande.statut !== 'facture' && bonCommande.statut !== 'annule' && (
         <Button size="sm" variant="destructive" onClick={onAnnuler}>
           Annuler
         </Button>
