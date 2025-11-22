@@ -27,6 +27,7 @@ type ListColumn<T> = {
   onRowDoubleClick={(item) => onView(item.id)} // optionnel
   emptyMessage="Aucun élément trouvé"
   stickyHeader // optionnel
+  stickyHeaderOffset={toolbarHeight} // optionnel si toolbar sticky au-dessus
 />
 ```
 

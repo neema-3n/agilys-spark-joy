@@ -25,6 +25,9 @@ interface DepenseTableProps {
   onViewDetails?: (depenseId: string) => void;
   disableActions?: boolean;
   selection: ListSelectionHandlers;
+  stickyHeader?: boolean;
+  stickyHeaderOffset?: number;
+  scrollContainerClassName?: string;
 }
 
 export const DepenseTable = ({
@@ -38,6 +41,9 @@ export const DepenseTable = ({
   onViewDetails,
   disableActions = false,
   selection,
+  stickyHeader = false,
+  stickyHeaderOffset = 0,
+  scrollContainerClassName,
 }: DepenseTableProps) => {
   const formatMontant = (montant: number) => {
     return formatCurrency(montant);
@@ -224,6 +230,9 @@ export const DepenseTable = ({
       getRowId={(depense) => depense.id}
       onRowDoubleClick={onViewDetails ? (depense) => onViewDetails(depense.id) : undefined}
       emptyMessage="Aucune dépense trouvée"
+      stickyHeader={stickyHeader}
+      stickyHeaderOffset={stickyHeaderOffset}
+      scrollContainerClassName={scrollContainerClassName}
     />
   );
 };

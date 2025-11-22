@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import React, { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import {
   Table,
@@ -25,6 +25,8 @@ interface ListTableProps<T> {
   onRowDoubleClick?: (item: T) => void;
   emptyMessage?: string;
   stickyHeader?: boolean;
+  stickyHeaderOffset?: number;
+  scrollContainerClassName?: string;
 }
 
 const getAlignClass = (align?: ListColumn<unknown>['align']) => {
@@ -40,17 +42,29 @@ export const ListTable = <T,>({
   onRowDoubleClick,
   emptyMessage = 'Aucun élément trouvé',
   stickyHeader = false,
+  stickyHeaderOffset = 0,
+  scrollContainerClassName,
 }: ListTableProps<T>) => {
   return (
-    <div className="overflow-hidden rounded-md border">
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader className={cn(stickyHeader && '[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-10 [&_tr]:bg-background')}>
+    <div className="rounded-md border">
+      <div className={cn('overflow-auto', scrollContainerClassName)}>
+        <Table className="min-w-full border-separate border-spacing-0" noWrapper>
+          <TableHeader>
             <TableRow>
               {columns.map((column) => (
                 <TableHead
                   key={column.id}
-                  className={cn(column.className, getAlignClass(column.align))}
+                  className={cn(
+                    column.className,
+                    getAlignClass(column.align),
+                    stickyHeader &&
+                      'sticky top-[var(--sticky-offset,0px)] z-30 bg-background shadow-sm border-b'
+                  )}
+                  style={
+                    stickyHeader
+                      ? ({ '--sticky-offset': `${stickyHeaderOffset}px` } as React.CSSProperties)
+                      : undefined
+                  }
                 >
                   {column.header}
                 </TableHead>

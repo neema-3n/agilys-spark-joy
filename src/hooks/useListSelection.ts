@@ -6,16 +6,20 @@ export const useListSelection = (ids: string[]) => {
   const idsSet = useMemo(() => new Set(ids), [ids]);
 
   useEffect(() => {
-    setSelectedIds((prev) => {
-      const filtered = new Set(Array.from(prev).filter((id) => idsSet.has(id)));
-      return filtered.size === prev.size ? prev : filtered;
-    });
-  }, [idsSet]);
+    const filtered = new Set(Array.from(selectedIds).filter((id) => idsSet.has(id)));
+    if (filtered.size !== selectedIds.size) {
+      setSelectedIds(filtered);
+    }
+  }, [idsSet, selectedIds]);
 
   const toggleOne = useCallback((id: string, checked: boolean) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      checked ? next.add(id) : next.delete(id);
+      if (checked) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
       return next;
     });
   }, []);

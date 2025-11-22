@@ -273,6 +273,7 @@ const Depenses = () => {
         <PageHeader
           title="Gestion des Dépenses"
           description="Ordonnancement et liquidation des dépenses"
+          sticky={false}
         />
         <p className="text-center text-muted-foreground">Chargement...</p>
       </div>
@@ -286,6 +287,7 @@ const Depenses = () => {
           title="Gestion des Dépenses"
           description="Ordonnancement et liquidation des dépenses"
           scrollProgress={scrollProgress}
+          sticky={false}
           actions={
             <Button onClick={() => setIsDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
@@ -390,6 +392,9 @@ const Depenses = () => {
                 onDelete={handleOpenDelete}
                 disableActions={isSubmittingAction}
                 selection={{ selectedIds, allSelected, toggleOne, toggleAll }}
+                stickyHeader
+                stickyHeaderOffset={0}
+                scrollContainerClassName="max-h-[calc(100vh-220px)] overflow-auto"
               />
             </ListLayout>
           </div>

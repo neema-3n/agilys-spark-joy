@@ -60,7 +60,7 @@ export default function Factures() {
   const [selectedFactureForDepense, setSelectedFactureForDepense] = useState<Facture | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statutFilter, setStatutFilter] = useState<'tous' | StatutFacture>('tous');
-  
+
   const { factures, isLoading, createFacture, updateFacture, deleteFacture, genererNumero, validerFacture, marquerPayee, annulerFacture } = useFactures();
   const { createDepenseFromFacture } = useDepenses();
   const [motifAnnulation, setMotifAnnulation] = useState('');
@@ -91,9 +91,7 @@ export default function Factures() {
           facture.bonCommande?.numero?.toLowerCase().includes(searchLower)
         );
       })
-      .sort(
-        (a, b) => new Date(b.dateFacture).getTime() - new Date(a.dateFacture).getTime()
-      );
+      .sort((a, b) => new Date(b.dateFacture).getTime() - new Date(a.dateFacture).getTime());
   }, [factures, searchTerm, statutFilter]);
 
   const selectionIds = useMemo(
@@ -247,7 +245,16 @@ export default function Factures() {
   }, [navigate]);
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-full">Chargement...</div>;
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Gestion des Factures"
+          description="Gérez les factures fournisseurs"
+          sticky={false}
+        />
+        <p className="text-center text-muted-foreground">Chargement...</p>
+      </div>
+    );
   }
 
   const pageHeaderContent = (
@@ -255,6 +262,7 @@ export default function Factures() {
       title="Gestion des Factures"
       description="Gérez les factures fournisseurs"
       scrollProgress={scrollProgress}
+      sticky={false}
       actions={
         <Button onClick={handleCreate}>
           <Plus className="mr-2 h-4 w-4" />
@@ -369,6 +377,9 @@ export default function Factures() {
                 onCreerDepense={(facture) => setSelectedFactureForDepense(facture)}
                 onViewDetails={handleOpenSnapshot}
                 selection={{ selectedIds, allSelected, toggleOne, toggleAll }}
+                stickyHeader
+                stickyHeaderOffset={0}
+                scrollContainerClassName="max-h-[calc(100vh-220px)] overflow-auto"
               />
             </ListLayout>
           </>
