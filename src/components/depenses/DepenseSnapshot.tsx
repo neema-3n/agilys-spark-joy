@@ -77,7 +77,7 @@ export const DepenseSnapshot = ({
   };
 
   const actionButtons = () => {
-    const buttons = [<div key="statut">{getStatutBadge(depense.statut)}</div>];
+    const buttons = [];
 
     if (onValider && depense.statut === 'brouillon') {
       buttons.push(
