@@ -3,12 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, FolderTree, BookOpen } from 'lucide-react';
+import { Plus, FolderTree, BookOpen, Upload } from 'lucide-react';
 import { useClient } from '@/contexts/ClientContext';
 import { Compte } from '@/types/compte.types';
 import { comptesService } from '@/services/api/comptes.service';
 import { CompteDialog } from './CompteDialog';
 import { CompteTreeItem } from './CompteTreeItem';
+import { ImportPlanComptableDialog } from './ImportPlanComptableDialog';
 import { useToast } from '@/hooks/use-toast';
 
 interface CompteNode extends Compte {
@@ -25,6 +26,7 @@ const PlanComptableManager = () => {
   const [compteToDelete, setCompteToDelete] = useState<Compte | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   // Construire l'arbre hiérarchique
   const buildTree = (comptes: Compte[]): CompteNode[] => {
@@ -217,10 +219,16 @@ const PlanComptableManager = () => {
                 Structure hiérarchique du plan comptable
               </CardDescription>
             </div>
-            <Button onClick={openCreateDialog}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nouveau compte
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
+                <Upload className="h-4 w-4 mr-2" />
+                Importer CSV
+              </Button>
+              <Button onClick={openCreateDialog}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nouveau compte
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -268,6 +276,12 @@ const PlanComptableManager = () => {
         onSubmit={selectedCompte ? handleUpdate : handleCreate}
         compte={selectedCompte}
         comptes={comptes}
+      />
+
+      <ImportPlanComptableDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onSuccess={loadComptes}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
