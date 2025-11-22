@@ -247,6 +247,17 @@ export const useDepenses = () => {
     },
   });
 
+  // Fonction simplifiée pour payer une dépense
+  const payerDepense = async (id: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    return marquerPayeeMutation.mutateAsync({
+      id,
+      datePaiement: today,
+      modePaiement: 'virement',
+      referencePaiement: undefined,
+    });
+  };
+
   return {
     depenses: query.data || [],
     isLoading: query.isLoading,
@@ -259,6 +270,7 @@ export const useDepenses = () => {
     validerDepense: validerMutation.mutateAsync,
     ordonnancerDepense: ordonnancerMutation.mutateAsync,
     marquerPayee: marquerPayeeMutation.mutateAsync,
+    payerDepense,
     annulerDepense: annulerMutation.mutateAsync,
     deleteDepense: deleteMutation.mutateAsync,
   };
