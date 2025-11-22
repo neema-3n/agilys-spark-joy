@@ -41,6 +41,7 @@ interface BudgetTableProps {
   onDelete: (id: string) => void;
   onReserver: (ligne: LigneBudgetaire) => void;
   onCreateModification: (ligne: LigneBudgetaire) => void;
+  onViewDetails?: (ligne: LigneBudgetaire) => void;
 }
 
 // Helper functions pour localStorage
@@ -102,6 +103,7 @@ export const BudgetTable = ({
   onDelete,
   onReserver,
   onCreateModification,
+  onViewDetails,
 }: BudgetTableProps) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     () => getInitialExpandedState(clientId, exerciceId, 'sections', sections)
@@ -319,12 +321,22 @@ export const BudgetTable = ({
     const enveloppe = enveloppes.find(e => e.id === ligne.enveloppeId);
     
     return (
-      <TableRow className="hover:bg-accent/50">
+      <TableRow
+        className={`hover:bg-accent/50 ${onViewDetails ? 'cursor-pointer' : ''}`}
+        onDoubleClick={onViewDetails ? () => onViewDetails(ligne) : undefined}
+      >
         <TableCell className="pl-8">
           <TooltipProvider delayDuration={500}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="font-medium text-sm text-foreground leading-tight line-clamp-2 cursor-help">
+                <div
+                  className="font-medium text-sm text-foreground leading-tight line-clamp-2 cursor-help"
+                  onClick={(e) => {
+                    if (!onViewDetails) return;
+                    e.preventDefault();
+                    onViewDetails(ligne);
+                  }}
+                >
                   {ligne.libelle}
                 </div>
               </TooltipTrigger>

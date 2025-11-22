@@ -289,7 +289,7 @@ export const DepenseDialog = ({
     setSelectedFacture(facture);
 
     // Calculate reste à payer
-    const resteAPayer = facture.montantTTC - facture.montantPaye;
+  const resteAPayer = facture.montantTTC - facture.montantLiquide;
     setMontantDisponible(resteAPayer);
     setMontantMax(facture.montantTTC);
 

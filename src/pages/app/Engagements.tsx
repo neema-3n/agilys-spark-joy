@@ -15,6 +15,7 @@ import { useDepenses } from '@/hooks/useDepenses';
 import { useToast } from '@/hooks/use-toast';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { showNavigationToast } from '@/lib/navigation-toast';
+import { useSnapshotState } from '@/hooks/useSnapshotState';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,7 +40,6 @@ const Engagements = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [actionEngagementId, setActionEngagementId] = useState<string | null>(null);
   const [selectedEngagementForDepense, setSelectedEngagementForDepense] = useState<Engagement | null>(null);
-  const [snapshotEngagementId, setSnapshotEngagementId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -55,21 +55,6 @@ const Engagements = () => {
 
   const { createBonCommande, genererNumero } = useBonsCommande();
   const { createDepenseFromEngagement } = useDepenses();
-
-  // Synchronisation bidirectionnelle URL ↔ state
-  useEffect(() => {
-    if (engagementId && engagements.length > 0 && !snapshotEngagementId) {
-      const engagement = engagements.find(e => e.id === engagementId);
-      if (engagement) {
-        setSnapshotEngagementId(engagementId);
-      } else {
-        navigate('/app/engagements', { replace: true });
-      }
-    }
-  }, [engagementId, engagements, snapshotEngagementId, navigate]);
-
-  // Gérer le scroll pour l'effet de disparition du header
-  const scrollProgress = useScrollProgress(!!snapshotEngagementId);
 
   const handleCreate = () => {
     setSelectedEngagement(undefined);
@@ -219,32 +204,31 @@ const Engagements = () => {
     setSelectedEngagementForDepense(engagement);
   };
 
-  const handleOpenSnapshot = useCallback((engagementId: string) => {
-    setSnapshotEngagementId(engagementId);
-    navigate(`/app/engagements/${engagementId}`);
-  }, [navigate]);
+  const {
+    snapshotId: snapshotEngagementId,
+    snapshotItem: snapshotEngagement,
+    snapshotIndex,
+    isSnapshotOpen,
+    isSnapshotLoading,
+    openSnapshot: handleOpenSnapshot,
+    closeSnapshot: handleCloseSnapshot,
+    navigateSnapshot: handleNavigateSnapshot,
+  } = useSnapshotState({
+    items: engagements,
+    getId: e => e.id,
+    initialId: engagementId,
+    onNavigateToId: id => navigate(id ? `/app/engagements/${id}` : '/app/engagements'),
+    onMissingId: () => navigate('/app/engagements', { replace: true }),
+    isLoadingItems: isLoading,
+  });
 
-  const handleCloseSnapshot = () => {
-    setSnapshotEngagementId(null);
-    navigate('/app/engagements');
-  };
-
-  const handleNavigateSnapshot = (direction: 'prev' | 'next') => {
-    const currentIndex = engagements.findIndex(e => e.id === snapshotEngagementId);
-    if (currentIndex === -1) return;
-    
-    const newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
-    if (newIndex >= 0 && newIndex < engagements.length) {
-      const newEngagement = engagements[newIndex];
-      setSnapshotEngagementId(newEngagement.id);
-      navigate(`/app/engagements/${newEngagement.id}`);
-    }
-  };
+  // Gérer le scroll pour l'effet de disparition du header
+  const scrollProgress = useScrollProgress(!!snapshotEngagementId);
 
   const handleNavigateToEntity = (type: string, id: string) => {
     const entityRoutes: Record<string, string> = {
       fournisseur: `/app/fournisseurs/${id}`,
-      ligneBudgetaire: `/app/budgets?ligne=${id}`,
+      ligneBudgetaire: `/app/budgets/${id}?tab=lignes`,
       projet: `/app/projets/${id}`,
       reservationCredit: `/app/reservations/${id}`,
     };
@@ -260,16 +244,6 @@ const Engagements = () => {
       });
     }
   };
-
-  const snapshotEngagement = useMemo(
-    () => engagements.find(e => e.id === snapshotEngagementId),
-    [engagements, snapshotEngagementId]
-  );
-
-  const snapshotIndex = useMemo(
-    () => engagements.findIndex(e => e.id === snapshotEngagementId),
-    [engagements, snapshotEngagementId]
-  );
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -312,10 +286,10 @@ const Engagements = () => {
 
   return (
     <div className="space-y-6">
-      {pageHeaderContent}
+      {!isSnapshotOpen && pageHeaderContent}
 
       <div className="px-8 space-y-6">
-        {snapshotEngagementId && snapshotEngagement ? (
+        {isSnapshotOpen && snapshotEngagement ? (
           <EngagementSnapshot
             engagement={snapshotEngagement}
             onClose={handleCloseSnapshot}
@@ -329,6 +303,8 @@ const Engagements = () => {
             onCreerBonCommande={snapshotEngagement.statut === 'valide' ? () => handleCreerBonCommande(snapshotEngagement) : undefined}
             onCreerDepense={snapshotEngagement.statut === 'valide' ? () => handleCreerDepense(snapshotEngagement) : undefined}
           />
+        ) : isSnapshotOpen && isSnapshotLoading ? (
+          <div className="flex items-center justify-center py-12 text-muted-foreground">Chargement du snapshot...</div>
         ) : (
           <>
             <EngagementStats engagements={engagements} />

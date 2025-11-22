@@ -48,10 +48,13 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth/login" element={<Login />} />
-          <Route path="/auth/init-test-users" element={<InitTestUsers />} />
+                  <Route path="/auth/init-test-users" element={<InitTestUsers />} />
                 <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                   <Route path="dashboard" element={<Dashboard />} />
-                  <Route path="budgets" element={<Budgets />} />
+                  <Route path="budgets">
+                    <Route index element={<Budgets />} />
+                    <Route path=":ligneId" element={<Budgets />} />
+                  </Route>
                   <Route path="structure-budgetaire" element={<StructureBudgetaire />} />
                   <Route path="enveloppes" element={<Enveloppes />} />
                   <Route path="previsions" element={<Previsions />} />

@@ -27,9 +27,6 @@ interface FactureSnapshotProps {
   /** Valider la facture (change le statut en "validée") */
   onValider?: () => void;
   
-  /** Marquer la facture comme payée */
-  onMarquerPayee?: () => void;
-  
   /** Annuler la facture */
   onAnnuler?: () => void;
   
@@ -53,7 +50,6 @@ export const FactureSnapshot = ({
   totalCount,
   onEdit,
   onValider,
-  onMarquerPayee,
   onAnnuler,
   onCreerDepense,
   onNavigateToEntity,
@@ -80,9 +76,9 @@ export const FactureSnapshot = ({
     );
   };
 
-  const solde = facture.montantTTC - facture.montantPaye;
+  const solde = facture.montantTTC - facture.montantLiquide;
   const progressionPaiement = facture.montantTTC > 0 
-    ? (facture.montantPaye / facture.montantTTC) * 100 
+    ? (facture.montantLiquide / facture.montantTTC) * 100 
     : 0;
 
   const handleEntityClick = (type: string, id: string) => {
@@ -104,11 +100,6 @@ export const FactureSnapshot = ({
       {facture.statut === 'brouillon' && onValider && (
         <Button size="sm" onClick={onValider}>
           Valider
-        </Button>
-      )}
-      {facture.statut === 'validee' && onMarquerPayee && (
-        <Button size="sm" onClick={onMarquerPayee}>
-          Marquer comme payée
         </Button>
       )}
       {facture.statut === 'validee' && onCreerDepense && (
@@ -217,8 +208,8 @@ export const FactureSnapshot = ({
               <div className="pt-4 border-t">
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Montant payé</span>
-                    <span className="font-medium">{formatMontant(facture.montantPaye)}</span>
+                    <span className="text-muted-foreground">Montant liquidé</span>
+                    <span className="font-medium">{formatMontant(facture.montantLiquide)}</span>
                   </div>
                   <Progress value={progressionPaiement} className="h-2" />
                   <div className="flex justify-between text-sm">
