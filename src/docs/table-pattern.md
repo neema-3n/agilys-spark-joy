@@ -148,3 +148,4 @@ return (
 - [ ] Respect tokens design system (aucune couleur directe)
 - [ ] Loading géré côté parent (spinner/skeleton)
 - [ ] Responsive : conteneur scroll horizontal (`overflow-x-auto`) déjà géré
+- [ ] State `isLoading` factorisé : composant `ListPageLoading` pour header + message de chargement

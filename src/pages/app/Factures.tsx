@@ -36,6 +36,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ListLayout } from '@/components/lists/ListLayout';
 import { ListToolbar } from '@/components/lists/ListToolbar';
+import { ListPageLoading } from '@/components/lists/ListPageLoading';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -246,14 +247,11 @@ export default function Factures() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Gestion des Factures"
-          description="Gérez les factures fournisseurs"
-          sticky={false}
-        />
-        <p className="text-center text-muted-foreground">Chargement...</p>
-      </div>
+      <ListPageLoading
+        title="Gestion des Factures"
+        description="Gérez les factures fournisseurs"
+        stickyHeader={false}
+      />
     );
   }
 
