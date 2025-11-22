@@ -50,6 +50,9 @@ interface FactureTableProps {
   onCreerDepense: (facture: Facture) => void;
   onViewDetails: (factureId: string) => void;
   selection: FactureTableSelection;
+  stickyHeader?: boolean;
+  stickyHeaderOffset?: number;
+  scrollContainerClassName?: string;
 }
 
 export const FactureTable = ({
@@ -62,6 +65,9 @@ export const FactureTable = ({
   onCreerDepense,
   onViewDetails,
   selection,
+  stickyHeader = false,
+  stickyHeaderOffset = 0,
+  scrollContainerClassName,
 }: FactureTableProps) => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const factureIds = useMemo(() => factures.map((facture) => facture.id), [factures]);
@@ -242,6 +248,9 @@ export const FactureTable = ({
         getRowId={(facture) => facture.id}
         onRowDoubleClick={(facture) => onViewDetails(facture.id)}
         emptyMessage="Aucune facture trouvée"
+        stickyHeader={stickyHeader}
+        stickyHeaderOffset={stickyHeaderOffset}
+        scrollContainerClassName={scrollContainerClassName}
       />
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>

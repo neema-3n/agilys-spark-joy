@@ -5,9 +5,16 @@ interface PageHeaderProps {
   description?: string;
   actions?: ReactNode;
   scrollProgress?: number;
+  sticky?: boolean;
 }
 
-export const PageHeader = ({ title, description, actions, scrollProgress = 0 }: PageHeaderProps) => {
+export const PageHeader = ({
+  title,
+  description,
+  actions,
+  scrollProgress = 0,
+  sticky = true,
+}: PageHeaderProps) => {
   const scale = 1 - (scrollProgress * 0.2);
   const opacity = 1 - (scrollProgress * 1.5);
   const blur = scrollProgress * 6;
@@ -15,15 +22,23 @@ export const PageHeader = ({ title, description, actions, scrollProgress = 0 }: 
   const zIndex = 10;
 
   return (
-    <div 
-      className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border transition-all duration-200 ease-out"
-      style={{
-        transform: `translateY(${translateY}px) scale(${scale})`,
-        opacity: Math.max(0, opacity),
-        filter: `blur(${blur}px)`,
-        transformOrigin: 'top center',
-        zIndex,
-      }}
+    <div
+      className={
+        sticky
+          ? 'sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border transition-all duration-200 ease-out'
+          : 'bg-background border-b border-border'
+      }
+      style={
+        sticky
+          ? {
+              transform: `translateY(${translateY}px) scale(${scale})`,
+              opacity: Math.max(0, opacity),
+              filter: `blur(${blur}px)`,
+              transformOrigin: 'top center',
+              zIndex,
+            }
+          : undefined
+      }
     >
       <div className="px-4 md:px-6 py-3 md:py-4">
         <div className="flex items-start justify-between">
