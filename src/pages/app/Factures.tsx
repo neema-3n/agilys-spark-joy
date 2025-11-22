@@ -40,8 +40,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useListSelection } from '@/hooks/useListSelection';
 
 export default function Factures() {
   const navigate = useNavigate();
@@ -93,6 +95,40 @@ export default function Factures() {
         (a, b) => new Date(b.dateFacture).getTime() - new Date(a.dateFacture).getTime()
       );
   }, [factures, searchTerm, statutFilter]);
+
+  const selectionIds = useMemo(
+    () => filteredFactures.map((facture) => facture.id),
+    [filteredFactures]
+  );
+  const { selectedIds, allSelected, toggleOne, toggleAll, clearSelection } = useListSelection(selectionIds);
+
+  const selectedFactures = useMemo(
+    () => filteredFactures.filter((facture) => selectedIds.has(facture.id)),
+    [filteredFactures, selectedIds]
+  );
+
+  const handleBatchValider = useCallback(async () => {
+    const candidates = selectedFactures.filter((facture) => facture.statut === 'brouillon');
+    if (candidates.length === 0) return;
+    await Promise.all(candidates.map((facture) => validerFacture(facture.id)));
+    clearSelection();
+  }, [selectedFactures, validerFacture, clearSelection]);
+
+  const handleBatchMarquerPayee = useCallback(async () => {
+    const candidates = selectedFactures.filter((facture) => facture.statut === 'validee');
+    if (candidates.length === 0) return;
+    await Promise.all(candidates.map((facture) => marquerPayee(facture.id)));
+    clearSelection();
+  }, [selectedFactures, marquerPayee, clearSelection]);
+
+  const hasSelection = selectedIds.size > 0;
+  const hasBrouillonsSelected = selectedFactures.some((facture) => facture.statut === 'brouillon');
+  const hasValideesSelected = selectedFactures.some((facture) => facture.statut === 'validee');
+
+  const handleExportFactures = useCallback(() => {
+    // Exporter toutes les factures filtrées (CSV/Excel) – brancher ici l'implémentation
+    // Exemple : exportFactures(filteredFactures);
+  }, [filteredFactures]);
 
   const {
     snapshotId: snapshotFactureId,
@@ -290,6 +326,35 @@ export default function Factures() {
                         ))}
                       </DropdownMenuContent>
                     </DropdownMenu>,
+                    <DropdownMenu key="batch-actions">
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline">
+                          Actions groupées
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          disabled={!hasBrouillonsSelected}
+                          onClick={handleBatchValider}
+                        >
+                          Valider les brouillons
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={!hasValideesSelected}
+                          onClick={handleBatchMarquerPayee}
+                        >
+                          Marquer comme payées
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem disabled={!hasSelection} onClick={() => clearSelection()}>
+                          Effacer la sélection
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleExportFactures}>
+                          Exporter (toutes les factures filtrées)
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>,
                   ]}
                 />
               }
@@ -303,6 +368,7 @@ export default function Factures() {
                 onAnnuler={handleAnnuler}
                 onCreerDepense={(facture) => setSelectedFactureForDepense(facture)}
                 onViewDetails={handleOpenSnapshot}
+                selection={{ selectedIds, allSelected, toggleOne, toggleAll }}
               />
             </ListLayout>
           </>
