@@ -394,6 +394,7 @@ export const EngagementStats = ({ engagements }: EngagementStatsProps) => {
 - ✅ Grid responsive (mobile → desktop)
 - ✅ Icônes Lucide appropriées
 - ✅ Formatage currency et nombres
+- ✅ **IMPORTANT** : Ne JAMAIS afficher de symbole de devise (€, $, XAF, FCFA, etc.) - les montants sont affichés sans devise
 
 #### Checklist Stats
 - [ ] useMemo pour tous les calculs
