@@ -4,7 +4,7 @@ Référence pour les listes factorisées basées sur `ListLayout`, `ListToolbar`
 
 ## Composants
 
-- `ListLayout` : carte contenant titre, description optionnelle, toolbar et footer optionnel.
+- `ListLayout` : carte contenant titre, description optionnelle, actions (optionnel aligné à droite), toolbar et footer optionnel.
 - `ListToolbar` : barre de recherche + filtres (ReactNode[]) + slot droit (bouton principal). Gère uniquement l’UI, pas le state.
 - `ListTable` : tableau générique (shadcn/ui) avec colonnes typées et gestion d’état vide.
 
@@ -118,13 +118,13 @@ return (
   <ListLayout
     title="Liste des factures"
     description="Visualisez, filtrez et gérez vos factures fournisseurs"
+    actions={<Button onClick={onCreate}>Nouvelle facture</Button>}
     toolbar={
       <ListToolbar
         searchValue={searchTerm}
         onSearchChange={setSearchTerm}
         searchPlaceholder="Rechercher par numéro, objet, fournisseur..."
         filters={[/* Dropdown statut */]}
-        rightSlot={<Button onClick={onCreate}>Nouvelle facture</Button>}
       />
     }
   >
