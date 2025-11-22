@@ -27,7 +27,8 @@ type ListColumn<T> = {
   onRowDoubleClick={(item) => onView(item.id)} // optionnel
   emptyMessage="Aucun élément trouvé"
   stickyHeader // optionnel
-  stickyHeaderOffset={toolbarHeight} // optionnel si toolbar sticky au-dessus
+  stickyHeaderOffset={0} // top pour le sticky
+  scrollContainerClassName="max-h-[calc(100vh-220px)] overflow-auto" // conteneur scroll vertical
 />
 ```
 
@@ -40,6 +41,7 @@ type ListColumn<T> = {
 - Accessibilité : `aria-label` sur l’input de recherche; boutons focusables (`focus-visible` conservé).
 - Style : aucune couleur directe; uniquement les tokens du design system (classes shadcn/Tailwind existantes).
 - Performance : dériver `columns` et `filteredItems` avec `useMemo` si nécessaire pour éviter les recalculs.
+- Scroll : utiliser `scrollContainerClassName` pour définir la hauteur max (`max-h[...]`) et `overflow-auto`; le sticky s’applique sur les `th` avec `stickyHeader` + `stickyHeaderOffset`.
 
 ### Sélection batch (optionnel)
 
@@ -132,6 +134,9 @@ return (
       getRowId={(facture) => facture.id}
       onRowDoubleClick={(facture) => onViewDetails(facture.id)}
       emptyMessage="Aucune facture trouvée"
+      stickyHeader
+      stickyHeaderOffset={0}
+      scrollContainerClassName="max-h-[calc(100vh-220px)] overflow-auto"
     />
   </ListLayout>
 );
@@ -149,3 +154,4 @@ return (
 - [ ] Loading géré côté parent (spinner/skeleton)
 - [ ] Responsive : conteneur scroll horizontal (`overflow-x-auto`) déjà géré
 - [ ] State `isLoading` factorisé : composant `ListPageLoading` pour header + message de chargement
+- [ ] Scroll vertical : `scrollContainerClassName` pour la hauteur + `overflow-auto`, stickyHeader + offset configuré
