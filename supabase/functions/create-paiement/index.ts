@@ -51,19 +51,31 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Récupérer le client_id de l'utilisateur
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('client_id')
-      .eq('id', user.id)
-      .single();
+    // Vérifier si l'utilisateur est super_admin
+    const { data: userRoles, error: rolesError } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id);
 
-    if (profileError || !profile) {
-      console.error('Profile error:', profileError);
-      return new Response(
-        JSON.stringify({ error: 'Profil utilisateur introuvable' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    const isSuperAdmin = userRoles?.some(r => r.role === 'super_admin') || false;
+
+    // Récupérer le client_id de l'utilisateur (seulement si pas super_admin)
+    let userClientId = null;
+    if (!isSuperAdmin) {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('client_id')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !profile) {
+        console.error('Profile error:', profileError);
+        return new Response(
+          JSON.stringify({ error: 'Profil utilisateur introuvable' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      userClientId = profile.client_id;
     }
 
     // Récupérer l'exercice_id de la dépense
@@ -81,8 +93,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Vérifier que la dépense appartient au même client
-    if (depense.client_id !== profile.client_id) {
+    // Vérifier que la dépense appartient au même client (sauf pour super_admin)
+    if (!isSuperAdmin && depense.client_id !== userClientId) {
       return new Response(
         JSON.stringify({ error: 'Accès non autorisé à cette dépense' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -93,7 +105,7 @@ Deno.serve(async (req) => {
     const { data: paiement, error: paiementError } = await supabase.rpc(
       'create_paiement_with_numero',
       {
-        p_client_id: profile.client_id,
+        p_client_id: depense.client_id,
         p_exercice_id: depense.exercice_id,
         p_depense_id: depense_id,
         p_montant: montant,
