@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -45,6 +45,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useListSelection } from '@/hooks/useListSelection';
+import { CTA_REVEAL_STYLES, useHeaderCtaReveal } from '@/hooks/useHeaderCtaReveal';
 
 export default function Factures() {
   const navigate = useNavigate();
@@ -61,8 +62,6 @@ export default function Factures() {
   const [selectedFactureForDepense, setSelectedFactureForDepense] = useState<Facture | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statutFilter, setStatutFilter] = useState<'tous' | StatutFacture>('tous');
-  const [isHeaderCtaVisible, setIsHeaderCtaVisible] = useState(true);
-  const headerCtaRef = useRef<HTMLButtonElement | null>(null);
 
   const { factures, isLoading, createFacture, updateFacture, deleteFacture, genererNumero, validerFacture, marquerPayee, annulerFacture } = useFactures();
   const { createDepenseFromFacture } = useDepenses();
@@ -149,19 +148,7 @@ export default function Factures() {
     isLoadingItems: isLoading,
   });
 
-  useEffect(() => {
-    const target = headerCtaRef.current;
-    if (!target || typeof IntersectionObserver === 'undefined') return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        setIsHeaderCtaVisible(entry.isIntersecting);
-      },
-      { root: null, threshold: 0 }
-    );
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, [isSnapshotOpen]);
+  const { headerCtaRef, isHeaderCtaVisible } = useHeaderCtaReveal([isSnapshotOpen]);
 
   // Gérer le scroll pour l'effet de disparition du header
   const scrollProgress = useScrollProgress(!!snapshotFactureId);
@@ -297,36 +284,9 @@ export default function Factures() {
   const activeStatutLabel =
     statutOptions.find((option) => option.value === statutFilter)?.label || 'Tous';
 
-  const ctaAnimationStyles = `
-    @keyframes factureCtaReveal {
-      0% {
-        filter: blur(10px);
-        background: hsl(var(--background));
-        color: hsl(var(--primary));
-        box-shadow: none;
-      }
-      60% {
-        filter: blur(3px);
-        background: hsl(var(--primary));
-        color: hsl(var(--primary-foreground));
-        box-shadow: var(--shadow-glow);
-      }
-      100% {
-        filter: blur(0);
-        background: hsl(var(--primary));
-        color: hsl(var(--primary-foreground));
-        box-shadow: var(--shadow-primary);
-      }
-    }
-    .facture-cta-appear {
-      animation: factureCtaReveal 1.5s ease forwards;
-      will-change: transform, filter;
-    }
-  `;
-
   return (
     <div className="space-y-6">
-      <style>{ctaAnimationStyles}</style>
+      <style>{CTA_REVEAL_STYLES}</style>
       {!isSnapshotOpen && pageHeaderContent}
 
       <div className="px-8 space-y-6">
@@ -357,7 +317,7 @@ export default function Factures() {
               description="Visualisez, filtrez et gérez vos factures fournisseurs"
               actions={
                 !isHeaderCtaVisible ? (
-                  <Button onClick={handleCreate} className="facture-cta-appear">
+                  <Button onClick={handleCreate} className="sticky-cta-appear">
                     <Plus className="mr-2 h-4 w-4" />
                     Nouvelle facture
                   </Button>
