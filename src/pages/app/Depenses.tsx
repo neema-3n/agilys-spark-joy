@@ -7,6 +7,7 @@ import { DepenseStatsCards } from '@/components/depenses/DepensesStats';
 import { DepenseTable } from '@/components/depenses/DepenseTable';
 import { DepenseDialog } from '@/components/depenses/DepenseDialog';
 import { DepenseSnapshot } from '@/components/depenses/DepenseSnapshot';
+import { AnnulerDepenseDialog } from '@/components/depenses/AnnulerDepenseDialog';
 import { useDepenses } from '@/hooks/useDepenses';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { useSnapshotState } from '@/hooks/useSnapshotState';
@@ -24,8 +25,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -63,7 +62,6 @@ const Depenses = () => {
   const [actionDepenseId, setActionDepenseId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
-  const [motifAnnulation, setMotifAnnulation] = useState('');
   const [paiementDialogOpen, setPaiementDialogOpen] = useState(false);
   const [isSubmittingAction, setIsSubmittingAction] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -189,15 +187,14 @@ const Depenses = () => {
 
   const handleOpenAnnuler = (id: string) => {
     setActionDepenseId(id);
-    setMotifAnnulation('');
     setAnnulerDialogOpen(true);
   };
 
-  const handleConfirmAnnuler = async () => {
-    if (!actionDepenseId || motifAnnulation.trim().length < 3) return;
+  const handleConfirmAnnuler = async (motif: string) => {
+    if (!actionDepenseId) return;
     try {
       setIsSubmittingAction(true);
-      await annulerDepense({ id: actionDepenseId, motif: motifAnnulation });
+      await annulerDepense({ id: actionDepenseId, motif });
       setAnnulerDialogOpen(false);
       setActionDepenseId(null);
     } finally {
@@ -415,34 +412,14 @@ const Depenses = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={annulerDialogOpen} onOpenChange={setAnnulerDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Annuler la dépense</AlertDialogTitle>
-            <AlertDialogDescription>
-              Indiquez le motif d&apos;annulation pour tracer cette action.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="px-1 pb-2">
-            <Label className="text-sm">Motif</Label>
-            <Input
-              value={motifAnnulation}
-              onChange={(e) => setMotifAnnulation(e.target.value)}
-              placeholder="Motif d'annulation"
-              className="mt-2"
-            />
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSubmittingAction}>Fermer</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmAnnuler}
-              disabled={isSubmittingAction || motifAnnulation.trim().length < 3}
-            >
-              Annuler la dépense
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <AnnulerDepenseDialog
+        open={annulerDialogOpen}
+        onOpenChange={setAnnulerDialogOpen}
+        depenseId={actionDepenseId}
+        depenseNumero={depenses.find(d => d.id === actionDepenseId)?.numero}
+        onConfirm={handleConfirmAnnuler}
+        isSubmitting={isSubmittingAction}
+      />
 
       {(() => {
         const depenseForPaiement = actionDepenseId 
