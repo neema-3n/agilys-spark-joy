@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -61,6 +61,10 @@ export default function Factures() {
   const [selectedFactureForDepense, setSelectedFactureForDepense] = useState<Facture | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statutFilter, setStatutFilter] = useState<'tous' | StatutFacture>('tous');
+  const [showFloatingCta, setShowFloatingCta] = useState(false);
+  const [showFloatingListCta, setShowFloatingListCta] = useState(false);
+  const headerCtaRef = useRef<HTMLButtonElement | null>(null);
+  const listCtaRef = useRef<HTMLButtonElement | null>(null);
 
   const { factures, isLoading, createFacture, updateFacture, deleteFacture, genererNumero, validerFacture, marquerPayee, annulerFacture } = useFactures();
   const { createDepenseFromFacture } = useDepenses();
@@ -128,6 +132,32 @@ export default function Factures() {
     // Exporter toutes les factures filtrées (CSV/Excel) – brancher ici l'implémentation
     // Exemple : exportFactures(filteredFactures);
   }, [filteredFactures]);
+
+  useEffect(() => {
+    if (!headerCtaRef.current || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        setShowFloatingCta(!entry.isIntersecting);
+      },
+      { root: null, threshold: 1 }
+    );
+    observer.observe(headerCtaRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!listCtaRef.current || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        setShowFloatingListCta(!entry.isIntersecting);
+      },
+      { root: null, threshold: 1 }
+    );
+    observer.observe(listCtaRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   const {
     snapshotId: snapshotFactureId,
@@ -256,18 +286,18 @@ export default function Factures() {
   }
 
   const pageHeaderContent = (
-    <PageHeader 
-      title="Gestion des Factures"
-      description="Gérez les factures fournisseurs"
-      scrollProgress={scrollProgress}
-      sticky={false}
-      actions={
-        <Button onClick={handleCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nouvelle facture
-        </Button>
-      }
-    />
+        <PageHeader
+          title="Gestion des Factures"
+          description="Gérez les factures fournisseurs"
+          scrollProgress={scrollProgress}
+          sticky={false}
+          actions={
+            <Button onClick={handleCreate} ref={headerCtaRef}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nouvelle facture
+            </Button>
+          }
+        />
   );
 
   const statutOptions: { value: 'tous' | StatutFacture; label: string }[] = [
@@ -311,6 +341,12 @@ export default function Factures() {
             <ListLayout
               title="Liste des factures"
               description="Visualisez, filtrez et gérez vos factures fournisseurs"
+              actions={
+                <Button onClick={handleCreate} ref={listCtaRef}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nouvelle facture
+                </Button>
+              }
               toolbar={
                 <ListToolbar
                   searchValue={searchTerm}
@@ -383,6 +419,23 @@ export default function Factures() {
           </>
         )}
       </div>
+
+      {showFloatingCta && !showFloatingListCta && !isSnapshotOpen && (
+        <div className="fixed bottom-6 right-6 z-50 shadow-lg">
+          <Button onClick={handleCreate}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nouvelle facture
+          </Button>
+        </div>
+      )}
+      {showFloatingListCta && !showFloatingCta && !isSnapshotOpen && (
+        <div className="fixed bottom-6 right-6 z-50 shadow-lg">
+          <Button onClick={handleCreate}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nouvelle facture
+          </Button>
+        </div>
+      )}
 
       <FactureDialog
         open={dialogOpen}
