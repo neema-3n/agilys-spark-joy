@@ -39,12 +39,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    const body: PaiementRequest = await req.json();
+    const body: any = await req.json();
     console.log('Creating paiement:', { userId: user.id, ...body });
 
-    const { depenseId, montant, datePaiement, modePaiement, referencePaiement, observations } = body;
+    const { depense_id, montant, date_paiement, mode_paiement, reference_paiement, observations } = body;
 
-    if (!depenseId || !montant || !datePaiement || !modePaiement) {
+    if (!depense_id || !montant || !date_paiement || !mode_paiement) {
       return new Response(
         JSON.stringify({ error: 'Paramètres manquants' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
     const { data: depense, error: depenseError } = await supabase
       .from('depenses')
       .select('exercice_id, client_id')
-      .eq('id', depenseId)
+      .eq('id', depense_id)
       .single();
 
     if (depenseError || !depense) {
@@ -95,11 +95,11 @@ Deno.serve(async (req) => {
       {
         p_client_id: profile.client_id,
         p_exercice_id: depense.exercice_id,
-        p_depense_id: depenseId,
+        p_depense_id: depense_id,
         p_montant: montant,
-        p_date_paiement: datePaiement,
-        p_mode_paiement: modePaiement,
-        p_reference_paiement: referencePaiement || null,
+        p_date_paiement: date_paiement,
+        p_mode_paiement: mode_paiement,
+        p_reference_paiement: reference_paiement || null,
         p_observations: observations || null,
         p_user_id: user.id,
       }
