@@ -2,12 +2,19 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 /**
- * Formate un montant en devise française (EUR)
+ * Formate un montant en nombre avec séparateurs de milliers, SANS devise
+ * IMPORTANT : Ne jamais afficher de symbole de devise (€, $, XAF, FCFA, etc.)
+ * 
+ * @param montant - Le montant à formater
+ * @returns Le montant formaté SANS symbole de devise
+ * 
+ * @example
+ * formatMontant(1234567.89) // "1 234 568"
  */
 export const formatMontant = (montant: number): string => {
   return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: 'EUR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(montant);
 };
 
