@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { usePaiements } from '@/hooks/usePaiements';
 import {
   Dialog,
   DialogContent,
@@ -40,7 +41,7 @@ const formSchema = z.object({
 interface PaiementDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: PaiementFormData) => Promise<void>;
+  onSubmit?: (data: PaiementFormData) => Promise<void>;
   depenseId: string;
   montantRestant: number;
   depenseNumero: string;
@@ -54,6 +55,8 @@ export const PaiementDialog = ({
   montantRestant,
   depenseNumero,
 }: PaiementDialogProps) => {
+  const { createPaiement } = usePaiements();
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -67,7 +70,10 @@ export const PaiementDialog = ({
   });
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
-    await onSubmit(values as PaiementFormData);
+    await createPaiement(values as PaiementFormData);
+    if (onSubmit) {
+      await onSubmit(values as PaiementFormData);
+    }
     form.reset();
     onOpenChange(false);
   };
