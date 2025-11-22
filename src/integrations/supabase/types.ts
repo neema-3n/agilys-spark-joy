@@ -1002,6 +1002,85 @@ export type Database = {
         }
         Relationships: []
       }
+      paiements: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string | null
+          date_annulation: string | null
+          date_paiement: string
+          depense_id: string
+          exercice_id: string
+          id: string
+          mode_paiement: string
+          montant: number
+          motif_annulation: string | null
+          numero: string
+          observations: string | null
+          reference_paiement: string | null
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          date_annulation?: string | null
+          date_paiement: string
+          depense_id: string
+          exercice_id: string
+          id?: string
+          mode_paiement: string
+          montant: number
+          motif_annulation?: string | null
+          numero: string
+          observations?: string | null
+          reference_paiement?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          date_annulation?: string | null
+          date_paiement?: string
+          depense_id?: string
+          exercice_id?: string
+          id?: string
+          mode_paiement?: string
+          montant?: number
+          motif_annulation?: string | null
+          numero?: string
+          observations?: string | null
+          reference_paiement?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paiements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paiements_depense_id_fkey"
+            columns: ["depense_id"]
+            isOneToOne: false
+            referencedRelation: "depenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paiements_exercice_id_fkey"
+            columns: ["exercice_id"]
+            isOneToOne: false
+            referencedRelation: "exercices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parametres_referentiels: {
         Row: {
           actif: boolean | null
@@ -1564,6 +1643,20 @@ export type Database = {
           p_montant: number
           p_motif: string
           p_type: string
+        }
+        Returns: Json
+      }
+      create_paiement_with_numero: {
+        Args: {
+          p_client_id: string
+          p_date_paiement: string
+          p_depense_id: string
+          p_exercice_id: string
+          p_mode_paiement: string
+          p_montant: number
+          p_observations: string
+          p_reference_paiement: string
+          p_user_id: string
         }
         Returns: Json
       }
