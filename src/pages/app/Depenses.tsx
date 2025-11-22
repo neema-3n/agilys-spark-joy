@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/select';
 import { ListLayout } from '@/components/lists/ListLayout';
 import { ListToolbar } from '@/components/lists/ListToolbar';
+import { ListPageLoading } from '@/components/lists/ListPageLoading';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -269,14 +270,11 @@ const Depenses = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Gestion des Dépenses"
-          description="Ordonnancement et liquidation des dépenses"
-          sticky={false}
-        />
-        <p className="text-center text-muted-foreground">Chargement...</p>
-      </div>
+      <ListPageLoading
+        title="Gestion des Dépenses"
+        description="Ordonnancement et liquidation des dépenses"
+        stickyHeader={false}
+      />
     );
   }
 
