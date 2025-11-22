@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -115,31 +114,27 @@ export const DepenseTable = ({
     },
     {
       id: 'montant',
-      header: 'Montant',
+      header: 'Montant TTC',
       align: 'right',
-      cellClassName: 'min-w-[200px]',
-      render: (depense) => {
-        const montantRestant = depense.montant - depense.montantPaye;
-        const pourcentagePaye = depense.montant > 0 ? (depense.montantPaye / depense.montant) * 100 : 0;
-        
-        return (
-          <div className="space-y-1.5">
-            <div className="flex justify-between items-baseline gap-4">
-              <span className="text-xs text-muted-foreground">Total:</span>
-              <span className="font-medium tabular-nums">{formatMontant(depense.montant)} €</span>
-            </div>
-            <div className="flex justify-between items-baseline gap-4">
-              <span className="text-xs text-muted-foreground">Payé:</span>
-              <span className="text-xs tabular-nums text-success">{formatMontant(depense.montantPaye)} €</span>
-            </div>
-            <div className="flex justify-between items-baseline gap-4">
-              <span className="text-xs text-muted-foreground">Solde:</span>
-              <span className="text-xs tabular-nums font-medium">{formatMontant(montantRestant)} €</span>
-            </div>
-            <Progress value={pourcentagePaye} className="h-1.5" />
-          </div>
-        );
-      },
+      render: (depense) => (
+        <span className="font-medium tabular-nums">{formatMontant(depense.montant)} €</span>
+      ),
+    },
+    {
+      id: 'montantPaye',
+      header: 'Payé',
+      align: 'right',
+      render: (depense) => (
+        <span className="text-success tabular-nums">{formatMontant(depense.montantPaye)} €</span>
+      ),
+    },
+    {
+      id: 'solde',
+      header: 'Solde',
+      align: 'right',
+      render: (depense) => (
+        <span className="font-medium tabular-nums">{formatMontant(depense.montant - depense.montantPaye)} €</span>
+      ),
     },
     {
       id: 'statut',
