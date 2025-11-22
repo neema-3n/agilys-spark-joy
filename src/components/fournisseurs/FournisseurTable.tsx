@@ -27,12 +27,13 @@ import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/
 
 interface FournisseurTableProps {
   fournisseurs: Fournisseur[];
-  onViewDetails?: (id: string) => void;
+  onViewDetails: (id: string) => void;
   onEdit: (fournisseur: Fournisseur) => void;
   onDelete: (id: string) => void;
   selection?: ListSelectionHandlers;
   stickyHeader?: boolean;
   stickyHeaderOffset?: number;
+  scrollContainerClassName?: string;
 }
 
 const formatMontant = (montant: number): string => {
@@ -61,21 +62,8 @@ export const FournisseurTable = ({
   selection,
   stickyHeader = false,
   stickyHeaderOffset = 0,
+  scrollContainerClassName,
 }: FournisseurTableProps) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-
-  const filteredFournisseurs = useMemo(() => {
-    const term = searchTerm.toLowerCase();
-    return fournisseurs.filter(
-      (f) =>
-        f.code.toLowerCase().includes(term) ||
-        f.nom.toLowerCase().includes(term) ||
-        f.categorie?.toLowerCase().includes(term) ||
-        f.email?.toLowerCase().includes(term) ||
-        f.telephone?.toLowerCase().includes(term)
-    );
-  }, [fournisseurs, searchTerm]);
 
   const columns = useMemo<ListColumn<Fournisseur>[]>(() => {
     const baseColumns: ListColumn<Fournisseur>[] = [
@@ -88,10 +76,8 @@ export const FournisseurTable = ({
             to={`/app/fournisseurs/${f.id}`}
             className="font-medium text-primary hover:underline"
             onClick={(e) => {
-              if (onViewDetails) {
-                e.preventDefault();
-                onViewDetails(f.id);
-              }
+              e.preventDefault();
+              onViewDetails(f.id);
             }}
           >
             {f.code}
@@ -106,10 +92,8 @@ export const FournisseurTable = ({
             to={`/app/fournisseurs/${f.id}`}
             className="hover:underline"
             onClick={(e) => {
-              if (onViewDetails) {
-                e.preventDefault();
-                onViewDetails(f.id);
-              }
+              e.preventDefault();
+              onViewDetails(f.id);
             }}
           >
             {f.nom}
@@ -167,19 +151,17 @@ export const FournisseurTable = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {onViewDetails && (
-                <DropdownMenuItem onClick={() => onViewDetails(f.id)}>
-                  <Eye className="mr-2 h-4 w-4" />
-                  Voir détails
-                </DropdownMenuItem>
-              )}
+              <DropdownMenuItem onClick={() => onViewDetails(f.id)}>
+                <Eye className="mr-2 h-4 w-4" />
+                Voir détails
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onEdit(f)}>
                 <Edit className="mr-2 h-4 w-4" />
                 Modifier
               </DropdownMenuItem>
               {f.nombreEngagements === 0 && (
                 <DropdownMenuItem
-                  onClick={() => setDeleteId(f.id)}
+                  onClick={() => onDelete(f.id)}
                   className="text-destructive"
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
@@ -208,52 +190,15 @@ export const FournisseurTable = ({
   }, [selection, onViewDetails, onEdit]);
 
   return (
-    <>
-      <ListLayout
-        title="Fournisseurs"
-        toolbar={
-          <ListToolbar
-            searchValue={searchTerm}
-            onSearchChange={setSearchTerm}
-            searchPlaceholder="Rechercher un fournisseur..."
-          />
-        }
-      >
-        <ListTable
-          items={filteredFournisseurs}
-          columns={columns}
-          getRowId={(f) => f.id}
-          onRowDoubleClick={onViewDetails ? (f) => onViewDetails(f.id) : undefined}
-          emptyMessage="Aucun fournisseur trouvé"
-          stickyHeader={stickyHeader}
-          stickyHeaderOffset={stickyHeaderOffset}
-        />
-      </ListLayout>
-
-      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-            <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer ce fournisseur ? Cette action est irréversible.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (deleteId) {
-                  onDelete(deleteId);
-                  setDeleteId(null);
-                }
-              }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Supprimer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+    <ListTable
+      items={fournisseurs}
+      columns={columns}
+      getRowId={(f) => f.id}
+      onRowDoubleClick={(f) => onViewDetails(f.id)}
+      emptyMessage="Aucun fournisseur trouvé"
+      stickyHeader={stickyHeader}
+      stickyHeaderOffset={stickyHeaderOffset}
+      scrollContainerClassName={scrollContainerClassName}
+    />
   );
 };
