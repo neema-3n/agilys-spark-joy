@@ -575,7 +575,7 @@ export type Database = {
           id: string
           ligne_budgetaire_id: string | null
           montant_ht: number
-          montant_paye: number
+          montant_liquide: number
           montant_ttc: number
           montant_tva: number
           numero: string
@@ -600,7 +600,7 @@ export type Database = {
           id?: string
           ligne_budgetaire_id?: string | null
           montant_ht?: number
-          montant_paye?: number
+          montant_liquide?: number
           montant_ttc?: number
           montant_tva?: number
           numero: string
@@ -625,7 +625,7 @@ export type Database = {
           id?: string
           ligne_budgetaire_id?: string | null
           montant_ht?: number
-          montant_paye?: number
+          montant_liquide?: number
           montant_ttc?: number
           montant_tva?: number
           numero?: string
@@ -1588,6 +1588,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      recalculate_facture_montant_liquide: {
+        Args: { p_facture_id: string }
+        Returns: undefined
       }
       recalculate_ligne_disponible: {
         Args: { p_ligne_budgetaire_id: string }
