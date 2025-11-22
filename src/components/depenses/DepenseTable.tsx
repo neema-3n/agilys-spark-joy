@@ -117,7 +117,7 @@ export const DepenseTable = ({
       header: 'Montant TTC',
       align: 'right',
       render: (depense) => (
-        <span className="font-medium tabular-nums">{formatMontant(depense.montant)} €</span>
+        <span className="font-medium tabular-nums">{formatMontant(depense.montant)}</span>
       ),
     },
     {
@@ -125,7 +125,7 @@ export const DepenseTable = ({
       header: 'Payé',
       align: 'right',
       render: (depense) => (
-        <span className="text-success tabular-nums">{formatMontant(depense.montantPaye)} €</span>
+        <span className="text-success tabular-nums">{formatMontant(depense.montantPaye)}</span>
       ),
     },
     {
@@ -133,7 +133,7 @@ export const DepenseTable = ({
       header: 'Solde',
       align: 'right',
       render: (depense) => (
-        <span className="font-medium tabular-nums">{formatMontant(depense.montant - depense.montantPaye)} €</span>
+        <span className="font-medium tabular-nums">{formatMontant(depense.montant - depense.montantPaye)}</span>
       ),
     },
     {
