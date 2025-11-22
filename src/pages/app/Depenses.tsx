@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ListLayout } from '@/components/lists/ListLayout';
+import { ListToolbar } from '@/components/lists/ListToolbar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useListSelection } from '@/hooks/useListSelection';
 
 const Depenses = () => {
   const {
@@ -60,11 +70,39 @@ const Depenses = () => {
     referencePaiement: '',
   });
   const [isSubmittingAction, setIsSubmittingAction] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statutFilter, setStatutFilter] = useState<
+    'tous' | 'brouillon' | 'validee' | 'ordonnancee' | 'payee' | 'annulee'
+  >('tous');
 
   const handleCreateDepense = async (data: DepenseFormData) => {
     await createDepense(data);
     setIsDialogOpen(false);
   };
+
+  const filteredDepenses = useMemo(() => {
+    const searchLower = searchTerm.trim().toLowerCase();
+    return depenses
+      .filter((depense) => (statutFilter === 'tous' ? true : depense.statut === statutFilter))
+      .filter((depense) => {
+        if (!searchLower) return true;
+        return (
+          depense.numero.toLowerCase().includes(searchLower) ||
+          depense.objet.toLowerCase().includes(searchLower) ||
+          depense.beneficiaire?.toLowerCase().includes(searchLower) ||
+          depense.fournisseur?.nom.toLowerCase().includes(searchLower)
+        );
+      })
+      .sort((a, b) => new Date(b.dateDepense).getTime() - new Date(a.dateDepense).getTime());
+  }, [depenses, statutFilter, searchTerm]);
+
+  const selectionIds = useMemo(() => filteredDepenses.map((depense) => depense.id), [filteredDepenses]);
+  const { selectedIds, allSelected, toggleOne, toggleAll, clearSelection } = useListSelection(selectionIds);
+
+  const selectedDepenses = useMemo(
+    () => filteredDepenses.filter((depense) => selectedIds.has(depense.id)),
+    [filteredDepenses, selectedIds]
+  );
 
   const {
     snapshotId: snapshotDepenseId,
@@ -181,10 +219,41 @@ const Depenses = () => {
     }
   };
 
-  const handleOpenDelete = (id: string) => {
+  const handleOpenDelete = useCallback((id: string) => {
     setActionDepenseId(id);
     setDeleteDialogOpen(true);
-  };
+  }, []);
+
+  const handleBatchValider = useCallback(async () => {
+    const candidates = selectedDepenses.filter((depense) => depense.statut === 'brouillon');
+    if (candidates.length === 0) return;
+    await Promise.all(candidates.map((depense) => validerDepense(depense.id)));
+    clearSelection();
+  }, [selectedDepenses, validerDepense, clearSelection]);
+
+  const handleBatchOrdonnancer = useCallback(async () => {
+    const candidates = selectedDepenses.filter((depense) => depense.statut === 'validee');
+    if (candidates.length === 0) return;
+    await Promise.all(candidates.map((depense) => ordonnancerDepense(depense.id)));
+    clearSelection();
+  }, [selectedDepenses, ordonnancerDepense, clearSelection]);
+
+  const handleBatchMarquerPayee = useCallback(async () => {
+    const candidates = selectedDepenses.filter((depense) => depense.statut === 'ordonnancee');
+    if (candidates.length === 0) return;
+    await Promise.all(candidates.map((depense) => marquerPayee(depense.id)));
+    clearSelection();
+  }, [selectedDepenses, marquerPayee, clearSelection]);
+
+  const handleExportDepenses = useCallback(() => {
+    // Exporter toutes les dépenses filtrées (CSV/Excel) – brancher ici l'implémentation
+    // Exemple : exportDepenses(filteredDepenses);
+  }, [filteredDepenses]);
+
+  const hasSelection = selectedIds.size > 0;
+  const hasBrouillonsSelected = selectedDepenses.some((depense) => depense.statut === 'brouillon');
+  const hasValideesSelected = selectedDepenses.some((depense) => depense.statut === 'validee');
+  const hasOrdonnanceesSelected = selectedDepenses.some((depense) => depense.statut === 'ordonnancee');
 
   const handleConfirmDelete = async () => {
     if (!actionDepenseId) return;
@@ -249,17 +318,81 @@ const Depenses = () => {
         <div className="px-8 py-12 text-center text-muted-foreground">Chargement du snapshot...</div>
       ) : (
         <>
-          <DepenseStatsCards depenses={depenses} />
-          <DepenseTable
-            depenses={depenses}
-            onViewDetails={handleOpenSnapshot}
-            onValider={handleValider}
-            onOrdonnancer={handleOrdonnancer}
-            onMarquerPayee={handleOpenMarquerPayee}
-            onAnnuler={handleOpenAnnuler}
-            onDelete={handleOpenDelete}
-            disableActions={isSubmittingAction}
-          />
+          <div className="px-8 space-y-6">
+            <DepenseStatsCards depenses={depenses} />
+            <ListLayout
+              title="Liste des dépenses"
+              description="Recherche, filtres et actions groupées sur les dépenses"
+              toolbar={
+                <ListToolbar
+                  searchValue={searchTerm}
+                  onSearchChange={setSearchTerm}
+                  searchPlaceholder="Rechercher par numéro, objet, bénéficiaire..."
+                  filters={[
+                    <DropdownMenu key="statut">
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline">
+                          Statut: {statutFilter === 'tous' ? 'Tous' : statutFilter}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {[
+                          { value: 'tous', label: 'Tous' },
+                          { value: 'brouillon', label: 'Brouillon' },
+                          { value: 'validee', label: 'Validée' },
+                          { value: 'ordonnancee', label: 'Ordonnancée' },
+                          { value: 'payee', label: 'Payée' },
+                          { value: 'annulee', label: 'Annulée' },
+                        ].map((option) => (
+                          <DropdownMenuItem key={option.value} onClick={() => setStatutFilter(option.value as any)}>
+                            {option.label}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>,
+                    <DropdownMenu key="batch">
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline">
+                          Actions groupées
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem disabled={!hasBrouillonsSelected} onClick={handleBatchValider}>
+                          Valider les brouillons
+                        </DropdownMenuItem>
+                        <DropdownMenuItem disabled={!hasValideesSelected} onClick={handleBatchOrdonnancer}>
+                          Ordonnancer les validées
+                        </DropdownMenuItem>
+                        <DropdownMenuItem disabled={!hasOrdonnanceesSelected} onClick={handleBatchMarquerPayee}>
+                          Marquer payées (ordonnancées)
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem disabled={!hasSelection} onClick={clearSelection}>
+                          Effacer la sélection
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleExportDepenses}>
+                          Exporter (toutes les dépenses filtrées)
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>,
+                  ]}
+                />
+              }
+            >
+              <DepenseTable
+                depenses={filteredDepenses}
+                onViewDetails={handleOpenSnapshot}
+                onValider={handleValider}
+                onOrdonnancer={handleOrdonnancer}
+                onMarquerPayee={handleOpenMarquerPayee}
+                onAnnuler={handleOpenAnnuler}
+                onDelete={handleOpenDelete}
+                disableActions={isSubmittingAction}
+                selection={{ selectedIds, allSelected, toggleOne, toggleAll }}
+              />
+            </ListLayout>
+          </div>
         </>
       )}
       

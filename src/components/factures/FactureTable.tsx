@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Facture } from '@/types/facture.types';
 import { ListColumn, ListTable } from '@/components/lists/ListTable';
 import { Button } from '@/components/ui/button';
@@ -33,7 +33,15 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Link } from 'react-router-dom';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useListSelection } from '@/hooks/useListSelection';
 
+interface FactureTableSelection {
+  selectedIds: Set<string>;
+  allSelected: boolean;
+  toggleOne: (id: string, checked: boolean) => void;
+  toggleAll: (checked: boolean) => void;
+}
 
 interface FactureTableProps {
   factures: Facture[];
@@ -44,6 +52,7 @@ interface FactureTableProps {
   onAnnuler: (id: string) => void;
   onCreerDepense: (facture: Facture) => void;
   onViewDetails: (factureId: string) => void;
+  selection?: FactureTableSelection;
 }
 
 export const FactureTable = ({
@@ -55,8 +64,12 @@ export const FactureTable = ({
   onAnnuler,
   onCreerDepense,
   onViewDetails,
+  selection,
 }: FactureTableProps) => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const factureIds = useMemo(() => factures.map((facture) => facture.id), [factures]);
+  const { selectedIds, allSelected, toggleOne, toggleAll } =
+    selection ?? useListSelection(factureIds);
 
   const getStatutBadge = (statut: string) => {
     const variants: Record<
@@ -85,6 +98,24 @@ export const FactureTable = ({
   };
 
   const columns: ListColumn<Facture>[] = [
+    {
+      id: 'select',
+      header: (
+        <Checkbox
+          checked={allSelected}
+          onCheckedChange={(checked) => toggleAll(Boolean(checked))}
+          aria-label="Sélectionner toutes les factures"
+        />
+      ),
+      cellClassName: 'w-[48px]',
+      render: (facture) => (
+        <Checkbox
+          checked={selectedIds.has(facture.id)}
+          onCheckedChange={(checked) => toggleOne(facture.id, Boolean(checked))}
+          aria-label={`Sélectionner la facture ${facture.numero}`}
+        />
+      ),
+    },
     {
       id: 'numero',
       header: 'Numéro',
@@ -160,7 +191,7 @@ export const FactureTable = ({
     },
     {
       id: 'actions',
-      header: '',
+      header: 'Actions',
       align: 'right',
       cellClassName: 'text-right w-[70px]',
       render: (facture) => (

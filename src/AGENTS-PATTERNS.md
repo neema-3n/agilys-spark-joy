@@ -263,97 +263,31 @@ export const engagementsService = {
 
 **Documentation complète** : `src/docs/table-pattern.md`
 
-#### Structure Standard
-```typescript
-import { ColumnDef } from '@tanstack/react-table';
-import { Engagement } from '@/types/engagement.types';
-import { Badge } from '@/components/ui/badge';
-import { formatCurrency, formatDate } from '@/lib/utils';
-
-export const columns: ColumnDef<Engagement>[] = [
-  {
-    accessorKey: 'numero',
-    header: 'Numéro',
-    cell: ({ row }) => (
-      <Button variant="link" onClick={() => onView(row.original.id)}>
-        {row.getValue('numero')}
-      </Button>
-    ),
-  },
-  {
-    accessorKey: 'objet',
-    header: 'Objet',
-  },
-  {
-    accessorKey: 'montant',
-    header: 'Montant',
-    cell: ({ row }) => formatCurrency(row.getValue('montant')),
-  },
-  {
-    accessorKey: 'statut',
-    header: 'Statut',
-    cell: ({ row }) => {
-      const statut = row.getValue('statut') as string;
-      return (
-        <Badge variant={
-          statut === 'valide' ? 'success' :
-          statut === 'en_attente' ? 'warning' :
-          'default'
-        }>
-          {statut}
-        </Badge>
-      );
-    },
-  },
-  {
-    accessorKey: 'dateCreation',
-    header: 'Date',
-    cell: ({ row }) => formatDate(row.getValue('dateCreation')),
-  },
-  {
-    id: 'actions',
-    cell: ({ row }) => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm">
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => onView(row.original.id)}>
-            Voir
-          </DropdownMenuItem>
-          {row.original.statut === 'brouillon' && (
-            <DropdownMenuItem onClick={() => onEdit(row.original.id)}>
-              Modifier
-            </DropdownMenuItem>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
-  },
-];
-```
+#### Structure Standard (List*)
+- `ListLayout` : carte avec titre/description + toolbar (recherche/filtre) + footer optionnel.
+- `ListToolbar` : input de recherche (icône Search intégrée), tableau de filtres (ReactNode[]) et `rightSlot` pour CTA.
+- `ListTable` : tableau générique basé sur shadcn/ui. Colonnes typées `ListColumn<T>`, `getRowId`, `onRowDoubleClick` pour ouvrir un snapshot.
 
 #### Points Clés
-- ✅ Colonnes typées avec `ColumnDef<T>`
-- ✅ Formatage cohérent (currency, date)
-- ✅ Actions conditionnelles selon statut
-- ✅ Badges pour statuts avec variants sémantiques
-- ✅ Bouton link sur numéro pour ouvrir snapshot
-- ✅ Loading skeleton pendant chargement
-- ✅ Message si liste vide
+- ✅ Colonnes `ListColumn<T>` avec alignement (`align`), `cellClassName` pour truncation
+- ✅ Actions dans la dernière colonne (align right, largeur fixe), `DropdownMenu` pour les menus
+- ✅ Clic sur numéro/ligne ouvre snapshot ou détails, sans fermer le snapshot depuis le handler
+- ✅ `emptyMessage` obligatoire ; loading géré par le parent (skeleton/spinner)
+- ✅ Aucun style direct (couleurs) : utiliser les tokens/design system
+- ✅ Toolbar accessible : `aria-label` sur l’input, filtres en ReactNode
+- ✅ Colonne `Checkbox` en option pour sélection batch, contrôlée par le parent
+- ✅ Responsive déjà géré (`overflow-x-auto` sur la table)
 
-#### Checklist Table
-- [ ] Colonnes typées ColumnDef<T>
-- [ ] Formatage currency et dates
-- [ ] Actions conditionnelles (selon statut)
-- [ ] Badges avec variants sémantiques
-- [ ] Clic sur numéro ouvre snapshot
-- [ ] Loading state avec Skeleton
-- [ ] Empty state avec message clair
-- [ ] Tri activé sur colonnes pertinentes
-- [ ] Responsive (scroll horizontal si nécessaire)
+#### Checklist Table/List
+- [ ] Colonnes typées `ListColumn<T>` (align right pour montants/dates, truncation si besoin)
+- [ ] `emptyMessage` renseigné
+- [ ] `onRowDoubleClick` / liens configurés pour snapshot ou détails
+- [ ] Actions à droite via `DropdownMenu` + largeur/align cohérents
+- [ ] Colonne `Checkbox` si batch (toggle all/one dans le parent)
+- [ ] Toolbar : recherche + filtres + `rightSlot` pour CTA
+- [ ] Respect du design system (pas de couleurs directes)
+- [ ] Loading state côté parent (spinner/skeleton)
+- [ ] Scrolling horizontal déjà assuré (`overflow-x-auto`)
 
 ---
 
