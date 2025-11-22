@@ -61,10 +61,8 @@ export default function Factures() {
   const [selectedFactureForDepense, setSelectedFactureForDepense] = useState<Facture | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statutFilter, setStatutFilter] = useState<'tous' | StatutFacture>('tous');
-  const [showFloatingCta, setShowFloatingCta] = useState(false);
-  const [showFloatingListCta, setShowFloatingListCta] = useState(false);
+  const [isHeaderCtaVisible, setIsHeaderCtaVisible] = useState(true);
   const headerCtaRef = useRef<HTMLButtonElement | null>(null);
-  const listCtaRef = useRef<HTMLButtonElement | null>(null);
 
   const { factures, isLoading, createFacture, updateFacture, deleteFacture, genererNumero, validerFacture, marquerPayee, annulerFacture } = useFactures();
   const { createDepenseFromFacture } = useDepenses();
@@ -133,32 +131,6 @@ export default function Factures() {
     // Exemple : exportFactures(filteredFactures);
   }, [filteredFactures]);
 
-  useEffect(() => {
-    if (!headerCtaRef.current || typeof IntersectionObserver === 'undefined') return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        setShowFloatingCta(!entry.isIntersecting);
-      },
-      { root: null, threshold: 1 }
-    );
-    observer.observe(headerCtaRef.current);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (!listCtaRef.current || typeof IntersectionObserver === 'undefined') return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        setShowFloatingListCta(!entry.isIntersecting);
-      },
-      { root: null, threshold: 1 }
-    );
-    observer.observe(listCtaRef.current);
-    return () => observer.disconnect();
-  }, []);
-
   const {
     snapshotId: snapshotFactureId,
     snapshotItem: snapshotFacture,
@@ -176,6 +148,20 @@ export default function Factures() {
     onMissingId: () => navigate('/app/factures', { replace: true }),
     isLoadingItems: isLoading,
   });
+
+  useEffect(() => {
+    const target = headerCtaRef.current;
+    if (!target || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        setIsHeaderCtaVisible(entry.isIntersecting);
+      },
+      { root: null, threshold: 0 }
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [isSnapshotOpen]);
 
   // Gérer le scroll pour l'effet de disparition du header
   const scrollProgress = useScrollProgress(!!snapshotFactureId);
@@ -286,18 +272,18 @@ export default function Factures() {
   }
 
   const pageHeaderContent = (
-        <PageHeader
-          title="Gestion des Factures"
-          description="Gérez les factures fournisseurs"
-          scrollProgress={scrollProgress}
-          sticky={false}
-          actions={
-            <Button onClick={handleCreate} ref={headerCtaRef}>
-              <Plus className="mr-2 h-4 w-4" />
-              Nouvelle facture
-            </Button>
-          }
-        />
+    <PageHeader
+      title="Gestion des Factures"
+      description="Gérez les factures fournisseurs"
+      scrollProgress={scrollProgress}
+      sticky={false}
+      actions={
+        <Button onClick={handleCreate} ref={headerCtaRef}>
+          <Plus className="mr-2 h-4 w-4" />
+          Nouvelle facture
+        </Button>
+      }
+    />
   );
 
   const statutOptions: { value: 'tous' | StatutFacture; label: string }[] = [
@@ -342,10 +328,12 @@ export default function Factures() {
               title="Liste des factures"
               description="Visualisez, filtrez et gérez vos factures fournisseurs"
               actions={
-                <Button onClick={handleCreate} ref={listCtaRef}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nouvelle facture
-                </Button>
+                !isHeaderCtaVisible ? (
+                  <Button onClick={handleCreate}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nouvelle facture
+                  </Button>
+                ) : undefined
               }
               toolbar={
                 <ListToolbar
@@ -420,15 +408,7 @@ export default function Factures() {
         )}
       </div>
 
-      {showFloatingCta && !showFloatingListCta && !isSnapshotOpen && (
-        <div className="fixed bottom-6 right-6 z-50 shadow-lg">
-          <Button onClick={handleCreate}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nouvelle facture
-          </Button>
-        </div>
-      )}
-      {showFloatingListCta && !showFloatingCta && !isSnapshotOpen && (
+      {!isHeaderCtaVisible && !isSnapshotOpen && (
         <div className="fixed bottom-6 right-6 z-50 shadow-lg">
           <Button onClick={handleCreate}>
             <Plus className="mr-2 h-4 w-4" />

@@ -7,15 +7,19 @@ interface ListLayoutProps {
   toolbar?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
+  actions?: ReactNode;
 }
 
-export const ListLayout = ({ title, description, toolbar, children, footer }: ListLayoutProps) => {
+export const ListLayout = ({ title, description, toolbar, children, footer, actions }: ListLayoutProps) => {
   return (
     <Card>
       <CardHeader className="space-y-4">
-        <div className="space-y-1">
-          <CardTitle>{title}</CardTitle>
-          {description && <CardDescription>{description}</CardDescription>}
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <CardTitle>{title}</CardTitle>
+            {description && <CardDescription>{description}</CardDescription>}
+          </div>
+          {actions && <div className="flex-shrink-0">{actions}</div>}
         </div>
         {toolbar}
       </CardHeader>
