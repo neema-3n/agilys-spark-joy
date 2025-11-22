@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -75,6 +75,8 @@ const Depenses = () => {
   const [statutFilter, setStatutFilter] = useState<
     'tous' | 'brouillon' | 'validee' | 'ordonnancee' | 'payee' | 'annulee'
   >('tous');
+  const [isHeaderCtaVisible, setIsHeaderCtaVisible] = useState(true);
+  const headerCtaRef = useRef<HTMLButtonElement | null>(null);
 
   const handleCreateDepense = async (data: DepenseFormData) => {
     await createDepense(data);
@@ -124,6 +126,22 @@ const Depenses = () => {
   });
 
   const scrollProgress = useScrollProgress(!!snapshotDepenseId);
+
+  useEffect(() => {
+    const target = headerCtaRef.current;
+    if (!target || typeof IntersectionObserver === 'undefined') return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        setIsHeaderCtaVisible(entry.isIntersecting);
+      },
+      { root: null, threshold: 0 }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [isSnapshotOpen]);
 
   const handleNavigateToEntity = useCallback(
     (type: string, id: string) => {
@@ -278,22 +296,52 @@ const Depenses = () => {
     );
   }
 
+  const pageHeaderContent = (
+    <PageHeader
+      title="Gestion des Dépenses"
+      description="Ordonnancement et liquidation des dépenses"
+      scrollProgress={scrollProgress}
+      sticky={false}
+      actions={
+        <Button onClick={() => setIsDialogOpen(true)} ref={headerCtaRef}>
+          <Plus className="h-4 w-4 mr-2" />
+          Nouvelle dépense
+        </Button>
+      }
+    />
+  );
+
+  const ctaAnimationStyles = `
+    @keyframes depenseCtaReveal {
+      0% {
+        filter: blur(10px);
+        background: hsl(var(--background));
+        color: hsl(var(--primary));
+        box-shadow: none;
+      }
+      60% {
+        filter: blur(3px);
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        box-shadow: var(--shadow-glow);
+      }
+      100% {
+        filter: blur(0);
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        box-shadow: var(--shadow-primary);
+      }
+    }
+    .depense-cta-appear {
+      animation: depenseCtaReveal 1.5s ease forwards;
+      will-change: transform, filter;
+    }
+  `;
+
   return (
     <div className="space-y-6">
-      {!isSnapshotOpen && (
-        <PageHeader
-          title="Gestion des Dépenses"
-          description="Ordonnancement et liquidation des dépenses"
-          scrollProgress={scrollProgress}
-          sticky={false}
-          actions={
-            <Button onClick={() => setIsDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nouvelle dépense
-            </Button>
-          }
-        />
-      )}
+      <style>{ctaAnimationStyles}</style>
+      {!isSnapshotOpen && pageHeaderContent}
 
       {isSnapshotOpen && snapshotDepense ? (
         <div className="px-8 space-y-6">
@@ -323,6 +371,14 @@ const Depenses = () => {
             <ListLayout
               title="Liste des dépenses"
               description="Recherche, filtres et actions groupées sur les dépenses"
+              actions={
+                !isHeaderCtaVisible ? (
+                  <Button onClick={() => setIsDialogOpen(true)} className="depense-cta-appear">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nouvelle dépense
+                  </Button>
+                ) : undefined
+              }
               toolbar={
                 <ListToolbar
                   searchValue={searchTerm}
