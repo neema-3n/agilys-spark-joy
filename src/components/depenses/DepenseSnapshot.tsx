@@ -105,7 +105,7 @@ export const DepenseSnapshot = ({
       );
     }
 
-    if (onEnregistrerPaiement && (depense.statut === 'ordonnancee' || depense.statut === 'validee') && montantRestant > 0) {
+    if (onEnregistrerPaiement && depense.statut === 'ordonnancee' && montantRestant > 0) {
       buttons.push(
         <Button
           key="paiement"
