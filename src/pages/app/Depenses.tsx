@@ -478,7 +478,8 @@ const Depenses = () => {
           ? depenses.find(d => d.id === actionDepenseId)
           : null;
         
-        return depenseForPaiement ? (
+        // Vérifier que la dépense existe ET qu'elle est ordonnancée
+        return depenseForPaiement && depenseForPaiement.statut === 'ordonnancee' ? (
           <PaiementDialog
             open={paiementDialogOpen}
             onOpenChange={setPaiementDialogOpen}
