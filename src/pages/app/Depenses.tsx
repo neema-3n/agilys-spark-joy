@@ -8,6 +8,7 @@ import { DepenseTable } from '@/components/depenses/DepenseTable';
 import { DepenseDialog } from '@/components/depenses/DepenseDialog';
 import { DepenseSnapshot } from '@/components/depenses/DepenseSnapshot';
 import { AnnulerDepenseDialog } from '@/components/depenses/AnnulerDepenseDialog';
+import { AnnulerMultipleDepensesDialog } from '@/components/depenses/AnnulerMultipleDepensesDialog';
 import { useDepenses } from '@/hooks/useDepenses';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { useSnapshotState } from '@/hooks/useSnapshotState';
@@ -53,6 +54,7 @@ const Depenses = () => {
     validerDepense,
     ordonnancerDepense,
     annulerDepense,
+    annulerMultipleDepenses,
     deleteDepense,
   } = useDepenses();
   
@@ -62,6 +64,7 @@ const Depenses = () => {
   const [actionDepenseId, setActionDepenseId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
+  const [annulerMultipleDialogOpen, setAnnulerMultipleDialogOpen] = useState(false);
   const [paiementDialogOpen, setPaiementDialogOpen] = useState(false);
   const [isSubmittingAction, setIsSubmittingAction] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -221,6 +224,34 @@ const Depenses = () => {
     clearSelection();
   }, [selectedDepenses, ordonnancerDepense, clearSelection]);
 
+  const handleOpenBatchAnnuler = useCallback(() => {
+    const candidates = selectedDepenses.filter(
+      (depense) => depense.statut !== 'annulee' && depense.statut !== 'payee'
+    );
+    if (candidates.length === 0) return;
+    setAnnulerMultipleDialogOpen(true);
+  }, [selectedDepenses]);
+
+  const handleConfirmBatchAnnuler = useCallback(
+    async (motif: string) => {
+      const candidates = selectedDepenses.filter(
+        (depense) => depense.statut !== 'annulee' && depense.statut !== 'payee'
+      );
+      if (candidates.length === 0) return;
+      
+      try {
+        setIsSubmittingAction(true);
+        const depenseIds = candidates.map(d => d.id);
+        await annulerMultipleDepenses({ ids: depenseIds, motif });
+        setAnnulerMultipleDialogOpen(false);
+        clearSelection();
+      } finally {
+        setIsSubmittingAction(false);
+      }
+    },
+    [selectedDepenses, annulerMultipleDepenses, clearSelection]
+  );
+
   // Removed batch payment - use individual payments instead
 
   const handleExportDepenses = useCallback(() => {
@@ -231,6 +262,9 @@ const Depenses = () => {
   const hasSelection = selectedIds.size > 0;
   const hasBrouillonsSelected = selectedDepenses.some((depense) => depense.statut === 'brouillon');
   const hasValideesSelected = selectedDepenses.some((depense) => depense.statut === 'validee');
+  const hasAnnulablesSelected = selectedDepenses.some(
+    (depense) => depense.statut !== 'annulee' && depense.statut !== 'payee'
+  );
 
   const handleConfirmDelete = async () => {
     if (!actionDepenseId) return;
@@ -353,6 +387,14 @@ const Depenses = () => {
                           Ordonnancer les validées
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          disabled={!hasAnnulablesSelected} 
+                          onClick={handleOpenBatchAnnuler}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          Annuler les dépenses sélectionnées
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem disabled={!hasSelection} onClick={clearSelection}>
                           Effacer la sélection
                         </DropdownMenuItem>
@@ -418,6 +460,16 @@ const Depenses = () => {
         depenseId={actionDepenseId}
         depenseNumero={depenses.find(d => d.id === actionDepenseId)?.numero}
         onConfirm={handleConfirmAnnuler}
+        isSubmitting={isSubmittingAction}
+      />
+
+      <AnnulerMultipleDepensesDialog
+        open={annulerMultipleDialogOpen}
+        onOpenChange={setAnnulerMultipleDialogOpen}
+        depenses={selectedDepenses.filter(
+          (depense) => depense.statut !== 'annulee' && depense.statut !== 'payee'
+        )}
+        onConfirm={handleConfirmBatchAnnuler}
         isSubmitting={isSubmittingAction}
       />
 
