@@ -4,18 +4,20 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { CalendarDays, Briefcase, Building2, BookOpen, Users, Settings as SettingsIcon, Database, Menu } from 'lucide-react';
+import { CalendarDays, Briefcase, Building2, BookOpen, Users, Settings as SettingsIcon, Database, Menu, Layers } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ExercicesManager } from '@/components/parametres/ExercicesManager';
 import { EnveloppesManager } from '@/components/parametres/EnveloppesManager';
 import { StructureManager } from '@/components/parametres/StructureManager';
 import { PlanComptableManager } from '@/components/parametres/PlanComptableManager';
 import { ReferentielsManager } from '@/components/parametres/ReferentielsManager';
+import { StructureBudgetaireManager } from '@/components/parametres/StructureBudgetaireManager';
 
 type ParametreSection = 
   | 'exercices' 
   | 'enveloppes' 
   | 'structure' 
+  | 'structure-budgetaire'
   | 'plan-comptable'
   | 'referentiels' 
   | 'utilisateurs' 
@@ -47,6 +49,13 @@ const Parametres = () => {
       description: 'Entités et services',
       icon: Building2,
       component: <StructureManager />
+    },
+    {
+      id: 'structure-budgetaire' as ParametreSection,
+      title: 'Structure Budgétaire',
+      description: 'Sections, Programmes, Actions',
+      icon: Layers,
+      component: <StructureBudgetaireManager />
     },
     {
       id: 'plan-comptable' as ParametreSection,
