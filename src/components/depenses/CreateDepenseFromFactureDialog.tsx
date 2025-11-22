@@ -17,6 +17,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { InfoIcon } from 'lucide-react';
 import type { Facture } from '@/types/facture.types';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 
 const schema = z.object({
   montant: z.coerce.number().positive('Le montant doit être positif'),
@@ -42,10 +43,9 @@ export const CreateDepenseFromFactureDialog = ({
   onSave,
 }: Props) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const soldeDisponible = facture 
-    ? Number(facture.montantTTC) - Number(facture.montantPaye || 0)
-    : 0;
+  const [montantDejaLiquide, setMontantDejaLiquide] = useState<number>(0);
+  const [soldeDisponible, setSoldeDisponible] = useState<number>(0);
+  const [isLoadingSolde, setIsLoadingSolde] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -60,19 +60,55 @@ export const CreateDepenseFromFactureDialog = ({
 
   useEffect(() => {
     if (facture && open) {
-      const solde = Number(facture.montantTTC) - Number(facture.montantPaye || 0);
-      form.reset({
-        montant: solde,
-        dateDepense: format(new Date(), 'yyyy-MM-dd'),
-        modePaiement: '',
-        referencePaiement: '',
-        observations: '',
-      });
+      let isActive = true;
+
+      const fetchSolde = async () => {
+        setIsLoadingSolde(true);
+        const { data, error } = await supabase
+          .from('depenses')
+          .select('montant, statut')
+          .eq('facture_id', facture.id)
+          .neq('statut', 'annulee');
+
+        if (!isActive) return;
+
+        if (error) {
+          console.error('Erreur récupération dépenses facture:', error);
+          setMontantDejaLiquide(Number(facture.montantLiquide || 0));
+          setSoldeDisponible(Number(facture.montantTTC) - Number(facture.montantLiquide || 0));
+          setIsLoadingSolde(false);
+          return;
+        }
+
+        const dejaLiquide = (data || []).reduce((sum, d) => sum + Number(d.montant), 0);
+        const solde = Number(facture.montantTTC) - dejaLiquide;
+
+        setMontantDejaLiquide(dejaLiquide);
+        setSoldeDisponible(solde);
+        form.reset({
+          montant: solde,
+          dateDepense: format(new Date(), 'yyyy-MM-dd'),
+          modePaiement: '',
+          referencePaiement: '',
+          observations: '',
+        });
+        setIsLoadingSolde(false);
+      };
+
+      fetchSolde();
+
+      return () => {
+        isActive = false;
+      };
     }
   }, [facture, open, form]);
 
   const handleSubmit = async (data: FormData) => {
     if (!facture) return;
+    if (data.montant > soldeDisponible) {
+      form.setError('montant', { message: `Montant supérieur au solde disponible (${soldeDisponible.toFixed(2)} €)` });
+      return;
+    }
     
     setIsSubmitting(true);
     try {
@@ -104,8 +140,11 @@ export const CreateDepenseFromFactureDialog = ({
             <div className="space-y-1 text-sm">
               <div><strong>Fournisseur :</strong> {facture.fournisseur?.nom}</div>
               <div><strong>Montant TTC :</strong> {facture.montantTTC.toFixed(2)} €</div>
-              <div><strong>Déjà payé :</strong> {(facture.montantPaye || 0).toFixed(2)} €</div>
-              <div><strong>Solde disponible :</strong> {soldeDisponible.toFixed(2)} €</div>
+              <div><strong>Déjà liquidé :</strong> {(montantDejaLiquide || 0).toFixed(2)} €</div>
+              <div>
+                <strong>Solde disponible :</strong>{' '}
+                {isLoadingSolde ? 'Calcul en cours...' : `${soldeDisponible.toFixed(2)} €`}
+              </div>
             </div>
           </AlertDescription>
         </Alert>

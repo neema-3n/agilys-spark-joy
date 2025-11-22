@@ -68,6 +68,7 @@ export const useReservations = () => {
     reservations: query.data || [],
     isLoading: query.isLoading,
     error: query.error,
+    fetchReservationById: reservationsService.getReservationById,
     createReservation: createMutation.mutateAsync,
     updateReservation: updateMutation.mutateAsync,
     utiliserReservation: utiliserMutation.mutateAsync,

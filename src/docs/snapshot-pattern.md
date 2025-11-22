@@ -3,6 +3,8 @@
 ## Règle d'or
 
 **Les handlers passés aux composants Snapshot ne doivent JAMAIS appeler `handleCloseSnapshot()`.**
+**Le header du snapshot doit être sticky en haut (pas d'espace vide au scroll).**
+**L’URL/state doivent rester synchronisés (ex: `/app/depenses/:id`, `/app/reservations/:id`, `/app/budgets/:ligneId`).**
 
 ## Pourquoi cette règle ?
 
@@ -85,91 +87,27 @@ const handleCreerDepense = (facture: Facture) => {
 />
 ```
 
-## Effet poussoir du header
-
-### Principe
-
-Quand un snapshot est ouvert et que l'utilisateur scroll vers le bas, le `PageHeader` doit progressivement :
-- Se réduire (scale)
-- Devenir transparent (opacity)
-- Se déplacer vers le haut (translateY)
-- Devenir flou (blur)
-
-Cela améliore l'expérience utilisateur en maximisant l'espace disponible pour le contenu du snapshot tout en gardant le contexte visible.
-
-### Implémentation
-
-#### 1. Importer le hook `useScrollProgress`
+### 3. Dans l'interface du composant snapshot
 
 ```typescript
-import { useScrollProgress } from '@/hooks/useScrollProgress';
-```
-
-#### 2. Calculer le scroll progress
-
-Le hook prend en paramètre un booléen indiquant si le snapshot est ouvert :
-
-```typescript
-// Gérer le scroll pour l'effet de disparition du header
-const scrollProgress = useScrollProgress(!!snapshotFactureId);
-```
-
-**Paramètres du hook :**
-- `isSnapshotOpen` (boolean) : `true` si un snapshot est ouvert
-- `maxScroll` (number, optionnel) : Distance de scroll maximum pour atteindre `progress = 1` (défaut: 100px)
-
-**Retour :**
-- `scrollProgress` (number) : Valeur entre 0 et 1 représentant la progression du scroll
-
-#### 3. Passer la prop au PageHeader
-
-```typescript
-<PageHeader
-  title="Factures"
-  description="Gestion des factures"
-  scrollProgress={scrollProgress}  // ← Important !
-  actions={...}
-/>
-```
-
-#### 4. Exemple complet dans une page
-
-```typescript
-import { useScrollProgress } from '@/hooks/useScrollProgress';
-
-export default function Factures() {
-  const [snapshotFactureId, setSnapshotFactureId] = useState<string | null>(null);
+interface FactureSnapshotProps {
+  facture: Facture;
+  onClose: () => void;
+  onNavigate: (direction: 'prev' | 'next') => void;
   
-  // Calculer le scroll progress
-  const scrollProgress = useScrollProgress(!!snapshotFactureId);
+  /**
+   * Handler pour l'édition de la facture.
+   * NE DOIT PAS fermer le snapshot - le dialogue s'ouvrira par-dessus.
+   */
+  onEdit?: () => void;
   
-  return (
-    <div className="flex-1 overflow-auto">
-      <PageHeader
-        title="Factures"
-        description="Gestion des factures"
-        scrollProgress={scrollProgress}
-        actions={...}
-      />
-      
-      {snapshotFactureId ? (
-        <FactureSnapshot {...} />
-      ) : (
-        <div className="p-6">
-          <FactureTable {...} />
-        </div>
-      )}
-    </div>
-  );
+  /**
+   * Handler pour créer une dépense depuis cette facture.
+   * NE DOIT PAS fermer le snapshot - le dialogue s'ouvrira par-dessus.
+   */
+  onCreerDepense?: () => void;
 }
 ```
-
-### Points d'attention
-
-- ⚠️ **Ne pas oublier** de passer `scrollProgress` au `PageHeader` : sans cette prop, l'effet ne fonctionnera pas
-- ✅ Le hook écoute automatiquement le scroll de l'élément `<main>` de l'application
-- ✅ Le hook se nettoie automatiquement (cleanup du listener) au unmount
-- ✅ Quand le snapshot se ferme, le `scrollProgress` revient automatiquement à 0
 
 ## Hook utilitaire (optionnel)
 
@@ -186,13 +124,38 @@ const handlers = useSnapshotHandlers({
 
 Ce hook documente clairement l'intention et peut être étendu à l'avenir avec des validations supplémentaires.
 
+### Hook de gestion d'état : `useSnapshotState`
+
+- Emplacement : `src/hooks/useSnapshotState.ts`
+- Responsabilités : conserver l'ID actuel, fournir `open/close`, navigation prev/next, reset si l’élément disparaît, synchroniser l’URL via `onNavigateToId`.
+- Exemple minimal :
+
+```ts
+const {
+  snapshotId,
+  snapshotItem,
+  snapshotIndex,
+  isSnapshotOpen,
+  openSnapshot,
+  closeSnapshot,
+  navigateSnapshot,
+} = useSnapshotState({
+  items: factures,
+  getId: f => f.id,
+  initialId: factureId, // param route
+  onNavigateToId: id => navigate(id ? `/app/factures/${id}` : '/app/factures'),
+  onMissingId: () => navigate('/app/factures', { replace: true }),
+});
+```
+
 ## Pages implémentant ce pattern
 
 - ✅ `src/pages/app/Factures.tsx` - Snapshots de factures
 - ✅ `src/pages/app/Engagements.tsx` - Snapshots d'engagements
-- ✅ `src/pages/app/BonsCommande.tsx` - Snapshots de bons de commande
-- ✅ `src/pages/app/Reservations.tsx` - Snapshots de réservations
-- ✅ `src/pages/app/Depenses.tsx` - Snapshots de dépenses
+- ✅ `src/pages/app/BonsCommande.tsx` - Snapshot BC + navigation
+- ✅ `src/pages/app/Depenses.tsx` - Snapshot dépense + navigation
+- ✅ `src/pages/app/Reservations.tsx` - Snapshot réservation + navigation + prompt annulation
+- ✅ `src/pages/app/Budgets.tsx` - Snapshot ligne budgétaire + navigation (via query param `ligneId`)
 
 ## Checklist pour nouveaux snapshots
 
@@ -201,6 +164,8 @@ Lors de la création d'un nouveau snapshot, vérifier :
 - [ ] Les handlers ne ferment jamais le snapshot
 - [ ] L'interface contient des JSDoc pour documenter le comportement
 - [ ] Les raccourcis clavier (Escape, flèches) fonctionnent correctement
+- [ ] Le header du snapshot est sticky/plein écran (pas d’espace vide en haut)
 - [ ] Le dialogue et le snapshot coexistent visuellement (z-index)
 - [ ] La navigation entre snapshots fonctionne pendant qu'un dialogue est ouvert
-- [ ] L'effet poussoir du header est implémenté (useScrollProgress + scrollProgress prop)
+- [ ] L’état/URL sont synchronisés (paramètre d’ID ou query param)
+- [ ] Quand c’est possible, mutualiser l’état avec `useSnapshotState` (id, navigation, reset, sync URL)

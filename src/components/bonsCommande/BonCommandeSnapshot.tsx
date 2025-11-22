@@ -1,50 +1,59 @@
-import { FileText, Building2, ShoppingCart, Package, Calendar, Info } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import type { BonCommande } from '@/types/bonCommande.types';
 import { SnapshotBase } from '@/components/shared/SnapshotBase';
-import { formatMontant, formatDate, formatDateTime, getEntityUrl } from '@/lib/snapshot-utils';
+import type { BonCommande } from '@/types/bonCommande.types';
+import { formatMontant, formatDate } from '@/lib/snapshot-utils';
+import { ShoppingCart, Building2, FileText, FolderOpen, Calendar, Truck, ClipboardCheck, Receipt } from 'lucide-react';
+import { ReactNode } from 'react';
 
 interface BonCommandeSnapshotProps {
   bonCommande: BonCommande;
-  /** Ferme le snapshot (via le bouton X ou Escape) */
   onClose: () => void;
-  /** Navigation entre snapshots */
   onNavigate: (direction: 'prev' | 'next') => void;
   hasPrev: boolean;
   hasNext: boolean;
   currentIndex: number;
   totalCount: number;
-  
-  /**
-   * Éditer le bon de commande (statut brouillon uniquement).
-   * NE DOIT PAS fermer le snapshot - le dialogue d'édition s'ouvrira par-dessus.
-   */
   onEdit?: () => void;
-  
-  /** Valider le bon de commande */
   onValider?: () => void;
-  
-  /** Mettre en cours le bon de commande */
   onMettreEnCours?: () => void;
-  
-  /** Réceptionner le bon de commande */
   onReceptionner?: () => void;
-  
-  /** Annuler le bon de commande */
   onAnnuler?: () => void;
-  
-  /**
-   * Créer une facture depuis ce bon de commande.
-   * NE DOIT PAS fermer le snapshot - le dialogue s'ouvrira par-dessus.
-   */
-  onCreerFacture?: () => void;
-  
-  /** Navigation vers une entité liée */
+  onCreateFacture?: () => void;
   onNavigateToEntity?: (type: string, id: string) => void;
 }
+
+const statutConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; description: string }> = {
+  brouillon: { label: 'Brouillon', variant: 'outline', description: 'En cours de préparation' },
+  valide: { label: 'Validé', variant: 'secondary', description: 'Prêt à être exécuté' },
+  en_cours: { label: 'En cours', variant: 'default', description: 'Commande en exécution' },
+  receptionne: { label: 'Réceptionné', variant: 'default', description: 'Livraison confirmée' },
+  facture: { label: 'Facturé', variant: 'default', description: 'Factures associées' },
+  annule: { label: 'Annulé', variant: 'destructive', description: 'Commande annulée' },
+};
+
+const entityButton = (
+  label: string,
+  value: string,
+  icon: ReactNode,
+  onClick?: () => void,
+) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`flex items-start gap-3 p-3 rounded-lg border transition ${
+      onClick ? 'hover:bg-muted cursor-pointer text-left' : 'bg-muted/30 text-left'
+    }`}
+  >
+    <span className="text-muted-foreground mt-1">{icon}</span>
+    <div>
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="font-medium">{value}</p>
+    </div>
+  </button>
+);
 
 export const BonCommandeSnapshot = ({
   bonCommande,
@@ -59,83 +68,53 @@ export const BonCommandeSnapshot = ({
   onMettreEnCours,
   onReceptionner,
   onAnnuler,
-  onCreerFacture,
+  onCreateFacture,
   onNavigateToEntity,
 }: BonCommandeSnapshotProps) => {
-  const getStatutBadge = (statut: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-      brouillon: 'outline',
-      valide: 'secondary',
-      en_cours: 'default',
-      receptionne: 'default',
-      facture: 'default',
-      annule: 'destructive',
-    };
-
-    const labels: Record<string, string> = {
-      brouillon: 'Brouillon',
-      valide: 'Validé',
-      en_cours: 'En cours',
-      receptionne: 'Réceptionné',
-      facture: 'Facturé',
-      annule: 'Annulé',
-    };
-
-    return (
-      <Badge variant={variants[statut] || 'default'}>
-        {labels[statut] || statut}
-      </Badge>
-    );
-  };
-
+  const statut = statutConfig[bonCommande.statut] || statutConfig.brouillon;
   const montantFacture = bonCommande.montantFacture || 0;
-  const progressionFacturation = bonCommande.montant > 0 
-    ? (montantFacture / bonCommande.montant) * 100 
-    : 0;
+  const progression = bonCommande.montant > 0 ? (montantFacture / bonCommande.montant) * 100 : 0;
 
-  const handleEntityClick = (type: string, id: string) => {
-    if (onNavigateToEntity) {
-      onNavigateToEntity(type, id);
-    } else {
-      window.location.href = getEntityUrl(type, id);
-    }
-  };
-
-  // Actions spécifiques aux bons de commande
   const actions = (
-    <>
-      {bonCommande.statut === 'brouillon' && onEdit && (
+    <div className="flex flex-wrap gap-2">
+      {onEdit && bonCommande.statut === 'brouillon' && (
         <Button variant="outline" size="sm" onClick={onEdit}>
           Modifier
         </Button>
       )}
-      {bonCommande.statut === 'brouillon' && onValider && (
+      {onValider && bonCommande.statut === 'brouillon' && (
         <Button size="sm" onClick={onValider}>
           Valider
         </Button>
       )}
-      {bonCommande.statut === 'valide' && onMettreEnCours && (
-        <Button size="sm" onClick={onMettreEnCours}>
+      {onMettreEnCours && bonCommande.statut === 'valide' && (
+        <Button size="sm" variant="secondary" onClick={onMettreEnCours}>
           Mettre en cours
         </Button>
       )}
-      {bonCommande.statut === 'en_cours' && onReceptionner && (
-        <Button size="sm" onClick={onReceptionner}>
+      {onReceptionner && bonCommande.statut === 'en_cours' && (
+        <Button size="sm" variant="secondary" onClick={onReceptionner}>
           Réceptionner
         </Button>
       )}
-      {bonCommande.statut === 'receptionne' && onCreerFacture && (
-        <Button variant="outline" size="sm" onClick={onCreerFacture}>
+      {onCreateFacture && bonCommande.statut === 'receptionne' && (
+        <Button size="sm" variant="secondary" onClick={onCreateFacture}>
           Créer une facture
         </Button>
       )}
-      {(bonCommande.statut === 'brouillon' || bonCommande.statut === 'valide' || bonCommande.statut === 'en_cours') && onAnnuler && (
-        <Button variant="destructive" size="sm" onClick={onAnnuler}>
+      {onAnnuler && bonCommande.statut !== 'facture' && bonCommande.statut !== 'annule' && (
+        <Button size="sm" variant="destructive" onClick={onAnnuler}>
           Annuler
         </Button>
       )}
-    </>
+    </div>
   );
+
+  const handleEntityClick = (type: string, id?: string) => {
+    if (id && onNavigateToEntity) {
+      onNavigateToEntity(type, id);
+    }
+  };
 
   return (
     <SnapshotBase
@@ -149,193 +128,75 @@ export const BonCommandeSnapshot = ({
       onNavigate={onNavigate}
       actions={actions}
     >
-      {/* Informations principales */}
       <Card>
         <CardHeader>
-          <div className="flex items-start justify-between">
-            <CardTitle className="text-lg">Informations générales</CardTitle>
-            {getStatutBadge(bonCommande.statut)}
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5" />
+              Informations principales
+            </CardTitle>
+            <Badge variant={statut.variant}>{statut.label}</Badge>
           </div>
+          <p className="text-sm text-muted-foreground">{statut.description}</p>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="text-sm text-muted-foreground">Date de commande</div>
-              <div className="font-medium">{formatDate(bonCommande.dateCommande)}</div>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Montant</p>
+                <p className="text-2xl font-bold text-primary">{formatMontant(bonCommande.montant)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Montant facturé</p>
+                <p className="text-lg font-semibold">{formatMontant(montantFacture)}</p>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Progression de facturation</span>
+                  <span className="font-medium">{progression.toFixed(0)}%</span>
+                </div>
+                <Progress value={progression} className="h-2" />
+              </div>
             </div>
-            <div>
-              <div className="text-sm text-muted-foreground">Montant</div>
-              <div className="font-medium text-lg">{formatMontant(bonCommande.montant)}</div>
+            <div className="space-y-3">
+              {entityButton(
+                'Fournisseur',
+                bonCommande.fournisseur?.nom || 'Non renseigné',
+                <Building2 className="h-4 w-4" />,
+                bonCommande.fournisseur?.id ? () => handleEntityClick('fournisseur', bonCommande.fournisseur?.id) : undefined,
+              )}
+              {entityButton(
+                'Engagement lié',
+                bonCommande.engagement?.numero || 'Aucun',
+                <FileText className="h-4 w-4" />,
+                bonCommande.engagement?.id ? () => handleEntityClick('engagement', bonCommande.engagement?.id) : undefined,
+              )}
+              {entityButton(
+                'Projet',
+                bonCommande.projet?.nom || 'Non renseigné',
+                <FolderOpen className="h-4 w-4" />,
+                bonCommande.projet?.id ? () => handleEntityClick('projet', bonCommande.projet?.id) : undefined,
+              )}
             </div>
-            {bonCommande.dateValidation && (
-              <div>
-                <div className="text-sm text-muted-foreground">Date de validation</div>
-                <div className="font-medium">{formatDate(bonCommande.dateValidation)}</div>
-              </div>
-            )}
-            {bonCommande.dateLivraisonPrevue && (
-              <div>
-                <div className="text-sm text-muted-foreground">Livraison prévue</div>
-                <div className="font-medium">{formatDate(bonCommande.dateLivraisonPrevue)}</div>
-              </div>
-            )}
-            {bonCommande.dateLivraisonReelle && (
-              <div>
-                <div className="text-sm text-muted-foreground">Livraison réelle</div>
-                <div className="font-medium">{formatDate(bonCommande.dateLivraisonReelle)}</div>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Progression de la facturation */}
-      {bonCommande.statut === 'receptionne' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Facturation</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Montant facturé</span>
-                <span className="font-medium">
-                  {formatMontant(montantFacture)} / {formatMontant(bonCommande.montant)}
-                </span>
-              </div>
-              <Progress value={progressionFacturation} className="h-2" />
-              <div className="text-xs text-muted-foreground text-right">
-                {progressionFacturation.toFixed(0)}%
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Fournisseur */}
-      {bonCommande.fournisseur && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              Fournisseur
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <button
-              onClick={() => handleEntityClick('fournisseur', bonCommande.fournisseur!.id)}
-              className="text-primary hover:underline font-medium"
-            >
-              {bonCommande.fournisseur.nom}
-            </button>
-            <div className="text-sm text-muted-foreground mt-1">
-              Code: {bonCommande.fournisseur.code}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Engagement lié */}
-      {bonCommande.engagement && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Engagement
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <button
-              onClick={() => handleEntityClick('engagement', bonCommande.engagement!.id)}
-              className="text-primary hover:underline font-medium"
-            >
-              {bonCommande.engagement.numero}
-            </button>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Ligne budgétaire */}
-      {bonCommande.ligneBudgetaire && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <ShoppingCart className="h-4 w-4" />
-              Ligne budgétaire
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="font-medium">{bonCommande.ligneBudgetaire.libelle}</div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Projet */}
-      {bonCommande.projet && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              Projet
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <button
-              onClick={() => handleEntityClick('projet', bonCommande.projet!.id)}
-              className="text-primary hover:underline font-medium"
-            >
-              {bonCommande.projet.nom}
-            </button>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Conditions de livraison */}
-      {bonCommande.conditionsLivraison && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Info className="h-4 w-4" />
-              Conditions de livraison
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm whitespace-pre-wrap">{bonCommande.conditionsLivraison}</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Observations */}
-      {bonCommande.observations && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Info className="h-4 w-4" />
-              Observations
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm whitespace-pre-wrap">{bonCommande.observations}</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Métadonnées */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            Informations système
+          <CardTitle className="flex items-center gap-2">
+            <Truck className="h-5 w-5" />
+            Livraison & suivi
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Créé le</span>
-            <span>{formatDateTime(bonCommande.createdAt)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Modifié le</span>
-            <span>{formatDateTime(bonCommande.updatedAt)}</span>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {entityButton('Date commande', formatDate(bonCommande.dateCommande), <Calendar className="h-4 w-4" />)}
+            {entityButton('Validation', bonCommande.dateValidation ? formatDate(bonCommande.dateValidation) : '—', <ClipboardCheck className="h-4 w-4" />)}
+            {entityButton('Livraison prévue', bonCommande.dateLivraisonPrevue ? formatDate(bonCommande.dateLivraisonPrevue) : '—', <Truck className="h-4 w-4" />)}
+            {entityButton('Livraison réelle', bonCommande.dateLivraisonReelle ? formatDate(bonCommande.dateLivraisonReelle) : '—', <Truck className="h-4 w-4" />)}
+            {entityButton('Conditions', bonCommande.conditionsLivraison || 'Non précisées', <Receipt className="h-4 w-4" />)}
+            {entityButton('Observations', bonCommande.observations || '—', <FileText className="h-4 w-4" />)}
           </div>
         </CardContent>
       </Card>

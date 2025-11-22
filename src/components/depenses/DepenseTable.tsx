@@ -1,23 +1,17 @@
-import { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { Search, MoreVertical, CheckCircle, FileCheck, Banknote, XCircle, Trash } from 'lucide-react';
+import { MoreHorizontal, CheckCircle, FileCheck, Banknote, XCircle, Trash, Eye } from 'lucide-react';
+import { ListColumn, ListTable } from '@/components/lists/ListTable';
+import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/selectionColumn';
+import { formatCurrency } from '@/lib/utils';
 import type { Depense } from '@/types/depense.types';
 
 interface DepenseTableProps {
@@ -28,7 +22,12 @@ interface DepenseTableProps {
   onMarquerPayee?: (id: string) => void;
   onAnnuler?: (id: string) => void;
   onDelete?: (id: string) => void;
-  onOpenSnapshot?: (id: string) => void;
+  onViewDetails?: (depenseId: string) => void;
+  disableActions?: boolean;
+  selection: ListSelectionHandlers;
+  stickyHeader?: boolean;
+  stickyHeaderOffset?: number;
+  scrollContainerClassName?: string;
 }
 
 export const DepenseTable = ({
@@ -39,17 +38,15 @@ export const DepenseTable = ({
   onMarquerPayee,
   onAnnuler,
   onDelete,
-  onOpenSnapshot,
+  onViewDetails,
+  disableActions = false,
+  selection,
+  stickyHeader = false,
+  stickyHeaderOffset = 0,
+  scrollContainerClassName,
 }: DepenseTableProps) => {
-  const [search, setSearch] = useState('');
-  const [filterStatut, setFilterStatut] = useState<string>('tous');
-
   const formatMontant = (montant: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'decimal',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(montant);
+    return formatCurrency(montant);
   };
 
   const getStatutBadge = (statut: string) => {
@@ -64,153 +61,178 @@ export const DepenseTable = ({
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const filteredDepenses = useMemo(() => {
-    let filtered = depenses;
+  const { selectedIds, allSelected, toggleOne, toggleAll } = selection;
 
-    if (filterStatut !== 'tous') {
-      filtered = filtered.filter(d => d.statut === filterStatut);
-    }
+  const columns: ListColumn<Depense>[] = [
+    buildSelectionColumn<Depense>({
+      selection: { selectedIds, allSelected, toggleOne, toggleAll },
+      getId: (depense) => depense.id,
+      getLabel: (depense) => `Sélectionner la dépense ${depense.numero}`,
+      allLabel: 'Sélectionner toutes les dépenses',
+    }),
+    {
+      id: 'numero',
+      header: 'Numéro',
+      render: (depense) => (
+        <Link
+          to={`/app/depenses/${depense.id}`}
+          className="text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded"
+          onClick={(event) => {
+            if (!onViewDetails) return;
+            if (
+              event.button !== 0 ||
+              event.metaKey ||
+              event.ctrlKey ||
+              event.shiftKey ||
+              event.altKey
+            ) {
+              return;
+            }
+            event.preventDefault();
+            onViewDetails(depense.id);
+          }}
+        >
+          {depense.numero}
+        </Link>
+      ),
+    },
+    {
+      id: 'date',
+      header: 'Date',
+      render: (depense) => new Date(depense.dateDepense).toLocaleDateString('fr-FR'),
+    },
+    {
+      id: 'objet',
+      header: 'Objet',
+      cellClassName: 'max-w-[240px] truncate',
+      render: (depense) => depense.objet,
+    },
+    {
+      id: 'beneficiaire',
+      header: 'Bénéficiaire',
+      render: (depense) => depense.fournisseur?.nom || depense.beneficiaire || '-',
+    },
+    {
+      id: 'montant',
+      header: 'Montant',
+      align: 'right',
+      render: (depense) => <span className="font-medium">{formatMontant(depense.montant)} €</span>,
+    },
+    {
+      id: 'statut',
+      header: 'Statut',
+      render: (depense) => getStatutBadge(depense.statut),
+    },
+    {
+      id: 'imputation',
+      header: 'Imputation',
+      render: (depense) => (
+        <div className="text-xs text-muted-foreground space-y-1">
+          {depense.engagement && <div>ENG: {depense.engagement.numero}</div>}
+          {depense.reservationCredit && <div>RES: {depense.reservationCredit.numero}</div>}
+          {depense.facture && <div>FAC: {depense.facture.numero}</div>}
+          {!depense.engagement && !depense.reservationCredit && depense.ligneBudgetaire && (
+            <div>Ligne directe</div>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      align: 'right',
+      cellClassName: 'text-right w-[70px]',
+      render: (depense) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" disabled={disableActions}>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {onViewDetails && (
+              <>
+                <DropdownMenuItem
+                  onClick={() => onViewDetails(depense.id)}
+                  disabled={disableActions}
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Voir les détails
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
 
-    if (search) {
-      const searchLower = search.toLowerCase();
-      filtered = filtered.filter(
-        d =>
-          d.numero.toLowerCase().includes(searchLower) ||
-          d.objet.toLowerCase().includes(searchLower) ||
-          d.beneficiaire?.toLowerCase().includes(searchLower) ||
-          d.fournisseur?.nom.toLowerCase().includes(searchLower)
-      );
-    }
+            {depense.statut === 'brouillon' && (
+              <>
+                {onValider && (
+                  <DropdownMenuItem
+                    onClick={() => onValider(depense.id)}
+                    disabled={disableActions}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Valider
+                  </DropdownMenuItem>
+                )}
+                {onDelete && (
+                  <DropdownMenuItem
+                    onClick={() => onDelete(depense.id)}
+                    className="text-destructive"
+                    disabled={disableActions}
+                  >
+                    <Trash className="h-4 w-4 mr-2" />
+                    Supprimer
+                  </DropdownMenuItem>
+                )}
+              </>
+            )}
 
-    return filtered.sort((a, b) => 
-      new Date(b.dateDepense).getTime() - new Date(a.dateDepense).getTime()
-    );
-  }, [depenses, search, filterStatut]);
+            {depense.statut === 'validee' && onOrdonnancer && (
+              <DropdownMenuItem
+                onClick={() => onOrdonnancer(depense.id)}
+                disabled={disableActions}
+              >
+                <FileCheck className="h-4 w-4 mr-2" />
+                Ordonnancer
+              </DropdownMenuItem>
+            )}
+
+            {depense.statut === 'ordonnancee' && onMarquerPayee && (
+              <DropdownMenuItem
+                onClick={() => onMarquerPayee(depense.id)}
+                disabled={disableActions}
+              >
+                <Banknote className="h-4 w-4 mr-2" />
+                Marquer payée
+              </DropdownMenuItem>
+            )}
+
+            {depense.statut !== 'annulee' && depense.statut !== 'payee' && onAnnuler && (
+              <DropdownMenuItem
+                onClick={() => onAnnuler(depense.id)}
+                className="text-destructive"
+                disabled={disableActions}
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Annuler
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ];
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Liste des dépenses</CardTitle>
-        <div className="flex gap-4 mt-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher par numéro, objet, bénéficiaire..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                Statut: {filterStatut === 'tous' ? 'Tous' : filterStatut}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setFilterStatut('tous')}>Tous</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setFilterStatut('brouillon')}>Brouillon</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setFilterStatut('validee')}>Validée</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setFilterStatut('ordonnancee')}>Ordonnancée</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setFilterStatut('payee')}>Payée</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setFilterStatut('annulee')}>Annulée</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Numéro</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Objet</TableHead>
-              <TableHead>Bénéficiaire</TableHead>
-              <TableHead className="text-right">Montant</TableHead>
-              <TableHead>Statut</TableHead>
-              <TableHead>Imputation</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredDepenses.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground">
-                  Aucune dépense trouvée
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredDepenses.map((depense) => (
-                <TableRow key={depense.id} className="cursor-pointer hover:bg-muted/50" onClick={() => onOpenSnapshot?.(depense.id)}>
-                  <TableCell className="font-medium">{depense.numero}</TableCell>
-                  <TableCell>{new Date(depense.dateDepense).toLocaleDateString('fr-FR')}</TableCell>
-                  <TableCell className="max-w-xs truncate">{depense.objet}</TableCell>
-                  <TableCell>
-                    {depense.fournisseur?.nom || depense.beneficiaire || '-'}
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    {formatMontant(depense.montant)} €
-                  </TableCell>
-                  <TableCell>{getStatutBadge(depense.statut)}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {depense.engagement && <div>ENG: {depense.engagement.numero}</div>}
-                    {depense.reservationCredit && <div>RES: {depense.reservationCredit.numero}</div>}
-                    {depense.facture && <div>FAC: {depense.facture.numero}</div>}
-                    {!depense.engagement && !depense.reservationCredit && depense.ligneBudgetaire && (
-                      <div>Ligne directe</div>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {depense.statut === 'brouillon' && (
-                          <>
-                            {onValider && (
-                              <DropdownMenuItem onClick={() => onValider(depense.id)}>
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Valider
-                              </DropdownMenuItem>
-                            )}
-                            {onDelete && (
-                              <DropdownMenuItem onClick={() => onDelete(depense.id)} className="text-destructive">
-                                <Trash className="h-4 w-4 mr-2" />
-                                Supprimer
-                              </DropdownMenuItem>
-                            )}
-                          </>
-                        )}
-                        {depense.statut === 'validee' && onOrdonnancer && (
-                          <DropdownMenuItem onClick={() => onOrdonnancer(depense.id)}>
-                            <FileCheck className="h-4 w-4 mr-2" />
-                            Ordonnancer
-                          </DropdownMenuItem>
-                        )}
-                        {depense.statut === 'ordonnancee' && onMarquerPayee && (
-                          <DropdownMenuItem onClick={() => onMarquerPayee(depense.id)}>
-                            <Banknote className="h-4 w-4 mr-2" />
-                            Marquer payée
-                          </DropdownMenuItem>
-                        )}
-                        {depense.statut !== 'annulee' && depense.statut !== 'payee' && onAnnuler && (
-                          <DropdownMenuItem onClick={() => onAnnuler(depense.id)} className="text-destructive">
-                            <XCircle className="h-4 w-4 mr-2" />
-                            Annuler
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+    <ListTable
+      items={depenses}
+      columns={columns}
+      getRowId={(depense) => depense.id}
+      onRowDoubleClick={onViewDetails ? (depense) => onViewDetails(depense.id) : undefined}
+      emptyMessage="Aucune dépense trouvée"
+      stickyHeader={stickyHeader}
+      stickyHeaderOffset={stickyHeaderOffset}
+      scrollContainerClassName={scrollContainerClassName}
+    />
   );
 };

@@ -19,7 +19,7 @@ function mapFactureFromDB(data: any): Facture {
     montantHT: parseFloat(data.montant_ht) || 0,
     montantTVA: parseFloat(data.montant_tva) || 0,
     montantTTC: parseFloat(data.montant_ttc) || 0,
-    montantPaye: parseFloat(data.montant_paye) || 0,
+    montantLiquide: parseFloat(data.montant_liquide) || 0,
     statut: data.statut,
     dateValidation: data.date_validation,
     observations: data.observations,
@@ -76,7 +76,7 @@ function mapFactureToDB(data: CreateFactureInput | UpdateFactureInput) {
   if (data.montantHT !== undefined) result.montant_ht = data.montantHT;
   if (data.montantTVA !== undefined) result.montant_tva = data.montantTVA;
   if (data.montantTTC !== undefined) result.montant_ttc = data.montantTTC;
-  if ('montantPaye' in data && data.montantPaye !== undefined) result.montant_paye = data.montantPaye;
+  if ('montantLiquide' in data && data.montantLiquide !== undefined) result.montant_liquide = data.montantLiquide;
   
   return result;
 }

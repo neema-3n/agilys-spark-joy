@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { useProjets } from '@/hooks/useProjets';
 import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
 import { useEngagements } from '@/hooks/useEngagements';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
+import { useSnapshotState } from '@/hooks/useSnapshotState';
 import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { FactureStats } from '@/components/factures/FactureStats';
@@ -18,7 +19,7 @@ import { FactureTable } from '@/components/factures/FactureTable';
 import { FactureDialog } from '@/components/factures/FactureDialog';
 import { FactureSnapshot } from '@/components/factures/FactureSnapshot';
 import { CreateDepenseFromFactureDialog } from '@/components/depenses/CreateDepenseFromFactureDialog';
-import { CreateFactureInput, Facture } from '@/types/facture.types';
+import { CreateFactureInput, Facture, StatutFacture } from '@/types/facture.types';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -33,6 +34,18 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ListLayout } from '@/components/lists/ListLayout';
+import { ListToolbar } from '@/components/lists/ListToolbar';
+import { ListPageLoading } from '@/components/lists/ListPageLoading';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useListSelection } from '@/hooks/useListSelection';
+import { CTA_REVEAL_STYLES, useHeaderCtaReveal } from '@/hooks/useHeaderCtaReveal';
 
 export default function Factures() {
   const navigate = useNavigate();
@@ -46,12 +59,10 @@ export default function Factures() {
   const [selectedBonCommandeId, setSelectedBonCommandeId] = useState<string | undefined>();
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
   const [annulationFactureId, setAnnulationFactureId] = useState<string | undefined>();
-  const [annulationMotif, setAnnulationMotif] = useState('');
   const [selectedFactureForDepense, setSelectedFactureForDepense] = useState<Facture | null>(null);
-  
-  // États pour le snapshot
-  const [snapshotFactureId, setSnapshotFactureId] = useState<string | null>(null);
-  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statutFilter, setStatutFilter] = useState<'tous' | StatutFacture>('tous');
+
   const { factures, isLoading, createFacture, updateFacture, deleteFacture, genererNumero, validerFacture, marquerPayee, annulerFacture } = useFactures();
   const { createDepenseFromFacture } = useDepenses();
   const [motifAnnulation, setMotifAnnulation] = useState('');
@@ -67,29 +78,77 @@ export default function Factures() {
     [factures, editingFactureId]
   );
 
-  // Snapshot helpers
-  const snapshotFacture = useMemo(
-    () => factures.find(f => f.id === snapshotFactureId),
-    [factures, snapshotFactureId]
+  const filteredFactures = useMemo(() => {
+    const searchLower = searchTerm.trim().toLowerCase();
+
+    return factures
+      .filter((facture) => (statutFilter === 'tous' ? true : facture.statut === statutFilter))
+      .filter((facture) => {
+        if (!searchLower) return true;
+
+        return (
+          facture.numero.toLowerCase().includes(searchLower) ||
+          facture.objet?.toLowerCase().includes(searchLower) ||
+          facture.fournisseur?.nom.toLowerCase().includes(searchLower) ||
+          facture.bonCommande?.numero?.toLowerCase().includes(searchLower)
+        );
+      })
+      .sort((a, b) => new Date(b.dateFacture).getTime() - new Date(a.dateFacture).getTime());
+  }, [factures, searchTerm, statutFilter]);
+
+  const selectionIds = useMemo(
+    () => filteredFactures.map((facture) => facture.id),
+    [filteredFactures]
+  );
+  const { selectedIds, allSelected, toggleOne, toggleAll, clearSelection } = useListSelection(selectionIds);
+
+  const selectedFactures = useMemo(
+    () => filteredFactures.filter((facture) => selectedIds.has(facture.id)),
+    [filteredFactures, selectedIds]
   );
 
-  const snapshotIndex = useMemo(
-    () => factures.findIndex(f => f.id === snapshotFactureId),
-    [factures, snapshotFactureId]
-  );
+  const handleBatchValider = useCallback(async () => {
+    const candidates = selectedFactures.filter((facture) => facture.statut === 'brouillon');
+    if (candidates.length === 0) return;
+    await Promise.all(candidates.map((facture) => validerFacture(facture.id)));
+    clearSelection();
+  }, [selectedFactures, validerFacture, clearSelection]);
 
-  // Synchroniser l'URL avec le snapshot
-  useEffect(() => {
-    if (factureId && factures.length > 0 && !snapshotFactureId) {
-      const facture = factures.find(f => f.id === factureId);
-      if (facture) {
-        setSnapshotFactureId(factureId);
-      } else {
-        // ID invalide, rediriger vers la liste
-        navigate('/app/factures', { replace: true });
-      }
-    }
-  }, [factureId, factures, snapshotFactureId, navigate]);
+  const handleBatchMarquerPayee = useCallback(async () => {
+    const candidates = selectedFactures.filter((facture) => facture.statut === 'validee');
+    if (candidates.length === 0) return;
+    await Promise.all(candidates.map((facture) => marquerPayee(facture.id)));
+    clearSelection();
+  }, [selectedFactures, marquerPayee, clearSelection]);
+
+  const hasSelection = selectedIds.size > 0;
+  const hasBrouillonsSelected = selectedFactures.some((facture) => facture.statut === 'brouillon');
+  const hasValideesSelected = selectedFactures.some((facture) => facture.statut === 'validee');
+
+  const handleExportFactures = useCallback(() => {
+    // Exporter toutes les factures filtrées (CSV/Excel) – brancher ici l'implémentation
+    // Exemple : exportFactures(filteredFactures);
+  }, [filteredFactures]);
+
+  const {
+    snapshotId: snapshotFactureId,
+    snapshotItem: snapshotFacture,
+    snapshotIndex,
+    isSnapshotOpen,
+    isSnapshotLoading,
+    openSnapshot: handleOpenSnapshot,
+    closeSnapshot: handleCloseSnapshot,
+    navigateSnapshot: handleNavigateSnapshot,
+  } = useSnapshotState({
+    items: factures,
+    getId: f => f.id,
+    initialId: factureId,
+    onNavigateToId: id => navigate(id ? `/app/factures/${id}` : '/app/factures'),
+    onMissingId: () => navigate('/app/factures', { replace: true }),
+    isLoadingItems: isLoading,
+  });
+
+  const { headerCtaRef, isHeaderCtaVisible } = useHeaderCtaReveal([isSnapshotOpen]);
 
   // Gérer le scroll pour l'effet de disparition du header
   const scrollProgress = useScrollProgress(!!snapshotFactureId);
@@ -169,28 +228,6 @@ export default function Factures() {
     }
   }, [annulationFactureId, motifAnnulation, annulerFacture]);
 
-  // Snapshot handlers
-  const handleOpenSnapshot = useCallback((factureId: string) => {
-    setSnapshotFactureId(factureId);
-    navigate(`/app/factures/${factureId}`);
-  }, [navigate]);
-
-  const handleCloseSnapshot = useCallback(() => {
-    setSnapshotFactureId(null);
-    navigate('/app/factures');
-  }, [navigate]);
-
-  const handleNavigateSnapshot = useCallback((direction: 'prev' | 'next') => {
-    if (snapshotIndex === -1) return;
-    
-    const newIndex = direction === 'prev' ? snapshotIndex - 1 : snapshotIndex + 1;
-    if (newIndex >= 0 && newIndex < factures.length) {
-      const newFacture = factures[newIndex];
-      setSnapshotFactureId(newFacture.id);
-      navigate(`/app/factures/${newFacture.id}`);
-    }
-  }, [snapshotIndex, factures, navigate]);
-
   const handleNavigateToEntity = useCallback((type: string, id: string) => {
     switch (type) {
       case 'fournisseur':
@@ -203,7 +240,7 @@ export default function Factures() {
         navigate(`/app/engagements/${id}`);
         break;
       case 'ligneBudgetaire':
-        navigate(`/app/budgets?ligneId=${id}`);
+        navigate(`/app/budgets/${id}?tab=lignes`);
         break;
       case 'projet':
         navigate(`/app/projets/${id}`);
@@ -212,16 +249,23 @@ export default function Factures() {
   }, [navigate]);
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-full">Chargement...</div>;
+    return (
+      <ListPageLoading
+        title="Gestion des Factures"
+        description="Gérez les factures fournisseurs"
+        stickyHeader={false}
+      />
+    );
   }
 
   const pageHeaderContent = (
-    <PageHeader 
+    <PageHeader
       title="Gestion des Factures"
       description="Gérez les factures fournisseurs"
       scrollProgress={scrollProgress}
+      sticky={false}
       actions={
-        <Button onClick={handleCreate}>
+        <Button onClick={handleCreate} ref={headerCtaRef}>
           <Plus className="mr-2 h-4 w-4" />
           Nouvelle facture
         </Button>
@@ -229,12 +273,24 @@ export default function Factures() {
     />
   );
 
+  const statutOptions: { value: 'tous' | StatutFacture; label: string }[] = [
+    { value: 'tous', label: 'Tous' },
+    { value: 'brouillon', label: 'Brouillon' },
+    { value: 'validee', label: 'Validée' },
+    { value: 'payee', label: 'Payée' },
+    { value: 'annulee', label: 'Annulée' },
+  ];
+
+  const activeStatutLabel =
+    statutOptions.find((option) => option.value === statutFilter)?.label || 'Tous';
+
   return (
     <div className="space-y-6">
-      {pageHeaderContent}
+      <style>{CTA_REVEAL_STYLES}</style>
+      {!isSnapshotOpen && pageHeaderContent}
 
       <div className="px-8 space-y-6">
-        {snapshotFactureId && snapshotFacture ? (
+        {isSnapshotOpen && snapshotFacture ? (
           <FactureSnapshot
             facture={snapshotFacture}
             onClose={handleCloseSnapshot}
@@ -250,20 +306,92 @@ export default function Factures() {
             onEdit={snapshotFacture.statut === 'brouillon' ? () => handleEdit(snapshotFacture.id) : undefined}
             onCreerDepense={(snapshotFacture.statut === 'validee' || snapshotFacture.statut === 'payee') ? () => setSelectedFactureForDepense(snapshotFacture) : undefined}
           />
+        ) : isSnapshotOpen && isSnapshotLoading ? (
+          <div className="py-12 text-center text-muted-foreground">Chargement du snapshot...</div>
         ) : (
           <>
             <FactureStats factures={factures} />
 
-            <FactureTable
-              factures={factures}
-              onEdit={(facture) => handleEdit(facture.id)}
-              onDelete={deleteFacture}
-              onValider={validerFacture}
-              onMarquerPayee={marquerPayee}
-              onAnnuler={handleAnnuler}
-              onCreerDepense={(facture) => setSelectedFactureForDepense(facture)}
-              onViewDetails={handleOpenSnapshot}
-            />
+            <ListLayout
+              title="Liste des factures"
+              description="Visualisez, filtrez et gérez vos factures fournisseurs"
+              actions={
+                !isHeaderCtaVisible ? (
+                  <Button onClick={handleCreate} className="sticky-cta-appear">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nouvelle facture
+                  </Button>
+                ) : undefined
+              }
+              toolbar={
+                <ListToolbar
+                  searchValue={searchTerm}
+                  onSearchChange={setSearchTerm}
+                  searchPlaceholder="Rechercher par numéro, objet, fournisseur..."
+                  filters={[
+                    <DropdownMenu key="statut">
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline">Statut: {activeStatutLabel}</Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {statutOptions.map((option) => (
+                          <DropdownMenuItem
+                            key={option.value}
+                            onClick={() => setStatutFilter(option.value)}
+                          >
+                            {option.label}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>,
+                    <DropdownMenu key="batch-actions">
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline">
+                          Actions groupées
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          disabled={!hasBrouillonsSelected}
+                          onClick={handleBatchValider}
+                        >
+                          Valider les brouillons
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={!hasValideesSelected}
+                          onClick={handleBatchMarquerPayee}
+                        >
+                          Marquer comme payées
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem disabled={!hasSelection} onClick={() => clearSelection()}>
+                          Effacer la sélection
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleExportFactures}>
+                          Exporter (toutes les factures filtrées)
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>,
+                  ]}
+                />
+              }
+            >
+              <FactureTable
+                factures={filteredFactures}
+                onEdit={(facture) => handleEdit(facture.id)}
+                onDelete={deleteFacture}
+                onValider={validerFacture}
+                onMarquerPayee={marquerPayee}
+                onAnnuler={handleAnnuler}
+                onCreerDepense={(facture) => setSelectedFactureForDepense(facture)}
+                onViewDetails={handleOpenSnapshot}
+                selection={{ selectedIds, allSelected, toggleOne, toggleAll }}
+                stickyHeader
+                stickyHeaderOffset={0}
+                scrollContainerClassName="max-h-[calc(100vh-220px)] overflow-auto"
+              />
+            </ListLayout>
           </>
         )}
       </div>
