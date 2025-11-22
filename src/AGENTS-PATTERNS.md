@@ -275,7 +275,7 @@ export const engagementsService = {
 - ✅ `emptyMessage` obligatoire ; loading géré par le parent (skeleton/spinner)
 - ✅ Aucun style direct (couleurs) : utiliser les tokens/design system
 - ✅ Toolbar accessible : `aria-label` sur l’input, filtres en ReactNode
-- ✅ Colonne `Checkbox` en option pour sélection batch, contrôlée par le parent
+- ✅ Colonne `Checkbox` option batch via `useListSelection` + `buildSelectionColumn` (parent obligatoire pour l’état)
 - ✅ Responsive déjà géré (`overflow-x-auto` sur la table)
 
 #### Checklist Table/List
@@ -283,7 +283,7 @@ export const engagementsService = {
 - [ ] `emptyMessage` renseigné
 - [ ] `onRowDoubleClick` / liens configurés pour snapshot ou détails
 - [ ] Actions à droite via `DropdownMenu` + largeur/align cohérents
-- [ ] Colonne `Checkbox` si batch (toggle all/one dans le parent)
+- [ ] Colonne `Checkbox` si batch (parent gère `useListSelection`, colonne via `buildSelectionColumn`)
 - [ ] Toolbar : recherche + filtres + `rightSlot` pour CTA
 - [ ] Respect du design system (pas de couleurs directes)
 - [ ] Loading state côté parent (spinner/skeleton)

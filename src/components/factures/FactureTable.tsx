@@ -49,7 +49,7 @@ interface FactureTableProps {
   onAnnuler: (id: string) => void;
   onCreerDepense: (facture: Facture) => void;
   onViewDetails: (factureId: string) => void;
-  selection?: FactureTableSelection;
+  selection: FactureTableSelection;
 }
 
 export const FactureTable = ({
@@ -65,8 +65,7 @@ export const FactureTable = ({
 }: FactureTableProps) => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const factureIds = useMemo(() => factures.map((facture) => facture.id), [factures]);
-  const { selectedIds, allSelected, toggleOne, toggleAll } =
-    selection ?? useListSelection(factureIds);
+  const { selectedIds, allSelected, toggleOne, toggleAll } = selection;
 
   const getStatutBadge = (statut: string) => {
     const variants: Record<
