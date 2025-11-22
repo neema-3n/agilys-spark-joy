@@ -444,16 +444,22 @@ const Depenses = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {actionDepenseId && snapshotDepense && (
-        <PaiementDialog
-          open={paiementDialogOpen}
-          onOpenChange={setPaiementDialogOpen}
-          onSubmit={handleEnregistrerPaiement}
-          depenseId={actionDepenseId}
-          montantRestant={snapshotDepense.montant - snapshotDepense.montantPaye}
-          depenseNumero={snapshotDepense.numero}
-        />
-      )}
+      {(() => {
+        const depenseForPaiement = actionDepenseId 
+          ? depenses.find(d => d.id === actionDepenseId)
+          : null;
+        
+        return depenseForPaiement ? (
+          <PaiementDialog
+            open={paiementDialogOpen}
+            onOpenChange={setPaiementDialogOpen}
+            onSubmit={handleEnregistrerPaiement}
+            depenseId={actionDepenseId}
+            montantRestant={depenseForPaiement.montant - depenseForPaiement.montantPaye}
+            depenseNumero={depenseForPaiement.numero}
+          />
+        ) : null;
+      })()}
     </div>
   );
 };
