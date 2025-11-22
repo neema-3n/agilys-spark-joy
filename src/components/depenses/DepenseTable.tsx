@@ -19,7 +19,7 @@ interface DepenseTableProps {
   onEdit?: (depense: Depense) => void;
   onValider?: (id: string) => void;
   onOrdonnancer?: (id: string) => void;
-  onMarquerPayee?: (id: string) => void;
+  onEnregistrerPaiement?: (id: string) => void;
   onAnnuler?: (id: string) => void;
   onDelete?: (id: string) => void;
   onViewDetails?: (depenseId: string) => void;
@@ -35,7 +35,7 @@ export const DepenseTable = ({
   onEdit,
   onValider,
   onOrdonnancer,
-  onMarquerPayee,
+  onEnregistrerPaiement,
   onAnnuler,
   onDelete,
   onViewDetails,
@@ -197,15 +197,17 @@ export const DepenseTable = ({
               </DropdownMenuItem>
             )}
 
-            {depense.statut === 'ordonnancee' && onMarquerPayee && (
-              <DropdownMenuItem
-                onClick={() => onMarquerPayee(depense.id)}
-                disabled={disableActions}
-              >
-                <Banknote className="h-4 w-4 mr-2" />
-                Marquer payée
-              </DropdownMenuItem>
-            )}
+            {(depense.statut === 'ordonnancee' || depense.statut === 'validee') &&
+              depense.montant > depense.montantPaye &&
+              onEnregistrerPaiement && (
+                <DropdownMenuItem
+                  onClick={() => onEnregistrerPaiement(depense.id)}
+                  disabled={disableActions}
+                >
+                  <Banknote className="h-4 w-4 mr-2" />
+                  Enregistrer un paiement
+                </DropdownMenuItem>
+              )}
 
             {depense.statut !== 'annulee' && depense.statut !== 'payee' && onAnnuler && (
               <DropdownMenuItem
