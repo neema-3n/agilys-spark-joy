@@ -1,8 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus } from 'lucide-react';
 import { useFournisseurs } from '@/hooks/useFournisseurs';
 import { FournisseurDialog } from '@/components/fournisseurs/FournisseurDialog';
@@ -10,264 +9,324 @@ import { FournisseurTable } from '@/components/fournisseurs/FournisseurTable';
 import { FournisseurStats } from '@/components/fournisseurs/FournisseurStats';
 import { FournisseurSnapshot } from '@/components/fournisseurs/FournisseurSnapshot';
 import { ListPageLoading } from '@/components/lists/ListPageLoading';
+import { ListLayout } from '@/components/lists/ListLayout';
 import { ListToolbar } from '@/components/lists/ListToolbar';
-import { useHeaderCtaReveal } from '@/hooks/useHeaderCtaReveal';
+import { CTA_REVEAL_STYLES, useHeaderCtaReveal } from '@/hooks/useHeaderCtaReveal';
 import { useSnapshotState } from '@/hooks/useSnapshotState';
 import { useSnapshotHandlers } from '@/hooks/useSnapshotHandlers';
 import { useListSelection } from '@/hooks/useListSelection';
+import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { Fournisseur, StatutFournisseur } from '@/types/fournisseur.types';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const Fournisseurs = () => {
   const { fournisseurId } = useParams<{ fournisseurId: string }>();
   const navigate = useNavigate();
   const { fournisseurs, stats, isLoading, create, update, delete: deleteFournisseur } = useFournisseurs();
+  
+  // États
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedFournisseur, setSelectedFournisseur] = useState<Fournisseur | undefined>();
-  const [activeView, setActiveView] = useState<'stats' | 'list'>('stats');
-  const [statutFilter, setStatutFilter] = useState<StatutFournisseur | 'tous'>('tous');
+  const [editingFournisseurId, setEditingFournisseurId] = useState<string | undefined>();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statutFilter, setStatutFilter] = useState<'tous' | StatutFournisseur>('tous');
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  // Header CTA reveal
-  const { headerCtaRef, isHeaderCtaVisible } = useHeaderCtaReveal();
+  // Helper pour récupérer le fournisseur depuis l'ID
+  const editingFournisseur = useMemo(
+    () => fournisseurs.find((f) => f.id === editingFournisseurId),
+    [fournisseurs, editingFournisseurId]
+  );
 
-  // Filtrage par statut
+  // Filtrage
   const filteredFournisseurs = useMemo(() => {
-    if (statutFilter === 'tous') return fournisseurs;
-    return fournisseurs.filter((f) => f.statut === statutFilter);
-  }, [fournisseurs, statutFilter]);
+    const searchLower = searchTerm.trim().toLowerCase();
+
+    return fournisseurs
+      .filter((f) => (statutFilter === 'tous' ? true : f.statut === statutFilter))
+      .filter((f) => {
+        if (!searchLower) return true;
+        return (
+          f.code.toLowerCase().includes(searchLower) ||
+          f.nom.toLowerCase().includes(searchLower) ||
+          f.categorie?.toLowerCase().includes(searchLower) ||
+          f.email?.toLowerCase().includes(searchLower) ||
+          f.telephone?.toLowerCase().includes(searchLower)
+        );
+      })
+      .sort((a, b) => a.nom.localeCompare(b.nom));
+  }, [fournisseurs, searchTerm, statutFilter]);
 
   // Sélection batch
-  const selection = useListSelection(filteredFournisseurs.map((f) => f.id));
+  const selectionIds = useMemo(
+    () => filteredFournisseurs.map((f) => f.id),
+    [filteredFournisseurs]
+  );
+  const { selectedIds, allSelected, toggleOne, toggleAll, clearSelection } = useListSelection(selectionIds);
+
+  const selectedFournisseurs = useMemo(
+    () => filteredFournisseurs.filter((f) => selectedIds.has(f.id)),
+    [filteredFournisseurs, selectedIds]
+  );
+
+  const hasSelection = selectedIds.size > 0;
 
   // Snapshot state
   const {
     snapshotId,
     snapshotItem: snapshotFournisseur,
     snapshotIndex,
-    openSnapshot,
-    closeSnapshot,
-    navigateSnapshot,
     isSnapshotOpen,
+    isSnapshotLoading,
+    openSnapshot: handleOpenSnapshot,
+    closeSnapshot: handleCloseSnapshot,
+    navigateSnapshot: handleNavigateSnapshot,
   } = useSnapshotState({
     items: filteredFournisseurs,
     getId: (f) => f.id,
     initialId: fournisseurId,
-    onNavigateToId: (id) => {
-      if (id) {
-        navigate(`/app/fournisseurs/${id}`, { replace: true });
-      } else {
-        navigate('/app/fournisseurs', { replace: true });
-      }
-    },
+    onNavigateToId: (id) => navigate(id ? `/app/fournisseurs/${id}` : '/app/fournisseurs'),
+    onMissingId: () => navigate('/app/fournisseurs', { replace: true }),
+    isLoadingItems: isLoading,
   });
 
+  const { headerCtaRef, isHeaderCtaVisible } = useHeaderCtaReveal([isSnapshotOpen]);
+  const scrollProgress = useScrollProgress(!!snapshotId);
+
   // Handlers
-  const handleCreate = async (data: any) => {
-    await create(data);
-    setDialogOpen(false);
-  };
-
-  const handleEdit = (fournisseur: Fournisseur) => {
-    setSelectedFournisseur(fournisseur);
+  const handleCreate = useCallback(() => {
+    setEditingFournisseurId(undefined);
     setDialogOpen(true);
-    // Le snapshot reste ouvert intentionnellement
-  };
+  }, []);
 
-  const handleUpdate = async (data: any) => {
-    if (selectedFournisseur) {
-      await update({ id: selectedFournisseur.id, input: data });
-      setDialogOpen(false);
-      setSelectedFournisseur(undefined);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    await deleteFournisseur(id);
-    if (snapshotId === id) {
-      closeSnapshot();
-    }
-  };
-
-  const handleDialogClose = (open: boolean) => {
+  const handleDialogClose = useCallback((open: boolean) => {
     setDialogOpen(open);
     if (!open) {
-      setSelectedFournisseur(undefined);
+      setEditingFournisseurId(undefined);
     }
-  };
+  }, []);
 
-  const handleViewDetails = (id: string) => {
-    openSnapshot(id);
-  };
+  const handleEdit = useCallback((id: string) => {
+    setEditingFournisseurId(id);
+    setDialogOpen(true);
+  }, []);
 
-  // Snapshot handlers (ne ferment pas le snapshot)
+  const handleSubmit = useCallback(
+    async (data: any) => {
+      if (editingFournisseurId) {
+        await update({ id: editingFournisseurId, input: data });
+      } else {
+        await create(data);
+      }
+      setDialogOpen(false);
+      setEditingFournisseurId(undefined);
+    },
+    [editingFournisseurId, update, create]
+  );
+
+  const handleDelete = useCallback(
+    async (id: string) => {
+      await deleteFournisseur(id);
+      if (snapshotId === id) {
+        handleCloseSnapshot();
+      }
+      setDeleteId(null);
+    },
+    [deleteFournisseur, snapshotId, handleCloseSnapshot]
+  );
+
+  const handleConfirmDelete = useCallback(() => {
+    if (deleteId) {
+      handleDelete(deleteId);
+    }
+  }, [deleteId, handleDelete]);
+
+  // Snapshot handlers
   const snapshotHandlers = useSnapshotHandlers({
     onEdit: () => {
       if (snapshotFournisseur) {
-        handleEdit(snapshotFournisseur);
+        handleEdit(snapshotFournisseur.id);
       }
     },
     onDelete: () => {
       if (snapshotFournisseur) {
-        handleDelete(snapshotFournisseur.id);
+        setDeleteId(snapshotFournisseur.id);
       }
     },
   });
+
+  const handleExportFournisseurs = useCallback(() => {
+    // Exporter tous les fournisseurs filtrés (CSV/Excel)
+  }, [filteredFournisseurs]);
 
   if (isLoading) {
     return (
       <ListPageLoading
         title="Gestion des Fournisseurs"
         description="Référentiel fournisseurs et suivi des contrats"
-        stickyHeader
+        stickyHeader={false}
       />
     );
   }
 
-  const hasSelection = selection.selectedArray.length > 0;
-  const hasPrev = snapshotIndex > 0;
-  const hasNext = snapshotIndex < filteredFournisseurs.length - 1;
+  const pageHeaderContent = (
+    <PageHeader
+      title="Gestion des Fournisseurs"
+      description="Référentiel fournisseurs et suivi des contrats"
+      scrollProgress={scrollProgress}
+      sticky={false}
+      actions={
+        <Button onClick={handleCreate} ref={headerCtaRef}>
+          <Plus className="mr-2 h-4 w-4" />
+          Nouveau fournisseur
+        </Button>
+      }
+    />
+  );
+
+  const statutOptions: { value: 'tous' | StatutFournisseur; label: string }[] = [
+    { value: 'tous', label: 'Tous' },
+    { value: 'actif', label: 'Actifs' },
+    { value: 'inactif', label: 'Inactifs' },
+    { value: 'blackliste', label: 'Blacklistés' },
+    { value: 'en_attente_validation', label: 'En attente' },
+  ];
+
+  const activeStatutLabel =
+    statutOptions.find((option) => option.value === statutFilter)?.label || 'Tous';
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Gestion des Fournisseurs"
-        description="Référentiel fournisseurs et suivi des contrats"
-        sticky
-        actions={
-          <Button ref={headerCtaRef} onClick={() => setDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nouveau fournisseur
-          </Button>
-        }
-      />
+      <style>{CTA_REVEAL_STYLES}</style>
+      {!isSnapshotOpen && pageHeaderContent}
 
       <div className="px-8 space-y-6">
-        {/* Barre d'outils avec filtre statut */}
-        <div className="flex items-center gap-4">
-          <Button
-            variant={activeView === 'stats' ? 'default' : 'outline'}
-            onClick={() => setActiveView('stats')}
-            size="sm"
-          >
-            Vue d'ensemble
-          </Button>
-          <Button
-            variant={activeView === 'list' ? 'default' : 'outline'}
-            onClick={() => setActiveView('list')}
-            size="sm"
-          >
-            Liste complète
-          </Button>
-
-          <div className="flex-1" />
-
-          <Select value={statutFilter} onValueChange={(v) => setStatutFilter(v as any)}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filtrer par statut" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="tous">Tous les statuts</SelectItem>
-              <SelectItem value="actif">Actifs</SelectItem>
-              <SelectItem value="inactif">Inactifs</SelectItem>
-              <SelectItem value="blackliste">Blacklistés</SelectItem>
-              <SelectItem value="en_attente_validation">En attente</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Vue d'ensemble */}
-        {activeView === 'stats' && (
-          <div className="space-y-6">
+        {isSnapshotOpen && snapshotFournisseur ? (
+          <FournisseurSnapshot
+            fournisseur={snapshotFournisseur}
+            onClose={handleCloseSnapshot}
+            onNavigate={handleNavigateSnapshot}
+            hasPrev={snapshotIndex > 0}
+            hasNext={snapshotIndex < filteredFournisseurs.length - 1}
+            currentIndex={snapshotIndex}
+            totalCount={filteredFournisseurs.length}
+            onEdit={snapshotHandlers.onEdit}
+            onDelete={snapshotFournisseur.nombreEngagements === 0 ? snapshotHandlers.onDelete : undefined}
+          />
+        ) : isSnapshotOpen && isSnapshotLoading ? (
+          <div className="py-12 text-center text-muted-foreground">Chargement du snapshot...</div>
+        ) : (
+          <>
             <FournisseurStats stats={stats} />
 
-            {stats && stats.topFournisseurs.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Top 5 Fournisseurs par montant engagé</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {stats.topFournisseurs.map((f, index) => (
-                      <div
-                        key={f.id}
-                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/30 cursor-pointer transition-colors"
-                        onClick={() => handleViewDetails(f.id)}
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold">
-                            {index + 1}
-                          </div>
-                          <div>
-                            <div className="font-medium">{f.nom}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {f.nombreEngagements} engagement{f.nombreEngagements > 1 ? 's' : ''}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-bold">
-                            {new Intl.NumberFormat('fr-FR', {
-                              minimumFractionDigits: 0,
-                              maximumFractionDigits: 0,
-                            }).format(f.montantTotal)}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
-
-        {/* Liste complète */}
-        {activeView === 'list' && (
-          <FournisseurTable
-            fournisseurs={filteredFournisseurs}
-            onViewDetails={handleViewDetails}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            selection={selection}
-            stickyHeader
-            stickyHeaderOffset={120}
-          />
+            <ListLayout
+              title="Liste des fournisseurs"
+              description="Visualisez, filtrez et gérez votre référentiel fournisseurs"
+              actions={
+                !isHeaderCtaVisible ? (
+                  <Button onClick={handleCreate} className="sticky-cta-appear">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nouveau fournisseur
+                  </Button>
+                ) : undefined
+              }
+              toolbar={
+                <ListToolbar
+                  searchValue={searchTerm}
+                  onSearchChange={setSearchTerm}
+                  searchPlaceholder="Rechercher par code, nom, catégorie..."
+                  filters={[
+                    <DropdownMenu key="statut">
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline">Statut: {activeStatutLabel}</Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {statutOptions.map((option) => (
+                          <DropdownMenuItem
+                            key={option.value}
+                            onClick={() => setStatutFilter(option.value)}
+                          >
+                            {option.label}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>,
+                    <DropdownMenu key="batch-actions">
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline">Actions groupées</Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem disabled={!hasSelection} onClick={() => clearSelection()}>
+                          Effacer la sélection
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleExportFournisseurs}>
+                          Exporter (tous les fournisseurs filtrés)
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>,
+                  ]}
+                />
+              }
+            >
+              <FournisseurTable
+                fournisseurs={filteredFournisseurs}
+                onViewDetails={handleOpenSnapshot}
+                onEdit={(f) => handleEdit(f.id)}
+                onDelete={(id) => setDeleteId(id)}
+                selection={{ selectedIds, allSelected, toggleOne, toggleAll }}
+                stickyHeader
+                stickyHeaderOffset={0}
+                scrollContainerClassName="max-h-[calc(100vh-220px)] overflow-auto"
+              />
+            </ListLayout>
+          </>
         )}
       </div>
-
-      {/* Snapshot */}
-      <Sheet open={isSnapshotOpen} onOpenChange={(open) => !open && closeSnapshot()}>
-        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto p-0">
-          {snapshotFournisseur && (
-            <FournisseurSnapshot
-              fournisseur={snapshotFournisseur}
-              onClose={closeSnapshot}
-              onNavigate={navigateSnapshot}
-              hasPrev={hasPrev}
-              hasNext={hasNext}
-              currentIndex={snapshotIndex + 1}
-              totalCount={filteredFournisseurs.length}
-              onEdit={snapshotHandlers.onEdit}
-              onDelete={snapshotHandlers.onDelete}
-            />
-          )}
-        </SheetContent>
-      </Sheet>
 
       {/* Dialog */}
       <FournisseurDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
-        onSubmit={selectedFournisseur ? handleUpdate : handleCreate}
-        fournisseur={selectedFournisseur}
+        onSubmit={handleSubmit}
+        fournisseur={editingFournisseur}
       />
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer ce fournisseur ? Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
