@@ -46,3 +46,14 @@ export interface UpdateCompteInput {
   niveau?: number;
   statut?: CompteStatut;
 }
+
+export interface ImportReport {
+  success: boolean;
+  stats: {
+    total: number;
+    created: number;
+    skipped: number;
+    errors: Array<{ code: string; error: string }>;
+  };
+  byLevel: Record<number, { created: number; skipped: number }>;
+}

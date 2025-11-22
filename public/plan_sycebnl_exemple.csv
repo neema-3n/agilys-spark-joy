@@ -1,0 +1,984 @@
+code,intitule,terme_courant,nb_chiffres,code_parent
+10,Dotation,Classe,2,
+101,Dotation non consomptible sans droit de reprise,Compte,3,10
+1011,en numéraire,Sous-compte,4,101
+1015,en nature,Sous-compte,4,101
+102,Dotation non consomptible avec droit de reprise,Compte,3,10
+1021,en numéraire,Sous-compte,4,102
+1025,en nature,Sous-compte,4,102
+103,Droit d'entrée,Compte,3,10
+104,Dotation consomptible,Compte,3,10
+1041,Dotation consomptible,Sous-compte,4,104
+1049,Dotation consomptible inscrite au compte de résultat,Sous-compte,4,104
+106,Écarts de réévaluation,Compte,3,10
+1061,Ecarts de réévaluation sur des biens sans droit de reprise,Sous-compte,4,106
+1061,1Ecarts de réévaluation sur des biens sans droit de reprise-immobilisations corporelles,Sous-compte,4,106
+1061,2Écarts de réévaluation sur des biens sans droit de reprise-immobilisations financières,Sous-compte,4,106
+1062,Écarts de réévaluation sur des biens avec droit de reprise,Sous-compte,4,106
+1062,1 Ecarts de réévaluation sur des biens avec droit de reprise-immobilisations corporelles,Sous-compte,4,106
+1062,2Ecarts de réévaluation sur des biens avec droit de reprise-immobilisations financières,Sous-compte,4,106
+11,RÉSERVES,Classe,2,
+112,Réserves statutaires ou contractuelles,Compte,3,11
+118,Autres réserves,Compte,3,11
+12,REPORT A NOUVEAU,Classe,2,
+121,Report à nouveau des excédents,Compte,3,12
+128,Résultat net en instance d’affectation,Compte,3,12
+129,Report à nouveau des déficits,Compte,3,12
+13,RÉSULTAT NET DE L’EXERCICE <»,Classe,2,
+131,I Excédent de l’exercice,Compte,3,13
+139,Déficit de l’exercice,Compte,3,13
+14,SUBVENTIONS D’INVESTISSEMENT,Classe,2,
+141,Subventions d'équipement,Compte,3,14
+1411,État,Sous-compte,4,141
+1412,.Régions,Sous-compte,4,141
+1413,Départements,Sous-compte,4,141
+1414,Communes et collectivités publiques décentralisées,Sous-compte,4,141
+1415,Entités publiques ou mixtes,Sous-compte,4,141
+1416,Entités et organismes privés,Sous-compte,4,141
+1417,Organismes internationaux,Sous-compte,4,141
+1418,Autre,Sous-compte,4,141
+148,Autres subventions d’investisscment,Compte,3,14
+15,PROVISIONS RÉGLEMENTÉES ET FONDS ASSIMILÉS,Classe,2,
+154,Provisions spéciales de réévaluation,Compte,3,15
+158,Autres provisions réglementées et fonds assimilés,Compte,3,15
+16,FONDS AFFECTÉS,Classe,2,
+161,Fonds projet de développement — avances de fonds à justifier,Compte,3,16
+162,Fonds affectés aux investissements du projet de développement - bailleurs de fonds,Compte,3,16
+163,Fonds affectés aux investissements du projet de développement - l'Etat,Compte,3,16
+164,Fonds affectés aux investissements des autres organismes de financement assimilés,Compte,3,16
+165,Fonds affectés à un projet spécifique,Compte,3,16
+167,Fonds provenant de dons et legs d'immobilisations,Compte,3,16
+1671,affectés,Sous-compte,4,167
+1672,non affectés,Sous-compte,4,167
+1679,Engagements auprès donateur,Sous-compte,4,167
+168,Autres fonds affectés,Compte,3,16
+169,Fonds affectés à recevoir,Compte,3,16
+17,FONDS REPORTES,Classe,2,
+171,,Compte,3,17
+172,,Compte,3,17
+178,,Compte,3,17
+18,EMPRUNTS ET DETTES ASSIMILÉES,Classe,2,
+181,Emprunts obligataires,Compte,3,18
+182,Avances reçues de l'État,Compte,3,18
+183,Emprunts et dettes auprès des établissements de crédit,Compte,3,18
+185,Dépôts et cautionnements reçus,Compte,3,18
+1851,Dépôts,Sous-compte,4,185
+1852,Cautionnements,Sous-compte,4,185
+186,Intérêts courus,Compte,3,18
+1861,sur emprunts obligataires,Sous-compte,4,186
+1862,sur emprunts et dettes auprès des établissements de crédit,Sous-compte,4,186
+1863,sur avances reçues de l’Etat,Sous-compte,4,186
+1865,sur dépôts et cautionnements reçus,Sous-compte,4,186
+1868,sur autres emprunts et dettes,Sous-compte,4,186
+187,Dettes de location-acquisition,Compte,3,18
+1871,Dettes de location-acquisition/ crédit-bail immobilier,Sous-compte,4,187
+1872,Dettes de location-acquisition/ crédit-bail mobilier,Sous-compte,4,187
+1873,Dettes de location-acquisition /location-vente,Sous-compte,4,187
+1876,Intérêts courus,Sous-compte,4,187
+188,Autres emprunts et dettes,Compte,3,18
+19,PROVISIONS POUR RISQUES ET CHARGES,Classe,2,
+191,Provisions pour litiges,Compte,3,19
+192,Provisions pour charges sur donations et legs,Compte,3,19
+194,Provisions pour pertes de change,Compte,3,19
+196,Provisions pour pensions et obligations similaires,Compte,3,19
+198,Autres provisions pour risques et charges,Compte,3,19
+1981,Provisions pour amendes et pénalités,Sous-compte,4,198
+1984,Provisions pour démantèlement et remise en état,Sous-compte,4,198
+1988,Provisions pour divers risques et charges,Sous-compte,4,198
+20,ACTIFS IMMOBILISES,Classe,2,
+201,Immobilisations incorporelles,Compte,3,20
+2011,Usufruit temporaire,Sous-compte,4,201
+2012,"Brevets, licences, concessions et droits similaires",Sous-compte,4,201
+2013,Logiciels et sites internet,Sous-compte,4,201
+2014,Marques,Sous-compte,4,201
+2017,Autres,Sous-compte,4,201
+202,Terrains,Compte,3,20
+203,Batiments,Compte,3,20
+204,Matériels,Compte,3,20
+205,Titres de participations,Compte,3,20
+21,IMMOBILISATIONS INCORPORELLES,Classe,2,
+212,"Brevets, licences, concessions et droits similaires",Compte,3,21
+2121,Brevets,Sous-compte,4,212
+2122,Licences,Sous-compte,4,212
+2123,Concessions de service public,Sous-compte,4,212
+2128,Autres concessions et droits similaires,Sous-compte,4,212
+213,Logiciels et sites internet,Compte,3,21
+2131,Logiciels,Sous-compte,4,213
+2132,Sites internet,Sous-compte,4,213
+214,Marques,Compte,3,21
+218,Autres droits et valeurs incorporels,Compte,3,21
+2181,Indemnités de transfert aux joueurs,Sous-compte,4,218
+219,Immobilisations incorporelles en cours,Compte,3,21
+2193,Logiciels et sites internet,Sous-compte,4,219
+2198,Autres droits et valeurs incorporels,Sous-compte,4,219
+22,TERRAINS,Classe,2,
+221,Terrains agricoles et forestiers,Compte,3,22
+2211,Terrains d'exploitation agricole,Sous-compte,4,221
+2212,Terrains d'exploitation forestière,Sous-compte,4,221
+2218,Autres terrains,Sous-compte,4,221
+222,Terrains nus,Compte,3,22
+2221,Terrains à bâtir,Sous-compte,4,222
+2228,Autres terrains nus,Sous-compte,4,222
+223,Terrains bâtis,Compte,3,22
+2231,pour bâtiments industriels et agricoles,Sous-compte,4,223
+2232,pour bâtiments administratifs et commerciaux,Sous-compte,4,223
+2234,pour bâtiments affectés aux autres opérations professionnelles,Sous-compte,4,223
+2235,pour bâtiments affectés aux autres opérations non professionnelles,Sous-compte,4,223
+2238,Autres terrains bâtis,Sous-compte,4,223
+224,Travaux de mise en valeur des terrains,Compte,3,22
+2241,Plantation d'arbres et d’arbustes,Sous-compte,4,224
+2245,Améliorations du fonds,Sous-compte,4,224
+2248,Autres travaux,Sous-compte,4,224
+226,Terrains aménagés,Compte,3,22
+2261,Parkings,Sous-compte,4,226
+228,Autres terrains,Compte,3,22
+2281,Terrains - immeubles de placement,Sous-compte,4,228
+2285,Terrains des logements affectés au personnel,Sous-compte,4,228
+2286,Terrains de location - acquisition,Sous-compte,4,228
+2288,Divers terrains,Sous-compte,4,228
+229,Aménagements de terrains en cours,Compte,3,22
+2291,Terrains agricoles et forestiers,Sous-compte,4,229
+2292,Terrains nus,Sous-compte,4,229
+2298,Autres terrains,Sous-compte,4,229
+23,"BÂTIMENTS, INSTALLATIONS TECHNIQUES ET AGENCEMENTS",Classe,2,
+231,"Bâtiments industriels, agricoles, administratifs, commerciaux, religieux et autres sur sol propre",Compte,3,23
+2311,Bâtiments industriels,Sous-compte,4,231
+2312,Bâtiments agricoles,Sous-compte,4,231
+2313,Bâtiments administratifs et commerciaux,Sous-compte,4,231
+2314,Bâtiments affectés au logement du personnel,Sous-compte,4,231
+2315,Bâtiments - immeubles de placement,Sous-compte,4,231
+2316,Bâtiments de location - acquisition,Sous-compte,4,231
+2317,Edifices religieux et assimilés,Sous-compte,4,231
+2318,Autres bâtiments sur sol propre,Sous-compte,4,231
+232,"Bâtiments industriels, agricoles, administratifs, commerciaux, religieux et autres sur sol d'autrui",Compte,3,23
+2321,Bâtiments industriels,Sous-compte,4,232
+2322,Bâtiments agricoles,Sous-compte,4,232
+2323,Bâtiments administratifs et commerciaux,Sous-compte,4,232
+2324,Bâtiments affectés au logement du personnel,Sous-compte,4,232
+2325,Bâtiments - immeubles de placement,Sous-compte,4,232
+2326,Bâtiments de location - acquisition,Sous-compte,4,232
+2327,Eldifices religieux et assimilés,Sous-compte,4,232
+2328,Autres bâtiments sur sol d’autrui,Sous-compte,4,232
+233,Ouvrages d'infrastructure,Compte,3,23
+2331,Voies de terre,Sous-compte,4,233
+2332,Voies de fer,Sous-compte,4,233
+2333,Voies d'eau,Sous-compte,4,233
+2334,"Barrages, digues",Sous-compte,4,233
+2335,Pistes d'aérodrome,Sous-compte,4,233
+2337,Stades et autres infrastructures sportives,Sous-compte,4,233
+2338,Autres ouvrages d'infrastructures,Sous-compte,4,233
+234,"Aménagements, agencements et installations techniques",Compte,3,23
+2341,Installations complexes spécialisées sur sol propre,Sous-compte,4,234
+2342,Installations complexes spécialisées sur sol d’autrui,Sous-compte,4,234
+2343,Installations à caractère spécifique sur sol propre,Sous-compte,4,234
+2344,Installations à caractère spécifique sur sol d’autrui,Sous-compte,4,234
+2345,Aménagements et agencements des bâtiments,Sous-compte,4,234
+235,Aménagements de bureaux et assimilés,Compte,3,23
+2351,Installations générales,Sous-compte,4,235
+2358,Autres aménagements de bureaux,Sous-compte,4,235
+238,Autres installations et agencements,Compte,3,23
+2381,Autres installations et agencements des édifices religieux et assimilés,Sous-compte,4,238
+2382,Autres installations et agencements des stades et autres infrastructures sportives,Sous-compte,4,238
+239,"Bâtiments, aménagements, agencements et installations en cours",Compte,3,23
+2391,Bâtiments sur sol propre en cours,Sous-compte,4,239
+2392,Bâtiments sur sol d’autrui en cours,Sous-compte,4,239
+2393,Ouvrages d'infrastructure en cours,Sous-compte,4,239
+2394,"Aménagements, agencements et installations techniques en cours",Sous-compte,4,239
+2395,Aménagements de bureaux en cours,Sous-compte,4,239
+2396,Bâtiments en cours-immeubles de placement,Sous-compte,4,239
+2398,Autres installations et agencements en cours,Sous-compte,4,239
+24,MATERIEL ET MOBILIER,Classe,2,
+241,Matériel et outillage industriel et commercial,Compte,3,24
+2411,Matériel industriel,Sous-compte,4,241
+2412,Outillage industriel,Sous-compte,4,241
+2413,Matériel commercial,Sous-compte,4,241
+2414,Outillage commercial,Sous-compte,4,241
+2416,Matériel et outillage industriel et commercial de location - acquisition,Sous-compte,4,241
+242,Matériel et outillage agricole,Compte,3,24
+2421,Matériel agricole,Sous-compte,4,242
+2422,Outillage agricole,Sous-compte,4,242
+2426,Matériel et outillage agricole de location-acquisition,Sous-compte,4,242
+243,Matériel d'emballage récupérable et identifiable,Compte,3,24
+244,Matériel et mobilier,Compte,3,24
+2441,Matériel et mobilier de bureau,Sous-compte,4,244
+2442,Matériel informatique et bureautique,Sous-compte,4,244
+2443,Matériel et mobilier religieux,Sous-compte,4,244
+2444,Matériel et mobilier sportifs,Sous-compte,4,244
+2445,Matériel et mobilier - immeubles de placement,Sous-compte,4,244
+2446,Matériel et mobilier de location - acquisition,Sous-compte,4,244
+2447,Matériel et mobilier des logements du personnel,Sous-compte,4,244
+245,Matériel de transport,Compte,3,24
+2451,Matériel automobile,Sous-compte,4,245
+2452,Matériel ferroviaire,Sous-compte,4,245
+2453,"Matériel fluvial, lagunaire",Sous-compte,4,245
+2454,Matériel naval,Sous-compte,4,245
+2455,Matériel aérien,Sous-compte,4,245
+2456,Matériel de transport de location - acquisition,Sous-compte,4,245
+2457,Matériel hippomobile,Sous-compte,4,245
+2458,Autres matériels de transport,Sous-compte,4,245
+246,Actifs biologiques,Compte,3,24
+2461,"Cheptel, animaux de trait",Sous-compte,4,246
+2462,"Cheptel, animaux reproducteurs",Sous-compte,4,246
+2463,Animaux de garde,Sous-compte,4,246
+2465,Plnntatinnc aurirnlpQ,Sous-compte,4,246
+2468,Autres actifs biologiques,Sous-compte,4,246
+247,"Agencements, aménagements du matériel et des actifs biologiques",Compte,3,24
+2471,Agencements et aménagements du matériel,Sous-compte,4,247
+2472,Agencements et aménagements des actifs biologiques,Sous-compte,4,247
+2478,"Autres agencements, aménagements du matériel et des actifs biologiques",Sous-compte,4,247
+248,Autres matériels et mobiliers,Compte,3,24
+2481,Collections et œuvres d’art,Sous-compte,4,248
+2488,Divers matériels et mobiliers,Sous-compte,4,248
+249,Matériels et actifs biologiques en cours,Compte,3,24
+2491,Matériel et outillage industriel et commercial,Sous-compte,4,249
+2492,Matériel et outillage agricole,Sous-compte,4,249
+2493,Matériel d'emballage récupérable et identifiable,Sous-compte,4,249
+2494,Matériel et mobilier de bureau,Sous-compte,4,249
+2495,Matériel de transport,Sous-compte,4,249
+2496,Actifs biologiques,Sous-compte,4,249
+2497,Agencements et aménagements du matériel et des actifs biologiques,Sous-compte,4,249
+2498,Autres matériels et actifs biologiques,Sous-compte,4,249
+25,AVANCE ET ACOMPTE,Classe,2,
+251,Avances et acomptes versés sur immobilisations incorporelles,Compte,3,25
+252,Avances et acomptes versés sur immobilisations corporelles,Compte,3,25
+26,TITRES DE PARTICIPATION,Classe,2,
+261,Titres de participation,Compte,3,26
+265,Participations dans des organismes professionnels,Compte,3,26
+266,Parts dans des groupements d'intérêt économique (G.LE.),Compte,3,26
+268,Autres titres de participation,Compte,3,26
+27,AUTRES IMMOBLISATIONS FINANCIÈRES,Classe,2,
+271,Prêts et créances,Compte,3,27
+2711,Prêts participatifs,Sous-compte,4,271
+2713,Billets de fonds,Sous-compte,4,271
+2715,Titres prêtés,Sous-compte,4,271
+2718,Autres prêts et créances,Sous-compte,4,271
+272,Prêts au personnel,Compte,3,27
+2721,Prêts immobiliers,Sous-compte,4,272
+2722,Prêts mobiliers et d'installation,Sous-compte,4,272
+2728,Autres prêts au personnel,Sous-compte,4,272
+273,Créances sur l'Etat,Compte,3,27
+2731,Retenues de garantie,Sous-compte,4,273
+2733,Fonds réglementé,Sous-compte,4,273
+2738,Autres créances sur l'Etat,Sous-compte,4,273
+274,Titres immobilisés,Compte,3,27
+2741,Titres immobilisés de l’activité de portefeuille (T.I.A.P.),Sous-compte,4,274
+2742,Titres participatifs,Sous-compte,4,274
+2743,Certificats d'investissement,Sous-compte,4,274
+2744,Parts de fonds commun de plac i ent(F.C.P.),Sous-compte,4,274
+2745,Obligations,Sous-compte,4,274
+2748,Autres titres immobilisés,Sous-compte,4,274
+275,Dépôts et cautionnements versés,Compte,3,27
+2751,Dépôts pour loyers d'avance,Sous-compte,4,275
+2752,Dépôts pour l'électricité,Sous-compte,4,275
+2753,Dépôts pour l’eau,Sous-compte,4,275
+2754,Dépôts pour le gaz,Sous-compte,4,275
+2755,"Dépôts pour le téléphone, la télécopie",Sous-compte,4,275
+2758,Autres dépôts et cautionnement,Sous-compte,4,275
+276,intérêts courus,Compte,3,27
+2761,Prêts et créances,Sous-compte,4,276
+2762,Prêts au personnel,Sous-compte,4,276
+2763,Créances sur l'Etat,Sous-compte,4,276
+2764,Titres immobilisés,Sous-compte,4,276
+2765,Dépôts et cautionnements versés,Sous-compte,4,276
+2768,Immobilisations financières diverses,Sous-compte,4,276
+278,Immobilisations financières diverses,Compte,3,27
+2781,Créances diverses,Sous-compte,4,278
+2784,Banques dépôts à tenue et opérations assimilées,Sous-compte,4,278
+2785,Or et métaux précieux11 ’,Sous-compte,4,278
+2788,Autres immobilisations financières,Sous-compte,4,278
+28,AMORTISSEMENTS,Classe,2,
+280,Amortissements d’usufruit temporaire,Compte,3,28
+281,Amortissements des immobilisations incorporelles,Compte,3,28
+2812,"Amortissements des brevets, licences, concessions et droits similaires",Sous-compte,4,281
+2813,Amortissements des logiciels et sites internet,Sous-compte,4,281
+2814,Amortissements des marques,Sous-compte,4,281
+2817,Amortissements des Indemnités de transfert aux joueurs,Sous-compte,4,281
+2818,Amortissements des autres droits et valeurs incorporels,Sous-compte,4,281
+282,Amortissements des terrains,Compte,3,28
+2824,Amortissements des travaux de mise en valeur des terrains,Sous-compte,4,282
+283,"Amortissements des bâtiments, installations techniques et agencements",Compte,3,28
+2831,"I Amortissements des bâtiments industriels, agricoles, administratifs, commerciaux,",Sous-compte,4,283
+2832,"Amortissements des bâtiments industriels, agricoles, administratifs, commerciaux,",Sous-compte,4,283
+2833,Amortissements des ouvrages d’infrastructure,Sous-compte,4,283
+2834,"Amortissements des aménagements, agencements et installations techniques",Sous-compte,4,283
+2835,Amortissements des aménagements de bureaux,Sous-compte,4,283
+2838,Amortissements des autres installations et agencements,Sous-compte,4,283
+284,Amortissements du matériel,Compte,3,28
+2841,Amortissements du matériel et de l’outillage industriel et commercial,Sous-compte,4,284
+2842,Amortissements du matériel et de l’outillage agricole,Sous-compte,4,284
+2843,Amortissements du matériel d'emballage récupérable et identifiable,Sous-compte,4,284
+2844,Amortissements du matériel et du mobilier,Sous-compte,4,284
+2845,Amortissements du matériel de transport,Sous-compte,4,284
+2846,Amortissements des actifs biologiques,Sous-compte,4,284
+2847,Amortissements des agencements et aménagements du matériel et des actifs biologiques,Sous-compte,4,284
+2848,Amortissements des autres matériels,Sous-compte,4,284
+29,DEPRECIATIONS DES IMMOBILISATIONS,Classe,2,
+290,Dépréciations des immobilisations destinées à la vente provenant de dons et legs,Compte,3,29
+2901,Dépréciations d'usufruit temporaire,Sous-compte,4,290
+2902,Dépréciations des immobilisations destinées à la vente provenant de dons et legs non,Sous-compte,4,290
+291,Dépréciations des immobilisations incorporelles,Compte,3,29
+2912,"Dépréciations des brevets, licences, concessions et droits similaires",Sous-compte,4,291
+2913,Dépréciations des logiciels et sites internet,Sous-compte,4,291
+31,BIENS LIES A L’ACTIVITÉ,Classe,2,
+311,Biens liés à l'activité A,Compte,3,31
+312,Biens liés à l'activité B,Compte,3,31
+32,MARCHANDISE,Classe,2,
+321,Marchandises A,Compte,3,32
+322,Marchandises B,Compte,3,32
+323,Matières A,Compte,3,32
+324,Matières B,Compte,3,32
+325,"Fournitures liées (A, B)",Compte,3,32
+33,AUTRES APPROVISIONNEMENTS,Classe,2,
+331,Matières consommables,Compte,3,33
+333,Fournitures de magasin,Compte,3,33
+334,Fournitures de bureau,Compte,3,33
+335,Emballages,Compte,3,33
+3351,Emballages perdus,Sous-compte,4,335
+3352,Emballages récupérables non identifiables,Sous-compte,4,335
+3353,Emballages à usage mixte,Sous-compte,4,335
+3358,Autres emballages,Sous-compte,4,335
+338,Autres matières,Compte,3,33
+34,DONS EN NATURE,Classe,2,
+341,Dons en nature non affectés,Compte,3,34
+345,Dons en nature affectés,Compte,3,34
+35,PRODUITS ET SERVICES EN COURS,Classe,2,
+36,PRODUITS FINIS,Classe,2,
+361,Produits finis A,Compte,3,36
+362,Produits finis B,Compte,3,36
+363,Actifs biologiques,Compte,3,36
+3631,Animaux,Sous-compte,4,363
+3632,Végétaux,Sous-compte,4,363
+3638,Autres stocks (activités annexes),Sous-compte,4,363
+367,Produits intermédiaires et résiduels,Compte,3,36
+37,"STOCK EN COURS DE ROUTE , EN CONSIGNATION OU EN DEPOT",Classe,2,
+371,Biens liés à l'activité en cours de route,Compte,3,37
+372,"Marchandises, matières premières et fournitures liés en cours de route",Compte,3,37
+373,Autres approvisionnements en cours de route,Compte,3,37
+377,Stocks en consignation ou en dépôt,Compte,3,37
+3771,Stock en consignation,Sous-compte,4,377
+3772,Stock en dépôt,Sous-compte,4,377
+378,Stock provenant d'immobilisations mises hors services ou au rebut,Compte,3,37
+38,DON EN NATURE H A O,Classe,2,
+381,non affecté,Compte,3,38
+385,affectés,Compte,3,38
+39,DÉPRÉCIATIONS DES STOCKS ET DES PRODUCTIONS EN COURS,Classe,2,
+391,Dépréciations des stocks de biens liés à Tactivité,Compte,3,39
+392,"Dépréciations des stocks de marchandises, et matières premières et fournitures",Compte,3,39
+393,,Compte,3,39
+396,,Compte,3,39
+397,"Dépréciations des stocks en cours de route, en consignation ou en dépôt",Compte,3,39
+40,FOURNISSEURS ET COMPTES RATTACHÉS,Classe,2,
+401,"Fournisseurs, dettes en compte",Compte,3,40
+4011,Fournisseurs,Sous-compte,4,401
+4013,Fournisseurs sous-traitants,Sous-compte,4,401
+4016,"Fournisseurs, réserve de propriété",Sous-compte,4,401
+4017,"Fournisseurs, retenues de garantie",Sous-compte,4,401
+402,"Fournisseurs, effets à payer",Compte,3,40
+4021,"Fournisseurs, effets à payer",Sous-compte,4,402
+4023,"Fournisseurs sous-traitants, effets à payer",Sous-compte,4,402
+408,"Fournisseurs, factures non parvenues",Compte,3,40
+4081,Fournisseurs,Sous-compte,4,408
+4083,Fournisseurs sous-traitants,Sous-compte,4,408
+4086,"Fournisseurs, intérêts courus",Sous-compte,4,408
+409,Fournisseurs débiteurs,Compte,3,40
+4091,Fournisseurs avances et acomptes versés,Sous-compte,4,409
+4093,Fournisseurs sous-traitants avances et acomptes versés,Sous-compte,4,409
+4094,Fournisseurs créances pour emballages et matériels à rendre,Sous-compte,4,409
+4098,"Fournisseurs, rabais, remises, ristournes et autres avoirs à obtenir",Sous-compte,4,409
+41,"ADHERENTS, CLIENTS-USAGERS ET COMPTES RATTACHÉS",Classe,2,
+411,Adhérents,Compte,3,41
+412,Clients-usagers,Compte,3,41
+413,"Adhérents, Clients-usagers, chèques, effets et autres valeurs impayés",Compte,3,41
+4131,"Adhérents, chèques impayés",Sous-compte,4,413
+4132,"Clients-usagers, chèques impayés",Sous-compte,4,413
+4133,"Adhérents, Autres valeurs impayées",Sous-compte,4,413
+4138,"Clients-usagers, autres valeurs impayées",Sous-compte,4,413
+416,"Créances, adhérents, clients-usagers litigieuses ou douteuses",Compte,3,41
+4161,Adhérents cotisations litigieuses ou douteuses,Sous-compte,4,416
+4162,Créances litigieuses ou douteuses,Sous-compte,4,416
+418,"Adhérents, clients-usagers produits à recevoir",Compte,3,41
+4181,"Adhérents, appels de fonds à établir",Sous-compte,4,418
+4182,"Clients- usagers, factures à établir",Sous-compte,4,418
+4186,"Adhérents. Clients-usagers, intérêts courus",Sous-compte,4,418
+419,"Adhérents, Clients-usagers créditeurs",Compte,3,41
+4191,"Adhérents, avances reçues",Sous-compte,4,419
+4192,"Clients-usagers, avances et acomptes reçus",Sous-compte,4,419
+4194,"Clients-usagers, dettes pour emballages et matériels consignés",Sous-compte,4,419
+4198,"Clients-usagers, rabais, remises, ristournes et autres avoirs à accorder",Sous-compte,4,419
+42,PERSONNEL,Classe,2,
+421,"Personnel, avances et acomptes",Compte,3,42
+421,"Personnel, avances",Compte,3,42
+4212,"Personnel, acomptes",Sous-compte,4,421
+4213,Frais avancés et fournitures au personnel,Sous-compte,4,421
+422,"Personnel, rémunérations dues",Compte,3,42
+423,"Personnel, oppositions, saisies arrêts",Compte,3,42
+4231,"Personnel, oppositions",Sous-compte,4,423
+4232,"Personnel, saisies arrêts",Sous-compte,4,423
+4233,"Personnel, avis à tiers détenteur",Sous-compte,4,423
+424,"Personnel, œuvres sociales internes",Compte,3,42
+4241,Assistance médicale,Sous-compte,4,424
+4242,Allocations familiales,Sous-compte,4,424
+4245,Organismes sociaux rattachés à l'entité,Sous-compte,4,424
+4248,Autres œuvres sociales internes,Sous-compte,4,424
+425,Représentants du personnel,Compte,3,42
+4251,Délégués du personnel,Sous-compte,4,425
+4252,Syndicats et assimilés,Sous-compte,4,425
+4258,Autres représentants du personnel,Sous-compte,4,425
+427,Personnel - dépôts,Compte,3,42
+428,"Personnel, charges à payer et produits à recevoir",Compte,3,42
+4281,Personnel congés à payer,Sous-compte,4,428
+4286,Autres Charges à payer,Sous-compte,4,428
+4287,Produits à recevoir,Sous-compte,4,428
+43,ORGANISMES SOCIAUX,Classe,2,
+431,Sécurité sociale,Compte,3,43
+4311,Prestations familiales,Sous-compte,4,431
+4312,Accidents de travail,Sous-compte,4,431
+4318,Autres cotisations sociales,Sous-compte,4,431
+432,Caisses de retraite,Compte,3,43
+4321,Caisse de retraite obligatoire,Sous-compte,4,432
+4322,Caisse de retraite complémentaire,Sous-compte,4,432
+4328,Autres caisses de retraites,Sous-compte,4,432
+433,Autres organismes sociaux,Compte,3,43
+4331,Mutuelle de santé,Sous-compte,4,433
+4332,Assurances retraite,Sous-compte,4,433
+4333,Assurances et organismes de santé,Sous-compte,4,433
+438,"Organismes sociaux, charges à payer et produits à recevoir",Compte,3,43
+4381,Charges sociales sur gratifications à payer,Sous-compte,4,438
+4386,Autres charges à payer,Sous-compte,4,438
+4387,Produits à recevoir,Sous-compte,4,438
+44,ÉTAT ET COLLECTIVITÉS PUBLIQUES,Classe,2,
+442,"Etat, autres impôts et taxes",Compte,3,44
+4421,impôts et taxes d'Etal,Sous-compte,4,442
+4422,Impôts et taxes pour les collectivités publiques,Sous-compte,4,442
+4423,Impôts et taxes recouvrables sur des obligataires,Sous-compte,4,442
+4424,Impôts et taxes recouvrables sur des adhérents et autres,Sous-compte,4,442
+4426,Droits de douane,Sous-compte,4,442
+4428,Autres impôts et taxes,Sous-compte,4,442
+443,"État, T.V.A. Facturée",Compte,3,44
+444,"État, T.V.A. due ou crédit de T.V.A.",Compte,3,44
+445,"État, T.V.A. Récupérable",Compte,3,44
+446,"État, autres taxes sur le chiffre d'affaires",Compte,3,44
+447,"Etat, impôts retenus à la source",Compte,3,44
+4471,Impôt général sur le revenu,Sous-compte,4,447
+4472,Impôts sur salaires,Sous-compte,4,447
+4473,Contribution nationale,Sous-compte,4,447
+4474,Contribution nationale de solidarité,Sous-compte,4,447
+4478,Autres impôts et contributions,Sous-compte,4,447
+448,"État, charges à payer et produits à recevoir",Compte,3,44
+4486,Charges à payer,Sous-compte,4,448
+4487,Produits à recevoir,Sous-compte,4,448
+449,"État, créances et dettes diverses",Compte,3,44
+4491,"Etat, Subvention à recevoir",Sous-compte,4,449
+45,"FONDATEURS, APPORTEURS ET COMPTES COURANTS",Classe,2,
+451,Associations et assimilées,Compte,3,45
+4511,Apporteurs en nature,Sous-compte,4,451
+4512,Apporteurs en numéraire,Sous-compte,4,451
+4515,"Adhérents, dirigeants, comptes courants",Sous-compte,4,451
+452,Fondations et assimilées,Compte,3,45
+4521,Apporteurs en nature,Sous-compte,4,452
+4522,Apporteurs en numéraire,Sous-compte,4,452
+4555,"Fondateurs, dirigeants, comptes courants",Sous-compte,4,455
+453,Ordres professionnels,Compte,3,45
+4531,Apporteurs en nature,Sous-compte,4,453
+4532,Apporteurs en numéraire,Sous-compte,4,453
+4535,"Membres, dirigeants, comptes courants",Sous-compte,4,453
+454,Organisations politiques,Compte,3,45
+4541,Apporteurs en nature,Sous-compte,4,454
+4542,Apporteurs en numéraire,Sous-compte,4,454
+4545,"Adhérents, dirigeants, comptes courants",Sous-compte,4,454
+455,Organisations syndicales,Compte,3,45
+4551,Apporteurs en nature,Sous-compte,4,455
+4552,Apporteurs en numéraire,Sous-compte,4,455
+4555,"Adhérents, dirigeants, comptes courants",Sous-compte,4,455
+456,"Organisations religieuses, apporteurs",Compte,3,45
+4561,Congrégations religieuses et assimilées,Sous-compte,4,456
+4562,et assimilés,Sous-compte,4,456
+457,"Mécènes, bénévoles et assimilés",Compte,3,45
+4571,Mécènes et assimilés,Sous-compte,4,457
+4572,Bénévoles et assimilés,Sous-compte,4,457
+458,Autres fondateurs et apporteurs,Compte,3,45
+46,"BAILLEURS, FONDS D’ADMINISTRATION",Classe,2,
+462,Bailleurs - projet de développement. Fonds d’administration,Compte,3,46
+463,"Etat - projet de développement, Fonds d'administration",Compte,3,46
+464,Autres tiers ou organismes de financement assimilés - projet de développement. Fonds,Compte,3,46
+469,Fonds d'administration à recevoir,Compte,3,46
+4692,Bailleurs -Fonds d’administration à recevoir,Sous-compte,4,469
+4693,Etat-Fonds d'administration à recevoir,Sous-compte,4,469
+4694,Autres tiers ou organismes de financement assimilés-Fonds d’administration à recevoir,Sous-compte,4,469
+47,DÉBITEURS ET CRÉDITEURS DIVERS,Classe,2,
+471,Débiteurs et créditeurs divers,Compte,3,47
+471,1 Débiteurs divers,Compte,3,47
+4712,Créditeurs divers,Sous-compte,4,471
+4713,"Créditeurs, dons en nature courants non consommés",Sous-compte,4,471
+4717,Débiteurs divers - retenues de garantie,Sous-compte,4,471
+4719,Bons de souscription d'actions et d’obligations,Sous-compte,4,471
+472,Créances et dettes sur titres de placement,Compte,3,47
+4721,Créances sur cessions de titres de placement,Sous-compte,4,472
+4726,Versements restant à effectuer sur titres de placement non libérés,Sous-compte,4,472
+473,Organismes nationaux et internationaux — subventions à recevoir,Compte,3,47
+4731,Subventions d'investissement à recevoir,Sous-compte,4,473
+4732,Subventions d'exploitation à recevoir,Sous-compte,4,473
+4733,Subventions d'équilibre à recevoir,Sous-compte,4,473
+4738,Autres subventions à recevoir,Sous-compte,4,473
+4739,Subventions à reverser,Sous-compte,4,473
+474,Compte de répartition périodique des charges et des produits,Compte,3,47
+4746,Compte de répartition périodique des charges,Sous-compte,4,474
+4747,Compte de répartition périodique des produits,Sous-compte,4,474
+475,Générosités financières à recevoir,Compte,3,47
+476,Charges constatées d’avance,Compte,3,47
+477,Produits constatés d'avance,Compte,3,47
+478,Ecarts de conversion - actif,Compte,3,47
+4781,Diminution des créances d'exploitation et H AO,Sous-compte,4,478
+4781,Diminution des créances d'exploitation,Sous-compte,4,478
+47818,Diminution des créances 1IAO,Poste détaillé,5,4781
+4782,Diminution des créances financières,Sous-compte,4,478
+4783,Augmentation des dettes d'exploitation et HAO,Sous-compte,4,478
+47831,Augmentation des dettes d'exploitation,Poste détaillé,5,4783
+47838,Augmentation des dettes HAO,Poste détaillé,5,4783
+4784,Augmentation des dettes financières,Sous-compte,4,478
+4786,Différences d évaluation sur instruments de trésorerie,Sous-compte,4,478
+4788,Différences compensées par couverture de change,Sous-compte,4,478
+4791,Augmentation des créances d’exploitation et HAO,Sous-compte,4,479
+47911,1 Augmentation des créances d’exploitation,Poste détaillé,5,4791
+47918,8 Augmentation des créances HAO,Poste détaillé,5,4791
+4792,Augmentation des créances financières,Sous-compte,4,479
+4793,Diminution des dettes d’exploitation et HAO,Sous-compte,4,479
+47931,1 Diminution des dettes d'exploitation,Poste détaillé,5,4793
+47938,8 Diminution des dettes HAO,Poste détaillé,5,4793
+4794,Diminution des dettes financières,Sous-compte,4,479
+4797,Différences d évaluation sur instruments de trésorerie,Sous-compte,4,479
+4798,Différences compensées nar couverture de charme,Sous-compte,4,479
+48,CRÉANCES ET DETTES DONS HORS ACTIVITÉS ORDINAIRES (H.A.O.),Classe,2,
+481,Fournisseurs d'investissements,Compte,3,48
+481,"Fournisseurs, immobilisations incorporelles",Compte,3,48
+4812,"Fournisseurs, immobilisations corporelles",Sous-compte,4,481
+4813,Versements restant à effectuer sur litres de participation et titres immobilisés non libérés,Sous-compte,4,481
+4816,"Fournisseurs, réserve de propriété - immobilisations",Sous-compte,4,481
+4816,"1 Fournisseurs, réserve de propriété — immobilisations incorporelles",Sous-compte,4,481
+4816,"2 Fournisseurs, réserve de propriété - immobilisations corporelles",Sous-compte,4,481
+4817,"Fournisseurs, retenues de garantie- immobilisations",Sous-compte,4,481
+4817,"1 Fournisseurs, retenues de garantie - immobilisations incorporelles",Sous-compte,4,481
+4817,"2 Fournisseurs, retenues de garantie - immobilisations corporelles",Sous-compte,4,481
+4818,"Fournisseurs, factures non parvenues - immobilisations",Sous-compte,4,481
+4818,"1 Fournisseurs, factures non parvenues - immobilisations incorporelles",Sous-compte,4,481
+4818,"2 Fournisseurs, factures non parvenues - immobilisations corporelles",Sous-compte,4,481
+484,Autres dettes hors activités ordinaires (H.A.O.),Compte,3,48
+485,Créances sur cessions d'immobilisations,Compte,3,48
+4851,"Créances, en compte, immobilisations incorporelles",Sous-compte,4,485
+4852,"Créances, en compte, immobilisations corporelles",Sous-compte,4,485
+4856,"Créances, immobilisations financières",Sous-compte,4,485
+4857,Créances. Retenues de garantie sur cession immobilisations,Sous-compte,4,485
+4858,"Créances sur cession d’immobilisations, factures à établir",Sous-compte,4,485
+486,Dettes et créances des legs et dons d'immobilisations,Compte,3,48
+4861,Dettes des dons et legs d’immobilisations,Sous-compte,4,486
+4865,Créances reçues surdons et legs d’immobilisations,Sous-compte,4,486
+488,Autres créances hors activités ordinaires (H.A.O.),Compte,3,48
+4881,"Créditeurs, dons en nature HAO non consommés",Sous-compte,4,488
+490,Dépréciations des comptes fournisseurs,Compte,3,49
+491,Dépréciations des comptes adhérents et clients-usagers,Compte,3,49
+491,I Dépréciations des créances litigieuses,Compte,3,49
+4912,Dépréciations des créances douteuses,Sous-compte,4,491
+492,Dépréciations des comptes personnel,Compte,3,49
+493,Dépréciations des comptes organismes sociaux,Compte,3,49
+494,Dépréciations des comptes Etat et Collectivités publiques,Compte,3,49
+497,Dépréciations des comptes débiteurs divers,Compte,3,49
+498,Dépréciations des comptes de créances H.A.O.,Compte,3,49
+4985,Dépréciations des créances sur cessions d’immobilisations,Sous-compte,4,498
+4988,Dépréciations des autres creances H.A.O.,Sous-compte,4,498
+499,Provisions pour risques et charges à court terme,Compte,3,49
+4991,Provisions pour risques sur opérations d’exploitation,Sous-compte,4,499
+4998,Provisions pour risques sur opérations H.A.O.,Sous-compte,4,499
+50,TITRES DE PLACEMENT,Classe,2,
+501,Titres du trésor et bons de caisse à court terme,Compte,3,50
+5011,Titres du Trésor à court terme,Sous-compte,4,501
+5012,Titres d'organismes financiers,Sous-compte,4,501
+5013,Bons de caisse à court terme,Sous-compte,4,501
+5016,Frais d'acquisition des titres de trésor et bons de caisse,Sous-compte,4,501
+502,Actions,Compte,3,50
+5022,Actions cotées,Sous-compte,4,502
+5023,Actions non cotées,Sous-compte,4,502
+5025,Autres actions,Sous-compte,4,502
+5026,Frais d’acquisition des actions,Sous-compte,4,502
+503,Obligations,Compte,3,50
+5032,Obligations cotées,Sous-compte,4,503
+5033,Obligations non cotées,Sous-compte,4,503
+5035,Autres obligations,Sous-compte,4,503
+5036,Frais d'acquisition des obligations,Sous-compte,4,503
+504,Bons de souscription,Compte,3,50
+5042,Bons de souscription d'actions,Sous-compte,4,504
+5043,Bons de souscription d'obligations,Sous-compte,4,504
+505,Titres négociables hors Région,Compte,3,50
+506,Intérêts courus,Compte,3,50
+5061,l itres du l'résor et bons de caisse à court terme,Sous-compte,4,506
+5062,Actions,Sous-compte,4,506
+5063,Obligations,Sous-compte,4,506
+508,Autres titres de placement et créances assimilées,Compte,3,50
+51,VALEURS À ENCAISSER,Classe,2,
+513,Chèques à encaisser,Compte,3,51
+514,Chèques à rencaissement,Compte,3,51
+515,Cartes de crédit à encaisser,Compte,3,51
+518,Autres valeurs à rencaissement,Compte,3,51
+5185,Chèques de voyage,Sous-compte,4,518
+5187,Intérêts échus des obligations,Sous-compte,4,518
+52,BANQUES,Classe,2,
+521,Banques locales,Compte,3,52
+521,1 Banques en monnaie nationale,Compte,3,52
+5215,Banques en devises,Sous-compte,4,521
+522,Banques autres Etats Région,Compte,3,52
+523,Banques autres Etats zone monétaire,Compte,3,52
+524,Banques hors zone monétaire,Compte,3,52
+525,Banques dépôt à terme et opérations assimilées,Compte,3,52
+526,"Banques, intérêts courus",Compte,3,52
+5261,"Banque, intérêts courus charges à payer",Sous-compte,4,526
+5267,"Banque, intérêts courus produits à recevoir",Sous-compte,4,526
+53,ETABLISSEMENTS FINANCIERS ET ASSIMILES,Classe,2,
+531,Banques postales,Compte,3,53
+532,Trésor,Compte,3,53
+533,Sociétés de gestion et d'intermédiation (S.G.I.),Compte,3,53
+536,"Etablissements financiers, intérêts courus",Compte,3,53
+5361,"Établissements financiers, intérêts courus charges à payer",Sous-compte,4,536
+5367,"Établissements financiers, intérêts courus produits à recevoir",Sous-compte,4,536
+538,Autres organismes financiers,Compte,3,53
+55,INSTRUMENTS DE MONNAIE ELECTRONIQUE,Classe,2,
+551,Monnaie électronique - carte carburant,Compte,3,55
+552,Monnaie électronique - téléphone portable,Compte,3,55
+553,Monnaie électronique - carte péage,Compte,3,55
+554,Porte-monnaie électronique,Compte,3,55
+558,Autres instruments de monnaie électronique,Compte,3,55
+56,"BANQUES, CRÉDITS DE TRÉSORERIE ET D'ESCOMPTE",Classe,2,
+561,Crédits de trésorerie,Compte,3,56
+565,Escompte de crédits ordinaires,Compte,3,56
+566,"Banques, crédits de trésorerie, intérêts courus",Compte,3,56
+57,CAISSE,Classe,2,
+571,Caisse en monnaie nationale,Compte,3,57
+572,Caisse en devises,Compte,3,57
+58,VIREMENTS INTERNES,Classe,2,
+585,Virements de fonds,Compte,3,58
+588,Autres virements internes,Compte,3,58
+59,DEPRECIATION ET PROVISION POUR RISQUE A COURS TERME,Classe,2,
+590,Dépréciations des titres de placement,Compte,3,59
+591,Dépréciations des titres et valeurs à encaisser,Compte,3,59
+592,Dépréciations des comptes banques,Compte,3,59
+593,Dépréciations des comptes établissements financiers et assimilés,Compte,3,59
+595,Dépréciations des comptes d'instruments de monnaie électronique,Compte,3,59
+599,Provisions pour risque et charges à court terme à caractère financier,Compte,3,59
+60,ACHATS ET VARIATIONS DE STOCKS,Classe,2,
+601,Achats de biens et services liés à Tactivité,Compte,3,60
+6015,1 Achats de biens et services liés à Pactivite dans l’Etat partie,Sous-compte,4,601
+6012,Achats de biens et services liés à P activité dans la Région,Sous-compte,4,601
+6013,Achats de biens et services liés à P activité hors Région,Sous-compte,4,601
+6015,frais sur achats (2) de biens et services liés à P activité,Sous-compte,4,601
+6019,"Rabais, Remises et Ristournes obtenus (non ventilés)",Sous-compte,4,601
+602,"Achats de marchandises, de matières premières et fournitures liées",Compte,3,60
+6021,Achats de marchandises et matières premières dans l’Etat partie,Sous-compte,4,602
+6022,Achats de marchandises et matières premières dans la Région,Sous-compte,4,602
+6023,Achats de marchandises et matières premières hors Région,Sous-compte,4,602
+6025,frais sur achats de marchandises et matières ( 2 ’,Sous-compte,4,602
+6029,"Rabais, Remises et Ristournes obtenus (non ventilés)",Sous-compte,4,602
+603,Variations des stocks de biens achetés et reçus en dons en nature à distribuer,Compte,3,60
+6031,Variations des stocks de biens et services liés à l'activité,Sous-compte,4,603
+6032,Variations des stocks de marchandises,Sous-compte,4,603
+6033,Variations des stocks de matières premières et fournitures liées,Sous-compte,4,603
+6034,Variations des stocks d'autres approvisionnements,Sous-compte,4,603
+6035,Variations de stocks de dons en nature à distribuer,Sous-compte,4,603
+604,Achats stockés de matières et fournitures consommables,Compte,3,60
+6041,Matières consommables,Sous-compte,4,604
+6042,Matières combustibles,Sous-compte,4,604
+6043,Produits d'entretien,Sous-compte,4,604
+6045,"Frais sur achats ,2) matières et fournitures consommables",Sous-compte,4,604
+6046,Fournitures de magasin,Sous-compte,4,604
+6047,Fournitures de bureau,Sous-compte,4,604
+6049,"Rabais, Remises et Ristournes obtenus (non ventilés)",Sous-compte,4,604
+605,Autres achats,Compte,3,60
+6051,Fournitures non stockables -Eau,Sous-compte,4,605
+6052,Fournitures non stockables - Électricité,Sous-compte,4,605
+6053,Fournitures non stockables — Autres énergies,Sous-compte,4,605
+6054,Fournitures d'entretien non stockables,Sous-compte,4,605
+6055,Fournitures de bureau non stockables,Sous-compte,4,605
+6056,Achats de petit matériel et outillage,Sous-compte,4,605
+6057,Achats d'études et prestations de services,Sous-compte,4,605
+6058,"Achats de travaux, matériels et équipements",Sous-compte,4,605
+6059,Rabais. Remises et Ristournes obtenus (non ventilés),Sous-compte,4,605
+606,Achats autres activités,Compte,3,60
+6061,Billetteries,Sous-compte,4,606
+6062,Tombola et autres jeux,Sous-compte,4,606
+6063,Bons d ' achats,Sous-compte,4,606
+6064,Voyages et sorties,Sous-compte,4,606
+6068,Autres activités,Sous-compte,4,606
+608,Achats d'emballages,Compte,3,60
+6081,Emballages perdus,Sous-compte,4,608
+6082,Emballages récupérables non idk n labiés,Sous-compte,4,608
+6083,Emballages à usage mixte,Sous-compte,4,608
+6085,"Frais sur achats <2,d’emballages",Sous-compte,4,608
+6089,Rabais. Remises et Ristournes obtenus (non ventilés),Sous-compte,4,608
+61,TRANSPORTS,Classe,2,
+612,Transports sur ventes,Compte,3,61
+613,Transports pour le compte de tiers,Compte,3,61
+614,Transports du personnel,Compte,3,61
+616,Transports de plis,Compte,3,61
+618,Autres frais de transport,Compte,3,61
+6181,Voyages et déplacements,Sous-compte,4,618
+6183,Transports administratifs,Sous-compte,4,618
+619,"Rabais, Remises et Ristournes Obtenus (non ventilés)",Compte,3,61
+62,SERVICES EXTÉRIEURS,Classe,2,
+621,Sous-traitance générale,Compte,3,62
+622,"Locations, charges locatives",Compte,3,62
+6221,Locations de terrains,Sous-compte,4,622
+6222,Locations de bâtiments,Sous-compte,4,622
+6223,Locations de matériels et outillages,Sous-compte,4,622
+6224,Malis sur emballages,Sous-compte,4,622
+6225,Locations d'emballages,Sous-compte,4,622
+6226,Fermages et loyers du foncier,Sous-compte,4,622
+6228,Locations et charges locatives diverses,Sous-compte,4,622
+623,Redevances de location-acquisition,Compte,3,62
+6232,Crédit-bail immobilier,Sous-compte,4,623
+6233,Crédit-bail mobilier,Sous-compte,4,623
+6234,Location-vente,Sous-compte,4,623
+6238,Autres contrats de location-acquisition,Sous-compte,4,623
+624,"Entretien, réparation, remise en état et maintenance",Compte,3,62
+6241,Entretien et réparation des biens immobiliers,Sous-compte,4,624
+6242,Entretien et réparation des biens mobiliers,Sous-compte,4,624
+6243,Maintenance,Sous-compte,4,624
+6244,Charges de démantèlement et remise en état,Sous-compte,4,624
+6248,Autres entretiens et réparation,Sous-compte,4,624
+625,Primes d'assurance,Compte,3,62
+6251,Assurances multirisques,Sous-compte,4,625
+6252,Assurances matériel de transport,Sous-compte,4,625
+6253,Assurances risques d'exploitation,Sous-compte,4,625
+63,AUTRE SERVICES EXTERIEURS,Classe,2,
+637,Rémunérations de personnel extérieur à l'entité,Compte,3,63
+6371,Personnel intérimaire,Sous-compte,4,637
+6372,Personnel détaché ou prêté à l'entité,Sous-compte,4,637
+638,Autres charges externes,Compte,3,63
+6381,Frais de recrutement du personnel,Sous-compte,4,638
+6382,Frais de déménagement,Sous-compte,4,638
+6383,Réceptions,Sous-compte,4,638
+6384,Missions,Sous-compte,4,638
+6385,Charges de copropriété,Sous-compte,4,638
+6388,Charges externes diverses,Sous-compte,4,638
+64,IMPÔTS ET TAXES,Classe,2,
+6414,Impôts et taxes directs,Sous-compte,4,641
+6411,Impôts fonciers et taxes annexes,Sous-compte,4,641
+6412,Licences et taxes annexes,Sous-compte,4,641
+6413,faxes sur appointements et salaires,Sous-compte,4,641
+6414,Taxes d'apprentissage,Sous-compte,4,641
+6415,Formation professionnelle continue,Sous-compte,4,641
+6416,Patente ou contribution économique locale,Sous-compte,4,641
+6418,Autres impôts et taxes directs,Sous-compte,4,641
+645,Impôts et taxes indirects,Compte,3,64
+646,Droits d’enregistrement,Compte,3,64
+6461,Droits de mutation,Sous-compte,4,646
+6462,Droits de timbre,Sous-compte,4,646
+6464,Vignettes,Sous-compte,4,646
+6468,Autres droits d’enregistrement,Sous-compte,4,646
+647,"Pénalités, amendes fiscales",Compte,3,64
+6471,"Pénalités d'assiette, impôts directs",Sous-compte,4,647
+6472,"Pénalités d'assiette, impôts indirects",Sous-compte,4,647
+6473,"Pénalités de recouvrement, impôts directs",Sous-compte,4,647
+6474,"Pénalités de recouvrement, impôts indirects",Sous-compte,4,647
+6478,Autres pénalités et amendes fiscales,Sous-compte,4,647
+648,Autres impôts et taxes,Compte,3,64
+649,Dégrèvements et annulations des impôts et taxes,Compte,3,64
+65,AUTRES CHARGES,Classe,2,
+651,"Pertes sur créances adhérents clients, et autres débiteurs",Compte,3,65
+6511,Clients-usagers,Sous-compte,4,651
+6512,Adhérents,Sous-compte,4,651
+6515,Autres débiteurs,Sous-compte,4,651
+652,Subventions accordées par l’entité,Compte,3,65
+654,Dons en nature courants à distribuer,Compte,3,65
+6541,Dons en nature courants à distribuer non affectés,Sous-compte,4,654
+6545,Dons en nature courants à distribuer affectés,Sous-compte,4,654
+657,Pénalités et amendes pénales,Compte,3,65
+658,Charges diverses,Compte,3,65
+659,Charges pour dépréciations et provisions pour risques à court terme d’exploitation,Compte,3,65
+6591,Provisions sur risques à court terme,Sous-compte,4,659
+6593,Charges pour dépréciations sur stocks,Sous-compte,4,659
+6594,Charges pour dépréciations sur créances,Sous-compte,4,659
+6598,Autres charges pour dépréciations et provisions pour risques à court terme,Sous-compte,4,659
+66,CHARGES DE PERSONNEL,Classe,2,
+661,Rémunérations directes versées au personnel national,Compte,3,66
+6611,Appointements salaires et commissions,Sous-compte,4,661
+6612,Primes et gratifications,Sous-compte,4,661
+6613,Conges payés,Sous-compte,4,661
+6614,Indemnités de préavis et de licenciement,Sous-compte,4,661
+6615,Indemnités de maladie versées aux travailleurs,Sous-compte,4,661
+6616,Supplément familial,Sous-compte,4,661
+6617,Avantages en nature,Sous-compte,4,661
+6618,Autres rémunérations directes,Sous-compte,4,661
+662,Rémunérations directes versées au personnel non national,Compte,3,66
+6621,Appointements salaires et commissions,Sous-compte,4,662
+67,FRAIS FINANCIERS,Classe,2,
+6748,Intérêts sur dettes diverses,Sous-compte,4,674
+676,Pertes de change financières,Compte,3,67
+677,Pertes sur titres de placement,Compte,3,67
+6771,Pertes sur cessions de titres de placement,Sous-compte,4,677
+678,Pertes et charges sur risques financiers,Compte,3,67
+6781,sur rentes viagères,Sous-compte,4,678
+6782,sur opérations financières,Sous-compte,4,678
+679,Charges pour dépréciations et prov isions pour risques à court terme financières,Compte,3,67
+6791,sur risques financiers,Sous-compte,4,679
+6795,sur titres de placement,Sous-compte,4,679
+6798,Autres charges pour dépréciations et provisions pour risques à court terme financières,Sous-compte,4,679
+68,DOTATIONS AUX AMORTISSEMENTS,Classe,2,
+680,Dotations aux amortissements d'usufruit temporaire,Compte,3,68
+681,Dotations aux amortissements d'exploitation,Compte,3,68
+6812,Dotations aux amortissements des immobilisations incorporelles,Sous-compte,4,681
+6813,Dotations aux amortissements des immobilisations corporelles,Sous-compte,4,681
+69,DOTATIONS AUX PROVISIONS ET AUX DÉPRÉCIATIONS,Classe,2,
+691,Dotations aux provisions et aux dépréciations d'exploitation,Compte,3,69
+6911,Dotations aux provisions pour risques et charges,Sous-compte,4,691
+6913,Dotations aux dépréciations des immobilisations incorporelles,Sous-compte,4,691
+6914,Dotations aux dépréciations des immobilisations corporelles,Sous-compte,4,691
+695,Dotations aux dépréciations d'immobilisations destinées à la vente provenant des,Compte,3,69
+6951,Dotations aux dépréciations d*usufruit temporaire,Sous-compte,4,695
+6952,non encore reçus Dotations aux dépréciations d'immobilisations destinées à la vente provenant des dons et,Sous-compte,4,695
+697,Dotations aux provisions et aux dépréciations financières,Compte,3,69
+6971,Dotations aux provisions pour risques et charges,Sous-compte,4,697
+6972,Dotations aux dépréciations des immobilisations financières,Sous-compte,4,697
+70,REVENUS,Classe,2,
+701,Cotisations des adhérents,Compte,3,70
+702,Quote-part de Tonds d'administration transférés,Compte,3,70
+703,Quote-part de dotation consomptible transférée,Compte,3,70
+704,Revenus liés à la générosité,Compte,3,70
+7041,Dons,Sous-compte,4,704
+7042,Legs,Sous-compte,4,704
+7043,Deniers du culte,Sous-compte,4,704
+7044,"Zakat, Dîme, quête et assimilées",Sous-compte,4,704
+7045,Célébrations,Sous-compte,4,704
+7046,Mécénats,Sous-compte,4,704
+7047,Parrainage,Sous-compte,4,704
+7048,Autres revenus liés à la générosité,Sous-compte,4,704
+705,"Ventes marchandises, services et produits finis",Compte,3,70
+7051,Ventes marchandises,Sous-compte,4,705
+7052,Services vendus,Sous-compte,4,705
+7053,Ventes de produits finis,Sous-compte,4,705
+7054,Ventes de produits intermédiaires,Sous-compte,4,705
+7055,Ventes de produits résiduels,Sous-compte,4,705
+71,SUBVENTION D'EXPLOITATION,Classe,2,
+706,Revenus des manifestations,Compte,3,70
+707,Produits accessoires,Compte,3,70
+708,Autres revenus,Compte,3,70
+7081,Ventes de dons en nature,Sous-compte,4,708
+7082,Revenus d'usufruit,Sous-compte,4,708
+711,Subventions d'exploitation versées par l'Etat et les Collectivités publiques,Compte,3,71
+713,Subventions d'exploitation versées par les organismes nationaux et internationaux,Compte,3,71
+718,Autres subventions d'exploitation,Compte,3,71
+72,PRODUCTION IMMOBILISEE,Classe,2,
+721,"Production immobilisée, immobilisations incorporelles",Compte,3,72
+722,"Production immobilisée, immobilisations corporelles",Compte,3,72
+724,Production auto-consommée,Compte,3,72
+726,"Production immobilisée, imn 3 olisations financières01",Compte,3,72
+73,VARIATIONS DES STOCKS DE BIENS PRODUITS,Classe,2,
+735,Variations des stocks de produits finis et services en cours,Compte,3,73
+736,"Variations des stocks de produits finis, produits intermédiaires et résiduels.",Compte,3,73
+75,AUTRES PRODUITS,Classe,2,
+751,"Profits sur créances Adhérents, clients-usagers, et autres débiteurs",Compte,3,75
+752,Contribution du fondateur,Compte,3,75
+754,Dons en nature courants,Compte,3,75
+7542,Dons en nature courants reçus à distribuer,Sous-compte,4,754
+758,Produits divers,Compte,3,75
+7582,Indemnités d'assurances reçues,Sous-compte,4,758
+7583,Abandons de frais par les bénévoles,Sous-compte,4,758
+7588,Autres produits divers,Sous-compte,4,758
+759,Reprises de charges pour dépréciations et provisions pour risques à court terme d'exploitation,Compte,3,75
+7591,Reprises provisions sur risques à court terme,Sous-compte,4,759
+7593,Reprises de charges pour dépréciations sur stocks,Sous-compte,4,759
+7594,Reprises de charges pour dépréciations sur créances,Sous-compte,4,759
+7598,Autres reprises de charges pour dépréciations et provisions pour risques à court terme,Sous-compte,4,759
+77,REVENUS FINANCIERS ET PRODUITS ASSIMILES,Classe,2,
+771,Intérêts de prêts et créances diverses,Compte,3,77
+7712,Intérêts de prêts,Sous-compte,4,771
+7713,Intérêts sur créances diverses,Sous-compte,4,771
+772,Revenus de participations et autres titres immobilisés,Compte,3,77
+7721,Revenus des titres de participation,Sous-compte,4,772
+7722,Revenus autres titres immobilisés,Sous-compte,4,772
+773,Escomptes obtenus,Compte,3,77
+774,Revenus de placement,Compte,3,77
+7745,Revenus des obligations,Sous-compte,4,774
+7746,Revenus des titres de placement,Sous-compte,4,774
+7747,Revenus des dépôts à terme et opérations assimilées,Sous-compte,4,774
+7748,Autres revenus de placement,Sous-compte,4,774
+776,Gains de change financiers,Compte,3,77
+777,Gains sur cessions de titres de placement,Compte,3,77
+778,Gains sur risques financiers,Compte,3,77
+7781,Gains sur rentes viagères,Sous-compte,4,778
+7782,Gains sur opérations financières,Sous-compte,4,778
+779,Reprises de charges pour dépréciations et provisions pour risques à court terme,Compte,3,77
+7791,Reprises de provisions sur risques financiers,Sous-compte,4,779
+7795,Reprises de charges pour dépréciations sur titres de placement,Sous-compte,4,779
+7798,Autre reprises de charges pour dépréciations et provisions pour risques à court terme,Sous-compte,4,779
+78,TRANSFERTS DE CHARGES,Classe,2,
+781,Transferts de charges d'exploitation,Compte,3,78
+787,Transferts de charges financières,Compte,3,78
+79,"EPRISES DE PROVISIONS, DE DEPRECIATIONS ET AUTRES",Classe,2,
+791,Reprises de provisions et dépréciations d'exploitation,Compte,3,79
+791,I Reprises de provisions pour risques et charges,Compte,3,79
+7913,Reprises de dépréciations des immobilisations incorporelles,Sous-compte,4,791
+7914,Reprises de dépréciations des immobilisations corporelles,Sous-compte,4,791
+792,Reprises de fonds affectés et provenant des dons et legs d'immobilisations,Compte,3,79
+7923,Reprises de fonds affectés provenant de dons et legs d'immobilisations,Sous-compte,4,792
+7925,Reprises de fonds affectés à un projet spécifique,Sous-compte,4,792
+7928,Autres reprises de fonds affectés,Sous-compte,4,792
+81,VALEURS COMPTABLES DES CESSIONS D’IMMOBILISATIONS,Classe,2,
+811,Valeurs comptables des cessions d’immobilisations incorporelles,Compte,3,81
+812,Valeurs comptables des cessions d'inimohilisations corporelles,Compte,3,81
+816,Valeurs comptables des cessionsières,Compte,3,81
+818,Valeurs comptables des cessions d’immobilisations reçues destinées à la vente,Compte,3,81
+82,PRODUITS DES CESSIONS D’IMMOBILISATIONS,Classe,2,
+821,Produits des cessions d’immobilisations incorporelles,Compte,3,82
+822,Produits des cessions d’immobilisations corporelles,Compte,3,82
+826,Produits des cessions d’immobilisations financières,Compte,3,82
+828,Produits des cessions d’immobilisations reçues destinées à la vente provenant de dons et legs,Compte,3,82
+83,CHARGES HORS ACTIVITÉS ORDINAIRES,Classe,2,
+831,Charges H.A.O. constatées,Compte,3,83
+832,"Dons en nature H.A.O. àf ' "" •",Compte,3,83
+8311,Dons en nature H.A.O. non affectés,Sous-compte,4,831
+8315,Dons en nature H.A.O. affectés,Sous-compte,4,831
+834,Pertes sur créances H.A.O.,Compte,3,83
+836,Abandons de créances consentis,Compte,3,83
+838,Transferts de charges H.A.O.,Compte,3,83
+839,charges pour dépréciations et provisions pour risques à court terme H A O,Compte,3,83
+84,REVENUS HORS ACTIVITÉS ORDINAIRES,Classe,2,
+841,Produits H.A.O. constatés,Compte,3,84
+8411,Dons en nature HAO vendus,Sous-compte,4,841
+8412,Prestations de services en nature HAO,Sous-compte,4,841
+8415,Dons en nature HAO à distribuer,Sous-compte,4,841
+842,Contributions volontaires en nature,Compte,3,84
+843,Contributions volontaires en numéraire,Compte,3,84
+846,Abandons de créances obtenus,Compte,3,84
+848,Transferts de produits H.A.O,Compte,3,84
+849,Reprises de charges pour dépréciations et provisions pour risques à court terme,Compte,3,84
+85,DOTATIONS HORS ACTIVITÉS ORDINAIRES,Classe,2,
+851,Dotations aux provisions réglementées,Compte,3,85
+852,Dotations aux amortissements H.A.O.,Compte,3,85
+853,Dotations aux dépréciations H.A.O.,Compte,3,85
+854,Dotations aux provisions pour risques et charges H.A.O.,Compte,3,85
+858,Autres dotations H.A.O,Compte,3,85
+86,"REPRISES D'AMORTISSEMENTS, PROVISIONS ET DEPRECIATIONS HAO.",Classe,2,
+861,Reprises de provisions réglementées,Compte,3,86
+862,Reprises d’amortissements H.A.O.,Compte,3,86
+863,Reprises de dépréciations H.A.O.,Compte,3,86
+864,Renrises de provisions nour risoues et charges H.A.O.,Compte,3,86
+868,Autres Reprise H.A.O,Compte,3,86
+87,VARIATION DE STOCK DE DON EN NATURE HAO,Classe,2,
+88,SUBVENTIONS D’ÉQUILIBRE,Classe,2,
+881,"Subventions d'équilibre, Etat",Compte,3,88
+884,"Subventions d’équilibre, Collectivités publiques",Compte,3,88
+888,Autres subventions d'équilibre,Compte,3,88
+90,CONTRIBUTIONS VOLONTAIRES EN NATURE,Classe,2,
+900,Secours en nature,Compte,3,90
+901,Mises à disposition gratuite de biens,Compte,3,90
+902,Prestations en nature,Compte,3,90
+904,Personnel Benevol,Compte,3,90
+91,ONTRIBUTIONS VOLONTAIRES EN NATURE,Classe,2,
+910,Dons en nature,Compte,3,91
+911,Prestations en nature,Compte,3,91
+914,Bénévolat,Compte,3,91
+92,OMPTES REFLECHIS,Classe,2,
+93,COMPTES DE RECLASSEMENTS,Classe,2,
+94,OMPTES DE COÛTS,Classe,2,
+95,OMPTES DE STOCKS,Classe,2,
+96,COMPTES D'ECARTS SUR COUTS PREETABLIS,Classe,2,
+97,COMPTES DE DIFFERENCES DE TRAITEMENT COMPTABLE,Classe,2,
+98,COMPTES DE RESULTATS,Classe,2,
+99,COMPTES DE LIAISONS INTERNES,Classe,2,
