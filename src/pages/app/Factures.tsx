@@ -297,8 +297,36 @@ export default function Factures() {
   const activeStatutLabel =
     statutOptions.find((option) => option.value === statutFilter)?.label || 'Tous';
 
+  const ctaAnimationStyles = `
+    @keyframes factureCtaReveal {
+      0% {
+        filter: blur(10px);
+        background: hsl(var(--background));
+        color: hsl(var(--primary));
+        box-shadow: none;
+      }
+      60% {
+        filter: blur(3px);
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        box-shadow: var(--shadow-glow);
+      }
+      100% {
+        filter: blur(0);
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        box-shadow: var(--shadow-primary);
+      }
+    }
+    .facture-cta-appear {
+      animation: factureCtaReveal 1.5s ease forwards;
+      will-change: transform, filter;
+    }
+  `;
+
   return (
     <div className="space-y-6">
+      <style>{ctaAnimationStyles}</style>
       {!isSnapshotOpen && pageHeaderContent}
 
       <div className="px-8 space-y-6">
@@ -329,7 +357,7 @@ export default function Factures() {
               description="Visualisez, filtrez et gérez vos factures fournisseurs"
               actions={
                 !isHeaderCtaVisible ? (
-                  <Button onClick={handleCreate}>
+                  <Button onClick={handleCreate} className="facture-cta-appear">
                     <Plus className="mr-2 h-4 w-4" />
                     Nouvelle facture
                   </Button>
