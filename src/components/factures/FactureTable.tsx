@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Facture } from '@/types/facture.types';
 import { ListColumn, ListTable } from '@/components/lists/ListTable';
+import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/selectionColumn';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -35,13 +36,9 @@ import {
 import { Link } from 'react-router-dom';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useListSelection } from '@/hooks/useListSelection';
+import { formatCurrency } from '@/lib/utils';
 
-interface FactureTableSelection {
-  selectedIds: Set<string>;
-  allSelected: boolean;
-  toggleOne: (id: string, checked: boolean) => void;
-  toggleAll: (checked: boolean) => void;
-}
+type FactureTableSelection = ListSelectionHandlers;
 
 interface FactureTableProps {
   factures: Facture[];
@@ -86,10 +83,7 @@ export const FactureTable = ({
   };
 
   const formatMontant = (montant: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(montant);
+    return formatCurrency(montant);
   };
 
   const formatDate = (dateString?: string) => {
@@ -98,24 +92,12 @@ export const FactureTable = ({
   };
 
   const columns: ListColumn<Facture>[] = [
-    {
-      id: 'select',
-      header: (
-        <Checkbox
-          checked={allSelected}
-          onCheckedChange={(checked) => toggleAll(Boolean(checked))}
-          aria-label="Sélectionner toutes les factures"
-        />
-      ),
-      cellClassName: 'w-[48px]',
-      render: (facture) => (
-        <Checkbox
-          checked={selectedIds.has(facture.id)}
-          onCheckedChange={(checked) => toggleOne(facture.id, Boolean(checked))}
-          aria-label={`Sélectionner la facture ${facture.numero}`}
-        />
-      ),
-    },
+    buildSelectionColumn<Facture>({
+      selection: { selectedIds, allSelected, toggleOne, toggleAll },
+      getId: (facture) => facture.id,
+      getLabel: (facture) => `Sélectionner la facture ${facture.numero}`,
+      allLabel: 'Sélectionner toutes les factures',
+    }),
     {
       id: 'numero',
       header: 'Numéro',
@@ -166,13 +148,15 @@ export const FactureTable = ({
       id: 'montant',
       header: 'Montant (TTC)',
       align: 'right',
-      render: (facture) => <span className="font-medium">{formatMontant(facture.montantTTC)}</span>,
+      render: (facture) => (
+        <span className="font-medium">{formatCurrency(facture.montantTTC)}</span>
+      ),
     },
     {
       id: 'paye',
       header: 'Liquidé',
       align: 'right',
-      render: (facture) => formatMontant(facture.montantLiquide || 0),
+      render: (facture) => formatCurrency(facture.montantLiquide || 0),
     },
     {
       id: 'solde',

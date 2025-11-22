@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,8 +9,9 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, CheckCircle, FileCheck, Banknote, XCircle, Trash, Eye } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
 import { ListColumn, ListTable } from '@/components/lists/ListTable';
+import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/selectionColumn';
+import { formatCurrency } from '@/lib/utils';
 import type { Depense } from '@/types/depense.types';
 
 interface DepenseTableProps {
@@ -24,12 +24,7 @@ interface DepenseTableProps {
   onDelete?: (id: string) => void;
   onViewDetails?: (depenseId: string) => void;
   disableActions?: boolean;
-  selection?: {
-    selectedIds: Set<string>;
-    allSelected: boolean;
-    toggleOne: (id: string, checked: boolean) => void;
-    toggleAll: (checked: boolean) => void;
-  };
+  selection: ListSelectionHandlers;
 }
 
 export const DepenseTable = ({
@@ -45,11 +40,7 @@ export const DepenseTable = ({
   selection,
 }: DepenseTableProps) => {
   const formatMontant = (montant: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'decimal',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(montant);
+    return formatCurrency(montant);
   };
 
   const getStatutBadge = (statut: string) => {
@@ -64,37 +55,15 @@ export const DepenseTable = ({
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const { selectedIds, allSelected, toggleOne, toggleAll } =
-    selection ??
-    useMemo(
-      () => ({
-        selectedIds: new Set<string>(),
-        allSelected: false,
-        toggleOne: () => {},
-        toggleAll: () => {},
-      }),
-      []
-    );
+  const { selectedIds, allSelected, toggleOne, toggleAll } = selection;
 
   const columns: ListColumn<Depense>[] = [
-    {
-      id: 'select',
-      header: (
-        <Checkbox
-          checked={allSelected}
-          onCheckedChange={(checked) => toggleAll(Boolean(checked))}
-          aria-label="Sélectionner toutes les dépenses"
-        />
-      ),
-      cellClassName: 'w-[48px]',
-      render: (depense) => (
-        <Checkbox
-          checked={selectedIds.has(depense.id)}
-          onCheckedChange={(checked) => toggleOne(depense.id, Boolean(checked))}
-          aria-label={`Sélectionner la dépense ${depense.numero}`}
-        />
-      ),
-    },
+    buildSelectionColumn<Depense>({
+      selection: { selectedIds, allSelected, toggleOne, toggleAll },
+      getId: (depense) => depense.id,
+      getLabel: (depense) => `Sélectionner la dépense ${depense.numero}`,
+      allLabel: 'Sélectionner toutes les dépenses',
+    }),
     {
       id: 'numero',
       header: 'Numéro',
