@@ -7,10 +7,15 @@ import { DepenseStatsCards } from '@/components/depenses/DepensesStats';
 import { DepenseTable } from '@/components/depenses/DepenseTable';
 import { DepenseDialog } from '@/components/depenses/DepenseDialog';
 import { DepenseSnapshot } from '@/components/depenses/DepenseSnapshot';
+import { AnnulerDepenseDialog } from '@/components/depenses/AnnulerDepenseDialog';
+import { AnnulerMultipleDepensesDialog } from '@/components/depenses/AnnulerMultipleDepensesDialog';
 import { useDepenses } from '@/hooks/useDepenses';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { useSnapshotState } from '@/hooks/useSnapshotState';
-import type { DepenseFormData, ModePaiement } from '@/types/depense.types';
+import type { DepenseFormData } from '@/types/depense.types';
+import { usePaiementsByDepense } from '@/hooks/usePaiements';
+import { PaiementDialog } from '@/components/paiements/PaiementDialog';
+import type { PaiementFormData } from '@/types/paiement.types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,8 +26,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -50,27 +53,19 @@ const Depenses = () => {
     createDepense,
     validerDepense,
     ordonnancerDepense,
-    marquerPayee,
     annulerDepense,
+    annulerMultipleDepenses,
     deleteDepense,
   } = useDepenses();
+  
   const { depenseId } = useParams<{ depenseId?: string }>();
   const navigate = useNavigate();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [actionDepenseId, setActionDepenseId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
-  const [motifAnnulation, setMotifAnnulation] = useState('');
-  const [payDialogOpen, setPayDialogOpen] = useState(false);
-  const [payForm, setPayForm] = useState<{
-    datePaiement: string;
-    modePaiement: ModePaiement | '';
-    referencePaiement: string;
-  }>({
-    datePaiement: new Date().toISOString().split('T')[0],
-    modePaiement: '',
-    referencePaiement: '',
-  });
+  const [annulerMultipleDialogOpen, setAnnulerMultipleDialogOpen] = useState(false);
+  const [paiementDialogOpen, setPaiementDialogOpen] = useState(false);
   const [isSubmittingAction, setIsSubmittingAction] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statutFilter, setStatutFilter] = useState<
@@ -123,6 +118,10 @@ const Depenses = () => {
     onMissingId: () => navigate('/app/depenses', { replace: true }),
     isLoadingItems: isLoading,
   });
+
+  const { paiements: paiementsDepense, isLoading: isLoadingPaiements } = usePaiementsByDepense(
+    snapshotDepenseId || ''
+  );
 
   const { headerCtaRef, isHeaderCtaVisible } = useHeaderCtaReveal([isSnapshotOpen]);
 
@@ -178,44 +177,27 @@ const Depenses = () => {
     [ordonnancerDepense]
   );
 
-  const handleOpenMarquerPayee = (id: string) => {
+  const handleOpenEnregistrerPaiement = (id: string) => {
     setActionDepenseId(id);
-    setPayForm({
-      datePaiement: new Date().toISOString().split('T')[0],
-      modePaiement: '',
-      referencePaiement: '',
-    });
-    setPayDialogOpen(true);
+    setPaiementDialogOpen(true);
   };
 
-  const handleMarquerPayee = async () => {
-    if (!actionDepenseId || !payForm.datePaiement || !payForm.modePaiement) return;
-    try {
-      setIsSubmittingAction(true);
-      await marquerPayee({
-        id: actionDepenseId,
-        datePaiement: payForm.datePaiement,
-        modePaiement: payForm.modePaiement,
-        referencePaiement: payForm.referencePaiement || undefined,
-      });
-      setPayDialogOpen(false);
-      setActionDepenseId(null);
-    } finally {
-      setIsSubmittingAction(false);
-    }
+  const handleEnregistrerPaiement = async (data: PaiementFormData) => {
+    // Géré directement par PaiementDialog via usePaiements
+    setPaiementDialogOpen(false);
+    setActionDepenseId(null);
   };
 
   const handleOpenAnnuler = (id: string) => {
     setActionDepenseId(id);
-    setMotifAnnulation('');
     setAnnulerDialogOpen(true);
   };
 
-  const handleConfirmAnnuler = async () => {
-    if (!actionDepenseId || motifAnnulation.trim().length < 3) return;
+  const handleConfirmAnnuler = async (motif: string) => {
+    if (!actionDepenseId) return;
     try {
       setIsSubmittingAction(true);
-      await annulerDepense({ id: actionDepenseId, motif: motifAnnulation });
+      await annulerDepense({ id: actionDepenseId, motif });
       setAnnulerDialogOpen(false);
       setActionDepenseId(null);
     } finally {
@@ -242,12 +224,35 @@ const Depenses = () => {
     clearSelection();
   }, [selectedDepenses, ordonnancerDepense, clearSelection]);
 
-  const handleBatchMarquerPayee = useCallback(async () => {
-    const candidates = selectedDepenses.filter((depense) => depense.statut === 'ordonnancee');
+  const handleOpenBatchAnnuler = useCallback(() => {
+    const candidates = selectedDepenses.filter(
+      (depense) => depense.statut !== 'annulee' && depense.statut !== 'payee'
+    );
     if (candidates.length === 0) return;
-    await Promise.all(candidates.map((depense) => marquerPayee(depense.id)));
-    clearSelection();
-  }, [selectedDepenses, marquerPayee, clearSelection]);
+    setAnnulerMultipleDialogOpen(true);
+  }, [selectedDepenses]);
+
+  const handleConfirmBatchAnnuler = useCallback(
+    async (motif: string) => {
+      const candidates = selectedDepenses.filter(
+        (depense) => depense.statut !== 'annulee' && depense.statut !== 'payee'
+      );
+      if (candidates.length === 0) return;
+      
+      try {
+        setIsSubmittingAction(true);
+        const depenseIds = candidates.map(d => d.id);
+        await annulerMultipleDepenses({ ids: depenseIds, motif });
+        setAnnulerMultipleDialogOpen(false);
+        clearSelection();
+      } finally {
+        setIsSubmittingAction(false);
+      }
+    },
+    [selectedDepenses, annulerMultipleDepenses, clearSelection]
+  );
+
+  // Removed batch payment - use individual payments instead
 
   const handleExportDepenses = useCallback(() => {
     // Exporter toutes les dépenses filtrées (CSV/Excel) – brancher ici l'implémentation
@@ -257,7 +262,9 @@ const Depenses = () => {
   const hasSelection = selectedIds.size > 0;
   const hasBrouillonsSelected = selectedDepenses.some((depense) => depense.statut === 'brouillon');
   const hasValideesSelected = selectedDepenses.some((depense) => depense.statut === 'validee');
-  const hasOrdonnanceesSelected = selectedDepenses.some((depense) => depense.statut === 'ordonnancee');
+  const hasAnnulablesSelected = selectedDepenses.some(
+    (depense) => depense.statut !== 'annulee' && depense.statut !== 'payee'
+  );
 
   const handleConfirmDelete = async () => {
     if (!actionDepenseId) return;
@@ -305,6 +312,8 @@ const Depenses = () => {
         <div className="px-8 space-y-6">
           <DepenseSnapshot
             depense={snapshotDepense}
+            paiements={paiementsDepense}
+            isLoadingPaiements={isLoadingPaiements}
             onClose={handleCloseSnapshot}
             onNavigate={handleNavigateSnapshot}
             hasPrev={snapshotIndex > 0}
@@ -314,7 +323,7 @@ const Depenses = () => {
             onNavigateToEntity={handleNavigateToEntity}
             onValider={handleValider}
             onOrdonnancer={handleOrdonnancer}
-            onMarquerPayee={handleOpenMarquerPayee}
+            onEnregistrerPaiement={handleOpenEnregistrerPaiement}
             onAnnuler={handleOpenAnnuler}
             onDelete={handleOpenDelete}
             disableActions={isSubmittingAction}
@@ -377,8 +386,13 @@ const Depenses = () => {
                         <DropdownMenuItem disabled={!hasValideesSelected} onClick={handleBatchOrdonnancer}>
                           Ordonnancer les validées
                         </DropdownMenuItem>
-                        <DropdownMenuItem disabled={!hasOrdonnanceesSelected} onClick={handleBatchMarquerPayee}>
-                          Marquer payées (ordonnancées)
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          disabled={!hasAnnulablesSelected} 
+                          onClick={handleOpenBatchAnnuler}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          Annuler les dépenses sélectionnées
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem disabled={!hasSelection} onClick={clearSelection}>
@@ -399,7 +413,7 @@ const Depenses = () => {
                 onViewDetails={handleOpenSnapshot}
                 onValider={handleValider}
                 onOrdonnancer={handleOrdonnancer}
-                onMarquerPayee={handleOpenMarquerPayee}
+                onEnregistrerPaiement={handleOpenEnregistrerPaiement}
                 onAnnuler={handleOpenAnnuler}
                 onDelete={handleOpenDelete}
                 disableActions={isSubmittingAction}
@@ -440,98 +454,42 @@ const Depenses = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={annulerDialogOpen} onOpenChange={setAnnulerDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Annuler la dépense</AlertDialogTitle>
-            <AlertDialogDescription>
-              Indiquez le motif d&apos;annulation pour tracer cette action.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="px-1 pb-2">
-            <Label className="text-sm">Motif</Label>
-            <Input
-              value={motifAnnulation}
-              onChange={(e) => setMotifAnnulation(e.target.value)}
-              placeholder="Motif d'annulation"
-              className="mt-2"
-            />
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSubmittingAction}>Fermer</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmAnnuler}
-              disabled={isSubmittingAction || motifAnnulation.trim().length < 3}
-            >
-              Annuler la dépense
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <AnnulerDepenseDialog
+        open={annulerDialogOpen}
+        onOpenChange={setAnnulerDialogOpen}
+        depenseId={actionDepenseId}
+        depenseNumero={depenses.find(d => d.id === actionDepenseId)?.numero}
+        onConfirm={handleConfirmAnnuler}
+        isSubmitting={isSubmittingAction}
+      />
 
-      <AlertDialog open={payDialogOpen} onOpenChange={setPayDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Marquer comme payée</AlertDialogTitle>
-            <AlertDialogDescription>
-              Renseignez les informations de paiement pour clôturer la dépense.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="space-y-3 px-1">
-            <div className="space-y-1">
-              <Label>Date de paiement</Label>
-              <Input
-                type="date"
-                value={payForm.datePaiement}
-                onChange={(e) =>
-                  setPayForm((prev) => ({ ...prev, datePaiement: e.target.value }))
-                }
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Mode de paiement</Label>
-              <Select
-                value={payForm.modePaiement}
-                onValueChange={(value) =>
-                  setPayForm((prev) => ({ ...prev, modePaiement: value as ModePaiement }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un mode" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="virement">Virement</SelectItem>
-                  <SelectItem value="cheque">Chèque</SelectItem>
-                  <SelectItem value="especes">Espèces</SelectItem>
-                  <SelectItem value="carte">Carte</SelectItem>
-                  <SelectItem value="autre">Autre</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label>Référence (optionnel)</Label>
-              <Input
-                value={payForm.referencePaiement}
-                onChange={(e) =>
-                  setPayForm((prev) => ({ ...prev, referencePaiement: e.target.value }))
-                }
-                placeholder="Référence de paiement"
-              />
-            </div>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSubmittingAction}>Fermer</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleMarquerPayee}
-              disabled={
-                isSubmittingAction || !payForm.datePaiement || !payForm.modePaiement
-              }
-            >
-              Valider le paiement
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <AnnulerMultipleDepensesDialog
+        open={annulerMultipleDialogOpen}
+        onOpenChange={setAnnulerMultipleDialogOpen}
+        depenses={selectedDepenses.filter(
+          (depense) => depense.statut !== 'annulee' && depense.statut !== 'payee'
+        )}
+        onConfirm={handleConfirmBatchAnnuler}
+        isSubmitting={isSubmittingAction}
+      />
+
+      {(() => {
+        const depenseForPaiement = actionDepenseId 
+          ? depenses.find(d => d.id === actionDepenseId)
+          : null;
+        
+        // Vérifier que la dépense existe ET qu'elle est ordonnancée
+        return depenseForPaiement && depenseForPaiement.statut === 'ordonnancee' ? (
+          <PaiementDialog
+            open={paiementDialogOpen}
+            onOpenChange={setPaiementDialogOpen}
+            onSubmit={handleEnregistrerPaiement}
+            depenseId={actionDepenseId}
+            montantRestant={depenseForPaiement.montant - depenseForPaiement.montantPaye}
+            depenseNumero={depenseForPaiement.numero}
+          />
+        ) : null;
+      })()}
     </div>
   );
 };

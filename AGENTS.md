@@ -68,6 +68,7 @@
 ❌ **JAMAIS** `text-white`, `bg-blue-500`, etc. dans les composants
 ✅ Toujours utiliser les tokens CSS du design system (`--primary`, `--foreground`, etc.)
 ✅ Toutes les couleurs en HSL dans `index.css` et `tailwind.config.ts`
+✅ **Ne JAMAIS afficher de symbole de devise** (€, $, XAF, FCFA, etc.) - les montants sont affichés sans devise
 
 ### 7. **Types TypeScript Stricts**
 ✅ Pas de `any` sauf justification exceptionnelle

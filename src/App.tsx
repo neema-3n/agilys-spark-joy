@@ -14,7 +14,6 @@ import InitTestUsers from "./pages/auth/InitTestUsers";
 import AppLayout from "./pages/app/AppLayout";
 import Dashboard from "./pages/app/Dashboard";
 import Budgets from "./pages/app/Budgets";
-import StructureBudgetaire from "./pages/app/StructureBudgetaire";
 import Engagements from "./pages/app/Engagements";
 import Factures from "./pages/app/Factures";
 import Tresorerie from "./pages/app/Tresorerie";
@@ -38,14 +37,14 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <ClientProvider>
-            <ExerciceProvider>
-        <Routes>
+    <BrowserRouter>
+      <AuthProvider>
+        <ClientProvider>
+          <ExerciceProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth/login" element={<Login />} />
                   <Route path="/auth/init-test-users" element={<InitTestUsers />} />
@@ -55,7 +54,6 @@ const App = () => (
                     <Route index element={<Budgets />} />
                     <Route path=":ligneId" element={<Budgets />} />
                   </Route>
-                  <Route path="structure-budgetaire" element={<StructureBudgetaire />} />
                   <Route path="enveloppes" element={<Enveloppes />} />
                   <Route path="previsions" element={<Previsions />} />
                   <Route path="reservations">
@@ -87,17 +85,20 @@ const App = () => (
                   <Route path="analyses" element={<Analyses />} />
                   <Route path="reporting" element={<Reporting />} />
                   <Route path="structure" element={<Structure />} />
-                  <Route path="fournisseurs" element={<Fournisseurs />} />
+                  <Route path="fournisseurs">
+                    <Route index element={<Fournisseurs />} />
+                    <Route path=":fournisseurId" element={<Fournisseurs />} />
+                  </Route>
                   <Route path="parametres" element={<Parametres />} />
                 </Route>
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </ExerciceProvider>
-          </ClientProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
+            </TooltipProvider>
+          </ExerciceProvider>
+        </ClientProvider>
+      </AuthProvider>
+    </BrowserRouter>
   </QueryClientProvider>
 );
 

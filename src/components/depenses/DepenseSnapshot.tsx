@@ -1,13 +1,17 @@
-import { Building2, Calendar, FileText, FolderOpen, Info, Receipt, Wallet } from 'lucide-react';
+import { Building2, Calendar, FileText, FolderOpen, Info, Receipt, Wallet, CreditCard } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { SnapshotBase } from '@/components/shared/SnapshotBase';
 import type { Depense } from '@/types/depense.types';
+import type { Paiement } from '@/types/paiement.types';
 import { formatMontant, formatDate, formatDateTime, getEntityUrl } from '@/lib/snapshot-utils';
 
 interface DepenseSnapshotProps {
   depense: Depense;
+  paiements?: Paiement[];
+  isLoadingPaiements?: boolean;
   onClose: () => void;
   onNavigate: (direction: 'prev' | 'next') => void;
   hasPrev: boolean;
@@ -17,7 +21,7 @@ interface DepenseSnapshotProps {
   onNavigateToEntity?: (type: string, id: string) => void;
   onValider?: (id: string) => void;
   onOrdonnancer?: (id: string) => void;
-  onMarquerPayee?: (id: string) => void;
+  onEnregistrerPaiement?: (id: string) => void;
   onAnnuler?: (id: string) => void;
   onDelete?: (id: string) => void;
   disableActions?: boolean;
@@ -25,6 +29,8 @@ interface DepenseSnapshotProps {
 
 export const DepenseSnapshot = ({
   depense,
+  paiements = [],
+  isLoadingPaiements,
   onClose,
   onNavigate,
   hasPrev,
@@ -34,11 +40,13 @@ export const DepenseSnapshot = ({
   onNavigateToEntity,
   onValider,
   onOrdonnancer,
-  onMarquerPayee,
+  onEnregistrerPaiement,
   onAnnuler,
   onDelete,
   disableActions,
 }: DepenseSnapshotProps) => {
+  const montantRestant = depense.montant - depense.montantPaye;
+  const pourcentagePaye = depense.montant > 0 ? (depense.montantPaye / depense.montant) * 100 : 0;
   const getStatutBadge = (statut: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
       brouillon: 'outline',
@@ -69,7 +77,7 @@ export const DepenseSnapshot = ({
   };
 
   const actionButtons = () => {
-    const buttons = [<div key="statut">{getStatutBadge(depense.statut)}</div>];
+    const buttons = [];
 
     if (onValider && depense.statut === 'brouillon') {
       buttons.push(
@@ -97,15 +105,15 @@ export const DepenseSnapshot = ({
       );
     }
 
-    if (onMarquerPayee && depense.statut === 'ordonnancee') {
+    if (onEnregistrerPaiement && depense.statut === 'ordonnancee' && montantRestant > 0) {
       buttons.push(
         <Button
-          key="payer"
+          key="paiement"
           size="sm"
-          onClick={() => onMarquerPayee(depense.id)}
+          onClick={() => onEnregistrerPaiement(depense.id)}
           disabled={disableActions}
         >
-          Marquer payée
+          Enregistrer un paiement
         </Button>
       );
     }
@@ -164,16 +172,27 @@ export const DepenseSnapshot = ({
             {getStatutBadge(depense.statut)}
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Montant</p>
-              <p className="text-2xl font-bold text-primary">{formatMontant(depense.montant)}</p>
-              {depense.montantPaye > 0 && (
-                <p className="text-sm text-muted-foreground">
-                  Payé: <span className="font-medium text-foreground">{formatMontant(depense.montantPaye)}</span>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">Montant total</p>
+                <p className="text-2xl font-bold text-primary">{formatMontant(depense.montant)}</p>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Montant payé</span>
+                  <span className="font-medium">{formatMontant(depense.montantPaye)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Solde à payer</span>
+                  <span className="font-medium text-primary">{formatMontant(montantRestant)}</span>
+                </div>
+                <Progress value={pourcentagePaye} className="h-2" />
+                <p className="text-xs text-muted-foreground text-right">
+                  {pourcentagePaye.toFixed(0)}% payé
                 </p>
-              )}
+              </div>
             </div>
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">Bénéficiaire / Fournisseur</p>
@@ -329,6 +348,45 @@ export const DepenseSnapshot = ({
           </CardHeader>
           <CardContent>
             <p className="text-sm whitespace-pre-wrap">{depense.observations}</p>
+          </CardContent>
+        </Card>
+      )}
+
+{paiements && paiements.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Historique des paiements ({paiements.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {isLoadingPaiements ? (
+              <p className="text-sm text-muted-foreground">Chargement...</p>
+            ) : (
+              paiements
+                .filter((p) => p.statut === 'valide')
+                .map((paiement) => (
+                  <div
+                    key={paiement.id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium">{paiement.numero}</p>
+                        <Badge variant="outline" className="text-xs">
+                          {paiement.modePaiement}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {formatDate(paiement.datePaiement)}
+                        {paiement.referencePaiement && ` • Réf: ${paiement.referencePaiement}`}
+                      </p>
+                    </div>
+                    <p className="text-sm font-semibold">{formatMontant(paiement.montant)}</p>
+                  </div>
+                ))
+            )}
           </CardContent>
         </Card>
       )}
