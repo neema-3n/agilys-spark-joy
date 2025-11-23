@@ -163,62 +163,66 @@ export const ReglesComptablesManager = () => {
                                 )}
                               </div>
 
-                              <div className="flex items-center gap-1">
-                                <span className="font-medium">Conditions:</span>{' '}
-                                {regle.conditions.length === 0 ? (
-                                  <span className="text-muted-foreground">Aucune</span>
-                                ) : (
+                              <div>
+                                <div className="flex items-center gap-1">
+                                  <span className="font-medium">Conditions:</span>{' '}
+                                  {regle.conditions.length === 0 ? (
+                                    <span className="text-muted-foreground">Aucune</span>
+                                  ) : (
+                                    <HoverCard>
+                                      <HoverCardTrigger asChild>
+                                        <button className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
+                                          {regle.conditions.length} condition(s)
+                                          <Info className="h-3 w-3" />
+                                        </button>
+                                      </HoverCardTrigger>
+                                      <HoverCardContent side="top" className="max-w-md">
+                                        <div className="space-y-2">
+                                          <p className="font-semibold text-xs">Conditions:</p>
+                                          {regle.conditions.map((condition, idx) => (
+                                            <div key={idx} className="text-xs">
+                                              <Badge variant="outline" className="font-mono text-xs">
+                                                {condition.champ}
+                                              </Badge>
+                                              {' '}
+                                              <span className="text-muted-foreground">
+                                                {OPERATEUR_LABELS[condition.operateur]}
+                                              </span>
+                                              {' '}
+                                              <span className="font-medium">
+                                                {String(condition.valeur)}
+                                              </span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </HoverCardContent>
+                                    </HoverCard>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div>
+                                <div className="flex items-center gap-1">
+                                  <span className="font-medium">Comptes:</span>{' '}
                                   <HoverCard>
                                     <HoverCardTrigger asChild>
                                       <button className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
-                                        {regle.conditions.length} condition(s)
+                                        {regle.compteDebit?.numero} → {regle.compteCredit?.numero}
                                         <Info className="h-3 w-3" />
                                       </button>
                                     </HoverCardTrigger>
                                     <HoverCardContent side="top" className="max-w-md">
-                                      <div className="space-y-2">
-                                        <p className="font-semibold text-xs">Conditions:</p>
-                                        {regle.conditions.map((condition, idx) => (
-                                          <div key={idx} className="text-xs">
-                                            <Badge variant="outline" className="font-mono text-xs">
-                                              {condition.champ}
-                                            </Badge>
-                                            {' '}
-                                            <span className="text-muted-foreground">
-                                              {OPERATEUR_LABELS[condition.operateur]}
-                                            </span>
-                                            {' '}
-                                            <span className="font-medium">
-                                              {String(condition.valeur)}
-                                            </span>
-                                          </div>
-                                        ))}
+                                      <div className="space-y-1">
+                                        <p className="text-xs">
+                                          <span className="font-semibold">Débit:</span> {regle.compteDebit?.numero} - {regle.compteDebit?.libelle}
+                                        </p>
+                                        <p className="text-xs">
+                                          <span className="font-semibold">Crédit:</span> {regle.compteCredit?.numero} - {regle.compteCredit?.libelle}
+                                        </p>
                                       </div>
                                     </HoverCardContent>
                                   </HoverCard>
-                                )}
-                              </div>
-
-                              <div className="flex items-center gap-1">
-                                <span className="font-medium">Comptes:</span>{' '}
-                                <HoverCard>
-                                  <HoverCardTrigger asChild>
-                                    <button className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
-                                      {regle.compteDebit?.numero} → {regle.compteCredit?.numero}
-                                      <Info className="h-3 w-3" />
-                                    </button>
-                                  </HoverCardTrigger>
-                                  <HoverCardContent side="top" className="max-w-md">
-                                    <div className="space-y-1">
-                                      <p className="text-xs">
-                                        <span className="font-semibold">Débit:</span> {regle.compteDebit?.numero} - {regle.compteDebit?.libelle}
-                                      </p>
-                                      <p className="text-xs">
-                                        <span className="font-semibold">Crédit:</span> {regle.compteCredit?.numero} - {regle.compteCredit?.libelle}
-                                      </p>
-                                    </div>
-                                  </HoverCardContent>
-                                </HoverCard>
+                                </div>
                               </div>
                             </div>
                           </div>
