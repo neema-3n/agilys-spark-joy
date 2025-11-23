@@ -204,6 +204,54 @@ export const marquerPayee = async (
   return toCamelCase(data) as Depense;
 };
 
+/**
+ * Récupère les paiements valides associés à une dépense
+ */
+export const getPaiementsValidesDepense = async (depenseId: string) => {
+  const { data, error } = await supabase
+    .from('paiements')
+    .select('id, numero, montant, date_paiement, mode_paiement')
+    .eq('depense_id', depenseId)
+    .eq('statut', 'valide')
+    .order('date_paiement', { ascending: false });
+
+  if (error) throw error;
+  return toCamelCase(data);
+};
+
+/**
+ * Récupère les paiements valides associés à plusieurs dépenses
+ */
+export const getPaiementsValidesMultipleDepenses = async (depenseIds: string[]) => {
+  if (depenseIds.length === 0) return [];
+  
+  const { data, error } = await supabase
+    .from('paiements')
+    .select(`
+      id, 
+      numero, 
+      montant, 
+      date_paiement, 
+      mode_paiement,
+      depense_id,
+      depenses!inner(numero, objet)
+    `)
+    .in('depense_id', depenseIds)
+    .eq('statut', 'valide')
+    .order('date_paiement', { ascending: false });
+
+  if (error) throw error;
+  return toCamelCase(data);
+};
+
+/**
+ * Annule plusieurs dépenses avec le même motif
+ */
+export const annulerMultipleDepenses = async (depenseIds: string[], motif: string): Promise<void> => {
+  const promises = depenseIds.map(id => annulerDepense(id, motif));
+  await Promise.all(promises);
+};
+
 export const annulerDepense = async (id: string, motif: string): Promise<Depense> => {
   const { data, error } = await supabase
     .from('depenses')

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ChevronDown, ChevronRight, FolderOpen, Folder, FileText, File } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronDown, ChevronRight, FolderOpen, Folder, FileText } from 'lucide-react';
 import { Compte } from '@/types';
 import { Button } from '@/components/ui/button';
 import {
@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Pencil, Trash2, CheckCircle, XCircle } from 'lucide-react';
 
 interface CompteNode extends Compte {
   children: CompteNode[];
@@ -16,27 +16,37 @@ interface CompteNode extends Compte {
 
 interface CompteTreeItemProps {
   node: CompteNode;
+  expandAll?: { expand: boolean; timestamp: number } | null;
   onEdit: (compte: Compte) => void;
   onDelete: (compte: Compte) => void;
+  onToggleStatus: (compte: Compte) => void;
   getTypeLabel: (type: string) => string;
   getCategorieLabel: (categorie: string) => string;
 }
 
 export const CompteTreeItem = ({ 
   node, 
+  expandAll,
   onEdit, 
   onDelete,
+  onToggleStatus,
   getTypeLabel,
   getCategorieLabel 
 }: CompteTreeItemProps) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const hasChildren = node.children.length > 0;
+
+  useEffect(() => {
+    if (expandAll !== null) {
+      setIsExpanded(expandAll.expand);
+    }
+  }, [expandAll]);
 
   const getIcon = () => {
     if (hasChildren) {
       return isExpanded ? <FolderOpen className="h-4 w-4" /> : <Folder className="h-4 w-4" />;
     }
-    return node.niveau <= 2 ? <FileText className="h-4 w-4" /> : <File className="h-4 w-4" />;
+    return <FileText className="h-4 w-4" />;
   };
 
   return (
@@ -86,6 +96,19 @@ export const CompteTreeItem = ({
                 <Pencil className="mr-2 h-4 w-4" />
                 Modifier
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onToggleStatus(node)}>
+                {node.statut === 'actif' ? (
+                  <>
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Désactiver
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Activer
+                  </>
+                )}
+              </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={() => onDelete(node)}
                 className="text-destructive"
@@ -104,8 +127,10 @@ export const CompteTreeItem = ({
             <CompteTreeItem
               key={child.id}
               node={child}
+              expandAll={expandAll}
               onEdit={onEdit}
               onDelete={onDelete}
+              onToggleStatus={onToggleStatus}
               getTypeLabel={getTypeLabel}
               getCategorieLabel={getCategorieLabel}
             />
