@@ -375,60 +375,85 @@ export type Database = {
       }
       ecritures_comptables: {
         Row: {
+          bon_commande_id: string | null
           client_id: string
           compte_credit_id: string
           compte_debit_id: string
           created_at: string | null
           created_by: string | null
           date_ecriture: string
+          depense_id: string | null
+          engagement_id: string | null
           exercice_id: string
+          facture_id: string | null
           id: string
           libelle: string
           montant: number
           numero_ligne: number
           numero_piece: string
+          paiement_id: string | null
           regle_comptable_id: string | null
+          reservation_id: string | null
           source_id: string
           type_operation: string
           updated_at: string | null
         }
         Insert: {
+          bon_commande_id?: string | null
           client_id: string
           compte_credit_id: string
           compte_debit_id: string
           created_at?: string | null
           created_by?: string | null
           date_ecriture: string
+          depense_id?: string | null
+          engagement_id?: string | null
           exercice_id: string
+          facture_id?: string | null
           id?: string
           libelle: string
           montant: number
           numero_ligne: number
           numero_piece: string
+          paiement_id?: string | null
           regle_comptable_id?: string | null
+          reservation_id?: string | null
           source_id: string
           type_operation: string
           updated_at?: string | null
         }
         Update: {
+          bon_commande_id?: string | null
           client_id?: string
           compte_credit_id?: string
           compte_debit_id?: string
           created_at?: string | null
           created_by?: string | null
           date_ecriture?: string
+          depense_id?: string | null
+          engagement_id?: string | null
           exercice_id?: string
+          facture_id?: string | null
           id?: string
           libelle?: string
           montant?: number
           numero_ligne?: number
           numero_piece?: string
+          paiement_id?: string | null
           regle_comptable_id?: string | null
+          reservation_id?: string | null
           source_id?: string
           type_operation?: string
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ecritures_comptables_bon_commande_id_fkey"
+            columns: ["bon_commande_id"]
+            isOneToOne: false
+            referencedRelation: "bons_commande"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ecritures_comptables_compte_credit_id_fkey"
             columns: ["compte_credit_id"]
@@ -444,6 +469,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ecritures_comptables_depense_id_fkey"
+            columns: ["depense_id"]
+            isOneToOne: false
+            referencedRelation: "depenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ecritures_comptables_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "ecritures_comptables_exercice_id_fkey"
             columns: ["exercice_id"]
             isOneToOne: false
@@ -451,10 +490,31 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ecritures_comptables_facture_id_fkey"
+            columns: ["facture_id"]
+            isOneToOne: false
+            referencedRelation: "factures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ecritures_comptables_paiement_id_fkey"
+            columns: ["paiement_id"]
+            isOneToOne: false
+            referencedRelation: "paiements"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "ecritures_comptables_regle_comptable_id_fkey"
             columns: ["regle_comptable_id"]
             isOneToOne: false
             referencedRelation: "regles_comptables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ecritures_comptables_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations_credits"
             referencedColumns: ["id"]
           },
         ]
