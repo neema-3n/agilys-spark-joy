@@ -5,6 +5,11 @@ import { Button } from '@/components/ui/button';
 import { SnapshotBase } from '@/components/shared/SnapshotBase';
 import type { ReservationCredit } from '@/types/reservation.types';
 import { formatDate, formatDateTime, formatMontant, getEntityUrl } from '@/lib/snapshot-utils';
+import { useEcrituresBySource } from '@/hooks/useEcrituresComptables';
+import { useGenerateEcritures } from '@/hooks/useGenerateEcritures';
+import { useClient } from '@/contexts/ClientContext';
+import { useExercice } from '@/contexts/ExerciceContext';
+import { EcrituresSection } from '@/components/ecritures/EcrituresSection';
 
 interface ReservationSnapshotProps {
   reservation: ReservationCredit;
@@ -33,6 +38,22 @@ export const ReservationSnapshot = ({
   onAnnuler,
   onNavigateToEntity,
 }: ReservationSnapshotProps) => {
+  const { currentClient } = useClient();
+  const { currentExercice } = useExercice();
+  const { ecritures, isLoading: ecrituresLoading } = useEcrituresBySource('reservation', reservation.id);
+  const generateMutation = useGenerateEcritures();
+
+  const handleGenerateEcritures = () => {
+    if (!currentClient?.id || !currentExercice?.id) return;
+    
+    generateMutation.mutate({
+      typeOperation: 'reservation',
+      sourceId: reservation.id,
+      clientId: currentClient.id,
+      exerciceId: currentExercice.id
+    });
+  };
+
   const getStatutBadge = (statut: ReservationCredit['statut']) => {
     const variants: Record<ReservationCredit['statut'], 'default' | 'secondary' | 'destructive' | 'outline'> = {
       active: 'secondary',
@@ -257,6 +278,14 @@ export const ReservationSnapshot = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Écritures comptables */}
+      <EcrituresSection
+        ecritures={ecritures}
+        isLoading={ecrituresLoading}
+        onGenerate={handleGenerateEcritures}
+        isGenerating={generateMutation.isPending}
+      />
     </SnapshotBase>
   );
 };
