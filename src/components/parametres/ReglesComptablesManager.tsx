@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Calculator, Info, Trash2, Copy } from 'lucide-react';
+import { Plus, Calculator, Info, Trash2, Copy, Pencil } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -92,8 +92,8 @@ export const ReglesComptablesManager = () => {
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
+      <CardHeader className="space-y-4 sm:space-y-0">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
               <Calculator className="h-5 w-5" />
@@ -103,7 +103,10 @@ export const ReglesComptablesManager = () => {
               Configurez les règles automatiques de génération des écritures comptables
             </CardDescription>
           </div>
-          <Button onClick={() => setDialogOpen(true)}>
+          <Button
+            onClick={() => setDialogOpen(true)}
+            className="w-full justify-center sm:w-auto"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Nouvelle règle
           </Button>
@@ -112,13 +115,15 @@ export const ReglesComptablesManager = () => {
 
       <CardContent>
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TypeOperation)}>
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
-            {TYPE_OPERATIONS.map((type) => (
-              <TabsTrigger key={type} value={type}>
-                {TYPE_OPERATION_LABELS[type]}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <div className="-mx-4 pb-2 sm:mx-0 sm:pb-0">
+            <TabsList className="flex min-w-max gap-2 overflow-x-auto px-4 sm:min-w-0 sm:w-full sm:px-0">
+              {TYPE_OPERATIONS.map((type) => (
+                <TabsTrigger key={type} value={type} className="whitespace-nowrap">
+                  {TYPE_OPERATION_LABELS[type]}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
 
           {TYPE_OPERATIONS.map((type) => (
             <TabsContent key={type} value={type} className="mt-6">
@@ -156,30 +161,60 @@ export const ReglesComptablesManager = () => {
                             </div>
 
                             <div className="flex flex-wrap gap-2 justify-start lg:justify-end shrink-0">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEdit(regle)}
-                              >
-                                Modifier
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDuplicate(regle)}
-                              >
-                                <Copy className="h-4 w-4 mr-2" />
-                                Dupliquer
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDeleteClick(regle)}
-                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Supprimer
-                              </Button>
+                              <div className="flex items-center gap-2 sm:hidden">
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => handleEdit(regle)}
+                                  aria-label="Modifier la règle"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => handleDuplicate(regle)}
+                                  aria-label="Dupliquer la règle"
+                                >
+                                  <Copy className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => handleDeleteClick(regle)}
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  aria-label="Supprimer la règle"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+
+                              <div className="hidden sm:flex flex-wrap gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleEdit(regle)}
+                                >
+                                  Modifier
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDuplicate(regle)}
+                                >
+                                  <Copy className="h-4 w-4 mr-2" />
+                                  Dupliquer
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDeleteClick(regle)}
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Supprimer
+                                </Button>
+                              </div>
                             </div>
                           </div>
 
