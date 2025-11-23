@@ -2,7 +2,8 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { showNavigationToast } from '@/lib/navigation-toast';
 import { useFacturesPaginated } from '@/hooks/useFactures';
 import { useDepenses } from '@/hooks/useDepenses';
@@ -47,6 +48,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useListSelection } from '@/hooks/useListSelection';
 import { CTA_REVEAL_STYLES, useHeaderCtaReveal } from '@/hooks/useHeaderCtaReveal';
+import { testDataService } from '@/services/api/test-data.service';
 
 export default function Factures() {
   const navigate = useNavigate();
@@ -87,6 +89,7 @@ export default function Factures() {
 
   const { createDepenseFromFacture } = useDepenses();
   const [motifAnnulation, setMotifAnnulation] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const { fournisseurs } = useFournisseurs();
   const { projets } = useProjets();
@@ -308,6 +311,33 @@ export default function Factures() {
     }
   }, [navigate]);
 
+  const handleGenerateTestData = async () => {
+    if (!currentClient || !currentExercice) return;
+    
+    const count = parseInt(prompt('Combien de factures de test voulez-vous générer ? (max 1000)', '500') || '0');
+    if (count <= 0 || count > 1000) {
+      toast.error('Nombre invalide (entre 1 et 1000)');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const result = await testDataService.generateTestFactures(
+        currentClient.id,
+        currentExercice.id,
+        count
+      );
+      toast.success(result.message);
+      // Rafraîchir les données
+      window.location.reload();
+    } catch (error) {
+      console.error('Erreur:', error);
+      toast.error(error instanceof Error ? error.message : 'Erreur lors de la génération');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <ListPageLoading
@@ -384,57 +414,73 @@ export default function Factures() {
                 ) : undefined
               }
               toolbar={
-                <ListToolbar
-                  searchValue={(filters.searchTerm as string) || ''}
-                  onSearchChange={handleSearchChange}
-                  searchPlaceholder="Rechercher par numéro, objet, fournisseur..."
-                  filters={[
-                    <DropdownMenu key="statut">
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline">Statut: {activeStatutLabel}</Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {statutOptions.map((option) => (
+                <div className="flex items-center justify-between gap-4 w-full">
+                  <ListToolbar
+                    searchValue={(filters.searchTerm as string) || ''}
+                    onSearchChange={handleSearchChange}
+                    searchPlaceholder="Rechercher par numéro, objet, fournisseur..."
+                    filters={[
+                      <DropdownMenu key="statut">
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline">Statut: {activeStatutLabel}</Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {statutOptions.map((option) => (
+                            <DropdownMenuItem
+                              key={option.value}
+                              onClick={() => handleStatutChange(option.value)}
+                            >
+                              {option.label}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>,
+                      <DropdownMenu key="batch-actions">
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline">
+                            Actions groupées
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
                           <DropdownMenuItem
-                            key={option.value}
-                            onClick={() => handleStatutChange(option.value)}
+                            disabled={!hasBrouillonsSelected}
+                            onClick={handleBatchValider}
                           >
-                            {option.label}
+                            Valider les brouillons
                           </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>,
-                    <DropdownMenu key="batch-actions">
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline">
-                          Actions groupées
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          disabled={!hasBrouillonsSelected}
-                          onClick={handleBatchValider}
-                        >
-                          Valider les brouillons
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          disabled={!hasValideesSelected}
-                          onClick={handleBatchMarquerPayee}
-                        >
-                          Marquer comme payées
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem disabled={!hasSelection} onClick={() => clearSelection()}>
-                          Effacer la sélection
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleExportFactures}>
-                          Exporter (toutes les factures filtrées)
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>,
-                  ]}
-                />
+                          <DropdownMenuItem
+                            disabled={!hasValideesSelected}
+                            onClick={handleBatchMarquerPayee}
+                          >
+                            Marquer comme payées
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem disabled={!hasSelection} onClick={() => clearSelection()}>
+                            Effacer la sélection
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={handleExportFactures}>
+                            Exporter (toutes les factures filtrées)
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>,
+                    ]}
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={handleGenerateTestData}
+                    disabled={isGenerating}
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Génération...
+                      </>
+                    ) : (
+                      'Générer des données de test'
+                    )}
+                  </Button>
+                </div>
               }
               footer={
                 <PaginationControls
