@@ -330,10 +330,12 @@ export const ImportPlanComptableDialog = ({ open, onOpenChange, onSuccess }: Imp
                         {(() => {
                           // Group errors by type
                           const missingParentErrors: Record<string, string[]> = {};
+                          const duplicateErrors: Record<string, Array<{ lines: string; code: string }>> = {};
                           const otherErrors: Array<{ code: string; error: string }> = [];
                           
                           report.stats.errors.forEach((error) => {
                             const missingParentMatch = error.error.match(/Compte parent (\d+) inexistant/);
+                            const duplicateMatch = error.error.match(/Compte en double dans le fichier CSV \(ligne (\d+) et ligne (\d+)\)/);
                             
                             if (missingParentMatch) {
                               const parentCode = missingParentMatch[1];
@@ -341,6 +343,13 @@ export const ImportPlanComptableDialog = ({ open, onOpenChange, onSuccess }: Imp
                                 missingParentErrors[parentCode] = [];
                               }
                               missingParentErrors[parentCode].push(error.code);
+                            } else if (duplicateMatch) {
+                              const lines = `ligne ${duplicateMatch[1]} et ligne ${duplicateMatch[2]}`;
+                              const key = error.code;
+                              if (!duplicateErrors[key]) {
+                                duplicateErrors[key] = [];
+                              }
+                              duplicateErrors[key].push({ lines, code: error.code });
                             } else {
                               otherErrors.push(error);
                             }
@@ -353,13 +362,36 @@ export const ImportPlanComptableDialog = ({ open, onOpenChange, onSuccess }: Imp
                             elements.push(
                               <div key={`parent-${parentCode}`} className="p-3 bg-destructive/10 rounded border border-destructive/20">
                                 <p className="font-medium text-destructive mb-2">
-                                  Compte parent {parentCode} inexistant. Ces comptes ne peuvent pas être importés sans leur parent.
+                                  Compte parent {parentCode} inexistant
                                 </p>
                                 <p className="text-sm text-muted-foreground">
                                   Comptes concernés ({childCodes.length}) : {childCodes.sort().join(', ')}
                                 </p>
                               </div>
                             );
+                          });
+                          
+                          // Display duplicate errors (grouped by account code)
+                          Object.entries(duplicateErrors).forEach(([code, duplicates]) => {
+                            const uniqueDuplicates = duplicates.reduce((acc, dup) => {
+                              if (!acc.find(d => d.lines === dup.lines)) {
+                                acc.push(dup);
+                              }
+                              return acc;
+                            }, [] as Array<{ lines: string; code: string }>);
+                            
+                            uniqueDuplicates.forEach((dup, index) => {
+                              elements.push(
+                                <div key={`dup-${code}-${index}`} className="p-3 bg-destructive/10 rounded border border-destructive/20">
+                                  <p className="font-medium text-destructive mb-2">
+                                    Compte {code} en double dans le fichier CSV
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {dup.lines}
+                                  </p>
+                                </div>
+                              );
+                            });
                           });
                           
                           // Display other errors
@@ -391,13 +423,49 @@ export const ImportPlanComptableDialog = ({ open, onOpenChange, onSuccess }: Imp
                   variant="outline" 
                   size="sm"
                   onClick={() => {
-                    // Create CSV content
-                    const csvContent = [
-                      'Code,Erreur',
-                      ...report.stats.errors.map(err => 
-                        `"${err.code}","${err.error.replace(/"/g, '""')}"`
-                      )
-                    ].join('\n');
+                    // Group errors for better readability
+                    const csvLines: string[] = ['Code,Type d\'erreur,Détails'];
+                    
+                    // Track which errors we've already processed
+                    const processedMissingParents = new Set<string>();
+                    const processedDuplicates = new Set<string>();
+                    
+                    report.stats.errors.forEach((error) => {
+                      // Handle missing parent errors
+                      const missingParentMatch = error.error.match(/Compte parent (\d+) inexistant/);
+                      if (missingParentMatch) {
+                        const parentCode = missingParentMatch[1];
+                        if (!processedMissingParents.has(parentCode)) {
+                          // Find all children with this missing parent
+                          const affectedCodes = report.stats.errors
+                            .filter(e => e.error.includes(`Compte parent ${parentCode} inexistant`))
+                            .map(e => e.code)
+                            .sort();
+                          
+                          csvLines.push(`"${affectedCodes.join(', ')}","Parent manquant","Compte parent ${parentCode} inexistant"`);
+                          processedMissingParents.add(parentCode);
+                        }
+                        return;
+                      }
+                      
+                      // Handle duplicate errors
+                      const duplicateMatch = error.error.match(/Compte en double dans le fichier CSV \(ligne (\d+) et ligne (\d+)\)/);
+                      if (duplicateMatch) {
+                        const line1 = duplicateMatch[1];
+                        const line2 = duplicateMatch[2];
+                        const key = `${error.code}-${line1}-${line2}`;
+                        if (!processedDuplicates.has(key)) {
+                          csvLines.push(`"${error.code}","Doublon","Compte en double (ligne ${line1} et ligne ${line2})"`);
+                          processedDuplicates.add(key);
+                        }
+                        return;
+                      }
+                      
+                      // Handle other errors
+                      csvLines.push(`"${error.code}","Erreur","${error.error.replace(/"/g, '""')}"`);
+                    });
+                    
+                    const csvContent = csvLines.join('\n');
                     
                     // Create and download file
                     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
