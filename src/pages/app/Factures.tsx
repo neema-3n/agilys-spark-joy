@@ -355,10 +355,26 @@ export default function Factures() {
       scrollProgress={scrollProgress}
       sticky={false}
       actions={
-        <Button onClick={handleCreate} ref={headerCtaRef}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nouvelle facture
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleGenerateTestData}
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Génération...
+              </>
+            ) : (
+              'Générer des données de test'
+            )}
+          </Button>
+          <Button onClick={handleCreate} ref={headerCtaRef}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nouvelle facture
+          </Button>
+        </div>
       }
     />
   );
@@ -414,73 +430,57 @@ export default function Factures() {
                 ) : undefined
               }
               toolbar={
-                <div className="flex items-center justify-between gap-4 w-full">
-                  <ListToolbar
-                    searchValue={(filters.searchTerm as string) || ''}
-                    onSearchChange={handleSearchChange}
-                    searchPlaceholder="Rechercher par numéro, objet, fournisseur..."
-                    filters={[
-                      <DropdownMenu key="statut">
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline">Statut: {activeStatutLabel}</Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {statutOptions.map((option) => (
-                            <DropdownMenuItem
-                              key={option.value}
-                              onClick={() => handleStatutChange(option.value)}
-                            >
-                              {option.label}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>,
-                      <DropdownMenu key="batch-actions">
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline">
-                            Actions groupées
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                <ListToolbar
+                  searchValue={(filters.searchTerm as string) || ''}
+                  onSearchChange={handleSearchChange}
+                  searchPlaceholder="Rechercher par numéro, objet, fournisseur..."
+                  filters={[
+                    <DropdownMenu key="statut">
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline">Statut: {activeStatutLabel}</Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {statutOptions.map((option) => (
                           <DropdownMenuItem
-                            disabled={!hasBrouillonsSelected}
-                            onClick={handleBatchValider}
+                            key={option.value}
+                            onClick={() => handleStatutChange(option.value)}
                           >
-                            Valider les brouillons
+                            {option.label}
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            disabled={!hasValideesSelected}
-                            onClick={handleBatchMarquerPayee}
-                          >
-                            Marquer comme payées
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem disabled={!hasSelection} onClick={() => clearSelection()}>
-                            Effacer la sélection
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={handleExportFactures}>
-                            Exporter (toutes les factures filtrées)
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>,
-                    ]}
-                  />
-                  <Button
-                    variant="outline"
-                    onClick={handleGenerateTestData}
-                    disabled={isGenerating}
-                  >
-                    {isGenerating ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Génération...
-                      </>
-                    ) : (
-                      'Générer des données de test'
-                    )}
-                  </Button>
-                </div>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>,
+                    <DropdownMenu key="batch-actions">
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline">
+                          Actions groupées
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          disabled={!hasBrouillonsSelected}
+                          onClick={handleBatchValider}
+                        >
+                          Valider les brouillons
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={!hasValideesSelected}
+                          onClick={handleBatchMarquerPayee}
+                        >
+                          Marquer comme payées
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem disabled={!hasSelection} onClick={() => clearSelection()}>
+                          Effacer la sélection
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleExportFactures}>
+                          Exporter (toutes les factures filtrées)
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>,
+                  ]}
+                />
               }
               footer={
                 <PaginationControls
