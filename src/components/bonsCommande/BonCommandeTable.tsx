@@ -137,6 +137,24 @@ export const BonCommandeTable = ({
         render: (bc) => <span className="tabular-nums">{formatCurrency(bc.montantFacture || 0)}</span>,
       },
       {
+        id: 'ecritures',
+        header: 'Écritures',
+        render: (bc) => {
+          const count = bc.ecrituresCount || 0;
+          return count > 0 ? (
+            <Badge variant="default" className="gap-1">
+              <BookOpen className="h-3 w-3" />
+              {count}
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="gap-1">
+              <AlertCircle className="h-3 w-3" />
+              -
+            </Badge>
+          );
+        },
+      },
+      {
         id: 'statut',
         header: 'Statut',
         render: (bc) => getStatutBadge(bc.statut),

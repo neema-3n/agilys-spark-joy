@@ -44,7 +44,8 @@ export const getPaiements = async (exerciceId: string, clientId: string): Promis
           nom,
           code
         )
-      )
+      ),
+      ecritures_comptables!paiement_id(count)
     `)
     .eq('exercice_id', exerciceId)
     .eq('client_id', clientId)
@@ -55,7 +56,13 @@ export const getPaiements = async (exerciceId: string, clientId: string): Promis
     throw error;
   }
 
-  return toCamelCase(data || []);
+  const paiementsWithCount = (data || []).map(paie => {
+    const ecrituresCount = paie.ecritures_comptables?.[0]?.count || 0;
+    const { ecritures_comptables, ...paiementData } = paie;
+    return { ...paiementData, ecritures_count: ecrituresCount };
+  });
+
+  return toCamelCase(paiementsWithCount);
 };
 
 // Récupérer les paiements d'une dépense spécifique
