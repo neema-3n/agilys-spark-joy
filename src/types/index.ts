@@ -99,6 +99,9 @@ export * from './prevision.types';
 // Export fournisseur types
 export * from './fournisseur.types';
 
+// Export regle comptable types
+export * from './regle-comptable.types';
+
 // Export reservation types
 export * from './reservation.types';
 
