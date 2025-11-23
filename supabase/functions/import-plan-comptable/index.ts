@@ -145,8 +145,13 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Decode base64
-    const csvContent = atob(csv);
+    // Decode base64 with proper UTF-8 handling
+    const binaryString = atob(csv);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const csvContent = new TextDecoder('utf-8').decode(bytes);
     
     // Parse CSV
     const rows = parseCSV(csvContent);
