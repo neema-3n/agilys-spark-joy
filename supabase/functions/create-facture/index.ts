@@ -135,6 +135,33 @@ Deno.serve(async (req) => {
       throw new Error(userMessage);
     }
 
+    console.log('create-facture: Facture created successfully:', data.id);
+
+    // Generate accounting entries automatically
+    try {
+      console.log('create-facture: Generating ecritures comptables');
+      
+      const { error: ecrituresError } = await supabaseAdmin.functions.invoke(
+        'generate-ecritures-comptables',
+        {
+          body: {
+            typeOperation: 'facture',
+            sourceId: data.id,
+            clientId: body.clientId,
+            exerciceId: body.exerciceId
+          }
+        }
+      );
+      
+      if (ecrituresError) {
+        console.error('create-facture: Error generating ecritures', ecrituresError);
+      } else {
+        console.log('create-facture: Ecritures generated successfully');
+      }
+    } catch (ecrituresError) {
+      console.error('create-facture: Exception generating ecritures', ecrituresError);
+    }
+
     // Convert snake_case to camelCase
     const toCamelCase = (obj: any): any => {
       if (obj === null || obj === undefined) return obj;
