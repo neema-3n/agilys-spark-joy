@@ -16,7 +16,7 @@ interface CompteNode extends Compte {
 
 interface CompteTreeItemProps {
   node: CompteNode;
-  expandAll?: boolean | null;
+  expandAll?: { expand: boolean; timestamp: number } | null;
   onEdit: (compte: Compte) => void;
   onDelete: (compte: Compte) => void;
   onToggleStatus: (compte: Compte) => void;
@@ -38,7 +38,7 @@ export const CompteTreeItem = ({
 
   useEffect(() => {
     if (expandAll !== null) {
-      setIsExpanded(expandAll);
+      setIsExpanded(expandAll.expand);
     }
   }, [expandAll]);
 
