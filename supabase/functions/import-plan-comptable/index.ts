@@ -278,14 +278,28 @@ serve(async (req) => {
         codeToUuid.set(existing.numero, existing.id);
       });
 
-      // Filter out duplicates
+      // Filter out duplicates and validate parent references
       const comptesToInsert = comptes.filter(compte => {
+        // Check for duplicates
         if (skipDuplicates && existingCodes.has(compte.code)) {
           console.log(`Skipping duplicate: ${compte.code}`);
           report.stats.skipped++;
           report.byLevel[niveau].skipped++;
           return false;
         }
+        
+        // Validate parent reference if code_parent is specified
+        if (compte.code_parent && !codeToUuid.has(compte.code_parent)) {
+          console.log(`Parent missing for compte ${compte.code}: parent ${compte.code_parent} not found`);
+          report.stats.errors.push({
+            code: compte.code,
+            error: `Compte parent ${compte.code_parent} inexistant. Ce compte ne peut pas être importé sans son parent.`
+          });
+          report.stats.skipped++;
+          report.byLevel[niveau].skipped++;
+          return false;
+        }
+        
         return true;
       });
 
