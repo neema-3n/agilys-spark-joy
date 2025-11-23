@@ -83,7 +83,7 @@ export const FactureSnapshot = ({
 
   const getStatutBadge = (statut: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'> = {
-      brouillon: 'warning',
+      brouillon: 'outline',
       validee: 'success',
       payee: 'success',
       annulee: 'destructive',
