@@ -7,6 +7,11 @@ import type { BonCommande } from '@/types/bonCommande.types';
 import { formatMontant, formatDate } from '@/lib/snapshot-utils';
 import { ShoppingCart, Building2, FileText, FolderOpen, Calendar, Truck, ClipboardCheck, Receipt } from 'lucide-react';
 import { ReactNode } from 'react';
+import { useEcrituresBySource } from '@/hooks/useEcrituresComptables';
+import { useGenerateEcritures } from '@/hooks/useGenerateEcritures';
+import { useClient } from '@/contexts/ClientContext';
+import { useExercice } from '@/contexts/ExerciceContext';
+import { EcrituresSection } from '@/components/ecritures/EcrituresSection';
 
 interface BonCommandeSnapshotProps {
   bonCommande: BonCommande;
@@ -71,6 +76,22 @@ export const BonCommandeSnapshot = ({
   onCreateFacture,
   onNavigateToEntity,
 }: BonCommandeSnapshotProps) => {
+  const { currentClient } = useClient();
+  const { currentExercice } = useExercice();
+  const { ecritures, isLoading: ecrituresLoading } = useEcrituresBySource('bon_commande', bonCommande.id);
+  const generateMutation = useGenerateEcritures();
+
+  const handleGenerateEcritures = () => {
+    if (!currentClient?.id || !currentExercice?.id) return;
+    
+    generateMutation.mutate({
+      typeOperation: 'bon_commande',
+      sourceId: bonCommande.id,
+      clientId: currentClient.id,
+      exerciceId: currentExercice.id
+    });
+  };
+
   const statut = statutConfig[bonCommande.statut] || statutConfig.brouillon;
   const montantFacture = bonCommande.montantFacture || 0;
   const progression = bonCommande.montant > 0 ? (montantFacture / bonCommande.montant) * 100 : 0;
@@ -200,6 +221,14 @@ export const BonCommandeSnapshot = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Écritures comptables */}
+      <EcrituresSection
+        ecritures={ecritures}
+        isLoading={ecrituresLoading}
+        onGenerate={handleGenerateEcritures}
+        isGenerating={generateMutation.isPending}
+      />
     </SnapshotBase>
   );
 };
