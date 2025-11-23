@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { Plus, Calculator } from 'lucide-react';
+import { Plus, Calculator, Info } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useReglesComptables } from '@/hooks/useReglesComptables';
 import { RegleComptableDialog } from './RegleComptableDialog';
-import { TYPE_OPERATION_LABELS } from '@/lib/regles-comptables-fields';
+import { TYPE_OPERATION_LABELS, OPERATEUR_LABELS } from '@/lib/regles-comptables-fields';
 import type { TypeOperation, RegleComptable } from '@/types/regle-comptable.types';
 
 const TYPE_OPERATIONS: TypeOperation[] = [
@@ -23,7 +25,7 @@ export const ReglesComptablesManager = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRegle, setEditingRegle] = useState<RegleComptable | undefined>();
 
-  const { regles, isLoading, deleteRegle } = useReglesComptables(activeTab);
+  const { regles, isLoading, deleteRegle, updateRegle } = useReglesComptables(activeTab);
 
   const handleEdit = (regle: RegleComptable) => {
     setEditingRegle(regle);
@@ -39,6 +41,13 @@ export const ReglesComptablesManager = () => {
   const handleCloseDialog = () => {
     setDialogOpen(false);
     setEditingRegle(undefined);
+  };
+
+  const handleToggleActif = async (regle: RegleComptable) => {
+    await updateRegle({
+      id: regle.id,
+      input: { actif: !regle.actif }
+    });
   };
 
   return (
@@ -95,9 +104,15 @@ export const ReglesComptablesManager = () => {
                             <div className="flex items-center gap-2 mb-2">
                               <h4 className="font-semibold">{regle.nom}</h4>
                               <Badge variant="outline">{regle.code}</Badge>
-                              {!regle.actif && (
-                                <Badge variant="secondary">Inactif</Badge>
-                              )}
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  checked={regle.actif}
+                                  onCheckedChange={() => handleToggleActif(regle)}
+                                />
+                                <span className="text-sm text-muted-foreground">
+                                  {regle.actif ? 'Actif' : 'Inactif'}
+                                </span>
+                              </div>
                             </div>
                             
                             {regle.description && (
@@ -118,13 +133,40 @@ export const ReglesComptablesManager = () => {
                                 )}
                               </div>
 
-                              <div>
+                              <div className="flex items-center gap-1">
                                 <span className="font-medium">Conditions:</span>{' '}
-                                <span className="text-muted-foreground">
-                                  {regle.conditions.length === 0
-                                    ? 'Aucune'
-                                    : `${regle.conditions.length} condition(s)`}
-                                </span>
+                                {regle.conditions.length === 0 ? (
+                                  <span className="text-muted-foreground">Aucune</span>
+                                ) : (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
+                                        {regle.conditions.length} condition(s)
+                                        <Info className="h-3 w-3" />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="max-w-md">
+                                      <div className="space-y-2">
+                                        <p className="font-semibold text-xs">Conditions:</p>
+                                        {regle.conditions.map((condition, idx) => (
+                                          <div key={idx} className="text-xs">
+                                            <Badge variant="outline" className="font-mono text-xs">
+                                              {condition.champ}
+                                            </Badge>
+                                            {' '}
+                                            <span className="text-muted-foreground">
+                                              {OPERATEUR_LABELS[condition.operateur]}
+                                            </span>
+                                            {' '}
+                                            <span className="font-medium">
+                                              {String(condition.valeur)}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                )}
                               </div>
 
                               <div>
