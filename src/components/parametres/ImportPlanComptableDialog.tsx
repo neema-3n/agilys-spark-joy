@@ -409,7 +409,7 @@ export const ImportPlanComptableDialog = ({ open, onOpenChange, onSuccess }: Imp
               onSuccess();
               handleClose();
             }}>
-              Fermer et recharger
+              Terminer
             </Button>
           )}
         </DialogFooter>
