@@ -69,28 +69,14 @@ export const getReservations = async (
         numero,
         montant,
         statut
-      ),
-      ecritures_comptables(count)
+      )
     `)
     .eq('exercice_id', exerciceId)
     .eq('client_id', clientId)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  
-  // Extraire le count des écritures comptables
-  const reservationsWithCount = (data || []).map(res => {
-    const ecrituresCount = Array.isArray(res.ecritures_comptables) && res.ecritures_comptables[0]
-      ? Number(res.ecritures_comptables[0].count) || 0
-      : 0;
-    const { ecritures_comptables, ...reservationData } = res;
-    return {
-      ...reservationData,
-      ecritures_count: ecrituresCount
-    };
-  });
-  
-  return toCamelCase(reservationsWithCount);
+  return toCamelCase(data);
 };
 
 export const getReservationById = async (id: string): Promise<ReservationCredit | null> => {

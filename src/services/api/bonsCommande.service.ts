@@ -69,8 +69,7 @@ export const bonsCommandeService = {
         fournisseurs(id, nom, code),
         engagements(id, numero),
         lignes_budgetaires(id, libelle),
-        projets(id, nom),
-        ecritures_comptables(count)
+        projets(id, nom)
       `)
       .eq('client_id', clientId)
       .order('date_commande', { ascending: false });
@@ -105,9 +104,6 @@ export const bonsCommandeService = {
     return data.map(item => ({
       ...mapBonCommandeFromDB(item),
       montantFacture: montantsFactures.get(item.id) || 0,
-      ecrituresCount: Array.isArray(item.ecritures_comptables) && item.ecritures_comptables[0]
-        ? Number(item.ecritures_comptables[0].count) || 0
-        : 0,
     }));
   },
 
