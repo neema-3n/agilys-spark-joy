@@ -19,13 +19,15 @@ interface RegleComptableDialogProps {
   onClose: () => void;
   regle?: RegleComptable;
   defaultTypeOperation?: TypeOperation;
+  initialValues?: Partial<RegleComptable>;
 }
 
 export const RegleComptableDialog = ({ 
   open, 
   onClose, 
   regle,
-  defaultTypeOperation = 'reservation'
+  defaultTypeOperation = 'reservation',
+  initialValues
 }: RegleComptableDialogProps) => {
   const { currentClient } = useClient();
   const { createRegle, updateRegle } = useReglesComptables();
@@ -59,6 +61,20 @@ export const RegleComptableDialog = ({
       setCompteCreditId(regle.compteCreditId);
       setActif(regle.actif);
       setOrdre(regle.ordre);
+    } else if (initialValues) {
+      // Duplication : utiliser les valeurs initiales
+      setCode(initialValues.code || '');
+      setNom(initialValues.nom || '');
+      setDescription(initialValues.description || '');
+      setPermanente(initialValues.permanente ?? true);
+      setDateDebut(initialValues.dateDebut || '');
+      setDateFin(initialValues.dateFin || '');
+      setTypeOperation(initialValues.typeOperation || defaultTypeOperation);
+      setConditions(initialValues.conditions || []);
+      setCompteDebitId(initialValues.compteDebitId || '');
+      setCompteCreditId(initialValues.compteCreditId || '');
+      setActif(initialValues.actif ?? true);
+      setOrdre(initialValues.ordre ?? 0);
     } else {
       setCode('');
       setNom('');
@@ -73,7 +89,7 @@ export const RegleComptableDialog = ({
       setActif(true);
       setOrdre(0);
     }
-  }, [regle, defaultTypeOperation, open]);
+  }, [regle, initialValues, defaultTypeOperation, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

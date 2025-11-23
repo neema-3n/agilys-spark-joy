@@ -34,6 +34,7 @@ export const ReglesComptablesManager = () => {
   const [activeTab, setActiveTab] = useState<TypeOperation>('reservation');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRegle, setEditingRegle] = useState<RegleComptable | undefined>();
+  const [initialValuesForDuplicate, setInitialValuesForDuplicate] = useState<Partial<RegleComptable> | undefined>();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [regleToDelete, setRegleToDelete] = useState<RegleComptable | null>(null);
 
@@ -45,13 +46,21 @@ export const ReglesComptablesManager = () => {
   };
 
   const handleDuplicate = (regle: RegleComptable) => {
-    // Créer une copie sans l'ID pour forcer la création d'une nouvelle règle
-    const { id, createdAt, updatedAt, ...regleData } = regle;
-    setEditingRegle({
-      ...regleData,
+    setEditingRegle(undefined);
+    setInitialValuesForDuplicate({
       nom: `${regle.nom} (Copie)`,
       code: `${regle.code}_COPY`,
-    } as RegleComptable);
+      description: regle.description,
+      permanente: regle.permanente,
+      dateDebut: regle.dateDebut,
+      dateFin: regle.dateFin,
+      typeOperation: regle.typeOperation,
+      conditions: regle.conditions,
+      compteDebitId: regle.compteDebitId,
+      compteCreditId: regle.compteCreditId,
+      actif: regle.actif,
+      ordre: regle.ordre,
+    });
     setDialogOpen(true);
   };
 
@@ -71,6 +80,7 @@ export const ReglesComptablesManager = () => {
   const handleCloseDialog = () => {
     setDialogOpen(false);
     setEditingRegle(undefined);
+    setInitialValuesForDuplicate(undefined);
   };
 
   const handleToggleActif = async (regle: RegleComptable) => {
@@ -269,6 +279,7 @@ export const ReglesComptablesManager = () => {
         onClose={handleCloseDialog}
         regle={editingRegle}
         defaultTypeOperation={activeTab}
+        initialValues={initialValuesForDuplicate}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
