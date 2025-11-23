@@ -330,7 +330,7 @@ export const ImportPlanComptableDialog = ({ open, onOpenChange, onSuccess }: Imp
                         {(() => {
                           // Group errors by type
                           const missingParentErrors: Record<string, string[]> = {};
-                          const duplicateErrors: Record<string, Array<{ lines: string; code: string }>> = {};
+                          const duplicatesByCode = new Map<string, Set<number>>();
                           const otherErrors: Array<{ code: string; error: string }> = [];
                           
                           report.stats.errors.forEach((error) => {
@@ -344,12 +344,14 @@ export const ImportPlanComptableDialog = ({ open, onOpenChange, onSuccess }: Imp
                               }
                               missingParentErrors[parentCode].push(error.code);
                             } else if (duplicateMatch) {
-                              const lines = `ligne ${duplicateMatch[1]} et ligne ${duplicateMatch[2]}`;
-                              const key = error.code;
-                              if (!duplicateErrors[key]) {
-                                duplicateErrors[key] = [];
+                              const line1 = parseInt(duplicateMatch[1]);
+                              const line2 = parseInt(duplicateMatch[2]);
+                              
+                              if (!duplicatesByCode.has(error.code)) {
+                                duplicatesByCode.set(error.code, new Set());
                               }
-                              duplicateErrors[key].push({ lines, code: error.code });
+                              duplicatesByCode.get(error.code)!.add(line1);
+                              duplicatesByCode.get(error.code)!.add(line2);
                             } else {
                               otherErrors.push(error);
                             }
@@ -372,26 +374,18 @@ export const ImportPlanComptableDialog = ({ open, onOpenChange, onSuccess }: Imp
                           });
                           
                           // Display duplicate errors (grouped by account code)
-                          Object.entries(duplicateErrors).forEach(([code, duplicates]) => {
-                            const uniqueDuplicates = duplicates.reduce((acc, dup) => {
-                              if (!acc.find(d => d.lines === dup.lines)) {
-                                acc.push(dup);
-                              }
-                              return acc;
-                            }, [] as Array<{ lines: string; code: string }>);
-                            
-                            uniqueDuplicates.forEach((dup, index) => {
-                              elements.push(
-                                <div key={`dup-${code}-${index}`} className="p-3 bg-destructive/10 rounded border border-destructive/20">
-                                  <p className="font-medium text-destructive mb-2">
-                                    Compte {code} en double dans le fichier CSV
-                                  </p>
-                                  <p className="text-sm text-muted-foreground">
-                                    {dup.lines}
-                                  </p>
-                                </div>
-                              );
-                            });
+                          duplicatesByCode.forEach((lines, code) => {
+                            const sortedLines = Array.from(lines).sort((a, b) => a - b);
+                            elements.push(
+                              <div key={`dup-${code}`} className="p-3 bg-destructive/10 rounded border border-destructive/20">
+                                <p className="font-medium text-destructive mb-2">
+                                  Compte {code} en double dans le fichier CSV
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  Lignes {sortedLines.join(', ')}
+                                </p>
+                              </div>
+                            );
                           });
                           
                           // Display other errors
@@ -428,7 +422,8 @@ export const ImportPlanComptableDialog = ({ open, onOpenChange, onSuccess }: Imp
                     
                     // Track which errors we've already processed
                     const processedMissingParents = new Set<string>();
-                    const processedDuplicates = new Set<string>();
+                    const duplicatesByCode = new Map<string, Set<number>>();
+                    const otherErrors: Array<{ code: string; error: string }> = [];
                     
                     report.stats.errors.forEach((error) => {
                       // Handle missing parent errors
@@ -448,21 +443,33 @@ export const ImportPlanComptableDialog = ({ open, onOpenChange, onSuccess }: Imp
                         return;
                       }
                       
-                      // Handle duplicate errors
+                      // Handle duplicate errors - collect all lines for each code
                       const duplicateMatch = error.error.match(/Compte en double dans le fichier CSV \(ligne (\d+) et ligne (\d+)\)/);
                       if (duplicateMatch) {
-                        const line1 = duplicateMatch[1];
-                        const line2 = duplicateMatch[2];
-                        const key = `${error.code}-${line1}-${line2}`;
-                        if (!processedDuplicates.has(key)) {
-                          csvLines.push(`"${error.code}","Doublon","Compte en double (ligne ${line1} et ligne ${line2})"`);
-                          processedDuplicates.add(key);
+                        const line1 = parseInt(duplicateMatch[1]);
+                        const line2 = parseInt(duplicateMatch[2]);
+                        
+                        if (!duplicatesByCode.has(error.code)) {
+                          duplicatesByCode.set(error.code, new Set());
                         }
+                        duplicatesByCode.get(error.code)!.add(line1);
+                        duplicatesByCode.get(error.code)!.add(line2);
                         return;
                       }
                       
                       // Handle other errors
-                      csvLines.push(`"${error.code}","Erreur","${error.error.replace(/"/g, '""')}"`);
+                      otherErrors.push({ code: error.code, error: error.error });
+                    });
+                    
+                    // Add duplicate errors (one line per code with all lines sorted)
+                    duplicatesByCode.forEach((lines, code) => {
+                      const sortedLines = Array.from(lines).sort((a, b) => a - b);
+                      csvLines.push(`"${code}","Doublon","Compte en double (lignes ${sortedLines.join(', ')})"`);
+                    });
+                    
+                    // Add other errors
+                    otherErrors.forEach(({ code, error }) => {
+                      csvLines.push(`"${code}","Erreur","${error.replace(/"/g, '""')}"`);
                     });
                     
                     const csvContent = csvLines.join('\n');
