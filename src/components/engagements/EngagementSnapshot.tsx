@@ -6,6 +6,11 @@ import { Progress } from '@/components/ui/progress';
 import type { Engagement } from '@/types/engagement.types';
 import { SnapshotBase } from '@/components/shared/SnapshotBase';
 import { formatMontant, formatDate, formatDateTime, getEntityUrl } from '@/lib/snapshot-utils';
+import { useEcrituresBySource } from '@/hooks/useEcrituresComptables';
+import { useGenerateEcritures } from '@/hooks/useGenerateEcritures';
+import { useClient } from '@/contexts/ClientContext';
+import { useExercice } from '@/contexts/ExerciceContext';
+import { EcrituresSection } from '@/components/ecritures/EcrituresSection';
 
 interface EngagementSnapshotProps {
   engagement: Engagement;
@@ -38,6 +43,22 @@ export const EngagementSnapshot = ({
   onCreerDepense,
   onNavigateToEntity,
 }: EngagementSnapshotProps) => {
+  const { currentClient } = useClient();
+  const { currentExercice } = useExercice();
+  const { ecritures, isLoading: ecrituresLoading } = useEcrituresBySource('engagement', engagement.id);
+  const generateMutation = useGenerateEcritures();
+
+  const handleGenerateEcritures = () => {
+    if (!currentClient?.id || !currentExercice?.id) return;
+    
+    generateMutation.mutate({
+      typeOperation: 'engagement',
+      sourceId: engagement.id,
+      clientId: currentClient.id,
+      exerciceId: currentExercice.id
+    });
+  };
+
   const getStatutBadge = (statut: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
       brouillon: 'secondary',
@@ -325,6 +346,14 @@ export const EngagementSnapshot = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Écritures comptables */}
+      <EcrituresSection
+        ecritures={ecritures}
+        isLoading={ecrituresLoading}
+        onGenerate={handleGenerateEcritures}
+        isGenerating={generateMutation.isPending}
+      />
     </SnapshotBase>
   );
 };
