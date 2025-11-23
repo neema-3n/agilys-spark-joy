@@ -4,7 +4,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { CalendarDays, Briefcase, Building2, BookOpen, Users, Settings as SettingsIcon, Database, Menu, Layers } from 'lucide-react';
+import { CalendarDays, Briefcase, Building2, BookOpen, Users, Settings as SettingsIcon, Database, Menu, Layers, Calculator } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ExercicesManager } from '@/components/parametres/ExercicesManager';
 import { EnveloppesManager } from '@/components/parametres/EnveloppesManager';
@@ -12,6 +12,7 @@ import { StructureManager } from '@/components/parametres/StructureManager';
 import { PlanComptableManager } from '@/components/parametres/PlanComptableManager';
 import { ReferentielsManager } from '@/components/parametres/ReferentielsManager';
 import { StructureBudgetaireManager } from '@/components/parametres/StructureBudgetaireManager';
+import { ReglesComptablesManager } from '@/components/parametres/ReglesComptablesManager';
 
 type ParametreSection = 
   | 'exercices' 
@@ -19,6 +20,7 @@ type ParametreSection =
   | 'structure' 
   | 'structure-budgetaire'
   | 'plan-comptable'
+  | 'regles-comptables'
   | 'referentiels' 
   | 'utilisateurs' 
   | 'general';
@@ -63,6 +65,13 @@ const Parametres = () => {
       description: 'Comptes et structure comptable',
       icon: BookOpen,
       component: <PlanComptableManager />
+    },
+    {
+      id: 'regles-comptables' as ParametreSection,
+      title: 'Règles Comptables',
+      description: 'Règles d\'écriture automatique',
+      icon: Calculator,
+      component: <ReglesComptablesManager />
     },
     {
       id: 'referentiels' as ParametreSection,
