@@ -24,7 +24,6 @@ export interface Facture {
   createdAt: string;
   updatedAt: string;
   createdBy?: string;
-  ecrituresCount?: number;
   
   // Relations optionnelles
   fournisseur?: {

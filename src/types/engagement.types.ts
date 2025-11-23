@@ -21,7 +21,6 @@ export interface Engagement {
   motifAnnulation?: string;
   observations?: string;
   solde?: number;
-  ecrituresCount?: number;
   
   // Données jointes
   ligneBudgetaire?: {
