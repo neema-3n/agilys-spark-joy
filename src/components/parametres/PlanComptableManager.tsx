@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, FolderTree, BookOpen, Upload, Trash2, ChevronsDown, ChevronsUp } from 'lucide-react';
+import { Plus, FolderTree, BookOpen, Upload, Trash2, ChevronsDown, ChevronsUp, ArrowUp } from 'lucide-react';
 import { useClient } from '@/contexts/ClientContext';
 import { Compte } from '@/types/compte.types';
 import { comptesService } from '@/services/api/comptes.service';
@@ -17,6 +17,8 @@ interface CompteNode extends Compte {
 }
 
 const PlanComptableManager = () => {
+  const scrollButtonRef = useRef<HTMLButtonElement | null>(null);
+  const topMarkerRef = useRef<HTMLDivElement | null>(null);
   const { currentClient } = useClient();
   const { toast } = useToast();
   const [comptes, setComptes] = useState<Compte[]>([]);
@@ -29,6 +31,7 @@ const PlanComptableManager = () => {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
   const [expandAll, setExpandAll] = useState<{ expand: boolean; timestamp: number } | null>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Trouver le premier ancêtre disponible dans la vue filtrée
   const findAvailableAncestor = (
@@ -106,9 +109,36 @@ const PlanComptableManager = () => {
   const filteredComptes = filterComptes(comptes, searchTerm);
   const compteTree = buildTree(filteredComptes, comptes);
 
+  const getScrollContainer = () =>
+    document.querySelector('main') as HTMLElement | null ||
+    (document.scrollingElement as HTMLElement | null) ||
+    null;
+
   useEffect(() => {
     loadComptes();
   }, [currentClient]);
+
+  useEffect(() => {
+    
+    const rootEl = getScrollContainer();
+    const marker = topMarkerRef.current;
+    if (!marker) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        setShowScrollTop(!entry.isIntersecting);
+      },
+      {
+        root: rootEl || null,
+        threshold: [0, 0.1],
+       // rootMargin: '-80px 0px 0px 0px', // attend que le header ait quitté la vue
+      }
+    );
+
+    observer.observe(marker);
+    return () => observer.disconnect();
+  }, []);
 
   const loadComptes = async () => {
     if (!currentClient) return;
@@ -284,8 +314,35 @@ const PlanComptableManager = () => {
     }
   };
 
+  const scrollToTop = () => {
+    const scrollOptions: ScrollToOptions = { top: 0, behavior: 'smooth' };
+
+    // Scroll main container if present
+    const main = getScrollContainer();
+    if (main) main.scrollTo(scrollOptions);
+
+    // Scroll all ancestor containers that can scroll (covers nested overflow-auto)
+    const btn = scrollButtonRef.current;
+    if (btn) {
+      let parent: HTMLElement | null = btn.parentElement;
+      while (parent) {
+        const style = getComputedStyle(parent);
+        const isScrollable = /(auto|scroll)/.test(style.overflowY) && parent.scrollHeight - parent.clientHeight > 4;
+        if (isScrollable) {
+          parent.scrollTo(scrollOptions);
+        }
+        parent = parent.parentElement;
+      }
+    }
+
+    // Scroll page fallback
+    window.scrollTo(scrollOptions);
+  };
+
   return (
     <>
+      <div aria-hidden="true" className="h-px w-px" />
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -320,7 +377,7 @@ const PlanComptableManager = () => {
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between mb-4">
-            <div className="flex gap-2">
+            <div ref={topMarkerRef} className="flex gap-2">
               <Button 
                 variant="outline" 
                 size="sm"
@@ -377,6 +434,20 @@ const PlanComptableManager = () => {
           )}
         </CardContent>
       </Card>
+
+      {showScrollTop && (
+        <Button
+          type="button"
+          size="icon"
+          variant="secondary"
+          onClick={scrollToTop}
+          ref={scrollButtonRef}
+          className="fixed bottom-6 right-6 z-30 rounded-full shadow-lg transition-transform hover:-translate-y-0.5"
+          aria-label="Revenir en haut de la page"
+        >
+          <ArrowUp className="h-4 w-4" />
+        </Button>
+      )}
 
       <CompteDialog
         open={dialogOpen}
