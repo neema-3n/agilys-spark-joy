@@ -97,6 +97,14 @@ export const ImportPlanComptableDialog = ({ open, onOpenChange, onSuccess }: Imp
     setPhase('importing');
     setProgress(10);
 
+    // Simulate smooth progress while waiting
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 90) return prev;
+        return prev + Math.random() * 10;
+      });
+    }, 500);
+
     try {
       setProgress(30);
       const importReport = await importComptesService.importFromCSV(
@@ -105,6 +113,7 @@ export const ImportPlanComptableDialog = ({ open, onOpenChange, onSuccess }: Imp
         skipDuplicates
       );
       
+      clearInterval(progressInterval);
       setProgress(100);
       setReport(importReport);
       setPhase('success');
@@ -115,6 +124,7 @@ export const ImportPlanComptableDialog = ({ open, onOpenChange, onSuccess }: Imp
       });
       
     } catch (err: any) {
+      clearInterval(progressInterval);
       console.error('Import error:', err);
       setError(err.message);
       setPhase('error');
