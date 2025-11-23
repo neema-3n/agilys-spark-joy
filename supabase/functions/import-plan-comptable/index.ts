@@ -279,10 +279,28 @@ serve(async (req) => {
 
           if (error) {
             console.error(`Batch insert error:`, error);
+            
+            // Translate database errors to user-friendly French messages
+            let userFriendlyError = error.message;
+            
+            if (error.message.includes('duplicate key') || error.message.includes('comptes_client_id_numero_key')) {
+              userFriendlyError = 'Ce compte existe déjà dans votre plan comptable';
+            } else if (error.message.includes('violates foreign key constraint')) {
+              userFriendlyError = 'Référence invalide (compte parent inexistant)';
+            } else if (error.message.includes('violates check constraint')) {
+              userFriendlyError = 'Données invalides (vérifier le format)';
+            } else if (error.message.includes('not-null constraint')) {
+              const match = error.message.match(/column "(\w+)"/);
+              const column = match ? match[1] : 'champ requis';
+              userFriendlyError = `Champ obligatoire manquant: ${column}`;
+            } else if (error.message.includes('invalid input syntax')) {
+              userFriendlyError = 'Format de données incorrect';
+            }
+            
             batch.forEach(compte => {
               report.stats.errors.push({
                 code: compte.code,
-                error: error.message,
+                error: userFriendlyError,
               });
             });
           } else {
@@ -297,16 +315,32 @@ serve(async (req) => {
           }
         } catch (error: any) {
           console.error(`Batch insert error:`, error);
+          
+          // Translate database errors to user-friendly French messages
+          let userFriendlyError = error.message;
+          
+          if (error.message.includes('duplicate key') || error.message.includes('comptes_client_id_numero_key')) {
+            userFriendlyError = 'Ce compte existe déjà dans votre plan comptable';
+          } else if (error.message.includes('violates foreign key constraint')) {
+            userFriendlyError = 'Référence invalide (compte parent inexistant)';
+          } else if (error.message.includes('violates check constraint')) {
+            userFriendlyError = 'Données invalides (vérifier le format)';
+          } else if (error.message.includes('not-null constraint')) {
+            const match = error.message.match(/column "(\w+)"/);
+            const column = match ? match[1] : 'champ requis';
+            userFriendlyError = `Champ obligatoire manquant: ${column}`;
+          } else if (error.message.includes('invalid input syntax')) {
+            userFriendlyError = 'Format de données incorrect';
+          } else if (error.message.includes('timeout')) {
+            userFriendlyError = 'Délai d\'attente dépassé (fichier trop volumineux)';
+          } else if (error.message.includes('permission denied')) {
+            userFriendlyError = 'Accès refusé (vérifier les permissions)';
+          }
+          
           batch.forEach(compte => {
-            const errorMsg = error.message.includes('duplicate')
-              ? `Compte déjà existant`
-              : error.message.includes('violates')
-              ? `Données invalides: ${error.message.split('violates')[1] || 'erreur contrainte'}`
-              : error.message;
-            
             report.stats.errors.push({
               code: compte.code,
-              error: errorMsg,
+              error: userFriendlyError,
             });
           });
         }
