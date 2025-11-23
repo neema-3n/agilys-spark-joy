@@ -32,6 +32,7 @@ import BonsCommande from "./pages/app/BonsCommande";
 import Depenses from "./pages/app/Depenses";
 import Enveloppes from "./pages/app/Enveloppes";
 import Projets from "./pages/app/Projets";
+import JournalComptable from "./pages/app/JournalComptable";
 
 const queryClient = new QueryClient();
 
@@ -80,6 +81,7 @@ const App = () => (
                   <Route path="paiements" element={<Paiements />} />
                   <Route path="tresorerie" element={<Tresorerie />} />
                   <Route path="plan-comptable" element={<PlanComptable />} />
+                  <Route path="journal-comptable" element={<JournalComptable />} />
                   <Route path="controle-interne" element={<ControleInterne />} />
                   <Route path="projets" element={<Projets />} />
                   <Route path="analyses" element={<Analyses />} />

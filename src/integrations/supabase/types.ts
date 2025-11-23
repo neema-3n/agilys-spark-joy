@@ -373,6 +373,92 @@ export type Database = {
           },
         ]
       }
+      ecritures_comptables: {
+        Row: {
+          client_id: string
+          compte_credit_id: string
+          compte_debit_id: string
+          created_at: string | null
+          created_by: string | null
+          date_ecriture: string
+          exercice_id: string
+          id: string
+          libelle: string
+          montant: number
+          numero_ligne: number
+          numero_piece: string
+          regle_comptable_id: string | null
+          source_id: string
+          type_operation: string
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          compte_credit_id: string
+          compte_debit_id: string
+          created_at?: string | null
+          created_by?: string | null
+          date_ecriture: string
+          exercice_id: string
+          id?: string
+          libelle: string
+          montant: number
+          numero_ligne: number
+          numero_piece: string
+          regle_comptable_id?: string | null
+          source_id: string
+          type_operation: string
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          compte_credit_id?: string
+          compte_debit_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          date_ecriture?: string
+          exercice_id?: string
+          id?: string
+          libelle?: string
+          montant?: number
+          numero_ligne?: number
+          numero_piece?: string
+          regle_comptable_id?: string | null
+          source_id?: string
+          type_operation?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ecritures_comptables_compte_credit_id_fkey"
+            columns: ["compte_credit_id"]
+            isOneToOne: false
+            referencedRelation: "comptes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ecritures_comptables_compte_debit_id_fkey"
+            columns: ["compte_debit_id"]
+            isOneToOne: false
+            referencedRelation: "comptes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ecritures_comptables_exercice_id_fkey"
+            columns: ["exercice_id"]
+            isOneToOne: false
+            referencedRelation: "exercices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ecritures_comptables_regle_comptable_id_fkey"
+            columns: ["regle_comptable_id"]
+            isOneToOne: false
+            referencedRelation: "regles_comptables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       engagements: {
         Row: {
           beneficiaire: string | null
@@ -1752,6 +1838,28 @@ export type Database = {
           p_montant: number
           p_objet: string
           p_projet_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      evaluate_condition: {
+        Args: {
+          p_expected_value: string
+          p_field_value: string
+          p_operator: string
+        }
+        Returns: boolean
+      }
+      generate_ecritures_comptables: {
+        Args: {
+          p_client_id: string
+          p_date_operation: string
+          p_exercice_id: string
+          p_montant: number
+          p_numero_piece: string
+          p_operation_data: Json
+          p_source_id: string
+          p_type_operation: string
           p_user_id: string
         }
         Returns: Json
