@@ -32,6 +32,7 @@ export const useEngagements = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['engagements'] });
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
     },
   });
 
@@ -73,6 +74,7 @@ export const useEngagements = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['engagements'] });
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
     },
   });
 
@@ -81,6 +83,7 @@ export const useEngagements = () => {
       engagementsService.annulerEngagement(id, motif),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['engagements'] });
+      queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
     },
   });
 
