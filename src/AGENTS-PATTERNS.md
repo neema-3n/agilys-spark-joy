@@ -315,6 +315,7 @@ export const engagementsService = {
 - ✅ Toolbar accessible : `aria-label` sur l’input, filtres en ReactNode
 - ✅ Colonne `Checkbox` option batch via `useListSelection` + `buildSelectionColumn` (parent obligatoire pour l’état)
 - ✅ Responsive déjà géré (`overflow-x-auto` sur la table)
+- ✅ Modules opérations (réservations, engagements, BC, paiements, factures, dépenses) doivent utiliser `ListTable` + `ListLayout/ListToolbar` (pas de tables ad hoc)
 
 #### Checklist Table/List
 - [ ] Colonnes typées `ListColumn<T>` (align right pour montants/dates, truncation si besoin)
