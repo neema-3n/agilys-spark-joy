@@ -173,8 +173,9 @@ export const ReglesComptablesManager = () => {
                                 <span className="font-medium">Comptes:</span>{' '}
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <button className="text-muted-foreground hover:text-foreground transition-colors">
+                                    <button className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
                                       {regle.compteDebit?.numero} → {regle.compteCredit?.numero}
+                                      <Info className="h-3 w-3" />
                                     </button>
                                   </TooltipTrigger>
                                   <TooltipContent side="top" className="max-w-md">
