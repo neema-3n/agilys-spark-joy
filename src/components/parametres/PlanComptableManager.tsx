@@ -30,21 +30,54 @@ const PlanComptableManager = () => {
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
   const [expandAll, setExpandAll] = useState<{ expand: boolean; timestamp: number } | null>(null);
 
-  // Construire l'arbre hiérarchique
-  const buildTree = (comptes: Compte[]): CompteNode[] => {
+  // Trouver le premier ancêtre disponible dans la vue filtrée
+  const findAvailableAncestor = (
+    compteId: string | undefined, 
+    allComptes: Compte[], 
+    availableMap: Map<string, CompteNode>
+  ): string | null => {
+    if (!compteId) return null;
+    
+    // Chercher le compte dans la liste complète
+    const compte = allComptes.find(c => c.id === compteId);
+    if (!compte) return null;
+    
+    // Si ce compte existe dans la map filtrée, c'est notre ancêtre
+    if (availableMap.has(compte.id)) {
+      return compte.id;
+    }
+    
+    // Sinon, remonter au parent
+    return findAvailableAncestor(compte.parentId, allComptes, availableMap);
+  };
+
+  // Construire l'arbre hiérarchique avec gestion des comptes orphelins
+  const buildTree = (comptesFiltered: Compte[], allComptes: Compte[]): CompteNode[] => {
     const map = new Map<string, CompteNode>();
     const roots: CompteNode[] = [];
 
-    // Initialiser tous les nœuds
-    comptes.forEach(compte => {
+    // Initialiser tous les nœuds filtrés
+    comptesFiltered.forEach(compte => {
       map.set(compte.id, { ...compte, children: [] });
     });
 
-    // Construire les relations parent-enfant
-    comptes.forEach(compte => {
+    // Construire les relations parent-enfant avec recherche d'ancêtre
+    comptesFiltered.forEach(compte => {
       const node = map.get(compte.id)!;
-      if (compte.parentId && map.has(compte.parentId)) {
-        map.get(compte.parentId)!.children.push(node);
+      
+      if (compte.parentId) {
+        // Si le parent direct existe dans la map filtrée
+        if (map.has(compte.parentId)) {
+          map.get(compte.parentId)!.children.push(node);
+        } else {
+          // Sinon, chercher le premier ancêtre disponible
+          const ancestorId = findAvailableAncestor(compte.parentId, allComptes, map);
+          if (ancestorId) {
+            map.get(ancestorId)!.children.push(node);
+          } else {
+            roots.push(node);
+          }
+        }
       } else {
         roots.push(node);
       }
@@ -71,7 +104,7 @@ const PlanComptableManager = () => {
   };
 
   const filteredComptes = filterComptes(comptes, searchTerm);
-  const compteTree = buildTree(filteredComptes);
+  const compteTree = buildTree(filteredComptes, comptes);
 
   useEffect(() => {
     loadComptes();
