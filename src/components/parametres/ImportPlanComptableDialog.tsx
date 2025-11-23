@@ -378,6 +378,35 @@ export const ImportPlanComptableDialog = ({ open, onOpenChange, onSuccess }: Imp
                 </AccordionItem>
               )}
             </Accordion>
+            
+            {report.stats.errors.length > 0 && (
+              <div className="flex justify-end">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    // Create CSV content
+                    const csvContent = [
+                      'Code,Erreur',
+                      ...report.stats.errors.map(err => 
+                        `"${err.code}","${err.error.replace(/"/g, '""')}"`
+                      )
+                    ].join('\n');
+                    
+                    // Create and download file
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `erreurs_import_${new Date().toISOString().split('T')[0]}.csv`;
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                  }}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Télécharger le log des erreurs
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
