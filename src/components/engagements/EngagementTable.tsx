@@ -32,7 +32,7 @@ const formatDate = (dateString: string) => new Date(dateString).toLocaleDateStri
 
 const getStatusBadge = (statut: Engagement['statut']) => {
   const variants: Record<Engagement['statut'], { variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'; label: string }> = {
-    brouillon: { variant: 'warning', label: 'Brouillon' },
+    brouillon: { variant: 'outline', label: 'Brouillon' },
     valide: { variant: 'success', label: 'Validé' },
     engage: { variant: 'success', label: 'Engagé' },
     liquide: { variant: 'success', label: 'Liquidé' },
