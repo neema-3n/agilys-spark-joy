@@ -31,10 +31,7 @@ export const ImportPlanComptableDialog = ({ open, onOpenChange, onSuccess }: Imp
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (!selectedFile) return;
-
+  const processFile = useCallback(async (selectedFile: File) => {
     if (!selectedFile.name.endsWith('.csv')) {
       toast({
         title: 'Format invalide',
@@ -72,6 +69,27 @@ export const ImportPlanComptableDialog = ({ open, onOpenChange, onSuccess }: Imp
       setPhase('error');
     }
   }, [toast]);
+
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
+    await processFile(selectedFile);
+  }, [processFile]);
+
+  const handleDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const droppedFile = e.dataTransfer.files?.[0];
+    if (!droppedFile) return;
+    
+    await processFile(droppedFile);
+  }, [processFile]);
+
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
 
   const handleImport = async () => {
     if (!file || !currentClient) return;
@@ -141,16 +159,23 @@ export const ImportPlanComptableDialog = ({ open, onOpenChange, onSuccess }: Imp
 
         {phase === 'select' && (
           <div className="space-y-4">
-            <div className="border-2 border-dashed rounded-lg p-8 text-center">
+            <div 
+              className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary/50 transition-colors"
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+            >
               <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
               <div className="text-sm text-muted-foreground mb-2">
                 Glissez votre fichier CSV ici ou cliquez pour sélectionner
               </div>
-              <Label htmlFor="csv-file" asChild>
-                <Button type="button" variant="outline" size="sm" className="cursor-pointer">
-                  Sélectionner un fichier
-                </Button>
-              </Label>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                onClick={() => document.getElementById('csv-file')?.click()}
+              >
+                Sélectionner un fichier
+              </Button>
               <input
                 id="csv-file"
                 type="file"
