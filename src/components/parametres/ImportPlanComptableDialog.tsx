@@ -326,13 +326,31 @@ export const ImportPlanComptableDialog = ({ open, onOpenChange, onSuccess }: Imp
                       <p className="text-sm text-muted-foreground mb-3">
                         Les comptes suivants n'ont pas pu être importés :
                       </p>
-                      <div className="max-h-60 overflow-y-auto space-y-1">
-                        {report.stats.errors.map((err, i) => (
-                          <div key={i} className="text-sm p-2 bg-destructive/10 rounded border border-destructive/20">
-                            <span className="font-medium">Compte {err.code}</span>
-                            <span className="text-muted-foreground"> : {err.error}</span>
-                          </div>
-                        ))}
+                      <div className="max-h-60 overflow-y-auto space-y-3">
+                        {(() => {
+                          // Group errors by error message
+                          const errorGroups = report.stats.errors.reduce((acc, error) => {
+                            if (!acc[error.error]) {
+                              acc[error.error] = [];
+                            }
+                            acc[error.error].push(error.code);
+                            return acc;
+                          }, {} as Record<string, string[]>);
+
+                          return Object.entries(errorGroups).map(([message, codes]) => (
+                            <div key={message} className="p-3 bg-destructive/10 rounded border border-destructive/20">
+                              <p className="font-medium text-destructive mb-2">{message}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {codes.length === 1 
+                                  ? `Compte : ${codes[0]}`
+                                  : codes.length <= 10
+                                  ? `Comptes : ${codes.join(', ')}`
+                                  : `${codes.length} comptes concernés : ${codes.slice(0, 8).join(', ')}...`
+                                }
+                              </p>
+                            </div>
+                          ));
+                        })()}
                       </div>
                     </div>
                   </AccordionContent>
