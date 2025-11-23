@@ -108,6 +108,46 @@ export const updateDepense = async (
   id: string,
   updates: Partial<DepenseFormData>
 ): Promise<Depense> => {
+  // 1. Récupérer la dépense actuelle
+  const { data: currentDepense, error: fetchError } = await supabase
+    .from('depenses')
+    .select('statut')
+    .eq('id', id)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  // 2. Vérifier s'il existe des écritures validées
+  const { data: ecritures, error: ecrituresError } = await supabase
+    .from('ecritures_comptables')
+    .select('id')
+    .eq('depense_id', id)
+    .eq('statut_ecriture', 'validee')
+    .limit(1);
+
+  if (ecrituresError) throw ecrituresError;
+
+  // 3. Si statut != brouillon ET écritures existent → BLOQUER
+  if (currentDepense.statut !== 'brouillon' && ecritures && ecritures.length > 0) {
+    throw new Error(
+      '❌ Modification impossible : Cette opération a été comptabilisée.\n\n' +
+      '💡 Pour effectuer une correction :\n' +
+      '1. Annulez cette dépense (génère des écritures d\'annulation)\n' +
+      '2. Créez une nouvelle dépense avec les bonnes valeurs'
+    );
+  }
+
+  // 4. Si brouillon avec écritures → SUPPRIMER les écritures
+  if (currentDepense.statut === 'brouillon' && ecritures && ecritures.length > 0) {
+    const { error: deleteError } = await supabase
+      .from('ecritures_comptables')
+      .delete()
+      .eq('depense_id', id);
+
+    if (deleteError) throw deleteError;
+  }
+
+  // 5. Procéder à la modification
   const cleanedData = cleanData(toSnakeCase(updates));
   
   const { data, error } = await supabase
@@ -261,6 +301,29 @@ export const annulerMultipleDepenses = async (depenseIds: string[], motif: strin
 };
 
 export const annulerDepense = async (id: string, motif: string): Promise<Depense> => {
+  // 1. Vérifier s'il existe des écritures validées
+  const { data: ecritures, error: ecrituresError } = await supabase
+    .from('ecritures_comptables')
+    .select('id')
+    .eq('depense_id', id)
+    .eq('statut_ecriture', 'validee');
+
+  if (ecrituresError) throw ecrituresError;
+
+  // 2. Si écritures existent → Contrepasser
+  if (ecritures && ecritures.length > 0) {
+    const { error: contrepasserError } = await supabase.functions.invoke('contrepasser-ecritures', {
+      body: {
+        typeOperation: 'depense',
+        sourceId: id,
+        motifAnnulation: motif,
+      }
+    });
+
+    if (contrepasserError) throw contrepasserError;
+  }
+
+  // 3. Mettre à jour le statut
   const { data, error } = await supabase
     .from('depenses')
     .update({
@@ -284,6 +347,33 @@ export const annulerDepense = async (id: string, motif: string): Promise<Depense
 };
 
 export const deleteDepense = async (id: string): Promise<void> => {
+  // 1. Vérifier le statut
+  const { data: depense, error: fetchError } = await supabase
+    .from('depenses')
+    .select('statut')
+    .eq('id', id)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  // 2. Vérifier s'il existe des écritures
+  const { data: ecritures, error: ecrituresError } = await supabase
+    .from('ecritures_comptables')
+    .select('id')
+    .eq('depense_id', id)
+    .limit(1);
+
+  if (ecrituresError) throw ecrituresError;
+
+  // 3. Bloquer si pas brouillon OU écritures existent
+  if (depense.statut !== 'brouillon' || (ecritures && ecritures.length > 0)) {
+    throw new Error(
+      '❌ Suppression impossible\n\n' +
+      '💡 Utilisez l\'annulation au lieu de la suppression pour conserver l\'historique comptable'
+    );
+  }
+
+  // 4. OK pour suppression
   const { error } = await supabase
     .from('depenses')
     .delete()

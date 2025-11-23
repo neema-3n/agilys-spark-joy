@@ -16,6 +16,8 @@ const mapDbToEcriture = (data: any): EcritureComptable => ({
   typeOperation: data.type_operation,
   sourceId: data.source_id,
   regleComptableId: data.regle_comptable_id,
+  statutEcriture: data.statut_ecriture || 'validee',
+  ecritureOrigineId: data.ecriture_origine_id,
   createdAt: data.created_at,
   createdBy: data.created_by,
   updatedAt: data.updated_at,
