@@ -36,6 +36,7 @@ export interface Depense {
   createdBy?: string;
   createdAt: string;
   updatedAt: string;
+  ecrituresCount?: number;
   
   // Données jointes
   engagement?: {

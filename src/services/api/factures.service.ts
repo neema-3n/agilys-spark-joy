@@ -26,6 +26,7 @@ function mapFactureFromDB(data: any): Facture {
     createdAt: data.created_at,
     updatedAt: data.updated_at,
     createdBy: data.created_by,
+    ecrituresCount: data.ecritures_comptables?.[0]?.count || 0,
     fournisseur: data.fournisseurs ? {
       id: data.fournisseurs.id,
       nom: data.fournisseurs.nom,
@@ -91,7 +92,8 @@ export const facturesService = {
         bons_commande (id, numero),
         engagements (id, numero),
         lignes_budgetaires (id, libelle),
-        projets (id, nom)
+        projets (id, nom),
+        ecritures_comptables!facture_id(count)
       `)
       .eq('client_id', clientId)
       .order('date_facture', { ascending: false });

@@ -136,11 +136,29 @@ export const DepenseTable = ({
         <span className="font-medium tabular-nums">{formatMontant(depense.montant - depense.montantPaye)}</span>
       ),
     },
-      {
-        id: 'statut',
-        header: 'Statut',
-        render: (depense) => getStatutBadge(depense.statut),
+    {
+      id: 'ecritures',
+      header: 'Écritures',
+      render: (depense) => {
+        const count = depense.ecrituresCount || 0;
+        return count > 0 ? (
+          <Badge variant="default" className="gap-1">
+            <BookOpen className="h-3 w-3" />
+            {count}
+          </Badge>
+        ) : (
+          <Badge variant="secondary" className="gap-1">
+            <AlertCircle className="h-3 w-3" />
+            -
+          </Badge>
+        );
       },
+    },
+    {
+      id: 'statut',
+      header: 'Statut',
+      render: (depense) => getStatutBadge(depense.statut),
+    },
     {
       id: 'imputation',
       header: 'Imputation',

@@ -22,6 +22,7 @@ const mapBonCommandeFromDB = (data: any): BonCommande => ({
   createdAt: data.created_at,
   updatedAt: data.updated_at,
   createdBy: data.created_by,
+  ecrituresCount: data.ecritures_comptables?.[0]?.count || 0,
   fournisseur: data.fournisseurs ? {
     id: data.fournisseurs.id,
     nom: data.fournisseurs.nom,
@@ -69,7 +70,8 @@ export const bonsCommandeService = {
         fournisseurs(id, nom, code),
         engagements(id, numero),
         lignes_budgetaires(id, libelle),
-        projets(id, nom)
+        projets(id, nom),
+        ecritures_comptables!bon_commande_id(count)
       `)
       .eq('client_id', clientId)
       .order('date_commande', { ascending: false });
