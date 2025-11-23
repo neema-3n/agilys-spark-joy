@@ -79,12 +79,11 @@ export default function Paiements() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Historique des Paiements"
-        description="Consultation de tous les paiements effectués"
-      />
+      <PageHeader title="Historique des Paiements" description="Consultation de tous les paiements effectués" sticky={false} />
 
       <div className="px-8 space-y-6">
+        <PaiementStats paiements={paiements} />
+
         <ListLayout
           title="Liste des paiements"
           description="Recherche et filtres sur l'historique des paiements"
@@ -96,9 +95,7 @@ export default function Paiements() {
               filters={[
                 <DropdownMenu key="statut">
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline">
-                      Statut: {statutFilter === 'tous' ? 'Tous' : statutFilter}
-                    </Button>
+                    <Button variant="outline">Statut: {statutFilter === 'tous' ? 'Tous' : statutFilter}</Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     {[
@@ -111,24 +108,21 @@ export default function Paiements() {
                       </DropdownMenuItem>
                     ))}
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setStatutFilter('tous')}>
-                      Réinitialiser
-                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setStatutFilter('tous')}>Réinitialiser</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>,
               ]}
             />
           }
         >
-          <div className="space-y-6 p-6 pt-2">
-            <PaiementStats paiements={paiements} />
-
-            <PaiementTable
-              paiements={filteredPaiements}
-              onView={handleView}
-              onAnnuler={handleAnnuler}
-            />
-          </div>
+          <PaiementTable
+            paiements={filteredPaiements}
+            onView={handleView}
+            onAnnuler={handleAnnuler}
+            stickyHeader
+            stickyHeaderOffset={0}
+            scrollContainerClassName="max-h-[calc(100vh-240px)] overflow-auto"
+          />
         </ListLayout>
       </div>
 
@@ -154,10 +148,7 @@ export default function Paiements() {
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmAnnuler}
-              disabled={!motifAnnulation.trim()}
-            >
+            <AlertDialogAction onClick={handleConfirmAnnuler} disabled={!motifAnnulation.trim()}>
               Confirmer l'annulation
             </AlertDialogAction>
           </AlertDialogFooter>
