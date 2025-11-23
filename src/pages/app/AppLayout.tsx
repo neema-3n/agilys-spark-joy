@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Wallet, FileText, Receipt, BarChart3, Settings, ChevronLeft, ChevronRight, ChevronDown, Users, CreditCard, Wallet2, ShieldCheck, LineChart, TrendingUp, BookmarkCheck, ShoppingCart, DollarSign, FolderKanban, Layers, PlayCircle, Target, Building2 } from 'lucide-react';
+import { LayoutDashboard, Wallet, FileText, Receipt, BarChart3, Settings, ChevronLeft, ChevronRight, ChevronDown, Users, CreditCard, Wallet2, ShieldCheck, LineChart, TrendingUp, BookmarkCheck, ShoppingCart, DollarSign, FolderKanban, Layers, PlayCircle, Target, Building2, BookOpen } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -20,6 +20,7 @@ const AppLayout = () => {
     'Budget': true,
     'Opérations': true,
     'Trésorerie': true,
+    'Comptabilité': true,
     'Conformité': true,
     'Analyse': true,
     'Système': true
@@ -35,7 +36,7 @@ const AppLayout = () => {
     pilotage: {
       label: 'Pilotage & Contrôle',
       icon: Target,
-      sections: ['Conformité', 'Analyse', 'Système']
+      sections: ['Comptabilité', 'Conformité', 'Analyse', 'Système']
     }
   };
 
@@ -94,6 +95,18 @@ const AppLayout = () => {
       name: 'Suivi De Trésorerie',
       href: '/app/tresorerie',
       icon: Wallet2
+    }]
+  }, {
+    title: 'Comptabilité',
+    icon: BookOpen,
+    items: [{
+      name: 'Plan Comptable',
+      href: '/app/plan-comptable',
+      icon: Layers
+    }, {
+      name: 'Journal Comptable',
+      href: '/app/journal-comptable',
+      icon: BookOpen
     }]
   }, {
     title: 'Conformité',
