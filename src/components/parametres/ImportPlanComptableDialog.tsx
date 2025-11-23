@@ -328,28 +328,49 @@ export const ImportPlanComptableDialog = ({ open, onOpenChange, onSuccess }: Imp
                       </p>
                       <div className="max-h-60 overflow-y-auto space-y-3">
                         {(() => {
-                          // Group errors by error message
-                          const errorGroups = report.stats.errors.reduce((acc, error) => {
-                            if (!acc[error.error]) {
-                              acc[error.error] = [];
+                          // Group errors by account code and error type
+                          const groupedByCode: Record<string, { baseMessage: string; lines: number[] }> = {};
+                          
+                          report.stats.errors.forEach((error) => {
+                            // Extract line numbers from error message
+                            const lineMatches = error.error.match(/ligne (\d+)/g);
+                            const lines = lineMatches 
+                              ? lineMatches.map(m => parseInt(m.replace('ligne ', '')))
+                              : [];
+                            
+                            // Extract base message without line numbers
+                            const baseMessage = error.error.replace(/\(ligne.*?\)/g, '').trim();
+                            
+                            const key = `${error.code}__${baseMessage}`;
+                            
+                            if (!groupedByCode[key]) {
+                              groupedByCode[key] = {
+                                baseMessage,
+                                lines: [],
+                              };
                             }
-                            acc[error.error].push(error.code);
-                            return acc;
-                          }, {} as Record<string, string[]>);
+                            
+                            groupedByCode[key].lines.push(...lines);
+                          });
 
-                          return Object.entries(errorGroups).map(([message, codes]) => (
-                            <div key={message} className="p-3 bg-destructive/10 rounded border border-destructive/20">
-                              <p className="font-medium text-destructive mb-2">{message}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {codes.length === 1 
-                                  ? `Compte : ${codes[0]}`
-                                  : codes.length <= 10
-                                  ? `Comptes : ${codes.join(', ')}`
-                                  : `${codes.length} comptes concernés : ${codes.slice(0, 8).join(', ')}...`
-                                }
-                              </p>
-                            </div>
-                          ));
+                          return Object.entries(groupedByCode).map(([key, data]) => {
+                            const code = key.split('__')[0];
+                            const uniqueLines = [...new Set(data.lines)].sort((a, b) => a - b);
+                            const lineText = uniqueLines.length > 0 
+                              ? `(ligne ${uniqueLines.join(', ')})`
+                              : '';
+                            
+                            return (
+                              <div key={key} className="p-3 bg-destructive/10 rounded border border-destructive/20">
+                                <p className="font-medium text-destructive mb-2">
+                                  {data.baseMessage} {lineText}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  Compte : {code}
+                                </p>
+                              </div>
+                            );
+                          });
                         })()}
                       </div>
                     </div>
