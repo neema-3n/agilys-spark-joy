@@ -195,28 +195,31 @@ export const facturesService = {
 
     if (fetchError) throw fetchError;
 
-    // 2. Vérifier s'il existe des écritures validées
-    const { data: ecritures, error: ecrituresError } = await supabase
-      .from('ecritures_comptables')
-      .select('id')
-      .eq('facture_id', id)
-      .eq('statut_ecriture', 'validee')
-      .limit(1);
+    // 2. Si le nouveau statut est 'annulee', autoriser sans vérification d'écritures
+    const isAnnulation = facture.statut === 'annulee';
 
-    if (ecrituresError) throw ecrituresError;
+    if (!isAnnulation) {
+      // 3. Vérifier s'il existe des écritures validées
+      const { data: ecritures, error: ecrituresError } = await supabase
+        .from('ecritures_comptables')
+        .select('id')
+        .eq('facture_id', id)
+        .eq('statut_ecriture', 'validee')
+        .limit(1);
 
-    // 3. Si écritures validées existent → BLOQUER (les brouillons ne génèrent jamais d'écritures)
-    if (ecritures && ecritures.length > 0) {
-      throw new Error(
-        '❌ Modification impossible : Cette opération a été comptabilisée.\n\n' +
-        '💡 Pour effectuer une correction :\n' +
-        '1. Annulez cette facture (génère des écritures d\'annulation)\n' +
-        '2. Créez une nouvelle facture avec les bonnes valeurs'
-      );
+      if (ecrituresError) throw ecrituresError;
+
+      // 4. Si écritures validées existent → BLOQUER
+      if (ecritures && ecritures.length > 0) {
+        throw new Error(
+          'Cette facture ne peut plus être modifiée car elle a déjà été comptabilisée.\n\n' +
+          'Pour effectuer une correction, vous devez l\'annuler puis créer une nouvelle facture.'
+        );
+      }
     }
     
-    // 4. Vérifier que la facture peut être modifiée
-    if (currentFacture.statut !== 'brouillon' && currentFacture.statut !== 'validee') {
+    // 5. Vérifier que la facture peut être modifiée
+    if (currentFacture.statut !== 'brouillon' && currentFacture.statut !== 'validee' && !isAnnulation) {
       throw new Error('Seules les factures en brouillon ou validées peuvent être modifiées');
     }
 
@@ -322,10 +325,27 @@ export const facturesService = {
       throw new Error('Seules les factures en brouillon peuvent être validées');
     }
 
-    return this.update(id, {
+    // 1. Valider la facture
+    const factureValidee = await this.update(id, {
       statut: 'validee',
       dateValidation: new Date().toISOString().split('T')[0],
     });
+
+    // 2. Générer les écritures comptables automatiquement (en arrière-plan)
+    try {
+      await supabase.functions.invoke('generate-ecritures-comptables', {
+        body: {
+          typeOperation: 'facture',
+          sourceId: id,
+          clientId: facture.clientId,
+          exerciceId: facture.exerciceId
+        }
+      });
+    } catch (error) {
+      console.error('Erreur lors de la génération des écritures:', error);
+    }
+
+    return factureValidee;
   },
 
   async marquerPayee(id: string): Promise<Facture> {
@@ -344,7 +364,7 @@ export const facturesService = {
     const facture = await this.getById(id);
 
     if (facture.statut === 'payee') {
-      throw new Error('Les factures payées ne peuvent pas être annulées');
+      throw new Error('Une facture payée ne peut pas être annulée');
     }
 
     // 1. Vérifier s'il existe des écritures validées
@@ -356,17 +376,25 @@ export const facturesService = {
 
     if (ecrituresError) throw ecrituresError;
 
-    // 2. Si écritures existent → Contrepasser
+    // 2. Si écritures existent → Contrepasser (silencieusement)
     if (ecritures && ecritures.length > 0) {
-      const { error: contrepasserError } = await supabase.functions.invoke('contrepasser-ecritures', {
-        body: {
-          typeOperation: 'facture',
-          sourceId: id,
-          motifAnnulation: motif,
-        }
-      });
+      try {
+        const { error: contrepasserError } = await supabase.functions.invoke('contrepasser-ecritures', {
+          body: {
+            typeOperation: 'facture',
+            sourceId: id,
+            motifAnnulation: motif,
+          }
+        });
 
-      if (contrepasserError) throw contrepasserError;
+        if (contrepasserError) {
+          console.error('Erreur lors de la contrepassation:', contrepasserError);
+          throw new Error('Une erreur est survenue lors de l\'annulation. Veuillez réessayer.');
+        }
+      } catch (error) {
+        console.error('Erreur lors de la contrepassation:', error);
+        throw new Error('Une erreur est survenue lors de l\'annulation. Veuillez réessayer.');
+      }
     }
 
     // 3. Mettre à jour le statut
