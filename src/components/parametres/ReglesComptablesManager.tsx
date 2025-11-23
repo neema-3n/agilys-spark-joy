@@ -156,7 +156,7 @@ export const ReglesComptablesManager = () => {
                             </div>
                             
                             {regle.description && (
-                              <p className="text-sm text-muted-foreground mb-3">
+                              <p className="text-sm text-muted-foreground mb-2">
                                 {regle.description}
                               </p>
                             )}
