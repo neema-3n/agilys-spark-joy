@@ -124,5 +124,21 @@ export const comptesService = {
       .eq('id', id);
 
     if (error) throw error;
+  },
+
+  /**
+   * Supprime tous les comptes d'un client
+   * ⚠️ Action irréversible - utiliser avec précaution
+   */
+  async deleteAll(clientId: string): Promise<number> {
+    const { data, error } = await supabase
+      .from('comptes')
+      .delete()
+      .eq('client_id', clientId)
+      .select('id');
+    
+    if (error) throw error;
+    
+    return data?.length || 0;
   }
 };

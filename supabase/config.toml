@@ -17,3 +17,6 @@ verify_jwt = true
 
 [functions.create-bon-commande]
 verify_jwt = true
+
+[functions.import-plan-comptable]
+verify_jwt = true

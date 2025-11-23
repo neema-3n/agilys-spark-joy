@@ -1,0 +1,419 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+interface CSVRow {
+  code: string;
+  intitule: string;
+  terme_courant?: string;
+  nb_chiffres: number;
+  code_parent?: string;
+}
+
+interface EnrichedCompte extends CSVRow {
+  niveau: number;
+  type: string;
+  categorie: string;
+}
+
+interface ImportReport {
+  success: boolean;
+  stats: {
+    total: number;
+    created: number;
+    skipped: number;
+    errors: Array<{ code: string; error: string }>;
+  };
+  byLevel: Record<number, { created: number; skipped: number }>;
+}
+
+function detectTypeAndCategorie(code: string): { type: string; categorie: string } {
+  const firstDigit = parseInt(code[0]);
+  const firstTwoDigits = parseInt(code.substring(0, 2));
+  
+  switch (firstDigit) {
+    case 1:
+      return { type: 'passif', categorie: 'capital' };
+    
+    case 2:
+      return { type: 'actif', categorie: 'immobilisation' };
+    
+    case 3:
+      return { type: 'actif', categorie: 'stock' };
+    
+    case 4:
+      if (firstTwoDigits <= 45) {
+        return { type: 'passif', categorie: 'dette' };
+      } else {
+        return { type: 'actif', categorie: 'creance' };
+      }
+    
+    case 5:
+      return { type: 'actif', categorie: 'tresorerie' };
+    
+    case 6:
+      if (firstTwoDigits >= 66 && firstTwoDigits <= 67) {
+        return { type: 'charge', categorie: 'financier' };
+      } else {
+        return { type: 'charge', categorie: 'exploitation' };
+      }
+    
+    case 7:
+      if (firstTwoDigits >= 76 && firstTwoDigits <= 77) {
+        return { type: 'produit', categorie: 'financier' };
+      } else {
+        return { type: 'produit', categorie: 'exploitation' };
+      }
+    
+    case 8:
+      return { type: 'resultat', categorie: 'autre' };
+    
+    default:
+      return { type: 'actif', categorie: 'autre' };
+  }
+}
+
+// Parse CSV with proper handling of quoted fields
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let insideQuotes = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    
+    if (char === '"') {
+      insideQuotes = !insideQuotes;
+    } else if (char === ',' && !insideQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  
+  // Add the last field
+  result.push(current.trim());
+  
+  return result;
+}
+
+function parseCSV(csvContent: string): CSVRow[] {
+  const lines = csvContent.trim().split('\n');
+  const headers = parseCSVLine(lines[0]);
+  
+  const rows: CSVRow[] = [];
+  const errors: string[] = [];
+  
+  lines.slice(1).forEach((line, index) => {
+    // Skip empty lines
+    if (!line.trim()) {
+      return;
+    }
+    
+    const values = parseCSVLine(line);
+    const row: any = {};
+    headers.forEach((header, i) => {
+      row[header] = values[i] || '';
+    });
+    
+    const code = row.code || '';
+    const intitule = row.intitule || '';
+    const nb_chiffres = parseInt(row.nb_chiffres || '0');
+    
+    // Validation
+    if (!code) {
+      errors.push(`Ligne ${index + 2}: code manquant`);
+      return;
+    }
+    if (!intitule) {
+      errors.push(`Ligne ${index + 2}: intitulé manquant pour le compte ${code}`);
+      return;
+    }
+    if (!nb_chiffres || nb_chiffres === 0) {
+      errors.push(`Ligne ${index + 2}: nb_chiffres manquant ou invalide pour le compte ${code}`);
+      return;
+    }
+    
+    rows.push({
+      code,
+      intitule,
+      terme_courant: row.terme_courant,
+      nb_chiffres,
+      code_parent: row.code_parent || null,
+    });
+  });
+  
+  if (errors.length > 0) {
+    console.log(`CSV parsing warnings: ${errors.length} lines skipped`);
+    errors.slice(0, 5).forEach(err => console.log(`  - ${err}`));
+  }
+  
+  return rows;
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { csv, clientId, skipDuplicates } = await req.json();
+
+    if (!csv || !clientId) {
+      return new Response(
+        JSON.stringify({ error: 'Paramètres manquants: csv, clientId' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Decode base64 with proper UTF-8 handling
+    const binaryString = atob(csv);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const csvContent = new TextDecoder('utf-8').decode(bytes);
+    
+    // Parse CSV
+    const rows = parseCSV(csvContent);
+    console.log(`Parsed ${rows.length} rows from CSV`);
+
+    // Enrich data with validation and detect CSV duplicates
+    const enrichedData: EnrichedCompte[] = [];
+    const validationErrors: Array<{ code: string; error: string }> = [];
+    const seenCodes = new Map<string, number>(); // Track codes and their first occurrence
+    
+    rows.forEach((row, index) => {
+      // Check for duplicates within the CSV itself
+      if (seenCodes.has(row.code)) {
+        validationErrors.push({
+          code: row.code,
+          error: `Compte en double dans le fichier CSV (ligne ${index + 2} et ligne ${seenCodes.get(row.code)! + 2})`
+        });
+        return;
+      }
+      seenCodes.set(row.code, index);
+      
+      // Validate niveau calculation
+      if (!row.nb_chiffres || row.nb_chiffres < 2) {
+        validationErrors.push({
+          code: row.code,
+          error: `Nombre de chiffres invalide (${row.nb_chiffres}). Doit être >= 2`
+        });
+        return;
+      }
+      
+      const { type, categorie } = detectTypeAndCategorie(row.code);
+      enrichedData.push({
+        ...row,
+        niveau: row.nb_chiffres - 1, // 2→1, 3→2, 4→3, 5→4
+        type,
+        categorie,
+      });
+    });
+
+    if (validationErrors.length > 0) {
+      console.log(`Validation errors: ${validationErrors.length} comptes skipped`);
+      validationErrors.slice(0, 5).forEach(err => 
+        console.log(`  - ${err.code}: ${err.error}`)
+      );
+    }
+
+    // Sort by niveau
+    enrichedData.sort((a, b) => a.niveau - b.niveau);
+
+    // Group by niveau
+    const byLevel = new Map<number, EnrichedCompte[]>();
+    enrichedData.forEach(compte => {
+      if (!byLevel.has(compte.niveau)) {
+        byLevel.set(compte.niveau, []);
+      }
+      byLevel.get(compte.niveau)!.push(compte);
+    });
+
+    console.log(`Grouped into ${byLevel.size} levels`);
+
+    // Import report
+    const report: ImportReport = {
+      success: true,
+      stats: {
+        total: rows.length,
+        created: 0,
+        skipped: 0,
+        errors: validationErrors, // Add validation errors to report
+      },
+      byLevel: {},
+    };
+
+    // Mapping code → uuid
+    const codeToUuid = new Map<string, string>();
+
+    // Import level by level with batch processing
+    for (const [niveau, comptes] of Array.from(byLevel.entries()).sort((a, b) => a[0] - b[0])) {
+      console.log(`Processing level ${niveau} with ${comptes.length} comptes`);
+      
+      report.byLevel[niveau] = { created: 0, skipped: 0 };
+
+      // Batch check for duplicates
+      const codesToCheck = comptes.map(c => c.code);
+      const { data: existingComptes } = await supabase
+        .from('comptes')
+        .select('id, numero')
+        .eq('client_id', clientId)
+        .in('numero', codesToCheck);
+
+      const existingCodes = new Set(existingComptes?.map(c => c.numero) || []);
+      
+      // Map existing codes to UUIDs
+      existingComptes?.forEach(existing => {
+        codeToUuid.set(existing.numero, existing.id);
+      });
+
+      // Filter out duplicates and validate parent references
+      const comptesToInsert = comptes.filter(compte => {
+        // Check for duplicates
+        if (skipDuplicates && existingCodes.has(compte.code)) {
+          console.log(`Skipping duplicate: ${compte.code}`);
+          report.stats.skipped++;
+          report.byLevel[niveau].skipped++;
+          return false;
+        }
+        
+        // Validate parent reference if code_parent is specified
+        if (compte.code_parent && !codeToUuid.has(compte.code_parent)) {
+          console.log(`Parent missing for compte ${compte.code}: parent ${compte.code_parent} not found`);
+          report.stats.errors.push({
+            code: compte.code,
+            error: `Compte parent ${compte.code_parent} inexistant. Ce compte ne peut pas être importé sans son parent.`
+          });
+          report.stats.skipped++;
+          report.byLevel[niveau].skipped++;
+          return false;
+        }
+        
+        return true;
+      });
+
+      // Batch insert (chunks of 100 to avoid payload limits)
+      const BATCH_SIZE = 100;
+      for (let i = 0; i < comptesToInsert.length; i += BATCH_SIZE) {
+        const batch = comptesToInsert.slice(i, i + BATCH_SIZE);
+        
+        const rowsToInsert = batch.map(compte => {
+          let parentId = null;
+          if (compte.code_parent && codeToUuid.has(compte.code_parent)) {
+            parentId = codeToUuid.get(compte.code_parent);
+          }
+
+          return {
+            client_id: clientId,
+            numero: compte.code,
+            libelle: compte.intitule,
+            type: compte.type,
+            categorie: compte.categorie,
+            niveau: compte.niveau,
+            parent_id: parentId,
+            statut: 'actif',
+          };
+        });
+
+        try {
+          const { data: inserted, error } = await supabase
+            .from('comptes')
+            .insert(rowsToInsert)
+            .select('id, numero');
+
+          if (error) {
+            console.error(`Batch insert error:`, error);
+            
+            // Translate database errors to user-friendly French messages
+            let userFriendlyError = error.message;
+            
+            if (error.message.includes('duplicate key') || error.message.includes('comptes_client_id_numero_key')) {
+              userFriendlyError = 'Ce compte existe déjà dans votre plan comptable';
+            } else if (error.message.includes('violates foreign key constraint')) {
+              userFriendlyError = 'Référence invalide (compte parent inexistant)';
+            } else if (error.message.includes('violates check constraint')) {
+              userFriendlyError = 'Données invalides (vérifier le format)';
+            } else if (error.message.includes('not-null constraint')) {
+              const match = error.message.match(/column "(\w+)"/);
+              const column = match ? match[1] : 'champ requis';
+              userFriendlyError = `Champ obligatoire manquant: ${column}`;
+            } else if (error.message.includes('invalid input syntax')) {
+              userFriendlyError = 'Format de données incorrect';
+            }
+            
+            batch.forEach(compte => {
+              report.stats.errors.push({
+                code: compte.code,
+                error: userFriendlyError,
+              });
+            });
+          } else {
+            // Map inserted codes to UUIDs
+            inserted?.forEach(row => {
+              codeToUuid.set(row.numero, row.id);
+            });
+            
+            report.stats.created += inserted?.length || 0;
+            report.byLevel[niveau].created += inserted?.length || 0;
+            console.log(`Batch inserted ${inserted?.length} comptes`);
+          }
+        } catch (error: any) {
+          console.error(`Batch insert error:`, error);
+          
+          // Translate database errors to user-friendly French messages
+          let userFriendlyError = error.message;
+          
+          if (error.message.includes('duplicate key') || error.message.includes('comptes_client_id_numero_key')) {
+            userFriendlyError = 'Ce compte existe déjà dans votre plan comptable';
+          } else if (error.message.includes('violates foreign key constraint')) {
+            userFriendlyError = 'Référence invalide (compte parent inexistant)';
+          } else if (error.message.includes('violates check constraint')) {
+            userFriendlyError = 'Données invalides (vérifier le format)';
+          } else if (error.message.includes('not-null constraint')) {
+            const match = error.message.match(/column "(\w+)"/);
+            const column = match ? match[1] : 'champ requis';
+            userFriendlyError = `Champ obligatoire manquant: ${column}`;
+          } else if (error.message.includes('invalid input syntax')) {
+            userFriendlyError = 'Format de données incorrect';
+          } else if (error.message.includes('timeout')) {
+            userFriendlyError = 'Délai d\'attente dépassé (fichier trop volumineux)';
+          } else if (error.message.includes('permission denied')) {
+            userFriendlyError = 'Accès refusé (vérifier les permissions)';
+          }
+          
+          batch.forEach(compte => {
+            report.stats.errors.push({
+              code: compte.code,
+              error: userFriendlyError,
+            });
+          });
+        }
+      }
+    }
+
+    console.log(`Import completed: ${report.stats.created} created, ${report.stats.skipped} skipped, ${report.stats.errors.length} errors`);
+
+    return new Response(
+      JSON.stringify(report),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error: any) {
+    console.error('Import error:', error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});
