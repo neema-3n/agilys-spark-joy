@@ -18,7 +18,7 @@ const getStatutBadge = (statut: string) => {
     actif: { variant: 'success', label: 'Actif' },
     inactif: { variant: 'secondary', label: 'Inactif' },
     blackliste: { variant: 'destructive', label: 'Blacklisté' },
-    en_attente_validation: { variant: 'warning', label: 'En attente' },
+    en_attente_validation: { variant: 'outline', label: 'En attente' },
   };
   const config = variants[statut] || variants.actif;
   return <Badge variant={config.variant}>{config.label}</Badge>;

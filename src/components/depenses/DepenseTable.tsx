@@ -51,9 +51,9 @@ export const DepenseTable = ({
 
   const getStatutBadge = (statut: string) => {
     const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'; label: string }> = {
-      brouillon: { variant: 'warning', label: 'Brouillon' },
+      brouillon: { variant: 'outline', label: 'Brouillon' },
       validee: { variant: 'success', label: 'Validée' },
-      ordonnancee: { variant: 'default', label: 'Ordonnancée' },
+      ordonnancee: { variant: 'secondary', label: 'Ordonnancée' },
       payee: { variant: 'success', label: 'Payée' },
       annulee: { variant: 'destructive', label: 'Annulée' },
     };
