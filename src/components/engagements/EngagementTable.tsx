@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ListColumn, ListTable } from '@/components/lists/ListTable';
 import { formatCurrency } from '@/lib/utils';
-import { CheckCircle, Edit, FileText, MoreHorizontal, Receipt, Trash2, XCircle, BookOpen, AlertCircle } from 'lucide-react';
+import { CheckCircle, Edit, FileText, MoreHorizontal, Receipt, Trash2, XCircle } from 'lucide-react';
 import type { Engagement } from '@/types/engagement.types';
 
 interface EngagementTableProps {
@@ -123,24 +123,6 @@ export const EngagementTable = ({
             {formatCurrency(engagement.solde ?? engagement.montant)}
           </span>
         ),
-      },
-      {
-        id: 'ecritures',
-        header: 'Écritures',
-        render: (engagement) => {
-          const count = engagement.ecrituresCount || 0;
-          return count > 0 ? (
-            <Badge variant="default" className="gap-1">
-              <BookOpen className="h-3 w-3" />
-              {count}
-            </Badge>
-          ) : (
-            <Badge variant="secondary" className="gap-1">
-              <AlertCircle className="h-3 w-3" />
-              -
-            </Badge>
-          );
-        },
       },
       {
         id: 'statut',

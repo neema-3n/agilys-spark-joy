@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, CheckCircle, FileCheck, Banknote, XCircle, Trash, Eye, BookOpen, AlertCircle } from 'lucide-react';
+import { MoreHorizontal, CheckCircle, FileCheck, Banknote, XCircle, Trash, Eye } from 'lucide-react';
 import { ListColumn, ListTable } from '@/components/lists/ListTable';
 import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/selectionColumn';
 import { formatCurrency } from '@/lib/utils';
@@ -135,24 +135,6 @@ export const DepenseTable = ({
       render: (depense) => (
         <span className="font-medium tabular-nums">{formatMontant(depense.montant - depense.montantPaye)}</span>
       ),
-    },
-    {
-      id: 'ecritures',
-      header: 'Écritures',
-      render: (depense) => {
-        const count = depense.ecrituresCount || 0;
-        return count > 0 ? (
-          <Badge variant="default" className="gap-1">
-            <BookOpen className="h-3 w-3" />
-            {count}
-          </Badge>
-        ) : (
-          <Badge variant="secondary" className="gap-1">
-            <AlertCircle className="h-3 w-3" />
-            -
-          </Badge>
-        );
-      },
     },
     {
       id: 'statut',

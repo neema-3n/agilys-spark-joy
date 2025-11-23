@@ -11,17 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ListColumn, ListTable } from '@/components/lists/ListTable';
 import { formatCurrency, cn } from '@/lib/utils';
-import {
-  AlertOctagon,
-  CheckCircle,
-  Eye,
-  MoreHorizontal,
-  Pencil,
-  Trash,
-  XCircle,
-  BookOpen,
-  AlertCircle,
-} from 'lucide-react';
+import { Edit, Trash2, Eye, MoreHorizontal, XCircle, CheckCircle, AlertOctagon } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { ReservationCredit } from '@/types/reservation.types';
@@ -176,24 +166,6 @@ export const ReservationTable = ({
         render: (reservation) => (reservation.dateExpiration ? formatDate(reservation.dateExpiration) : '-'),
       },
       {
-        id: 'ecritures',
-        header: 'Écritures',
-        render: (reservation) => {
-          const count = reservation.ecrituresCount || 0;
-          return count > 0 ? (
-            <Badge variant="default" className="gap-1">
-              <BookOpen className="h-3 w-3" />
-              {count}
-            </Badge>
-          ) : (
-            <Badge variant="secondary" className="gap-1">
-              <AlertCircle className="h-3 w-3" />
-              -
-            </Badge>
-          );
-        },
-      },
-      {
         id: 'statut',
         header: 'Statut',
         render: (reservation) => getStatutBadge(reservation.statut),
@@ -224,7 +196,7 @@ export const ReservationTable = ({
 
                 {isActive && onEdit && (
                   <DropdownMenuItem onClick={() => onEdit(reservation.id)}>
-                    <Pencil className="h-4 w-4 mr-2" />
+                    <Edit className="h-4 w-4 mr-2" />
                     Modifier
                   </DropdownMenuItem>
                 )}
@@ -257,7 +229,7 @@ export const ReservationTable = ({
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => onDelete(reservation.id)} className="text-destructive">
-                      <Trash className="h-4 w-4 mr-2" />
+                      <Trash2 className="h-4 w-4 mr-2" />
                       Supprimer
                     </DropdownMenuItem>
                   </>

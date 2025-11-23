@@ -9,12 +9,9 @@ import {
   Pencil,
   Trash2,
   CheckCircle,
-  DollarSign,
   XCircle,
   Eye,
   FileText,
-  BookOpen,
-  AlertCircle,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -173,24 +170,6 @@ export const FactureTable = ({
         const solde = facture.montantTTC - (facture.montantLiquide || 0);
         const soldeClass = solde > 0 ? 'text-orange-600 font-medium' : 'text-green-600';
         return <span className={soldeClass}>{formatMontant(solde)}</span>;
-      },
-    },
-    {
-      id: 'ecritures',
-      header: 'Écritures',
-      render: (facture) => {
-        const count = facture.ecrituresCount || 0;
-        return count > 0 ? (
-          <Badge variant="default" className="gap-1">
-            <BookOpen className="h-3 w-3" />
-            {count}
-          </Badge>
-        ) : (
-          <Badge variant="secondary" className="gap-1">
-            <AlertCircle className="h-3 w-3" />
-            -
-          </Badge>
-        );
       },
     },
     {
