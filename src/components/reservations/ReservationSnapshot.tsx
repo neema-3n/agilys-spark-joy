@@ -57,9 +57,9 @@ export const ReservationSnapshot = ({
   const canGenerateEcritures = reservation.statut === 'active' || reservation.statut === 'utilisee';
 
   const getStatutBadge = (statut: ReservationCredit['statut']) => {
-    const variants: Record<ReservationCredit['statut'], 'default' | 'secondary' | 'destructive' | 'outline'> = {
-      active: 'secondary',
-      utilisee: 'outline',
+    const variants: Record<ReservationCredit['statut'], 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'> = {
+      active: 'success',
+      utilisee: 'secondary',
       annulee: 'destructive',
       expiree: 'outline',
     };

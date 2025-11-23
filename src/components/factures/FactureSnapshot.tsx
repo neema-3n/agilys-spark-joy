@@ -82,10 +82,10 @@ export const FactureSnapshot = ({
   const canGenerateEcritures = facture.statut !== 'brouillon';
 
   const getStatutBadge = (statut: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-      brouillon: 'outline',
-      validee: 'secondary',
-      payee: 'default',
+    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'> = {
+      brouillon: 'warning',
+      validee: 'success',
+      payee: 'success',
       annulee: 'destructive',
     };
 

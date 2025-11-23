@@ -62,11 +62,11 @@ export const EngagementSnapshot = ({
   const canGenerateEcritures = engagement.statut !== 'brouillon';
 
   const getStatutBadge = (statut: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-      brouillon: 'secondary',
-      valide: 'default',
-      engage: 'default',
-      liquide: 'default',
+    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'> = {
+      brouillon: 'warning',
+      valide: 'success',
+      engage: 'success',
+      liquide: 'success',
       annule: 'destructive',
     };
 
