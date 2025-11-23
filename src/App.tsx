@@ -89,7 +89,10 @@ const App = () => (
                     <Route index element={<Fournisseurs />} />
                     <Route path=":fournisseurId" element={<Fournisseurs />} />
                   </Route>
-                  <Route path="parametres" element={<Parametres />} />
+                  <Route path="parametres">
+                    <Route index element={<Parametres />} />
+                    <Route path=":sectionId" element={<Parametres />} />
+                  </Route>
                 </Route>
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />

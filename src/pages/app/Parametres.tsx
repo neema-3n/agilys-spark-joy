@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { CalendarDays, Briefcase, Building2, BookOpen, Users, Settings as SettingsIcon, Database, Menu, Layers, Calculator } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ExercicesManager } from '@/components/parametres/ExercicesManager';
 import { EnveloppesManager } from '@/components/parametres/EnveloppesManager';
@@ -14,21 +14,43 @@ import { ReferentielsManager } from '@/components/parametres/ReferentielsManager
 import { StructureBudgetaireManager } from '@/components/parametres/StructureBudgetaireManager';
 import { ReglesComptablesManager } from '@/components/parametres/ReglesComptablesManager';
 
-type ParametreSection = 
-  | 'exercices' 
-  | 'enveloppes' 
-  | 'structure' 
-  | 'structure-budgetaire'
-  | 'plan-comptable'
-  | 'regles-comptables'
-  | 'referentiels' 
-  | 'utilisateurs' 
-  | 'general';
+const SECTION_IDS = [
+  'exercices',
+  'enveloppes',
+  'structure',
+  'structure-budgetaire',
+  'plan-comptable',
+  'regles-comptables',
+  'referentiels',
+  'utilisateurs',
+  'general',
+] as const;
+
+type ParametreSection = (typeof SECTION_IDS)[number];
+const DEFAULT_SECTION: ParametreSection = 'exercices';
 
 const Parametres = () => {
+  const { sectionId } = useParams<{ sectionId?: ParametreSection }>();
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const [activeSection, setActiveSection] = useState<ParametreSection>('exercices');
+  const [activeSection, setActiveSection] = useState<ParametreSection>(
+    () => (sectionId && SECTION_IDS.includes(sectionId) ? sectionId : DEFAULT_SECTION)
+  );
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  useEffect(() => {
+    if (!sectionId) {
+      navigate(`/app/parametres/${DEFAULT_SECTION}`, { replace: true });
+      return;
+    }
+
+    if (!SECTION_IDS.includes(sectionId)) {
+      navigate(`/app/parametres/${DEFAULT_SECTION}`, { replace: true });
+      return;
+    }
+
+    setActiveSection(sectionId);
+  }, [sectionId, navigate]);
 
   const sections = [
     {
@@ -129,6 +151,7 @@ const Parametres = () => {
             key={section.id}
             onClick={() => {
               setActiveSection(section.id);
+              navigate(`/app/parametres/${section.id}`);
               if (isMobile) setSheetOpen(false);
             }}
             className={`w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors ${
