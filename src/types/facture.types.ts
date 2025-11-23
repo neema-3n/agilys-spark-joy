@@ -66,3 +66,25 @@ export interface FactureStats {
   montantValidee: number;
   montantLiquide: number;
 }
+
+export interface PaginationParams {
+  page: number;
+  pageSize: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  filters?: {
+    statut?: StatutFacture;
+    searchTerm?: string;
+    fournisseurId?: string;
+    dateDebut?: string;
+    dateFin?: string;
+  };
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
