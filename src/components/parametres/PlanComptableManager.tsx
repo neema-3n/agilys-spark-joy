@@ -28,7 +28,7 @@ const PlanComptableManager = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
-  const [expandAll, setExpandAll] = useState<boolean | null>(null);
+  const [expandAll, setExpandAll] = useState<{ expand: boolean; timestamp: number } | null>(null);
 
   // Construire l'arbre hiérarchique
   const buildTree = (comptes: Compte[]): CompteNode[] => {
@@ -291,7 +291,7 @@ const PlanComptableManager = () => {
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => setExpandAll(true)}
+                onClick={() => setExpandAll({ expand: true, timestamp: Date.now() })}
               >
                 <ChevronsDown className="h-4 w-4 mr-2" />
                 Tout déplier
@@ -299,7 +299,7 @@ const PlanComptableManager = () => {
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => setExpandAll(false)}
+                onClick={() => setExpandAll({ expand: false, timestamp: Date.now() })}
               >
                 <ChevronsUp className="h-4 w-4 mr-2" />
                 Tout replier
