@@ -92,6 +92,8 @@ export const BonCommandeSnapshot = ({
     });
   };
 
+  const canGenerateEcritures = bonCommande.statut !== 'brouillon';
+
   const statut = statutConfig[bonCommande.statut] || statutConfig.brouillon;
   const montantFacture = bonCommande.montantFacture || 0;
   const progression = bonCommande.montant > 0 ? (montantFacture / bonCommande.montant) * 100 : 0;
@@ -226,8 +228,9 @@ export const BonCommandeSnapshot = ({
       <EcrituresSection
         ecritures={ecritures}
         isLoading={ecrituresLoading}
-        onGenerate={handleGenerateEcritures}
+        onGenerate={canGenerateEcritures ? handleGenerateEcritures : undefined}
         isGenerating={generateMutation.isPending}
+        disabledReason={!canGenerateEcritures ? "Les écritures ne peuvent être générées que pour les bons de commande validés" : undefined}
       />
     </SnapshotBase>
   );

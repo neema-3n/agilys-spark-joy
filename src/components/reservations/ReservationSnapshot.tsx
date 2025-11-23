@@ -54,6 +54,8 @@ export const ReservationSnapshot = ({
     });
   };
 
+  const canGenerateEcritures = reservation.statut === 'active' || reservation.statut === 'utilisee';
+
   const getStatutBadge = (statut: ReservationCredit['statut']) => {
     const variants: Record<ReservationCredit['statut'], 'default' | 'secondary' | 'destructive' | 'outline'> = {
       active: 'secondary',
@@ -283,8 +285,9 @@ export const ReservationSnapshot = ({
       <EcrituresSection
         ecritures={ecritures}
         isLoading={ecrituresLoading}
-        onGenerate={handleGenerateEcritures}
+        onGenerate={canGenerateEcritures ? handleGenerateEcritures : undefined}
         isGenerating={generateMutation.isPending}
+        disabledReason={!canGenerateEcritures ? "Les écritures ne peuvent être générées que pour les réservations actives ou utilisées" : undefined}
       />
     </SnapshotBase>
   );
