@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, FolderOpen, Folder, FileText, File } from 'lucide-react';
+import { ChevronDown, ChevronRight, FolderOpen, Folder, FileText } from 'lucide-react';
 import { Compte } from '@/types';
 import { Button } from '@/components/ui/button';
 import {
