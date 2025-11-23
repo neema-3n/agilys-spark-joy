@@ -575,7 +575,7 @@ export type Database = {
           id: string
           ligne_budgetaire_id: string | null
           montant_ht: number
-          montant_paye: number
+          montant_liquide: number
           montant_ttc: number
           montant_tva: number
           numero: string
@@ -600,7 +600,7 @@ export type Database = {
           id?: string
           ligne_budgetaire_id?: string | null
           montant_ht?: number
-          montant_paye?: number
+          montant_liquide?: number
           montant_ttc?: number
           montant_tva?: number
           numero: string
@@ -625,7 +625,7 @@ export type Database = {
           id?: string
           ligne_budgetaire_id?: string | null
           montant_ht?: number
-          montant_paye?: number
+          montant_liquide?: number
           montant_ttc?: number
           montant_tva?: number
           numero?: string
@@ -1002,6 +1002,85 @@ export type Database = {
         }
         Relationships: []
       }
+      paiements: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string | null
+          date_annulation: string | null
+          date_paiement: string
+          depense_id: string
+          exercice_id: string
+          id: string
+          mode_paiement: string
+          montant: number
+          motif_annulation: string | null
+          numero: string
+          observations: string | null
+          reference_paiement: string | null
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          date_annulation?: string | null
+          date_paiement: string
+          depense_id: string
+          exercice_id: string
+          id?: string
+          mode_paiement: string
+          montant: number
+          motif_annulation?: string | null
+          numero: string
+          observations?: string | null
+          reference_paiement?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          date_annulation?: string | null
+          date_paiement?: string
+          depense_id?: string
+          exercice_id?: string
+          id?: string
+          mode_paiement?: string
+          montant?: number
+          motif_annulation?: string | null
+          numero?: string
+          observations?: string | null
+          reference_paiement?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paiements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paiements_depense_id_fkey"
+            columns: ["depense_id"]
+            isOneToOne: false
+            referencedRelation: "depenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paiements_exercice_id_fkey"
+            columns: ["exercice_id"]
+            isOneToOne: false
+            referencedRelation: "exercices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parametres_referentiels: {
         Row: {
           actif: boolean | null
@@ -1202,6 +1281,88 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      regles_comptables: {
+        Row: {
+          actif: boolean | null
+          client_id: string
+          code: string
+          compte_credit_id: string
+          compte_debit_id: string
+          conditions: Json
+          created_at: string | null
+          created_by: string | null
+          date_debut: string | null
+          date_fin: string | null
+          description: string | null
+          id: string
+          nom: string
+          ordre: number | null
+          permanente: boolean | null
+          type_operation: string
+          updated_at: string | null
+        }
+        Insert: {
+          actif?: boolean | null
+          client_id: string
+          code: string
+          compte_credit_id: string
+          compte_debit_id: string
+          conditions?: Json
+          created_at?: string | null
+          created_by?: string | null
+          date_debut?: string | null
+          date_fin?: string | null
+          description?: string | null
+          id?: string
+          nom: string
+          ordre?: number | null
+          permanente?: boolean | null
+          type_operation: string
+          updated_at?: string | null
+        }
+        Update: {
+          actif?: boolean | null
+          client_id?: string
+          code?: string
+          compte_credit_id?: string
+          compte_debit_id?: string
+          conditions?: Json
+          created_at?: string | null
+          created_by?: string | null
+          date_debut?: string | null
+          date_fin?: string | null
+          description?: string | null
+          id?: string
+          nom?: string
+          ordre?: number | null
+          permanente?: boolean | null
+          type_operation?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regles_comptables_compte_credit_id_fkey"
+            columns: ["compte_credit_id"]
+            isOneToOne: false
+            referencedRelation: "comptes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regles_comptables_compte_debit_id_fkey"
+            columns: ["compte_debit_id"]
+            isOneToOne: false
+            referencedRelation: "comptes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regles_comptables_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reservations_credits: {
         Row: {
@@ -1567,6 +1728,20 @@ export type Database = {
         }
         Returns: Json
       }
+      create_paiement_with_numero: {
+        Args: {
+          p_client_id: string
+          p_date_paiement: string
+          p_depense_id: string
+          p_exercice_id: string
+          p_mode_paiement: string
+          p_montant: number
+          p_observations: string
+          p_reference_paiement: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       create_reservation_with_numero: {
         Args: {
           p_beneficiaire: string
@@ -1588,6 +1763,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      recalculate_facture_montant_liquide: {
+        Args: { p_facture_id: string }
+        Returns: undefined
       }
       recalculate_ligne_disponible: {
         Args: { p_ligne_budgetaire_id: string }

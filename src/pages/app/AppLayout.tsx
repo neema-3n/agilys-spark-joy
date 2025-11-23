@@ -53,10 +53,6 @@ const AppLayout = () => {
       href: '/app/budgets',
       icon: Wallet
     }, {
-      name: 'Structure Budgétaire',
-      href: '/app/structure-budgetaire',
-      icon: Layers
-    }, {
       name: 'Prévisions Budgétaires',
       href: '/app/previsions',
       icon: TrendingUp
