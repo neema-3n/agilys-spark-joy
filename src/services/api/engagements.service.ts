@@ -202,6 +202,46 @@ export const updateEngagement = async (
   id: string,
   updates: Partial<EngagementFormData>
 ): Promise<Engagement> => {
+  // 1. Récupérer l'engagement actuel
+  const { data: currentEngagement, error: fetchError } = await supabase
+    .from('engagements')
+    .select('statut')
+    .eq('id', id)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  // 2. Vérifier s'il existe des écritures validées
+  const { data: ecritures, error: ecrituresError } = await supabase
+    .from('ecritures_comptables')
+    .select('id')
+    .eq('engagement_id', id)
+    .eq('statut_ecriture', 'validee')
+    .limit(1);
+
+  if (ecrituresError) throw ecrituresError;
+
+  // 3. Si statut != brouillon ET écritures existent → BLOQUER
+  if (currentEngagement.statut !== 'brouillon' && ecritures && ecritures.length > 0) {
+    throw new Error(
+      '❌ Modification impossible : Cette opération a été comptabilisée.\n\n' +
+      '💡 Pour effectuer une correction :\n' +
+      '1. Annulez cet engagement (génère des écritures d\'annulation)\n' +
+      '2. Créez un nouvel engagement avec les bonnes valeurs'
+    );
+  }
+
+  // 4. Si brouillon avec écritures → SUPPRIMER les écritures
+  if (currentEngagement.statut === 'brouillon' && ecritures && ecritures.length > 0) {
+    const { error: deleteError } = await supabase
+      .from('ecritures_comptables')
+      .delete()
+      .eq('engagement_id', id);
+
+    if (deleteError) throw deleteError;
+  }
+
+  // 5. Procéder à la modification
   const cleanedUpdates = cleanData(toSnakeCase(updates));
 
   const { data, error } = await supabase
@@ -286,7 +326,30 @@ export const annulerEngagement = async (
       `Veuillez d'abord supprimer ou dissocier les BC suivants : ${bonsCommande.map(bc => bc.numero).join(', ')}`
     );
   }
+
+  // 1. Vérifier s'il existe des écritures validées
+  const { data: ecritures, error: ecrituresError } = await supabase
+    .from('ecritures_comptables')
+    .select('id')
+    .eq('engagement_id', id)
+    .eq('statut_ecriture', 'validee');
+
+  if (ecrituresError) throw ecrituresError;
+
+  // 2. Si écritures existent → Contrepasser
+  if (ecritures && ecritures.length > 0) {
+    const { error: contrepasserError } = await supabase.functions.invoke('contrepasser-ecritures', {
+      body: {
+        typeOperation: 'engagement',
+        sourceId: id,
+        motifAnnulation,
+      }
+    });
+
+    if (contrepasserError) throw contrepasserError;
+  }
   
+  // 3. Mettre à jour le statut
   const { data, error } = await supabase
     .from('engagements')
     .update({
@@ -335,7 +398,34 @@ export const deleteEngagement = async (id: string): Promise<void> => {
       `Veuillez d'abord supprimer ou dissocier les BC suivants : ${bonsCommande.map(bc => bc.numero).join(', ')}`
     );
   }
+
+  // 1. Vérifier le statut
+  const { data: engagement, error: fetchError } = await supabase
+    .from('engagements')
+    .select('statut')
+    .eq('id', id)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  // 2. Vérifier s'il existe des écritures
+  const { data: ecritures, error: ecrituresError } = await supabase
+    .from('ecritures_comptables')
+    .select('id')
+    .eq('engagement_id', id)
+    .limit(1);
+
+  if (ecrituresError) throw ecrituresError;
+
+  // 3. Bloquer si pas brouillon OU écritures existent
+  if (engagement.statut !== 'brouillon' || (ecritures && ecritures.length > 0)) {
+    throw new Error(
+      '❌ Suppression impossible\n\n' +
+      '💡 Utilisez l\'annulation au lieu de la suppression pour conserver l\'historique comptable'
+    );
+  }
   
+  // 4. OK pour suppression
   const { error } = await supabase
     .from('engagements')
     .delete()
