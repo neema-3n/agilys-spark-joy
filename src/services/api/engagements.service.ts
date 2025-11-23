@@ -265,6 +265,16 @@ export const updateEngagement = async (
 
 // Valider un engagement
 export const validerEngagement = async (id: string): Promise<Engagement> => {
+  // 1. Récupérer l'engagement pour avoir client_id et exercice_id
+  const { data: engagement, error: fetchError } = await supabase
+    .from('engagements')
+    .select('client_id, exercice_id')
+    .eq('id', id)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  // 2. Mettre à jour le statut
   const { data, error } = await supabase
     .from('engagements')
     .update({
@@ -294,6 +304,21 @@ export const validerEngagement = async (id: string): Promise<Engagement> => {
     .single();
 
   if (error) throw error;
+
+  // 3. Générer les écritures comptables automatiquement (en arrière-plan)
+  try {
+    await supabase.functions.invoke('generate-ecritures-comptables', {
+      body: {
+        typeOperation: 'engagement',
+        sourceId: id,
+        clientId: engagement.client_id,
+        exerciceId: engagement.exercice_id
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la génération des écritures:', error);
+  }
+
   return toCamelCase(data);
 };
 

@@ -160,6 +160,16 @@ export const updateDepense = async (
 };
 
 export const validerDepense = async (id: string): Promise<Depense> => {
+  // 1. Récupérer la dépense pour avoir client_id et exercice_id
+  const { data: depense, error: fetchError } = await supabase
+    .from('depenses')
+    .select('client_id, exercice_id')
+    .eq('id', id)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  // 2. Mettre à jour le statut
   const { data, error } = await supabase
     .from('depenses')
     .update({
@@ -179,10 +189,35 @@ export const validerDepense = async (id: string): Promise<Depense> => {
     .single();
 
   if (error) throw error;
+
+  // 3. Générer les écritures comptables automatiquement
+  try {
+    await supabase.functions.invoke('generate-ecritures-comptables', {
+      body: {
+        typeOperation: 'depense',
+        sourceId: id,
+        clientId: depense.client_id,
+        exerciceId: depense.exercice_id
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la génération des écritures:', error);
+  }
+
   return toCamelCase(data) as Depense;
 };
 
 export const ordonnancerDepense = async (id: string): Promise<Depense> => {
+  // 1. Récupérer la dépense pour avoir client_id et exercice_id
+  const { data: depense, error: fetchError } = await supabase
+    .from('depenses')
+    .select('client_id, exercice_id')
+    .eq('id', id)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  // 2. Mettre à jour le statut
   const { data, error } = await supabase
     .from('depenses')
     .update({
@@ -202,6 +237,21 @@ export const ordonnancerDepense = async (id: string): Promise<Depense> => {
     .single();
 
   if (error) throw error;
+
+  // 3. Générer les écritures comptables automatiquement
+  try {
+    await supabase.functions.invoke('generate-ecritures-comptables', {
+      body: {
+        typeOperation: 'depense',
+        sourceId: id,
+        clientId: depense.client_id,
+        exerciceId: depense.exercice_id
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la génération des écritures:', error);
+  }
+
   return toCamelCase(data) as Depense;
 };
 
@@ -211,12 +261,16 @@ export const marquerPayee = async (
   modePaiement: string,
   referencePaiement?: string
 ): Promise<Depense> => {
-  const { data: depense } = await supabase
+  // 1. Récupérer la dépense
+  const { data: depense, error: fetchError } = await supabase
     .from('depenses')
-    .select('montant')
+    .select('montant, client_id, exercice_id')
     .eq('id', id)
     .single();
 
+  if (fetchError) throw fetchError;
+
+  // 2. Mettre à jour le statut
   const { data, error } = await supabase
     .from('depenses')
     .update({
@@ -239,6 +293,21 @@ export const marquerPayee = async (
     .single();
 
   if (error) throw error;
+
+  // 3. Générer les écritures comptables automatiquement
+  try {
+    await supabase.functions.invoke('generate-ecritures-comptables', {
+      body: {
+        typeOperation: 'depense',
+        sourceId: id,
+        clientId: depense.client_id,
+        exerciceId: depense.exercice_id
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la génération des écritures:', error);
+  }
+
   return toCamelCase(data) as Depense;
 };
 
