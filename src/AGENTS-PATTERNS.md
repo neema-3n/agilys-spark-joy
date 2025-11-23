@@ -16,6 +16,7 @@
 ## 🔥 Patterns Critiques
 
 Ces patterns sont **ABSOLUMENT OBLIGATOIRES** et doivent être respectés sans exception.
+Applicabilité : ils s'appliquent à tous les modules existants et à toute nouvelle création/réutilisation/adaptation. Quand vous touchez un module legacy, profitez-en pour le réaligner sur ces patterns.
 
 ### 1. 🚨 Snapshot Pattern - RÈGLE D'OR
 
@@ -87,6 +88,7 @@ Objectif : garder un CTA visible quand le header sort de l'écran, sans duplique
 - Header : rattacher `ref={headerCtaRef}` au bouton principal.
 - Fallback : dans `ListLayout.actions`, afficher un `<Button className="sticky-cta-appear">` quand `!isHeaderCtaVisible`.
 - Animation : la classe `sticky-cta-appear` applique l'animation partagée ; ne pas recréer de CSS local.
+- PageHeader : pour les pages liste utilisant Sticky CTA Reveal, passez `sticky={false}` afin que le titre ne reste pas figé et que le CTA sticky prenne le relais quand le header disparaît. Conservez ce réglage sur tous les modules et appliquez-le lors de la création, de la réutilisation ou de l’adaptation de nouveaux écrans liste.
 
 Exemple (extrait) :
 ```tsx
