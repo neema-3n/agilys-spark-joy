@@ -44,11 +44,11 @@ const formatMontant = (montant: number): string => {
 };
 
 const getStatutBadge = (statut: string) => {
-  const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
-    actif: { variant: 'default', label: 'Actif' },
+  const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'; label: string }> = {
+    actif: { variant: 'success', label: 'Actif' },
     inactif: { variant: 'secondary', label: 'Inactif' },
     blackliste: { variant: 'destructive', label: 'Blacklisté' },
-    en_attente_validation: { variant: 'outline', label: 'En attente' },
+    en_attente_validation: { variant: 'warning', label: 'En attente' },
   };
   const config = variants[statut] || variants.actif;
   return <Badge variant={config.variant}>{config.label}</Badge>;

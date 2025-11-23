@@ -71,11 +71,11 @@ export const DepenseSnapshot = ({
   const montantRestant = depense.montant - depense.montantPaye;
   const pourcentagePaye = depense.montant > 0 ? (depense.montantPaye / depense.montant) * 100 : 0;
   const getStatutBadge = (statut: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-      brouillon: 'outline',
-      validee: 'secondary',
+    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'> = {
+      brouillon: 'warning',
+      validee: 'success',
       ordonnancee: 'default',
-      payee: 'default',
+      payee: 'success',
       annulee: 'destructive',
     };
 
