@@ -2,7 +2,7 @@ import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { LayoutDashboard, Wallet, FileText, Receipt, BarChart3, Settings, ChevronLeft, ChevronRight, ChevronDown, Users, CreditCard, Wallet2, ShieldCheck, LineChart, TrendingUp, BookmarkCheck, ShoppingCart, DollarSign, FolderKanban, Layers, PlayCircle, Target, Building2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AppHeader } from '@/components/app/AppHeader';
@@ -12,6 +12,8 @@ const AppLayout = () => {
   const { user } = useAuth();
   const location = useLocation();
   const isMobile = useIsMobile();
+  const mainRef = useRef<HTMLElement | null>(null);
+  const scrollPositionsRef = useRef<Record<string, number>>({});
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     'Fournisseurs': true,
@@ -193,6 +195,28 @@ const AppLayout = () => {
       setSidebarOpen(false);
     }
   }, [isMobile]);
+
+  // Sauvegarde la position de scroll pour chaque route
+  useEffect(() => {
+    const mainElement = mainRef.current;
+    if (!mainElement) return;
+
+    const handleScroll = () => {
+      scrollPositionsRef.current[location.pathname] = mainElement.scrollTop;
+    };
+
+    mainElement.addEventListener('scroll', handleScroll);
+    return () => mainElement.removeEventListener('scroll', handleScroll);
+  }, [location.pathname]);
+
+  // Restaure la position de scroll de la route visitée
+  useEffect(() => {
+    const mainElement = mainRef.current;
+    if (!mainElement) return;
+
+    const savedScrollTop = scrollPositionsRef.current[location.pathname] ?? 0;
+    mainElement.scrollTo({ top: savedScrollTop, behavior: 'auto' });
+  }, [location.pathname]);
 
   // Filtrer les sections selon le groupe actif
   const navigationSections = allNavigationSections.filter(section => 
@@ -399,7 +423,7 @@ const AppLayout = () => {
       {/* Main Content with Header */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <AppHeader onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-        <main className="flex-1 overflow-auto">
+        <main ref={mainRef} className="flex-1 overflow-auto">
           <Outlet />
         </main>
       </div>
