@@ -139,9 +139,9 @@ export const ReglesComptablesManager = () => {
                   {regles.map((regle) => (
                     <Card key={regle.id}>
                       <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
+                        <div className="space-y-3">
+                          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 min-w-0">
                               <h4 className="font-semibold">{regle.nom}</h4>
                               <Badge variant="outline">{regle.code}</Badge>
                               <div className="flex items-center gap-2">
@@ -154,114 +154,106 @@ export const ReglesComptablesManager = () => {
                                 </span>
                               </div>
                             </div>
-                            
-                            {regle.description && (
-                              <p className="text-sm text-muted-foreground mb-2">
-                                {regle.description}
-                              </p>
-                            )}
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                              <div>
-                                <span className="font-medium">Période:</span>{' '}
-                                {regle.permanente ? (
-                                  <span className="text-muted-foreground">Permanente</span>
-                                ) : (
-                                  <span className="text-muted-foreground">
-                                    {regle.dateDebut} → {regle.dateFin}
-                                  </span>
-                                )}
-                              </div>
-
-                              <div>
-                                <div className="flex items-center gap-1">
-                                  <span className="font-medium">Conditions:</span>{' '}
-                                  {regle.conditions.length === 0 ? (
-                                    <span className="text-muted-foreground">Aucune</span>
-                                  ) : (
-                                    <HoverCard>
-                                      <HoverCardTrigger asChild>
-                                        <button className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
-                                          {regle.conditions.length} condition(s)
-                                          <Info className="h-3 w-3" />
-                                        </button>
-                                      </HoverCardTrigger>
-                                      <HoverCardContent side="top" className="max-w-md">
-                                        <div className="space-y-2">
-                                          <p className="font-semibold text-xs">Conditions:</p>
-                                          {regle.conditions.map((condition, idx) => (
-                                            <div key={idx} className="text-xs">
-                                              <Badge variant="outline" className="font-mono text-xs">
-                                                {condition.champ}
-                                              </Badge>
-                                              {' '}
-                                              <span className="text-muted-foreground">
-                                                {OPERATEUR_LABELS[condition.operateur]}
-                                              </span>
-                                              {' '}
-                                              <span className="font-medium">
-                                                {String(condition.valeur)}
-                                              </span>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      </HoverCardContent>
-                                    </HoverCard>
-                                  )}
-                                </div>
-                              </div>
-
-                              <div>
-                                <div className="flex items-center gap-1">
-                                  <span className="font-medium">Comptes:</span>{' '}
-                                  <HoverCard>
-                                    <HoverCardTrigger asChild>
-                                      <button className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
-                                        {regle.compteDebit?.numero} → {regle.compteCredit?.numero}
-                                        <Info className="h-3 w-3" />
-                                      </button>
-                                    </HoverCardTrigger>
-                                    <HoverCardContent side="top" className="max-w-md">
-                                      <div className="space-y-1">
-                                        <p className="text-xs">
-                                          <span className="font-semibold">Débit:</span> {regle.compteDebit?.numero} - {regle.compteDebit?.libelle}
-                                        </p>
-                                        <p className="text-xs">
-                                          <span className="font-semibold">Crédit:</span> {regle.compteCredit?.numero} - {regle.compteCredit?.libelle}
-                                        </p>
-                                      </div>
-                                    </HoverCardContent>
-                                  </HoverCard>
-                                </div>
-                              </div>
+                            <div className="flex flex-wrap gap-2 justify-start lg:justify-end shrink-0">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEdit(regle)}
+                              >
+                                Modifier
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDuplicate(regle)}
+                              >
+                                <Copy className="h-4 w-4 mr-2" />
+                                Dupliquer
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteClick(regle)}
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Supprimer
+                              </Button>
                             </div>
                           </div>
 
-                          <div className="flex gap-2 ml-4">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEdit(regle)}
-                            >
-                              Modifier
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDuplicate(regle)}
-                            >
-                              <Copy className="h-4 w-4 mr-2" />
-                              Dupliquer
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteClick(regle)}
-                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Supprimer
-                            </Button>
+                          {regle.description && (
+                            <p className="text-sm text-muted-foreground">
+                              {regle.description}
+                            </p>
+                          )}
+
+                          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 text-sm items-start">
+                            <div className="flex flex-wrap items-center gap-1">
+                              <span className="font-medium">Période:</span>
+                              <span className="text-muted-foreground">
+                                {regle.permanente ? 'Permanente' : `${regle.dateDebut} → ${regle.dateFin}`}
+                              </span>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-1">
+                              <span className="font-medium">Conditions:</span>
+                              {regle.conditions.length === 0 ? (
+                                <span className="text-muted-foreground">Aucune</span>
+                              ) : (
+                                <HoverCard>
+                                  <HoverCardTrigger asChild>
+                                    <button className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
+                                      {regle.conditions.length} condition(s)
+                                      <Info className="h-3 w-3" />
+                                    </button>
+                                  </HoverCardTrigger>
+                                  <HoverCardContent side="top" className="max-w-md">
+                                    <div className="space-y-2">
+                                      <p className="font-semibold text-xs">Conditions:</p>
+                                      {regle.conditions.map((condition, idx) => (
+                                        <div key={idx} className="text-xs">
+                                          <Badge variant="outline" className="font-mono text-xs">
+                                            {condition.champ}
+                                          </Badge>
+                                          {' '}
+                                          <span className="text-muted-foreground">
+                                            {OPERATEUR_LABELS[condition.operateur]}
+                                          </span>
+                                          {' '}
+                                          <span className="font-medium">
+                                            {String(condition.valeur)}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </HoverCardContent>
+                                </HoverCard>
+                              )}
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-1">
+                              <span className="font-medium">Comptes:</span>
+                              <HoverCard>
+                                <HoverCardTrigger asChild>
+                                  <button className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
+                                    {regle.compteDebit?.numero} → {regle.compteCredit?.numero}
+                                    <Info className="h-3 w-3" />
+                                  </button>
+                                </HoverCardTrigger>
+                                <HoverCardContent side="top" className="max-w-md">
+                                  <div className="space-y-1">
+                                    <p className="text-xs">
+                                      <span className="font-semibold">Débit:</span> {regle.compteDebit?.numero} - {regle.compteDebit?.libelle}
+                                    </p>
+                                    <p className="text-xs">
+                                      <span className="font-semibold">Crédit:</span> {regle.compteCredit?.numero} - {regle.compteCredit?.libelle}
+                                    </p>
+                                  </div>
+                                </HoverCardContent>
+                              </HoverCard>
+                            </div>
                           </div>
                         </div>
                       </CardContent>
