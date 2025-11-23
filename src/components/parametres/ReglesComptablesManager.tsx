@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Plus, Calculator, Info, Trash2 } from 'lucide-react';
+import { Plus, Calculator, Info, Trash2, Copy } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,6 +41,17 @@ export const ReglesComptablesManager = () => {
 
   const handleEdit = (regle: RegleComptable) => {
     setEditingRegle(regle);
+    setDialogOpen(true);
+  };
+
+  const handleDuplicate = (regle: RegleComptable) => {
+    // Créer une copie sans l'ID pour forcer la création d'une nouvelle règle
+    const { id, createdAt, updatedAt, ...regleData } = regle;
+    setEditingRegle({
+      ...regleData,
+      nom: `${regle.nom} (Copie)`,
+      code: `${regle.code}_COPY`,
+    } as RegleComptable);
     setDialogOpen(true);
   };
 
@@ -157,14 +168,14 @@ export const ReglesComptablesManager = () => {
                                 {regle.conditions.length === 0 ? (
                                   <span className="text-muted-foreground">Aucune</span>
                                 ) : (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
+                                  <Popover>
+                                    <PopoverTrigger asChild>
                                       <button className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
                                         {regle.conditions.length} condition(s)
                                         <Info className="h-3 w-3" />
                                       </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top" className="max-w-md">
+                                    </PopoverTrigger>
+                                    <PopoverContent side="top" className="max-w-md">
                                       <div className="space-y-2">
                                         <p className="font-semibold text-xs">Conditions:</p>
                                         {regle.conditions.map((condition, idx) => (
@@ -183,21 +194,21 @@ export const ReglesComptablesManager = () => {
                                           </div>
                                         ))}
                                       </div>
-                                    </TooltipContent>
-                                  </Tooltip>
+                                    </PopoverContent>
+                                  </Popover>
                                 )}
                               </div>
 
                               <div className="flex items-center gap-1">
                                 <span className="font-medium">Comptes:</span>{' '}
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
+                                <Popover>
+                                  <PopoverTrigger asChild>
                                     <button className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
                                       {regle.compteDebit?.numero} → {regle.compteCredit?.numero}
                                       <Info className="h-3 w-3" />
                                     </button>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" className="max-w-md">
+                                  </PopoverTrigger>
+                                  <PopoverContent side="top" className="max-w-md">
                                     <div className="space-y-1">
                                       <p className="text-xs">
                                         <span className="font-semibold">Débit:</span> {regle.compteDebit?.numero} - {regle.compteDebit?.libelle}
@@ -206,8 +217,8 @@ export const ReglesComptablesManager = () => {
                                         <span className="font-semibold">Crédit:</span> {regle.compteCredit?.numero} - {regle.compteCredit?.libelle}
                                       </p>
                                     </div>
-                                  </TooltipContent>
-                                </Tooltip>
+                                  </PopoverContent>
+                                </Popover>
                               </div>
                             </div>
                           </div>
@@ -219,6 +230,14 @@ export const ReglesComptablesManager = () => {
                               onClick={() => handleEdit(regle)}
                             >
                               Modifier
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDuplicate(regle)}
+                            >
+                              <Copy className="h-4 w-4 mr-2" />
+                              Dupliquer
                             </Button>
                             <Button
                               variant="outline"
