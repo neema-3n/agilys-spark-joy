@@ -63,7 +63,7 @@ export const EngagementSnapshot = ({
 
   const getStatutBadge = (statut: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'> = {
-      brouillon: 'warning',
+      brouillon: 'outline',
       valide: 'success',
       engage: 'success',
       liquide: 'success',

@@ -30,13 +30,31 @@ interface BonCommandeSnapshotProps {
   onNavigateToEntity?: (type: string, id: string) => void;
 }
 
-const statutConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'; description: string }> = {
-  brouillon: { label: 'Brouillon', variant: 'warning', description: 'En cours de préparation' },
-  valide: { label: 'Validé', variant: 'success', description: 'Prêt à être exécuté' },
-  en_cours: { label: 'En cours', variant: 'default', description: 'Commande en exécution' },
-  receptionne: { label: 'Réceptionné', variant: 'success', description: 'Livraison confirmée' },
-  facture: { label: 'Facturé', variant: 'secondary', description: 'Factures associées' },
-  annule: { label: 'Annulé', variant: 'destructive', description: 'Commande annulée' },
+const variants: Record<BonCommande['statut'], 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'> = {
+  brouillon: 'outline',
+  valide: 'success',
+  en_cours: 'secondary',
+  receptionne: 'success',
+  facture: 'secondary',
+  annule: 'destructive',
+};
+
+const labels: Record<BonCommande['statut'], string> = {
+  brouillon: 'Brouillon',
+  valide: 'Validé',
+  en_cours: 'En cours',
+  receptionne: 'Réceptionné',
+  facture: 'Facturé',
+  annule: 'Annulé',
+};
+
+const descriptions: Record<BonCommande['statut'], string> = {
+  brouillon: 'En cours de préparation',
+  valide: 'Prêt à être exécuté',
+  en_cours: 'Commande en exécution',
+  receptionne: 'Livraison confirmée',
+  facture: 'Factures associées',
+  annule: 'Commande annulée',
 };
 
 const entityButton = (
@@ -94,7 +112,7 @@ export const BonCommandeSnapshot = ({
 
   const canGenerateEcritures = bonCommande.statut !== 'brouillon';
 
-  const statut = statutConfig[bonCommande.statut] || statutConfig.brouillon;
+  const statut = { variant: variants[bonCommande.statut] || 'outline', label: labels[bonCommande.statut] || bonCommande.statut, description: descriptions[bonCommande.statut] || '' };
   const montantFacture = bonCommande.montantFacture || 0;
   const progression = bonCommande.montant > 0 ? (montantFacture / bonCommande.montant) * 100 : 0;
 
