@@ -77,18 +77,48 @@ function detectTypeAndCategorie(code: string): { type: string; categorie: string
   }
 }
 
+// Parse CSV with proper handling of quoted fields
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let insideQuotes = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    
+    if (char === '"') {
+      insideQuotes = !insideQuotes;
+    } else if (char === ',' && !insideQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  
+  // Add the last field
+  result.push(current.trim());
+  
+  return result;
+}
+
 function parseCSV(csvContent: string): CSVRow[] {
   const lines = csvContent.trim().split('\n');
-  const headers = lines[0].split(',').map(h => h.trim());
+  const headers = parseCSVLine(lines[0]);
   
   const rows: CSVRow[] = [];
   const errors: string[] = [];
   
   lines.slice(1).forEach((line, index) => {
-    const values = line.split(',').map(v => v.trim());
+    // Skip empty lines
+    if (!line.trim()) {
+      return;
+    }
+    
+    const values = parseCSVLine(line);
     const row: any = {};
     headers.forEach((header, i) => {
-      row[header] = values[i];
+      row[header] = values[i] || '';
     });
     
     const code = row.code || '';
