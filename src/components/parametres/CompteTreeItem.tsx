@@ -46,7 +46,7 @@ export const CompteTreeItem = ({
     if (hasChildren) {
       return isExpanded ? <FolderOpen className="h-4 w-4" /> : <Folder className="h-4 w-4" />;
     }
-    return node.niveau <= 2 ? <FileText className="h-4 w-4" /> : <File className="h-4 w-4" />;
+    return <FileText className="h-4 w-4" />;
   };
 
   return (
