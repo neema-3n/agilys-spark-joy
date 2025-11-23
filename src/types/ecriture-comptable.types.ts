@@ -1,5 +1,7 @@
 import type { TypeOperation } from './regle-comptable.types';
 
+export type StatutEcriture = 'validee' | 'contrepassation';
+
 export interface EcritureComptable {
   id: string;
   clientId: string;
@@ -14,6 +16,8 @@ export interface EcritureComptable {
   typeOperation: TypeOperation;
   sourceId: string;
   regleComptableId?: string;
+  statutEcriture: StatutEcriture;
+  ecritureOrigineId?: string;
   createdAt: string;
   createdBy?: string;
   updatedAt: string;
