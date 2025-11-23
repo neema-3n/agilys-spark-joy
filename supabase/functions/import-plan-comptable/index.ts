@@ -81,21 +81,49 @@ function parseCSV(csvContent: string): CSVRow[] {
   const lines = csvContent.trim().split('\n');
   const headers = lines[0].split(',').map(h => h.trim());
   
-  return lines.slice(1).map(line => {
+  const rows: CSVRow[] = [];
+  const errors: string[] = [];
+  
+  lines.slice(1).forEach((line, index) => {
     const values = line.split(',').map(v => v.trim());
     const row: any = {};
     headers.forEach((header, i) => {
       row[header] = values[i];
     });
     
-    return {
-      code: row.code || '',
-      intitule: row.intitule || '',
+    const code = row.code || '';
+    const intitule = row.intitule || '';
+    const nb_chiffres = parseInt(row.nb_chiffres || '0');
+    
+    // Validation
+    if (!code) {
+      errors.push(`Ligne ${index + 2}: code manquant`);
+      return;
+    }
+    if (!intitule) {
+      errors.push(`Ligne ${index + 2}: intitulé manquant pour le compte ${code}`);
+      return;
+    }
+    if (!nb_chiffres || nb_chiffres === 0) {
+      errors.push(`Ligne ${index + 2}: nb_chiffres manquant ou invalide pour le compte ${code}`);
+      return;
+    }
+    
+    rows.push({
+      code,
+      intitule,
       terme_courant: row.terme_courant,
-      nb_chiffres: parseInt(row.nb_chiffres || '0'),
+      nb_chiffres,
       code_parent: row.code_parent || null,
-    };
-  }).filter(row => row.code && row.intitule);
+    });
+  });
+  
+  if (errors.length > 0) {
+    console.log(`CSV parsing warnings: ${errors.length} lines skipped`);
+    errors.slice(0, 5).forEach(err => console.log(`  - ${err}`));
+  }
+  
+  return rows;
 }
 
 serve(async (req) => {
@@ -124,16 +152,35 @@ serve(async (req) => {
     const rows = parseCSV(csvContent);
     console.log(`Parsed ${rows.length} rows from CSV`);
 
-    // Enrich data
-    const enrichedData: EnrichedCompte[] = rows.map(row => {
+    // Enrich data with validation
+    const enrichedData: EnrichedCompte[] = [];
+    const validationErrors: Array<{ code: string; error: string }> = [];
+    
+    rows.forEach(row => {
+      // Validate niveau calculation
+      if (!row.nb_chiffres || row.nb_chiffres < 2) {
+        validationErrors.push({
+          code: row.code,
+          error: `Nombre de chiffres invalide (${row.nb_chiffres}). Doit être >= 2`
+        });
+        return;
+      }
+      
       const { type, categorie } = detectTypeAndCategorie(row.code);
-      return {
+      enrichedData.push({
         ...row,
         niveau: row.nb_chiffres - 1, // 2→1, 3→2, 4→3, 5→4
         type,
         categorie,
-      };
+      });
     });
+
+    if (validationErrors.length > 0) {
+      console.log(`Validation errors: ${validationErrors.length} comptes skipped`);
+      validationErrors.slice(0, 5).forEach(err => 
+        console.log(`  - ${err.code}: ${err.error}`)
+      );
+    }
 
     // Sort by niveau
     enrichedData.sort((a, b) => a.niveau - b.niveau);
@@ -156,7 +203,7 @@ serve(async (req) => {
         total: rows.length,
         created: 0,
         skipped: 0,
-        errors: [],
+        errors: validationErrors, // Add validation errors to report
       },
       byLevel: {},
     };
@@ -244,11 +291,17 @@ serve(async (req) => {
             console.log(`Batch inserted ${inserted?.length} comptes`);
           }
         } catch (error: any) {
-          console.error(`Batch insert exception:`, error);
+          console.error(`Batch insert error:`, error);
           batch.forEach(compte => {
+            const errorMsg = error.message.includes('duplicate')
+              ? `Compte déjà existant`
+              : error.message.includes('violates')
+              ? `Données invalides: ${error.message.split('violates')[1] || 'erreur contrainte'}`
+              : error.message;
+            
             report.stats.errors.push({
               code: compte.code,
-              error: error.message,
+              error: errorMsg,
             });
           });
         }
