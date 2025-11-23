@@ -79,6 +79,8 @@ export const FactureSnapshot = ({
     });
   };
 
+  const canGenerateEcritures = facture.statut !== 'brouillon';
+
   const getStatutBadge = (statut: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
       brouillon: 'outline',
@@ -370,8 +372,9 @@ export const FactureSnapshot = ({
       <EcrituresSection
         ecritures={ecritures}
         isLoading={ecrituresLoading}
-        onGenerate={handleGenerateEcritures}
+        onGenerate={canGenerateEcritures ? handleGenerateEcritures : undefined}
         isGenerating={generateMutation.isPending}
+        disabledReason={!canGenerateEcritures ? "Les écritures ne peuvent être générées que pour les factures validées" : undefined}
       />
     </SnapshotBase>
   );

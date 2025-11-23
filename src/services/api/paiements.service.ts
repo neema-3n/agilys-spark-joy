@@ -156,17 +156,8 @@ export const deletePaiement = async (id: string): Promise<void> => {
 
   if (fetchError) throw fetchError;
 
-  // 2. Vérifier s'il existe des écritures
-  const { data: ecritures, error: ecrituresError } = await supabase
-    .from('ecritures_comptables')
-    .select('id')
-    .eq('paiement_id', id)
-    .limit(1);
-
-  if (ecrituresError) throw ecrituresError;
-
-  // 3. Bloquer si validé OU écritures existent
-  if (paiement.statut === 'valide' || (ecritures && ecritures.length > 0)) {
+  // 2. Bloquer si validé (les paiements validés peuvent avoir des écritures)
+  if (paiement.statut === 'valide') {
     throw new Error(
       '❌ Suppression impossible\n\n' +
       '💡 Utilisez l\'annulation au lieu de la suppression pour conserver l\'historique comptable'
