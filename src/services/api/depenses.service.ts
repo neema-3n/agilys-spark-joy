@@ -48,28 +48,14 @@ export const getDepenses = async (exerciceId: string, clientId: string): Promise
       ligne_budgetaire:lignes_budgetaires(id, libelle, disponible),
       facture:factures(id, numero, montant_ttc, statut),
       fournisseur:fournisseurs(id, nom, code),
-      projet:projets(id, code, nom),
-      ecritures_comptables(count)
+      projet:projets(id, code, nom)
     `)
     .eq('exercice_id', exerciceId)
     .eq('client_id', clientId)
     .order('date_depense', { ascending: false });
 
   if (error) throw error;
-  
-  // Extraire le count des écritures comptables
-  const depensesWithCount = (data || []).map(dep => {
-    const ecrituresCount = Array.isArray(dep.ecritures_comptables) && dep.ecritures_comptables[0]
-      ? Number(dep.ecritures_comptables[0].count) || 0
-      : 0;
-    const { ecritures_comptables, ...depenseData } = dep;
-    return {
-      ...depenseData,
-      ecritures_count: ecrituresCount
-    };
-  });
-  
-  return toCamelCase(depensesWithCount) as Depense[];
+  return toCamelCase(data) as Depense[];
 };
 
 export const createDepense = async (

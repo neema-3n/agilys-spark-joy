@@ -40,7 +40,6 @@ export interface BonCommande {
     id: string;
     nom: string;
   };
-  ecrituresCount?: number;
   
   // Montant facturé (calculé)
   montantFacture?: number;
