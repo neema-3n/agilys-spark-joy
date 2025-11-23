@@ -33,7 +33,7 @@ export const CompteTreeItem = ({
   getTypeLabel,
   getCategorieLabel 
 }: CompteTreeItemProps) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const hasChildren = node.children.length > 0;
 
   useEffect(() => {
