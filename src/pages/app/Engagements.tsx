@@ -16,6 +16,17 @@ import { useToast } from '@/hooks/use-toast';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { showNavigationToast } from '@/lib/navigation-toast';
 import { useSnapshotState } from '@/hooks/useSnapshotState';
+import { ListLayout } from '@/components/lists/ListLayout';
+import { ListToolbar } from '@/components/lists/ListToolbar';
+import { ListPageLoading } from '@/components/lists/ListPageLoading';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { CTA_REVEAL_STYLES, useHeaderCtaReveal } from '@/hooks/useHeaderCtaReveal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,8 +51,11 @@ const Engagements = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [actionEngagementId, setActionEngagementId] = useState<string | null>(null);
   const [selectedEngagementForDepense, setSelectedEngagementForDepense] = useState<Engagement | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statutFilter, setStatutFilter] = useState<'tous' | 'brouillon' | 'valide' | 'engage' | 'liquide' | 'annule'>('tous');
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { headerCtaRef, isHeaderCtaVisible } = useHeaderCtaReveal([statutFilter]);
   
   const {
     engagements,
@@ -204,6 +218,24 @@ const Engagements = () => {
     setSelectedEngagementForDepense(engagement);
   };
 
+  const filteredEngagements = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return engagements
+      .filter((engagement) => (statutFilter === 'tous' ? true : engagement.statut === statutFilter))
+      .filter((engagement) => {
+        if (!term) return true;
+        return (
+          engagement.numero.toLowerCase().includes(term) ||
+          engagement.objet.toLowerCase().includes(term) ||
+          engagement.fournisseur?.nom.toLowerCase().includes(term) ||
+          engagement.beneficiaire?.toLowerCase().includes(term) ||
+          engagement.reservationCredit?.numero?.toLowerCase().includes(term) ||
+          engagement.ligneBudgetaire?.libelle?.toLowerCase().includes(term)
+        );
+      })
+      .sort((a, b) => new Date(b.dateCreation).getTime() - new Date(a.dateCreation).getTime());
+  }, [engagements, statutFilter, searchTerm]);
+
   const {
     snapshotId: snapshotEngagementId,
     snapshotItem: snapshotEngagement,
@@ -264,9 +296,11 @@ const Engagements = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
+      <ListPageLoading
+        title="Gestion des Engagements"
+        description="Demandes, validations et suivi des engagements"
+        stickyHeader={false}
+      />
     );
   }
 
@@ -276,7 +310,7 @@ const Engagements = () => {
       description="Demandes, validations et suivi des engagements"
       scrollProgress={snapshotEngagementId ? scrollProgress : 0}
       actions={
-        <Button onClick={handleCreate}>
+        <Button onClick={handleCreate} ref={headerCtaRef}>
           <Plus className="h-4 w-4 mr-2" />
           Nouvel engagement
         </Button>
@@ -286,6 +320,7 @@ const Engagements = () => {
 
   return (
     <div className="space-y-6">
+      <style>{CTA_REVEAL_STYLES}</style>
       {!isSnapshotOpen && pageHeaderContent}
 
       <div className="px-8 space-y-6">
@@ -307,18 +342,67 @@ const Engagements = () => {
           <div className="flex items-center justify-center py-12 text-muted-foreground">Chargement du snapshot...</div>
         ) : (
           <>
-            <EngagementStats engagements={engagements} />
+            <ListLayout
+              title="Liste des engagements"
+              description="Recherche, filtres et actions sur les engagements"
+              actions={
+                !isHeaderCtaVisible ? (
+                  <Button onClick={handleCreate} className="sticky-cta-appear">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nouvel engagement
+                  </Button>
+                ) : undefined
+              }
+              toolbar={
+                <ListToolbar
+                  searchValue={searchTerm}
+                  onSearchChange={setSearchTerm}
+                  searchPlaceholder="Rechercher par numéro, objet, fournisseur..."
+                  filters={[
+                    <DropdownMenu key="statut">
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline">
+                          Statut: {statutFilter === 'tous' ? 'Tous' : statutFilter}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {[
+                          { value: 'tous', label: 'Tous' },
+                          { value: 'brouillon', label: 'Brouillon' },
+                          { value: 'valide', label: 'Validé' },
+                          { value: 'engage', label: 'Engagé' },
+                          { value: 'liquide', label: 'Liquidé' },
+                          { value: 'annule', label: 'Annulé' },
+                        ].map((option) => (
+                          <DropdownMenuItem key={option.value} onClick={() => setStatutFilter(option.value as any)}>
+                            {option.label}
+                          </DropdownMenuItem>
+                        ))}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => setStatutFilter('tous')}>
+                          Réinitialiser
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>,
+                  ]}
+                />
+              }
+            >
+              <div className="space-y-6 p-6 pt-2">
+                <EngagementStats engagements={engagements} />
 
-            <EngagementTable
-              engagements={engagements}
-              onEdit={handleEdit}
-              onValider={handleValider}
-              onAnnuler={handleAnnuler}
-              onDelete={handleDelete}
-              onCreerBonCommande={handleCreerBonCommande}
-              onCreerDepense={(engagement) => setSelectedEngagementForDepense(engagement)}
-              onViewDetails={handleOpenSnapshot}
-            />
+                <EngagementTable
+                  engagements={filteredEngagements}
+                  onEdit={handleEdit}
+                  onValider={handleValider}
+                  onAnnuler={handleAnnuler}
+                  onDelete={handleDelete}
+                  onCreerBonCommande={handleCreerBonCommande}
+                  onCreerDepense={(engagement) => setSelectedEngagementForDepense(engagement)}
+                  onViewDetails={handleOpenSnapshot}
+                />
+              </div>
+            </ListLayout>
           </>
         )}
       </div>
