@@ -398,13 +398,7 @@ const BonsCommande = () => {
         onOpenChange={handleDialogClose}
         onSubmit={handleSubmit}
         bonCommande={editingBonCommande}
-        fournisseurs={fournisseurs}
-        lignesBudgetaires={lignesBudgetaires}
-        projets={projets}
-        engagements={engagements.filter((e) => e.statut === 'valide' || e.statut === 'engage')}
         onGenererNumero={handleGenererNumero}
-        currentClientId={currentClient?.id || ''}
-        currentExerciceId={currentExercice?.id || ''}
       />
 
       <ReceptionnerBCDialog
@@ -413,7 +407,7 @@ const BonsCommande = () => {
           setReceptionnerDialogOpen(open);
           if (!open) setReceptionBonCommandeId(undefined);
         }}
-        bonCommande={receptionBonCommande}
+        bonCommandeNumero={receptionBonCommande?.numero || ''}
         onConfirm={handleReceptionnerConfirm}
       />
 
@@ -423,7 +417,7 @@ const BonsCommande = () => {
           setAnnulerDialogOpen(open);
           if (!open) setAnnulationBonCommandeId(undefined);
         }}
-        bonCommande={annulationBonCommande}
+        bonCommandeNumero={annulationBonCommande?.numero || ''}
         onConfirm={handleAnnulerConfirm}
       />
 
@@ -433,14 +427,17 @@ const BonsCommande = () => {
           setFactureDialogOpen(open);
           if (!open) setFactureBonCommandeId(undefined);
         }}
-        bonCommande={bonsCommande.find((bc) => bc.id === factureBonCommandeId)}
+        facture={undefined}
+        onSubmit={handleSaveFacture}
         fournisseurs={fournisseurs}
         bonsCommande={bonsCommandeReceptionnes}
         lignesBudgetaires={lignesBudgetaires}
         projets={projets}
         engagements={engagements.filter((e) => e.statut === 'valide')}
-        onSubmit={handleSaveFacture}
+        currentClientId={currentClient?.id || ''}
+        currentExerciceId={currentExercice?.id || ''}
         onGenererNumero={handleGenererNumeroFacture}
+        initialBonCommandeId={factureBonCommandeId}
       />
     </div>
   );
