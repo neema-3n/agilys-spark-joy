@@ -383,6 +383,7 @@ export type Database = {
           created_by: string | null
           date_ecriture: string
           depense_id: string | null
+          ecriture_origine_id: string | null
           engagement_id: string | null
           exercice_id: string
           facture_id: string | null
@@ -395,6 +396,7 @@ export type Database = {
           regle_comptable_id: string | null
           reservation_id: string | null
           source_id: string
+          statut_ecriture: string | null
           type_operation: string
           updated_at: string | null
         }
@@ -407,6 +409,7 @@ export type Database = {
           created_by?: string | null
           date_ecriture: string
           depense_id?: string | null
+          ecriture_origine_id?: string | null
           engagement_id?: string | null
           exercice_id: string
           facture_id?: string | null
@@ -419,6 +422,7 @@ export type Database = {
           regle_comptable_id?: string | null
           reservation_id?: string | null
           source_id: string
+          statut_ecriture?: string | null
           type_operation: string
           updated_at?: string | null
         }
@@ -431,6 +435,7 @@ export type Database = {
           created_by?: string | null
           date_ecriture?: string
           depense_id?: string | null
+          ecriture_origine_id?: string | null
           engagement_id?: string | null
           exercice_id?: string
           facture_id?: string | null
@@ -443,6 +448,7 @@ export type Database = {
           regle_comptable_id?: string | null
           reservation_id?: string | null
           source_id?: string
+          statut_ecriture?: string | null
           type_operation?: string
           updated_at?: string | null
         }
@@ -473,6 +479,13 @@ export type Database = {
             columns: ["depense_id"]
             isOneToOne: false
             referencedRelation: "depenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ecritures_comptables_ecriture_origine_id_fkey"
+            columns: ["ecriture_origine_id"]
+            isOneToOne: false
+            referencedRelation: "ecritures_comptables"
             referencedColumns: ["id"]
           },
           {

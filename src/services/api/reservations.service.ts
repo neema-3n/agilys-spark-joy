@@ -144,6 +144,46 @@ export const updateReservation = async (
   id: string,
   updates: Partial<ReservationCreditFormData>
 ): Promise<ReservationCredit> => {
+  // 1. Récupérer la réservation actuelle
+  const { data: currentReservation, error: fetchError } = await supabase
+    .from('reservations_credits')
+    .select('statut')
+    .eq('id', id)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  // 2. Vérifier s'il existe des écritures validées
+  const { data: ecritures, error: ecrituresError } = await supabase
+    .from('ecritures_comptables')
+    .select('id')
+    .eq('reservation_id', id)
+    .eq('statut_ecriture', 'validee')
+    .limit(1);
+
+  if (ecrituresError) throw ecrituresError;
+
+  // 3. Si statut != active ET écritures existent → BLOQUER
+  if (currentReservation.statut !== 'active' && ecritures && ecritures.length > 0) {
+    throw new Error(
+      '❌ Modification impossible : Cette opération a été comptabilisée.\n\n' +
+      '💡 Pour effectuer une correction :\n' +
+      '1. Annulez cette réservation (génère des écritures d\'annulation)\n' +
+      '2. Créez une nouvelle réservation avec les bonnes valeurs'
+    );
+  }
+
+  // 4. Si active avec écritures → SUPPRIMER les écritures
+  if (currentReservation.statut === 'active' && ecritures && ecritures.length > 0) {
+    const { error: deleteError } = await supabase
+      .from('ecritures_comptables')
+      .delete()
+      .eq('reservation_id', id);
+
+    if (deleteError) throw deleteError;
+  }
+
+  // 5. Procéder à la modification
   const { data, error } = await supabase
     .from('reservations_credits')
     .update(cleanData(toSnakeCase(updates)))
@@ -195,6 +235,29 @@ export const annulerReservation = async (
   id: string,
   motifAnnulation: string
 ): Promise<ReservationCredit> => {
+  // 1. Vérifier s'il existe des écritures validées
+  const { data: ecritures, error: ecrituresError } = await supabase
+    .from('ecritures_comptables')
+    .select('id')
+    .eq('reservation_id', id)
+    .eq('statut_ecriture', 'validee');
+
+  if (ecrituresError) throw ecrituresError;
+
+  // 2. Si écritures existent → Contrepasser
+  if (ecritures && ecritures.length > 0) {
+    const { error: contrepasserError } = await supabase.functions.invoke('contrepasser-ecritures', {
+      body: {
+        typeOperation: 'reservation',
+        sourceId: id,
+        motifAnnulation,
+      }
+    });
+
+    if (contrepasserError) throw contrepasserError;
+  }
+
+  // 3. Mettre à jour le statut
   const { data, error } = await supabase
     .from('reservations_credits')
     .update({ 
@@ -222,6 +285,33 @@ export const annulerReservation = async (
 };
 
 export const deleteReservation = async (id: string): Promise<void> => {
+  // 1. Vérifier le statut
+  const { data: reservation, error: fetchError } = await supabase
+    .from('reservations_credits')
+    .select('statut')
+    .eq('id', id)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  // 2. Vérifier s'il existe des écritures
+  const { data: ecritures, error: ecrituresError } = await supabase
+    .from('ecritures_comptables')
+    .select('id')
+    .eq('reservation_id', id)
+    .limit(1);
+
+  if (ecrituresError) throw ecrituresError;
+
+  // 3. Bloquer si pas active OU écritures existent
+  if (reservation.statut !== 'active' || (ecritures && ecritures.length > 0)) {
+    throw new Error(
+      '❌ Suppression impossible\n\n' +
+      '💡 Utilisez l\'annulation au lieu de la suppression pour conserver l\'historique comptable'
+    );
+  }
+
+  // 4. OK pour suppression
   const { error } = await supabase
     .from('reservations_credits')
     .delete()
