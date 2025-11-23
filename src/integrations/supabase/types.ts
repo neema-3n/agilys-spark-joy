@@ -1282,6 +1282,88 @@ export type Database = {
         }
         Relationships: []
       }
+      regles_comptables: {
+        Row: {
+          actif: boolean | null
+          client_id: string
+          code: string
+          compte_credit_id: string
+          compte_debit_id: string
+          conditions: Json
+          created_at: string | null
+          created_by: string | null
+          date_debut: string | null
+          date_fin: string | null
+          description: string | null
+          id: string
+          nom: string
+          ordre: number | null
+          permanente: boolean | null
+          type_operation: string
+          updated_at: string | null
+        }
+        Insert: {
+          actif?: boolean | null
+          client_id: string
+          code: string
+          compte_credit_id: string
+          compte_debit_id: string
+          conditions?: Json
+          created_at?: string | null
+          created_by?: string | null
+          date_debut?: string | null
+          date_fin?: string | null
+          description?: string | null
+          id?: string
+          nom: string
+          ordre?: number | null
+          permanente?: boolean | null
+          type_operation: string
+          updated_at?: string | null
+        }
+        Update: {
+          actif?: boolean | null
+          client_id?: string
+          code?: string
+          compte_credit_id?: string
+          compte_debit_id?: string
+          conditions?: Json
+          created_at?: string | null
+          created_by?: string | null
+          date_debut?: string | null
+          date_fin?: string | null
+          description?: string | null
+          id?: string
+          nom?: string
+          ordre?: number | null
+          permanente?: boolean | null
+          type_operation?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regles_comptables_compte_credit_id_fkey"
+            columns: ["compte_credit_id"]
+            isOneToOne: false
+            referencedRelation: "comptes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regles_comptables_compte_debit_id_fkey"
+            columns: ["compte_debit_id"]
+            isOneToOne: false
+            referencedRelation: "comptes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regles_comptables_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reservations_credits: {
         Row: {
           beneficiaire: string | null
