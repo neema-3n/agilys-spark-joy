@@ -66,6 +66,8 @@ export const DepenseSnapshot = ({
     });
   };
 
+  const canGenerateEcritures = depense.statut !== 'brouillon';
+
   const montantRestant = depense.montant - depense.montantPaye;
   const pourcentagePaye = depense.montant > 0 ? (depense.montantPaye / depense.montant) * 100 : 0;
   const getStatutBadge = (statut: string) => {
@@ -449,8 +451,9 @@ export const DepenseSnapshot = ({
       <EcrituresSection
         ecritures={ecritures}
         isLoading={ecrituresLoading}
-        onGenerate={handleGenerateEcritures}
+        onGenerate={canGenerateEcritures ? handleGenerateEcritures : undefined}
         isGenerating={generateMutation.isPending}
+        disabledReason={!canGenerateEcritures ? "Les écritures ne peuvent être générées que pour les dépenses validées" : undefined}
       />
     </SnapshotBase>
   );
