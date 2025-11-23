@@ -269,13 +269,28 @@ export const bonsCommandeService = {
       .single();
 
     if (error) throw error;
+
+    // Générer les écritures comptables automatiquement
+    try {
+      await supabase.functions.invoke('generate-ecritures-comptables', {
+        body: {
+          typeOperation: 'bon_commande',
+          sourceId: id,
+          clientId: bc.client_id,
+          exerciceId: bc.exercice_id
+        }
+      });
+    } catch (error) {
+      console.error('Erreur lors de la génération des écritures:', error);
+    }
+
     return mapBonCommandeFromDB(data);
   },
 
   async mettreEnCours(id: string): Promise<BonCommande> {
     const { data: bc, error: fetchError } = await supabase
       .from('bons_commande')
-      .select('statut')
+      .select('statut, client_id, exercice_id')
       .eq('id', id)
       .single();
 
@@ -298,13 +313,28 @@ export const bonsCommandeService = {
       .single();
 
     if (error) throw error;
+
+    // Générer les écritures comptables automatiquement
+    try {
+      await supabase.functions.invoke('generate-ecritures-comptables', {
+        body: {
+          typeOperation: 'bon_commande',
+          sourceId: id,
+          clientId: bc.client_id,
+          exerciceId: bc.exercice_id
+        }
+      });
+    } catch (error) {
+      console.error('Erreur lors de la génération des écritures:', error);
+    }
+
     return mapBonCommandeFromDB(data);
   },
 
   async receptionner(id: string, dateLivraisonReelle: string): Promise<BonCommande> {
     const { data: bc, error: fetchError } = await supabase
       .from('bons_commande')
-      .select('statut')
+      .select('statut, client_id, exercice_id')
       .eq('id', id)
       .single();
 
@@ -330,6 +360,21 @@ export const bonsCommandeService = {
       .single();
 
     if (error) throw error;
+
+    // Générer les écritures comptables automatiquement
+    try {
+      await supabase.functions.invoke('generate-ecritures-comptables', {
+        body: {
+          typeOperation: 'bon_commande',
+          sourceId: id,
+          clientId: bc.client_id,
+          exerciceId: bc.exercice_id
+        }
+      });
+    } catch (error) {
+      console.error('Erreur lors de la génération des écritures:', error);
+    }
+
     return mapBonCommandeFromDB(data);
   },
 
