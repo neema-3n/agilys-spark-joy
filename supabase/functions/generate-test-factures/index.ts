@@ -110,6 +110,26 @@ Deno.serve(async (req) => {
     const startDate = new Date(exercice.date_debut);
     const endDate = new Date(exercice.date_fin);
 
+    // Récupérer le dernier numéro de facture existant
+    const { data: lastFacture } = await supabaseAdmin
+      .from('factures')
+      .select('numero')
+      .eq('client_id', body.clientId)
+      .eq('exercice_id', body.exerciceId)
+      .order('numero', { ascending: false })
+      .limit(1)
+      .single();
+
+    let startNumber = 1;
+    if (lastFacture?.numero) {
+      const match = lastFacture.numero.match(/FAC(\d+)/);
+      if (match) {
+        startNumber = parseInt(match[1]) + 1;
+      }
+    }
+
+    console.log(`Starting from numero: FAC${String(startNumber).padStart(6, '0')}`);
+
     // Générer les factures
     const factures = [];
     for (let i = 0; i < body.count; i++) {
@@ -122,7 +142,7 @@ Deno.serve(async (req) => {
       factures.push({
         client_id: body.clientId,
         exercice_id: body.exerciceId,
-        numero: `FAC${String(i + 1).padStart(6, '0')}`,
+        numero: `FAC${String(startNumber + i).padStart(6, '0')}`,
         date_facture: dateFacture,
         date_echeance: randomDate(new Date(dateFacture), endDate),
         fournisseur_id: fournisseurs[Math.floor(Math.random() * fournisseurs.length)].id,
