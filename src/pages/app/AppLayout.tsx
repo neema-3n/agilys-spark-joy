@@ -133,11 +133,20 @@ const AppLayout = () => {
     }]
   }];
 
-  const isPathActive = (targetPath: string) =>
-    location.pathname === targetPath || location.pathname.startsWith(`${targetPath}/`);
+  const isPathActive = (targetPath: string) => {
+    if (targetPath.startsWith('/app/parametres')) {
+      return location.pathname === targetPath || location.pathname.startsWith('/app/parametres/');
+    }
+
+    return location.pathname === targetPath || location.pathname.startsWith(`${targetPath}/`);
+  };
 
   // Fonction pour déterminer le groupe actif basé sur le pathname
   const getGroupFromPath = (pathname: string): 'operationnel' | 'pilotage' => {
+    if (pathname.startsWith('/app/parametres')) {
+      return 'pilotage';
+    }
+
     // Chercher la section qui contient cette route
     const section = allNavigationSections.find(s => 
       s.items.some(item => pathname.startsWith(item.href))
