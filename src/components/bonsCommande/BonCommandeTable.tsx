@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ListColumn, ListTable } from '@/components/lists/ListTable';
 import { formatCurrency } from '@/lib/utils';
-import { CheckCircle, Edit, Eye, FileText, MoreHorizontal, PackageCheck, Receipt, Trash2, Truck, XCircle } from 'lucide-react';
+import { CheckCircle, Edit, Eye, FileText, MoreHorizontal, PackageCheck, Receipt, Trash2, Truck, XCircle, BookOpen, AlertCircle } from 'lucide-react';
 import type { BonCommande } from '@/types/bonCommande.types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -135,6 +135,24 @@ export const BonCommandeTable = ({
         header: 'Facturé',
         align: 'right',
         render: (bc) => <span className="tabular-nums">{formatCurrency(bc.montantFacture || 0)}</span>,
+      },
+      {
+        id: 'ecritures',
+        header: 'Écritures',
+        render: (bc) => {
+          const count = bc.ecrituresCount || 0;
+          return count > 0 ? (
+            <Badge variant="default" className="gap-1">
+              <BookOpen className="h-3 w-3" />
+              {count}
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="gap-1">
+              <AlertCircle className="h-3 w-3" />
+              -
+            </Badge>
+          );
+        },
       },
       {
         id: 'statut',

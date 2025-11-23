@@ -15,6 +15,7 @@ export interface ReservationCredit {
   createdAt: string;
   updatedAt: string;
   clientId: string;
+  ecrituresCount?: number;
   // Données jointes
   ligneBudgetaire?: {
     libelle: string;
