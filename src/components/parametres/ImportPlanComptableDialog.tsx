@@ -282,11 +282,21 @@ export const ImportPlanComptableDialog = ({ open, onOpenChange, onSuccess }: Imp
             <Alert>
               <CheckCircle2 className="h-4 w-4" />
               <AlertDescription>
-                <strong>Import réussi !</strong>
+                <strong>Import terminé</strong>
                 <div className="mt-2 space-y-1 text-sm">
-                  <div>✅ {report.stats.created} comptes créés</div>
-                  {report.stats.skipped > 0 && <div>⚠️ {report.stats.skipped} comptes ignorés (doublons)</div>}
-                  {report.stats.errors.length > 0 && <div>❌ {report.stats.errors.length} erreurs</div>}
+                  <div className="flex items-center gap-2">
+                    <span className="text-green-600 dark:text-green-400">✅ {report.stats.created} comptes créés</span>
+                  </div>
+                  {report.stats.skipped > 0 && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-orange-600 dark:text-orange-400">⏭️ {report.stats.skipped} comptes ignorés (déjà existants)</span>
+                    </div>
+                  )}
+                  {report.stats.errors.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-destructive">❌ {report.stats.errors.length} comptes en erreur</span>
+                    </div>
+                  )}
                 </div>
               </AlertDescription>
             </Alert>
@@ -308,14 +318,22 @@ export const ImportPlanComptableDialog = ({ open, onOpenChange, onSuccess }: Imp
               
               {report.stats.errors.length > 0 && (
                 <AccordionItem value="errors">
-                  <AccordionTrigger>Erreurs ({report.stats.errors.length})</AccordionTrigger>
+                  <AccordionTrigger className="text-destructive">
+                    ⚠️ Erreurs ({report.stats.errors.length})
+                  </AccordionTrigger>
                   <AccordionContent>
-                    <div className="space-y-1 text-sm text-destructive">
-                      {report.stats.errors.map((err, i) => (
-                        <div key={i}>
-                          {err.code}: {err.error}
-                        </div>
-                      ))}
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Les comptes suivants n'ont pas pu être importés :
+                      </p>
+                      <div className="max-h-60 overflow-y-auto space-y-1">
+                        {report.stats.errors.map((err, i) => (
+                          <div key={i} className="text-sm p-2 bg-destructive/10 rounded border border-destructive/20">
+                            <span className="font-medium">Compte {err.code}</span>
+                            <span className="text-muted-foreground"> : {err.error}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </AccordionContent>
                 </AccordionItem>
