@@ -28,6 +28,7 @@ export interface Paiement {
   createdBy?: string;
   createdAt: string;
   updatedAt: string;
+  ecrituresCount?: number;
   
   // Relations (données jointes)
   depense?: {

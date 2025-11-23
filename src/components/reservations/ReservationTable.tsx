@@ -19,6 +19,8 @@ import {
   Pencil,
   Trash,
   XCircle,
+  BookOpen,
+  AlertCircle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -172,6 +174,24 @@ export const ReservationTable = ({
         id: 'expiration',
         header: 'Expiration',
         render: (reservation) => (reservation.dateExpiration ? formatDate(reservation.dateExpiration) : '-'),
+      },
+      {
+        id: 'ecritures',
+        header: 'Écritures',
+        render: (reservation) => {
+          const count = reservation.ecrituresCount || 0;
+          return count > 0 ? (
+            <Badge variant="default" className="gap-1">
+              <BookOpen className="h-3 w-3" />
+              {count}
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="gap-1">
+              <AlertCircle className="h-3 w-3" />
+              -
+            </Badge>
+          );
+        },
       },
       {
         id: 'statut',
