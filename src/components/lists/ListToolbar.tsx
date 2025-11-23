@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Search } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
 interface ListToolbarProps {
@@ -25,9 +25,19 @@ export const ListToolbar = ({
           value={searchValue}
           onChange={(event) => onSearchChange(event.target.value)}
           placeholder={searchPlaceholder}
-          className="pl-10"
+          className="pl-10 pr-10"
           aria-label="Rechercher dans la liste"
         />
+        {searchValue && (
+          <button
+            type="button"
+            onClick={() => onSearchChange('')}
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            aria-label="Effacer la recherche"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
       <div className="flex flex-wrap items-center gap-2 md:flex-nowrap">
         {filters.map((filter, index) => (
