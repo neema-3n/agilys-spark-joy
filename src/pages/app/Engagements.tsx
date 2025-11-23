@@ -1,6 +1,8 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Plus } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { EngagementDialog } from '@/components/engagements/EngagementDialog';
@@ -37,186 +39,31 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import type { Engagement, EngagementFormData } from '@/types/engagement.types';
+import type { EngagementFormData } from '@/types/engagement.types';
 import type { CreateBonCommandeInput } from '@/types/bonCommande.types';
 
-// Engagements page - manages engagement creation and lifecycle
 const Engagements = () => {
   const { engagementId } = useParams<{ engagementId?: string }>();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedEngagement, setSelectedEngagement] = useState<Engagement | undefined>();
+  const [editingEngagementId, setEditingEngagementId] = useState<string | undefined>();
   const [bonCommandeDialogOpen, setBonCommandeDialogOpen] = useState(false);
   const [engagementSourceId, setEngagementSourceId] = useState<string | null>(null);
   const [validateDialogOpen, setValidateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [actionEngagementId, setActionEngagementId] = useState<string | null>(null);
-  const [selectedEngagementForDepense, setSelectedEngagementForDepense] = useState<Engagement | null>(null);
+  const [engagementForDepenseId, setEngagementForDepenseId] = useState<string | null>(null);
+  const [annulationDialogOpen, setAnnulationDialogOpen] = useState(false);
+  const [annulationEngagementId, setAnnulationEngagementId] = useState<string | null>(null);
+  const [motifAnnulation, setMotifAnnulation] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [statutFilter, setStatutFilter] = useState<'tous' | 'brouillon' | 'valide' | 'engage' | 'liquide' | 'annule'>('tous');
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { headerCtaRef, isHeaderCtaVisible } = useHeaderCtaReveal([statutFilter]);
-  
-  const {
-    engagements,
-    isLoading,
-    createEngagement,
-    updateEngagement,
-    validerEngagement,
-    annulerEngagement,
-    deleteEngagement,
-  } = useEngagements();
 
+  const { engagements, isLoading, createEngagement, updateEngagement, validerEngagement, annulerEngagement, deleteEngagement } =
+    useEngagements();
   const { createBonCommande, genererNumero } = useBonsCommande();
   const { createDepenseFromEngagement } = useDepenses();
-
-  const handleCreate = () => {
-    setSelectedEngagement(undefined);
-    setDialogOpen(true);
-  };
-
-  const handleEdit = (engagement: Engagement) => {
-    setSelectedEngagement(engagement);
-    setDialogOpen(true);
-  };
-
-  const handleSave = async (data: EngagementFormData) => {
-    try {
-      if (selectedEngagement) {
-        await updateEngagement({ id: selectedEngagement.id, updates: data });
-        toast({
-          title: 'Engagement modifié',
-          description: 'L\'engagement a été modifié avec succès.',
-        });
-      } else {
-        await createEngagement(data);
-        toast({
-          title: 'Engagement créé',
-          description: 'L\'engagement a été créé avec succès.',
-        });
-      }
-      setDialogOpen(false);
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: 'Une erreur est survenue lors de la sauvegarde.',
-        variant: 'destructive',
-      });
-      throw error;
-    }
-  };
-
-  const handleValider = (id: string) => {
-    setActionEngagementId(id);
-    setValidateDialogOpen(true);
-  };
-
-  const confirmValider = async () => {
-    if (!actionEngagementId) return;
-    
-    try {
-      await validerEngagement(actionEngagementId);
-      toast({
-        title: 'Engagement validé',
-        description: 'L\'engagement a été validé avec succès.',
-      });
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: 'Une erreur est survenue lors de la validation.',
-        variant: 'destructive',
-      });
-    } finally {
-      setValidateDialogOpen(false);
-      setActionEngagementId(null);
-    }
-  };
-
-  const handleAnnuler = async (id: string, motif: string) => {
-    try {
-      await annulerEngagement({ id, motif });
-      toast({
-        title: 'Engagement annulé',
-        description: 'L\'engagement a été annulé.',
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Erreur d\'annulation',
-        description: error.message || 'Une erreur est survenue lors de l\'annulation.',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleDelete = (id: string) => {
-    setActionEngagementId(id);
-    setDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!actionEngagementId) return;
-    
-    try {
-      await deleteEngagement(actionEngagementId);
-      toast({
-        title: 'Engagement supprimé',
-        description: 'L\'engagement a été supprimé avec succès.',
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Erreur de suppression',
-        description: error.message || 'Une erreur est survenue lors de la suppression.',
-        variant: 'destructive',
-      });
-    } finally {
-      setDeleteDialogOpen(false);
-      setActionEngagementId(null);
-    }
-  };
-
-  const handleCreerBonCommande = (engagement: Engagement) => {
-    setEngagementSourceId(engagement.id);
-    setBonCommandeDialogOpen(true);
-  };
-
-  const handleSaveBonCommande = async (data: CreateBonCommandeInput) => {
-    try {
-      const engagement = engagements.find(e => e.id === engagementSourceId);
-      
-      await createBonCommande(data);
-      
-      setBonCommandeDialogOpen(false);
-      setEngagementSourceId(null);
-      
-      showNavigationToast({
-        title: 'Bon de commande créé',
-        description: `Le BC a été créé depuis l'engagement ${engagement?.numero || ''}.`,
-        targetPage: {
-          name: 'Bons de Commande',
-          path: '/app/bons-commande',
-        },
-        navigate,
-      });
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: 'Une erreur est survenue lors de la création.',
-        variant: 'destructive',
-      });
-      throw error;
-    }
-  };
-
-  const handleDialogClose = (open: boolean) => {
-    setDialogOpen(open);
-    if (!open) {
-      setSelectedEngagement(undefined);
-    }
-  };
-
-  const handleCreerDepense = (engagement: Engagement) => {
-    setSelectedEngagementForDepense(engagement);
-  };
 
   const filteredEngagements = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -247,40 +94,229 @@ const Engagements = () => {
     navigateSnapshot: handleNavigateSnapshot,
   } = useSnapshotState({
     items: engagements,
-    getId: e => e.id,
+    getId: (e) => e.id,
     initialId: engagementId,
-    onNavigateToId: id => navigate(id ? `/app/engagements/${id}` : '/app/engagements'),
+    onNavigateToId: (id) => navigate(id ? `/app/engagements/${id}` : '/app/engagements'),
     onMissingId: () => navigate('/app/engagements', { replace: true }),
     isLoadingItems: isLoading,
   });
 
-  // Gérer le scroll pour l'effet de disparition du header
+  const { headerCtaRef, isHeaderCtaVisible } = useHeaderCtaReveal([isSnapshotOpen]);
   const scrollProgress = useScrollProgress(!!snapshotEngagementId);
 
-  const handleNavigateToEntity = (type: string, id: string) => {
-    const entityRoutes: Record<string, string> = {
-      fournisseur: `/app/fournisseurs/${id}`,
-      ligneBudgetaire: `/app/budgets/${id}?tab=lignes`,
-      projet: `/app/projets/${id}`,
-      reservationCredit: `/app/reservations/${id}`,
-    };
-    
-    const route = entityRoutes[type];
-    if (route) {
-      navigate(route);
-      showNavigationToast({
-        title: `Navigation vers ${type}`,
-        description: 'Vous avez été redirigé',
-        targetPage: { name: type, path: route },
-        navigate
-      });
+  const editingEngagement = useMemo(
+    () => engagements.find((engagement) => engagement.id === editingEngagementId),
+    [editingEngagementId, engagements]
+  );
+
+  const engagementSource = useMemo(
+    () => engagements.find((engagement) => engagement.id === engagementSourceId),
+    [engagementSourceId, engagements]
+  );
+
+  const engagementForDepense = useMemo(
+    () => engagements.find((engagement) => engagement.id === engagementForDepenseId) || null,
+    [engagementForDepenseId, engagements]
+  );
+
+  const handleCreate = useCallback(() => {
+    setEditingEngagementId(undefined);
+    setDialogOpen(true);
+  }, []);
+
+  const handleEdit = useCallback((engagementId: string) => {
+    setEditingEngagementId(engagementId);
+    setDialogOpen(true);
+  }, []);
+
+  const handleDialogClose = useCallback((open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      setEditingEngagementId(undefined);
     }
-  };
+  }, []);
+
+  const handleSave = useCallback(
+    async (data: EngagementFormData) => {
+      try {
+        if (editingEngagementId) {
+          await updateEngagement({ id: editingEngagementId, updates: data });
+          toast({
+            title: 'Engagement modifié',
+            description: "L'engagement a été modifié avec succès.",
+          });
+        } else {
+          await createEngagement(data);
+          toast({
+            title: 'Engagement créé',
+            description: "L'engagement a été créé avec succès.",
+          });
+        }
+        setDialogOpen(false);
+      } catch (error) {
+        toast({
+          title: 'Erreur',
+          description: 'Une erreur est survenue lors de la sauvegarde.',
+          variant: 'destructive',
+        });
+        throw error;
+      }
+    },
+    [createEngagement, editingEngagementId, toast, updateEngagement]
+  );
+
+  const handleValider = useCallback((id: string) => {
+    setActionEngagementId(id);
+    setValidateDialogOpen(true);
+  }, []);
+
+  const confirmValider = useCallback(async () => {
+    if (!actionEngagementId) return;
+
+    try {
+      await validerEngagement(actionEngagementId);
+      toast({
+        title: 'Engagement validé',
+        description: "L'engagement a été validé avec succès.",
+      });
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Une erreur est survenue lors de la validation.',
+        variant: 'destructive',
+      });
+    } finally {
+      setValidateDialogOpen(false);
+      setActionEngagementId(null);
+    }
+  }, [actionEngagementId, toast, validerEngagement]);
+
+  const handleAnnulationRequest = useCallback((id: string) => {
+    setAnnulationEngagementId(id);
+    setMotifAnnulation('');
+    setAnnulationDialogOpen(true);
+  }, []);
+
+  const handleAnnuler = useCallback(
+    async (id: string, motif: string) => {
+      try {
+        await annulerEngagement({ id, motif });
+        toast({
+          title: 'Engagement annulé',
+          description: "L'engagement a été annulé.",
+        });
+      } catch (error: any) {
+        toast({
+          title: "Erreur d'annulation",
+          description: error.message || "Une erreur est survenue lors de l'annulation.",
+          variant: 'destructive',
+        });
+      }
+    },
+    [annulerEngagement, toast]
+  );
+
+  const handleConfirmMotifAnnulation = useCallback(async () => {
+    if (!annulationEngagementId || !motifAnnulation.trim()) return;
+    await handleAnnuler(annulationEngagementId, motifAnnulation.trim());
+    setAnnulationDialogOpen(false);
+    setAnnulationEngagementId(null);
+    setMotifAnnulation('');
+  }, [annulationEngagementId, handleAnnuler, motifAnnulation]);
+
+  const handleDelete = useCallback((id: string) => {
+    setActionEngagementId(id);
+    setDeleteDialogOpen(true);
+  }, []);
+
+  const confirmDelete = useCallback(async () => {
+    if (!actionEngagementId) return;
+
+    try {
+      await deleteEngagement(actionEngagementId);
+      toast({
+        title: 'Engagement supprimé',
+        description: "L'engagement a été supprimé avec succès.",
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erreur de suppression',
+        description: error.message || 'Une erreur est survenue lors de la suppression.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setActionEngagementId(null);
+    }
+  }, [actionEngagementId, deleteEngagement, toast]);
+
+  const handleCreerBonCommande = useCallback((engagementId: string) => {
+    setEngagementSourceId(engagementId);
+    setBonCommandeDialogOpen(true);
+  }, []);
+
+  const handleSaveBonCommande = useCallback(
+    async (data: CreateBonCommandeInput) => {
+      try {
+        const engagement = engagements.find((e) => e.id === engagementSourceId);
+
+        await createBonCommande(data);
+
+        setBonCommandeDialogOpen(false);
+        setEngagementSourceId(null);
+
+        showNavigationToast({
+          title: 'Bon de commande créé',
+          description: `Le BC a été créé depuis l'engagement ${engagement?.numero || ''}.`,
+          targetPage: {
+            name: 'Bons de Commande',
+            path: '/app/bons-commande',
+          },
+          navigate,
+        });
+      } catch (error) {
+        toast({
+          title: 'Erreur',
+          description: 'Une erreur est survenue lors de la création.',
+          variant: 'destructive',
+        });
+        throw error;
+      }
+    },
+    [createBonCommande, engagements, engagementSourceId, navigate, toast]
+  );
+
+  const handleCreerDepense = useCallback((engagementId: string) => {
+    setEngagementForDepenseId(engagementId);
+  }, []);
+
+  const handleNavigateToEntity = useCallback(
+    (type: string, id: string) => {
+      const entityRoutes: Record<string, string> = {
+        fournisseur: `/app/fournisseurs/${id}`,
+        ligneBudgetaire: `/app/budgets/${id}?tab=lignes`,
+        projet: `/app/projets/${id}`,
+        reservationCredit: `/app/reservations/${id}`,
+      };
+
+      const route = entityRoutes[type];
+      if (route) {
+        navigate(route);
+        showNavigationToast({
+          title: `Navigation vers ${type}`,
+          description: 'Vous avez été redirigé',
+          targetPage: { name: type, path: route },
+          navigate,
+        });
+      }
+    },
+    [navigate]
+  );
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (!snapshotEngagementId) return;
-      
+
       if (e.key === 'Escape') {
         handleCloseSnapshot();
       } else if (e.key === 'ArrowLeft' && snapshotIndex > 0) {
@@ -292,7 +328,7 @@ const Engagements = () => {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [snapshotEngagementId, snapshotIndex, engagements.length]);
+  }, [snapshotEngagementId, snapshotIndex, engagements.length, handleCloseSnapshot, handleNavigateSnapshot]);
 
   if (isLoading) {
     return (
@@ -305,9 +341,10 @@ const Engagements = () => {
   }
 
   const pageHeaderContent = (
-    <PageHeader 
+    <PageHeader
       title="Gestion des Engagements"
       description="Demandes, validations et suivi des engagements"
+      sticky={false}
       scrollProgress={snapshotEngagementId ? scrollProgress : 0}
       actions={
         <Button onClick={handleCreate} ref={headerCtaRef}>
@@ -329,19 +366,29 @@ const Engagements = () => {
             engagement={snapshotEngagement}
             onClose={handleCloseSnapshot}
             onNavigate={handleNavigateSnapshot}
-            hasPrev={snapshotIndex > 0}
-            hasNext={snapshotIndex < engagements.length - 1}
-            currentIndex={snapshotIndex}
-            totalCount={engagements.length}
-            onEdit={() => handleEdit(snapshotEngagement)}
-            onValider={snapshotEngagement.statut === 'brouillon' ? () => handleValider(snapshotEngagement.id) : undefined}
-            onCreerBonCommande={snapshotEngagement.statut === 'valide' ? () => handleCreerBonCommande(snapshotEngagement) : undefined}
-            onCreerDepense={snapshotEngagement.statut === 'valide' ? () => handleCreerDepense(snapshotEngagement) : undefined}
-          />
+        hasPrev={snapshotIndex > 0}
+        hasNext={snapshotIndex < engagements.length - 1}
+        currentIndex={snapshotIndex}
+        totalCount={engagements.length}
+        onEdit={() => handleEdit(snapshotEngagement.id)}
+        onValider={snapshotEngagement.statut === 'brouillon' ? () => handleValider(snapshotEngagement.id) : undefined}
+        onCreerBonCommande={
+          snapshotEngagement.statut === 'valide' ? () => handleCreerBonCommande(snapshotEngagement.id) : undefined
+        }
+        onCreerDepense={snapshotEngagement.statut === 'valide' ? () => handleCreerDepense(snapshotEngagement.id) : undefined}
+        onAnnuler={
+          snapshotEngagement.statut === 'brouillon' || snapshotEngagement.statut === 'valide'
+            ? () => handleAnnulationRequest(snapshotEngagement.id)
+            : undefined
+        }
+        onNavigateToEntity={handleNavigateToEntity}
+      />
         ) : isSnapshotOpen && isSnapshotLoading ? (
           <div className="flex items-center justify-center py-12 text-muted-foreground">Chargement du snapshot...</div>
         ) : (
           <>
+            <EngagementStats engagements={engagements} />
+
             <ListLayout
               title="Liste des engagements"
               description="Recherche, filtres et actions sur les engagements"
@@ -361,9 +408,7 @@ const Engagements = () => {
                   filters={[
                     <DropdownMenu key="statut">
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline">
-                          Statut: {statutFilter === 'tous' ? 'Tous' : statutFilter}
-                        </Button>
+                        <Button variant="outline">Statut: {statutFilter === 'tous' ? 'Tous' : statutFilter}</Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         {[
@@ -379,40 +424,32 @@ const Engagements = () => {
                           </DropdownMenuItem>
                         ))}
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setStatutFilter('tous')}>
-                          Réinitialiser
-                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setStatutFilter('tous')}>Réinitialiser</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>,
                   ]}
                 />
               }
             >
-              <div className="space-y-6 p-6 pt-2">
-                <EngagementStats engagements={engagements} />
-
-                <EngagementTable
-                  engagements={filteredEngagements}
-                  onEdit={handleEdit}
-                  onValider={handleValider}
-                  onAnnuler={handleAnnuler}
-                  onDelete={handleDelete}
-                  onCreerBonCommande={handleCreerBonCommande}
-                  onCreerDepense={(engagement) => setSelectedEngagementForDepense(engagement)}
-                  onViewDetails={handleOpenSnapshot}
-                />
-              </div>
+              <EngagementTable
+                engagements={filteredEngagements}
+                onEdit={handleEdit}
+                onValider={handleValider}
+                onAnnuler={handleAnnulationRequest}
+                onDelete={handleDelete}
+                onCreerBonCommande={handleCreerBonCommande}
+                onCreerDepense={handleCreerDepense}
+                onViewDetails={handleOpenSnapshot}
+                stickyHeader
+                stickyHeaderOffset={0}
+                scrollContainerClassName="max-h-[calc(100vh-220px)] overflow-auto"
+              />
             </ListLayout>
           </>
         )}
       </div>
 
-      <EngagementDialog
-        open={dialogOpen}
-        onOpenChange={handleDialogClose}
-        onSave={handleSave}
-        engagement={selectedEngagement}
-      />
+      <EngagementDialog open={dialogOpen} onOpenChange={handleDialogClose} onSave={handleSave} engagement={editingEngagement} />
 
       <BonCommandeDialog
         open={bonCommandeDialogOpen}
@@ -420,25 +457,61 @@ const Engagements = () => {
           setBonCommandeDialogOpen(open);
           if (!open) setEngagementSourceId(null);
         }}
-        selectedEngagement={engagements.find(e => e.id === engagementSourceId)}
+        selectedEngagement={engagementSource}
         onSubmit={handleSaveBonCommande}
         onGenererNumero={genererNumero}
       />
+
+      <AlertDialog
+        open={annulationDialogOpen}
+        onOpenChange={(open) => {
+          setAnnulationDialogOpen(open);
+          if (!open) {
+            setAnnulationEngagementId(null);
+            setMotifAnnulation('');
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Annuler l&apos;engagement</AlertDialogTitle>
+            <AlertDialogDescription>Veuillez indiquer le motif d&apos;annulation de cet engagement.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="motif-engagement">Motif d&apos;annulation</Label>
+            <Input
+              id="motif-engagement"
+              value={motifAnnulation}
+              onChange={(event) => setMotifAnnulation(event.target.value)}
+              placeholder="Ex: réaffectation budgétaire, erreur de saisie..."
+              className="mt-2"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Fermer</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmMotifAnnulation}
+              disabled={!motifAnnulation.trim()}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Confirmer l&apos;annulation
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={validateDialogOpen} onOpenChange={setValidateDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Valider cet engagement ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action confirmera l'engagement et permettra la création de bons de commande. 
-              L'engagement ne pourra plus être modifié après validation.
+              Cette action confirmera l'engagement et permettra la création de bons de commande. L'engagement ne pourra plus être modifié
+              après validation.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmValider}>
-              Valider l'engagement
-            </AlertDialogAction>
+            <AlertDialogAction onClick={confirmValider}>Valider l'engagement</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -453,10 +526,7 @@ const Engagements = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Supprimer
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -464,16 +534,16 @@ const Engagements = () => {
       </AlertDialog>
 
       <CreateDepenseFromEngagementDialog
-        open={!!selectedEngagementForDepense}
-        onOpenChange={(open) => !open && setSelectedEngagementForDepense(null)}
-        engagement={selectedEngagementForDepense}
+        open={!!engagementForDepense}
+        onOpenChange={(open) => !open && setEngagementForDepenseId(null)}
+        engagement={engagementForDepense}
         onSave={async (data) => {
           try {
-            const engagement = selectedEngagementForDepense;
+            const engagement = engagementForDepense;
             await createDepenseFromEngagement(data);
-            
-            setSelectedEngagementForDepense(null);
-            
+
+            setEngagementForDepenseId(null);
+
             showNavigationToast({
               title: 'Dépense créée',
               description: `La dépense a été créée depuis l'engagement ${engagement?.numero || ''}.`,
