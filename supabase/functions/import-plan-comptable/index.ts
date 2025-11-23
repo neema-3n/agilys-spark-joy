@@ -164,65 +164,92 @@ serve(async (req) => {
     // Mapping code → uuid
     const codeToUuid = new Map<string, string>();
 
-    // Import level by level
+    // Import level by level with batch processing
     for (const [niveau, comptes] of Array.from(byLevel.entries()).sort((a, b) => a[0] - b[0])) {
       console.log(`Processing level ${niveau} with ${comptes.length} comptes`);
       
       report.byLevel[niveau] = { created: 0, skipped: 0 };
 
-      for (const compte of comptes) {
-        try {
-          // Check if exists
-          if (skipDuplicates) {
-            const { data: existing } = await supabase
-              .from('comptes')
-              .select('id')
-              .eq('numero', compte.code)
-              .eq('client_id', clientId)
-              .single();
+      // Batch check for duplicates
+      const codesToCheck = comptes.map(c => c.code);
+      const { data: existingComptes } = await supabase
+        .from('comptes')
+        .select('id, numero')
+        .eq('client_id', clientId)
+        .in('numero', codesToCheck);
 
-            if (existing) {
-              console.log(`Skipping duplicate: ${compte.code}`);
-              report.stats.skipped++;
-              report.byLevel[niveau].skipped++;
-              codeToUuid.set(compte.code, existing.id);
-              continue;
-            }
-          }
+      const existingCodes = new Set(existingComptes?.map(c => c.numero) || []);
+      
+      // Map existing codes to UUIDs
+      existingComptes?.forEach(existing => {
+        codeToUuid.set(existing.numero, existing.id);
+      });
 
-          // Resolve parent_id
+      // Filter out duplicates
+      const comptesToInsert = comptes.filter(compte => {
+        if (skipDuplicates && existingCodes.has(compte.code)) {
+          console.log(`Skipping duplicate: ${compte.code}`);
+          report.stats.skipped++;
+          report.byLevel[niveau].skipped++;
+          return false;
+        }
+        return true;
+      });
+
+      // Batch insert (chunks of 100 to avoid payload limits)
+      const BATCH_SIZE = 100;
+      for (let i = 0; i < comptesToInsert.length; i += BATCH_SIZE) {
+        const batch = comptesToInsert.slice(i, i + BATCH_SIZE);
+        
+        const rowsToInsert = batch.map(compte => {
           let parentId = null;
           if (compte.code_parent && codeToUuid.has(compte.code_parent)) {
             parentId = codeToUuid.get(compte.code_parent);
           }
 
-          // Insert
+          return {
+            client_id: clientId,
+            numero: compte.code,
+            libelle: compte.intitule,
+            type: compte.type,
+            categorie: compte.categorie,
+            niveau: compte.niveau,
+            parent_id: parentId,
+            statut: 'actif',
+          };
+        });
+
+        try {
           const { data: inserted, error } = await supabase
             .from('comptes')
-            .insert({
-              client_id: clientId,
-              numero: compte.code,
-              libelle: compte.intitule,
-              type: compte.type,
-              categorie: compte.categorie,
-              niveau: compte.niveau,
-              parent_id: parentId,
-              statut: 'actif',
-            })
-            .select('id')
-            .single();
+            .insert(rowsToInsert)
+            .select('id, numero');
 
-          if (error) throw error;
-
-          codeToUuid.set(compte.code, inserted.id);
-          report.stats.created++;
-          report.byLevel[niveau].created++;
-          
+          if (error) {
+            console.error(`Batch insert error:`, error);
+            batch.forEach(compte => {
+              report.stats.errors.push({
+                code: compte.code,
+                error: error.message,
+              });
+            });
+          } else {
+            // Map inserted codes to UUIDs
+            inserted?.forEach(row => {
+              codeToUuid.set(row.numero, row.id);
+            });
+            
+            report.stats.created += inserted?.length || 0;
+            report.byLevel[niveau].created += inserted?.length || 0;
+            console.log(`Batch inserted ${inserted?.length} comptes`);
+          }
         } catch (error: any) {
-          console.error(`Error inserting ${compte.code}:`, error);
-          report.stats.errors.push({
-            code: compte.code,
-            error: error.message,
+          console.error(`Batch insert exception:`, error);
+          batch.forEach(compte => {
+            report.stats.errors.push({
+              code: compte.code,
+              error: error.message,
+            });
           });
         }
       }
