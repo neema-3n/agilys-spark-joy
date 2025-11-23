@@ -205,8 +205,8 @@ export const facturesService = {
 
     if (ecrituresError) throw ecrituresError;
 
-    // 3. Si statut != brouillon ET écritures existent → BLOQUER
-    if (currentFacture.statut !== 'brouillon' && ecritures && ecritures.length > 0) {
+    // 3. Si écritures validées existent → BLOQUER (les brouillons ne génèrent jamais d'écritures)
+    if (ecritures && ecritures.length > 0) {
       throw new Error(
         '❌ Modification impossible : Cette opération a été comptabilisée.\n\n' +
         '💡 Pour effectuer une correction :\n' +
@@ -214,18 +214,8 @@ export const facturesService = {
         '2. Créez une nouvelle facture avec les bonnes valeurs'
       );
     }
-
-    // 4. Si brouillon avec écritures → SUPPRIMER les écritures
-    if (currentFacture.statut === 'brouillon' && ecritures && ecritures.length > 0) {
-      const { error: deleteError } = await supabase
-        .from('ecritures_comptables')
-        .delete()
-        .eq('facture_id', id);
-
-      if (deleteError) throw deleteError;
-    }
     
-    // 5. Vérifier que la facture peut être modifiée
+    // 4. Vérifier que la facture peut être modifiée
     if (currentFacture.statut !== 'brouillon' && currentFacture.statut !== 'validee') {
       throw new Error('Seules les factures en brouillon ou validées peuvent être modifiées');
     }

@@ -221,8 +221,8 @@ export const updateEngagement = async (
 
   if (ecrituresError) throw ecrituresError;
 
-  // 3. Si statut != brouillon ET écritures existent → BLOQUER
-  if (currentEngagement.statut !== 'brouillon' && ecritures && ecritures.length > 0) {
+  // 3. Si écritures validées existent → BLOQUER (les brouillons ne génèrent jamais d'écritures)
+  if (ecritures && ecritures.length > 0) {
     throw new Error(
       '❌ Modification impossible : Cette opération a été comptabilisée.\n\n' +
       '💡 Pour effectuer une correction :\n' +
@@ -231,17 +231,7 @@ export const updateEngagement = async (
     );
   }
 
-  // 4. Si brouillon avec écritures → SUPPRIMER les écritures
-  if (currentEngagement.statut === 'brouillon' && ecritures && ecritures.length > 0) {
-    const { error: deleteError } = await supabase
-      .from('ecritures_comptables')
-      .delete()
-      .eq('engagement_id', id);
-
-    if (deleteError) throw deleteError;
-  }
-
-  // 5. Procéder à la modification
+  // 4. Procéder à la modification
   const cleanedUpdates = cleanData(toSnakeCase(updates));
 
   const { data, error } = await supabase
@@ -408,17 +398,8 @@ export const deleteEngagement = async (id: string): Promise<void> => {
 
   if (fetchError) throw fetchError;
 
-  // 2. Vérifier s'il existe des écritures
-  const { data: ecritures, error: ecrituresError } = await supabase
-    .from('ecritures_comptables')
-    .select('id')
-    .eq('engagement_id', id)
-    .limit(1);
-
-  if (ecrituresError) throw ecrituresError;
-
-  // 3. Bloquer si pas brouillon OU écritures existent
-  if (engagement.statut !== 'brouillon' || (ecritures && ecritures.length > 0)) {
+  // 2. Bloquer si pas brouillon (les brouillons n'ont jamais d'écritures)
+  if (engagement.statut !== 'brouillon') {
     throw new Error(
       '❌ Suppression impossible\n\n' +
       '💡 Utilisez l\'annulation au lieu de la suppression pour conserver l\'historique comptable'

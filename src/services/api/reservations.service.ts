@@ -163,8 +163,8 @@ export const updateReservation = async (
 
   if (ecrituresError) throw ecrituresError;
 
-  // 3. Si statut != active ET écritures existent → BLOQUER
-  if (currentReservation.statut !== 'active' && ecritures && ecritures.length > 0) {
+  // 3. Si écritures validées existent → BLOQUER (les réservations actives ne génèrent pas d'écritures tant qu'aucun engagement n'est validé)
+  if (ecritures && ecritures.length > 0) {
     throw new Error(
       '❌ Modification impossible : Cette opération a été comptabilisée.\n\n' +
       '💡 Pour effectuer une correction :\n' +
@@ -173,17 +173,7 @@ export const updateReservation = async (
     );
   }
 
-  // 4. Si active avec écritures → SUPPRIMER les écritures
-  if (currentReservation.statut === 'active' && ecritures && ecritures.length > 0) {
-    const { error: deleteError } = await supabase
-      .from('ecritures_comptables')
-      .delete()
-      .eq('reservation_id', id);
-
-    if (deleteError) throw deleteError;
-  }
-
-  // 5. Procéder à la modification
+  // 4. Procéder à la modification
   const { data, error } = await supabase
     .from('reservations_credits')
     .update(cleanData(toSnakeCase(updates)))
@@ -294,20 +284,11 @@ export const deleteReservation = async (id: string): Promise<void> => {
 
   if (fetchError) throw fetchError;
 
-  // 2. Vérifier s'il existe des écritures
-  const { data: ecritures, error: ecrituresError } = await supabase
-    .from('ecritures_comptables')
-    .select('id')
-    .eq('reservation_id', id)
-    .limit(1);
-
-  if (ecrituresError) throw ecrituresError;
-
-  // 3. Bloquer si pas active OU écritures existent
-  if (reservation.statut !== 'active' || (ecritures && ecritures.length > 0)) {
+  // 2. Bloquer si pas active (les réservations actives sans engagements n'ont jamais d'écritures)
+  if (reservation.statut !== 'active') {
     throw new Error(
       '❌ Suppression impossible\n\n' +
-      '💡 Utilisez l\'annulation au lieu de la suppression pour conserver l\'historique comptable'
+      '💡 Utilisez l\'annulation au lieu de la suppression pour conserver l\'historique'
     );
   }
 

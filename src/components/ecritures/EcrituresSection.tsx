@@ -10,6 +10,7 @@ interface EcrituresSectionProps {
   isLoading: boolean;
   onGenerate?: () => void;
   isGenerating?: boolean;
+  disabledReason?: string;
 }
 
 // Grouper les écritures avec leurs contrepassations
@@ -40,7 +41,8 @@ export const EcrituresSection = ({
   ecritures,
   isLoading,
   onGenerate,
-  isGenerating
+  isGenerating,
+  disabledReason
 }: EcrituresSectionProps) => {
   const groupedEcritures = groupEcritures(ecritures);
 
@@ -74,7 +76,11 @@ export const EcrituresSection = ({
             <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
             <p>
               Aucune écriture comptable générée pour cette opération.
-              {onGenerate && ' Cliquez sur le bouton ci-dessus pour les générer.'}
+              {disabledReason ? (
+                <span className="block mt-1 text-xs italic">{disabledReason}</span>
+              ) : onGenerate ? (
+                ' Cliquez sur le bouton ci-dessus pour les générer.'
+              ) : null}
             </p>
           </div>
         ) : (
