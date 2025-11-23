@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -168,14 +168,14 @@ export const ReglesComptablesManager = () => {
                                 {regle.conditions.length === 0 ? (
                                   <span className="text-muted-foreground">Aucune</span>
                                 ) : (
-                                  <Popover>
-                                    <PopoverTrigger asChild>
+                                  <HoverCard>
+                                    <HoverCardTrigger asChild>
                                       <button className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
                                         {regle.conditions.length} condition(s)
                                         <Info className="h-3 w-3" />
                                       </button>
-                                    </PopoverTrigger>
-                                    <PopoverContent side="top" className="max-w-md">
+                                    </HoverCardTrigger>
+                                    <HoverCardContent side="top" className="max-w-md">
                                       <div className="space-y-2">
                                         <p className="font-semibold text-xs">Conditions:</p>
                                         {regle.conditions.map((condition, idx) => (
@@ -194,21 +194,21 @@ export const ReglesComptablesManager = () => {
                                           </div>
                                         ))}
                                       </div>
-                                    </PopoverContent>
-                                  </Popover>
+                                    </HoverCardContent>
+                                  </HoverCard>
                                 )}
                               </div>
 
                               <div className="flex items-center gap-1">
                                 <span className="font-medium">Comptes:</span>{' '}
-                                <Popover>
-                                  <PopoverTrigger asChild>
+                                <HoverCard>
+                                  <HoverCardTrigger asChild>
                                     <button className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
                                       {regle.compteDebit?.numero} → {regle.compteCredit?.numero}
                                       <Info className="h-3 w-3" />
                                     </button>
-                                  </PopoverTrigger>
-                                  <PopoverContent side="top" className="max-w-md">
+                                  </HoverCardTrigger>
+                                  <HoverCardContent side="top" className="max-w-md">
                                     <div className="space-y-1">
                                       <p className="text-xs">
                                         <span className="font-semibold">Débit:</span> {regle.compteDebit?.numero} - {regle.compteDebit?.libelle}
@@ -217,8 +217,8 @@ export const ReglesComptablesManager = () => {
                                         <span className="font-semibold">Crédit:</span> {regle.compteCredit?.numero} - {regle.compteCredit?.libelle}
                                       </p>
                                     </div>
-                                  </PopoverContent>
-                                </Popover>
+                                  </HoverCardContent>
+                                </HoverCard>
                               </div>
                             </div>
                           </div>
