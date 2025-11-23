@@ -98,7 +98,8 @@ export const getEngagements = async (
       ),
       bons_commande:bons_commande!bons_commande_engagement_id_fkey (
         montant
-      )
+      ),
+      ecritures_comptables!engagement_id(count)
     `)
     .eq('exercice_id', exerciceId)
     .eq('client_id', clientId)
@@ -110,13 +111,15 @@ export const getEngagements = async (
   const engagementsAvecSolde = (data || []).map(eng => {
     const montantBonsCommande = eng.bons_commande?.reduce((sum: number, bc: any) => sum + Number(bc.montant || 0), 0) || 0;
     const solde = Number(eng.montant) - montantBonsCommande;
+    const ecrituresCount = eng.ecritures_comptables?.[0]?.count || 0;
     
-    // Retirer bons_commande du résultat final pour garder la structure propre
-    const { bons_commande, ...engagementData } = eng;
+    // Retirer bons_commande et ecritures_comptables du résultat final pour garder la structure propre
+    const { bons_commande, ecritures_comptables, ...engagementData } = eng;
     
     return {
       ...engagementData,
-      solde
+      solde,
+      ecrituresCount
     };
   });
   

@@ -76,6 +76,24 @@ export const PaiementTable = ({
         render: (paiement) => paiement.referencePaiement || '-',
       },
       {
+        id: 'ecritures',
+        header: 'Écritures',
+        render: (paiement) => {
+          const count = paiement.ecrituresCount || 0;
+          return count > 0 ? (
+            <Badge variant="default" className="gap-1">
+              <BookOpen className="h-3 w-3" />
+              {count}
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="gap-1">
+              <AlertCircle className="h-3 w-3" />
+              -
+            </Badge>
+          );
+        },
+      },
+      {
         id: 'statut',
         header: 'Statut',
         render: (paiement) => (

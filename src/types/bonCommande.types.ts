@@ -21,6 +21,7 @@ export interface BonCommande {
   createdAt: string;
   updatedAt: string;
   createdBy?: string;
+  ecrituresCount?: number;
   
   // Relations optionnelles
   fournisseur?: {
