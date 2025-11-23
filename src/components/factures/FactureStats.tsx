@@ -4,18 +4,29 @@ import { Facture } from '@/types/facture.types';
 
 interface FactureStatsProps {
   factures: Facture[];
+  stats?: {
+    nombreTotal: number;
+    nombreBrouillon: number;
+    nombreValidee: number;
+    nombrePayee: number;
+    montantTotal: number;
+    montantBrouillon: number;
+    montantValidee: number;
+    montantLiquide: number;
+  };
 }
 
-export const FactureStats = ({ factures }: FactureStatsProps) => {
-  const stats = {
-    total: factures.length,
-    brouillon: factures.filter(f => f.statut === 'brouillon').length,
-    validee: factures.filter(f => f.statut === 'validee').length,
-    payee: factures.filter(f => f.statut === 'payee').length,
-    montantLiquide: factures.reduce((sum, f) => sum + (f.montantLiquide || 0), 0),
+export const FactureStats = ({ factures, stats: globalStats }: FactureStatsProps) => {
+  // Utiliser les stats globales si disponibles, sinon calculer localement (fallback)
+  const stats = globalStats || {
+    nombreTotal: factures.length,
+    nombreBrouillon: factures.filter(f => f.statut === 'brouillon').length,
+    nombreValidee: factures.filter(f => f.statut === 'validee').length,
+    nombrePayee: factures.filter(f => f.statut === 'payee').length,
     montantTotal: factures.reduce((sum, f) => sum + f.montantTTC, 0),
     montantBrouillon: factures.filter(f => f.statut === 'brouillon').reduce((sum, f) => sum + f.montantTTC, 0),
     montantValidee: factures.filter(f => f.statut === 'validee').reduce((sum, f) => sum + f.montantTTC, 0),
+    montantLiquide: factures.reduce((sum, f) => sum + (f.montantLiquide || 0), 0),
   };
 
   const formatMontant = (montant: number) => {
@@ -29,7 +40,7 @@ export const FactureStats = ({ factures }: FactureStatsProps) => {
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <StatsCard
         title="Total des factures"
-        value={stats.total.toString()}
+        value={stats.nombreTotal.toString()}
         icon={FileText}
         color="text-primary"
         trend={formatMontant(stats.montantTotal)}
@@ -37,14 +48,14 @@ export const FactureStats = ({ factures }: FactureStatsProps) => {
       />
       <StatsCard
         title="En brouillon"
-        value={stats.brouillon.toString()}
+        value={stats.nombreBrouillon.toString()}
         icon={XCircle}
         color="text-muted-foreground"
         trend={formatMontant(stats.montantBrouillon)}
       />
       <StatsCard
         title="Validées"
-        value={stats.validee.toString()}
+        value={stats.nombreValidee.toString()}
         icon={CheckCircle}
         color="text-secondary"
         trend={formatMontant(stats.montantValidee)}
@@ -52,7 +63,7 @@ export const FactureStats = ({ factures }: FactureStatsProps) => {
       />
       <StatsCard
         title="Liquidé"
-        value={stats.payee.toString()}
+        value={stats.nombrePayee.toString()}
         icon={DollarSign}
         color="text-accent"
         trend={formatMontant(stats.montantLiquide)}

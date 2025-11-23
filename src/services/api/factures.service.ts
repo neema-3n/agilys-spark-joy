@@ -396,4 +396,41 @@ export const facturesService = {
       observations: motif,
     });
   },
+
+  async getStats(clientId: string, exerciceId?: string): Promise<{
+    nombreTotal: number;
+    nombreBrouillon: number;
+    nombreValidee: number;
+    nombrePayee: number;
+    montantTotal: number;
+    montantBrouillon: number;
+    montantValidee: number;
+    montantLiquide: number;
+  }> {
+    let query = supabase
+      .from('factures')
+      .select('statut, montant_ttc, montant_liquide')
+      .eq('client_id', clientId);
+
+    if (exerciceId) {
+      query = query.eq('exercice_id', exerciceId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    const stats = {
+      nombreTotal: data.length,
+      nombreBrouillon: data.filter(f => f.statut === 'brouillon').length,
+      nombreValidee: data.filter(f => f.statut === 'validee').length,
+      nombrePayee: data.filter(f => f.statut === 'payee').length,
+      montantTotal: data.reduce((sum, f) => sum + parseFloat(f.montant_ttc.toString()), 0),
+      montantBrouillon: data.filter(f => f.statut === 'brouillon').reduce((sum, f) => sum + parseFloat(f.montant_ttc.toString()), 0),
+      montantValidee: data.filter(f => f.statut === 'validee').reduce((sum, f) => sum + parseFloat(f.montant_ttc.toString()), 0),
+      montantLiquide: data.reduce((sum, f) => sum + parseFloat(f.montant_liquide.toString()), 0),
+    };
+
+    return stats;
+  },
 };
