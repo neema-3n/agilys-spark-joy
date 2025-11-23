@@ -169,11 +169,25 @@ export const ReglesComptablesManager = () => {
                                 )}
                               </div>
 
-                              <div>
+                              <div className="flex items-center gap-1">
                                 <span className="font-medium">Comptes:</span>{' '}
-                                <span className="text-muted-foreground">
-                                  {regle.compteDebit?.numero} → {regle.compteCredit?.numero}
-                                </span>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button className="text-muted-foreground hover:text-foreground transition-colors">
+                                      {regle.compteDebit?.numero} → {regle.compteCredit?.numero}
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="max-w-md">
+                                    <div className="space-y-1">
+                                      <p className="text-xs">
+                                        <span className="font-semibold">Débit:</span> {regle.compteDebit?.numero} - {regle.compteDebit?.libelle}
+                                      </p>
+                                      <p className="text-xs">
+                                        <span className="font-semibold">Crédit:</span> {regle.compteCredit?.numero} - {regle.compteCredit?.libelle}
+                                      </p>
+                                    </div>
+                                  </TooltipContent>
+                                </Tooltip>
                               </div>
                             </div>
                           </div>
