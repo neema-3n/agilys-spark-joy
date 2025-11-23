@@ -11,17 +11,33 @@ import { Compte } from '@/types/compte.types';
 import { useReferentiels } from '@/hooks/useReferentiels';
 import { useEffect } from 'react';
 
-const compteSchema = z.object({
+const createCompteSchema = (comptes: Compte[]) => z.object({
   numero: z.string().min(1, 'Le numéro est requis').max(20, 'Maximum 20 caractères'),
   libelle: z.string().min(3, 'Le libellé doit contenir au moins 3 caractères').max(200, 'Maximum 200 caractères'),
   type: z.string().min(1, 'Le type est requis'),
   categorie: z.string().min(1, 'La catégorie est requise'),
   parentId: z.string().optional(),
   niveau: z.coerce.number().min(1).max(9).default(1),
-  statut: z.string().min(1, 'Le statut est requis')
+  statut: z.string().optional().default('actif')
+}).refine((data) => {
+  if (!data.parentId) return true;
+  const parent = comptes.find(c => c.id === data.parentId);
+  if (!parent) return true;
+  return data.numero.startsWith(parent.numero);
+}, {
+  message: 'Le numéro du compte doit commencer par le numéro du parent',
+  path: ['numero']
 });
 
-type CompteFormData = z.infer<typeof compteSchema>;
+type CompteFormData = {
+  numero: string;
+  libelle: string;
+  type: string;
+  categorie: string;
+  parentId?: string;
+  niveau: number;
+  statut?: string;
+};
 
 interface CompteDialogProps {
   open: boolean;
@@ -40,7 +56,8 @@ const CompteDialog = ({
 }: CompteDialogProps) => {
   const { data: compteTypes = [], isLoading: loadingTypes } = useReferentiels('compte_type');
   const { data: compteCategories = [], isLoading: loadingCategories } = useReferentiels('compte_categorie');
-  const { data: statuts = [], isLoading: loadingStatuts } = useReferentiels('statut_general');
+  
+  const compteSchema = createCompteSchema(comptes);
   
   const form = useForm<CompteFormData>({
     resolver: zodResolver(compteSchema),
@@ -250,37 +267,6 @@ const CompteDialog = ({
                 )}
               />
             </div>
-
-            <FormField
-              control={form.control}
-              name="statut"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Statut</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {loadingStatuts ? (
-                          <SelectItem value="" disabled>Chargement...</SelectItem>
-                        ) : statuts.length === 0 ? (
-                          <SelectItem value="" disabled>Aucun statut disponible</SelectItem>
-                        ) : (
-                          statuts.map((statut) => (
-                            <SelectItem key={statut.id} value={statut.code}>
-                              {statut.libelle}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             </form>
           </Form>

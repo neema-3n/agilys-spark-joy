@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Pencil, Trash2, CheckCircle, XCircle } from 'lucide-react';
 
 interface CompteNode extends Compte {
   children: CompteNode[];
@@ -19,6 +19,7 @@ interface CompteTreeItemProps {
   expandAll?: boolean | null;
   onEdit: (compte: Compte) => void;
   onDelete: (compte: Compte) => void;
+  onToggleStatus: (compte: Compte) => void;
   getTypeLabel: (type: string) => string;
   getCategorieLabel: (categorie: string) => string;
 }
@@ -28,6 +29,7 @@ export const CompteTreeItem = ({
   expandAll,
   onEdit, 
   onDelete,
+  onToggleStatus,
   getTypeLabel,
   getCategorieLabel 
 }: CompteTreeItemProps) => {
@@ -94,6 +96,19 @@ export const CompteTreeItem = ({
                 <Pencil className="mr-2 h-4 w-4" />
                 Modifier
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onToggleStatus(node)}>
+                {node.statut === 'actif' ? (
+                  <>
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Désactiver
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Activer
+                  </>
+                )}
+              </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={() => onDelete(node)}
                 className="text-destructive"
@@ -115,6 +130,7 @@ export const CompteTreeItem = ({
               expandAll={expandAll}
               onEdit={onEdit}
               onDelete={onDelete}
+              onToggleStatus={onToggleStatus}
               getTypeLabel={getTypeLabel}
               getCategorieLabel={getCategorieLabel}
             />
