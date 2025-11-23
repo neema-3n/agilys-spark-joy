@@ -157,11 +157,22 @@ serve(async (req) => {
     const rows = parseCSV(csvContent);
     console.log(`Parsed ${rows.length} rows from CSV`);
 
-    // Enrich data with validation
+    // Enrich data with validation and detect CSV duplicates
     const enrichedData: EnrichedCompte[] = [];
     const validationErrors: Array<{ code: string; error: string }> = [];
+    const seenCodes = new Map<string, number>(); // Track codes and their first occurrence
     
-    rows.forEach(row => {
+    rows.forEach((row, index) => {
+      // Check for duplicates within the CSV itself
+      if (seenCodes.has(row.code)) {
+        validationErrors.push({
+          code: row.code,
+          error: `Compte en double dans le fichier CSV (ligne ${index + 2} et ligne ${seenCodes.get(row.code)! + 2})`
+        });
+        return;
+      }
+      seenCodes.set(row.code, index);
+      
       // Validate niveau calculation
       if (!row.nb_chiffres || row.nb_chiffres < 2) {
         validationErrors.push({
