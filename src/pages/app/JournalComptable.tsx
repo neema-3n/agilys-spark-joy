@@ -132,14 +132,13 @@ export default function JournalComptable() {
                   <div className="space-y-2">
                     <Label>Type d'Opération</Label>
                     <Select
-                      value={filters.typeOperation || ''}
+                      value={filters.typeOperation || undefined}
                       onValueChange={(value) => handleFilterChange('typeOperation', value)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Tous" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Tous</SelectItem>
                         {TYPE_OPERATIONS.map(type => (
                           <SelectItem key={type.value} value={type.value}>
                             {type.label}
