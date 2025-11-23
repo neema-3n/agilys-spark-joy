@@ -128,16 +128,19 @@ const AppLayout = () => {
     icon: Settings,
     items: [{
       name: 'Paramètres',
-      href: '/app/parametres',
+      href: '/app/parametres/exercices',
       icon: Settings
     }]
   }];
+
+  const isPathActive = (targetPath: string) =>
+    location.pathname === targetPath || location.pathname.startsWith(`${targetPath}/`);
 
   // Fonction pour déterminer le groupe actif basé sur le pathname
   const getGroupFromPath = (pathname: string): 'operationnel' | 'pilotage' => {
     // Chercher la section qui contient cette route
     const section = allNavigationSections.find(s => 
-      s.items.some(item => item.href === pathname)
+      s.items.some(item => pathname.startsWith(item.href))
     );
     
     if (!section) return 'operationnel'; // Par défaut
@@ -162,8 +165,9 @@ const AppLayout = () => {
   };
 
   // Helper pour rendre les items en mode collapsé avec tooltip
-  const renderCollapsedItem = (item: any, isActive: boolean) => {
+  const renderCollapsedItem = (item: any) => {
     const Icon = item.icon;
+    const isActive = isPathActive(item.href);
     
     return (
       <Tooltip key={item.href}>
@@ -327,7 +331,7 @@ const AppLayout = () => {
                   
                   if (isSingleItem) {
                     const item = section.items[0];
-                    const isActive = location.pathname === item.href;
+                    const isActive = isPathActive(item.href);
                     const Icon = item.icon;
                     
                     return (
@@ -367,7 +371,7 @@ const AppLayout = () => {
                       
                       <CollapsibleContent className="space-y-1">
                         {section.items.map(item => {
-                          const isActive = location.pathname === item.href;
+                          const isActive = isPathActive(item.href);
                           const Icon = item.icon;
                           
                           return (
@@ -395,8 +399,7 @@ const AppLayout = () => {
               <>
                 {navigationSections.map((section) =>
                   section.items.map((item) => {
-                    const isActive = location.pathname === item.href;
-                    return renderCollapsedItem(item, isActive);
+                    return renderCollapsedItem(item);
                   })
                 )}
               </>
