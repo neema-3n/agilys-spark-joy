@@ -96,11 +96,6 @@ export const ImportPlanComptableDialog = ({ open, onOpenChange, onSuccess }: Imp
         description: `${importReport.stats.created} comptes importés avec succès`,
       });
       
-      setTimeout(() => {
-        onSuccess();
-        handleClose();
-      }, 3000);
-      
     } catch (err: any) {
       console.error('Import error:', err);
       setError(err.message);
@@ -148,11 +143,11 @@ export const ImportPlanComptableDialog = ({ open, onOpenChange, onSuccess }: Imp
           <div className="space-y-4">
             <div className="border-2 border-dashed rounded-lg p-8 text-center">
               <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <Label htmlFor="csv-file" className="cursor-pointer">
-                <div className="text-sm text-muted-foreground mb-2">
-                  Glissez votre fichier CSV ici ou cliquez pour sélectionner
-                </div>
-                <Button type="button" variant="outline" size="sm">
+              <div className="text-sm text-muted-foreground mb-2">
+                Glissez votre fichier CSV ici ou cliquez pour sélectionner
+              </div>
+              <Label htmlFor="csv-file" asChild>
+                <Button type="button" variant="outline" size="sm" className="cursor-pointer">
                   Sélectionner un fichier
                 </Button>
               </Label>
@@ -318,8 +313,11 @@ export const ImportPlanComptableDialog = ({ open, onOpenChange, onSuccess }: Imp
             </Button>
           )}
           {phase === 'success' && (
-            <Button onClick={handleClose}>
-              Terminer
+            <Button onClick={() => {
+              onSuccess();
+              handleClose();
+            }}>
+              Fermer et recharger
             </Button>
           )}
         </DialogFooter>
