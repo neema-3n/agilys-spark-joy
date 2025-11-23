@@ -91,6 +91,17 @@ export default function Factures() {
   const [motifAnnulation, setMotifAnnulation] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // Récupérer les stats globales côté serveur
+  const { data: stats } = useQuery({
+    queryKey: ['factures-stats', currentClient?.id, currentExercice?.id],
+    queryFn: async () => {
+      if (!currentClient) return null;
+      const { facturesService } = await import('@/services/api/factures.service');
+      return facturesService.getStats(currentClient.id, currentExercice?.id);
+    },
+    enabled: !!currentClient,
+  });
+
   const { fournisseurs } = useFournisseurs();
   const { projets } = useProjets();
   const { lignes: lignesBudgetaires } = useLignesBudgetaires();
@@ -145,19 +156,6 @@ export default function Factures() {
     toggleOne,
     toggleAll,
   } = useListSelection(selectionIds);
-
-  const stats = useMemo(() => {
-    return {
-      nombreTotal: totalCount,
-      nombreBrouillon: factures.filter(f => f.statut === 'brouillon').length,
-      nombreValidee: factures.filter(f => f.statut === 'validee').length,
-      nombrePayee: factures.filter(f => f.statut === 'payee').length,
-      montantTotal: factures.reduce((sum, f) => sum + f.montantTTC, 0),
-      montantBrouillon: factures.filter(f => f.statut === 'brouillon').reduce((sum, f) => sum + f.montantTTC, 0),
-      montantValidee: factures.filter(f => f.statut === 'validee').reduce((sum, f) => sum + f.montantTTC, 0),
-      montantLiquide: factures.reduce((sum, f) => sum + f.montantLiquide, 0),
-    };
-  }, [factures, totalCount]);
 
   const selectedFactures = useMemo(
     () => factures.filter((facture) => selectedIds.has(facture.id)),
@@ -416,7 +414,7 @@ export default function Factures() {
           <div className="py-12 text-center text-muted-foreground">Chargement du snapshot...</div>
         ) : (
           <>
-            <FactureStats factures={factures} />
+            {stats && <FactureStats factures={factures} stats={stats} />}
 
             <ListLayout
               title="Liste des factures"
