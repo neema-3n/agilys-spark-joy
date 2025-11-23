@@ -1,11 +1,21 @@
 import { useState } from 'react';
-import { Plus, Calculator, Info } from 'lucide-react';
+import { Plus, Calculator, Info, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useReglesComptables } from '@/hooks/useReglesComptables';
 import { RegleComptableDialog } from './RegleComptableDialog';
 import { TYPE_OPERATION_LABELS, OPERATEUR_LABELS } from '@/lib/regles-comptables-fields';
@@ -24,6 +34,8 @@ export const ReglesComptablesManager = () => {
   const [activeTab, setActiveTab] = useState<TypeOperation>('reservation');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRegle, setEditingRegle] = useState<RegleComptable | undefined>();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [regleToDelete, setRegleToDelete] = useState<RegleComptable | null>(null);
 
   const { regles, isLoading, deleteRegle, updateRegle } = useReglesComptables(activeTab);
 
@@ -32,9 +44,16 @@ export const ReglesComptablesManager = () => {
     setDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Êtes-vous sûr de vouloir supprimer cette règle ?')) {
-      await deleteRegle(id);
+  const handleDeleteClick = (regle: RegleComptable) => {
+    setRegleToDelete(regle);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (regleToDelete) {
+      await deleteRegle(regleToDelete.id);
+      setDeleteDialogOpen(false);
+      setRegleToDelete(null);
     }
   };
 
@@ -202,10 +221,12 @@ export const ReglesComptablesManager = () => {
                               Modifier
                             </Button>
                             <Button
-                              variant="destructive"
+                              variant="outline"
                               size="sm"
-                              onClick={() => handleDelete(regle.id)}
+                              onClick={() => handleDeleteClick(regle)}
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
                             >
+                              <Trash2 className="h-4 w-4 mr-2" />
                               Supprimer
                             </Button>
                           </div>
@@ -226,6 +247,28 @@ export const ReglesComptablesManager = () => {
         regle={editingRegle}
         defaultTypeOperation={activeTab}
       />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer la règle comptable <span className="font-semibold">{regleToDelete?.nom}</span> ?
+              <br />
+              Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };
