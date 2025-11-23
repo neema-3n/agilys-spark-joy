@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -19,6 +19,17 @@ import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { useSnapshotState } from '@/hooks/useSnapshotState';
 import { showNavigationToast } from '@/lib/navigation-toast';
 import { CreateDepenseUrgenceFromReservationDialog } from '@/components/depenses/CreateDepenseUrgenceFromReservationDialog';
+import { ListLayout } from '@/components/lists/ListLayout';
+import { ListToolbar } from '@/components/lists/ListToolbar';
+import { ListPageLoading } from '@/components/lists/ListPageLoading';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { CTA_REVEAL_STYLES, useHeaderCtaReveal } from '@/hooks/useHeaderCtaReveal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,9 +52,12 @@ const Reservations = () => {
   const [engagementDialogOpen, setEngagementDialogOpen] = useState(false);
   const [reservationSourceId, setReservationSourceId] = useState<string | null>(null);
   const [selectedReservationForDepense, setSelectedReservationForDepense] = useState<ReservationCredit | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statutFilter, setStatutFilter] = useState<'tous' | 'active' | 'utilisee' | 'annulee' | 'expiree'>('tous');
   const navigate = useNavigate();
   const { reservationId } = useParams<{ reservationId?: string }>();
   const { toast } = useToast();
+  const { headerCtaRef, isHeaderCtaVisible } = useHeaderCtaReveal([statutFilter]);
   
   const {
     reservations,
@@ -102,9 +116,23 @@ const Reservations = () => {
   };
 
   const handleCreerDepenseUrgence = (reservation: ReservationCredit) => {
-    console.log('💳 Création dépense urgente depuis réservation', reservation);
     setSelectedReservationForDepense(reservation);
   };
+
+  const filteredReservations = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return reservations
+      .filter((reservation) => (statutFilter === 'tous' ? true : reservation.statut === statutFilter))
+      .filter((reservation) => {
+        if (!term) return true;
+        return (
+          reservation.numero.toLowerCase().includes(term) ||
+          reservation.objet.toLowerCase().includes(term) ||
+          reservation.beneficiaire?.toLowerCase().includes(term)
+        );
+      })
+      .sort((a, b) => new Date(b.dateReservation).getTime() - new Date(a.dateReservation).getTime());
+  }, [reservations, statutFilter, searchTerm]);
 
   // Synchroniser l'URL avec l'état du snapshot
   const {
@@ -296,21 +324,24 @@ const Reservations = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
+      <ListPageLoading
+        title="Réservation de Crédits"
+        description="Blocage préalable avec traçabilité complète"
+        stickyHeader={false}
+      />
     );
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full space-y-6">
+      <style>{CTA_REVEAL_STYLES}</style>
       {!isSnapshotOpen && (
         <PageHeader
           title="Réservation de Crédits"
           description="Blocage préalable avec traçabilité complète"
           scrollProgress={scrollProgress}
           actions={
-            <Button onClick={handleCreate}>
+            <Button onClick={handleCreate} ref={headerCtaRef}>
               <Plus className="h-4 w-4 mr-2" />
               Nouvelle réservation
             </Button>
@@ -339,18 +370,69 @@ const Reservations = () => {
           <div className="flex items-center justify-center py-12 text-muted-foreground">Chargement du snapshot...</div>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto p-8 pt-6 space-y-6">
-          <ReservationStats reservations={reservations} />
+        <div className="flex-1 overflow-y-auto px-8 pt-0 space-y-6">
+          <ListLayout
+            title="Liste des réservations"
+            description="Recherche, filtres et actions sur les réservations de crédits"
+            actions={
+              !isHeaderCtaVisible ? (
+                <Button onClick={handleCreate} className="sticky-cta-appear">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nouvelle réservation
+                </Button>
+              ) : undefined
+            }
+            toolbar={
+              <ListToolbar
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
+                searchPlaceholder="Rechercher par numéro, objet, bénéficiaire..."
+                filters={[
+                  <DropdownMenu key="statut">
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline">
+                        Statut: {statutFilter === 'tous' ? 'Tous' : statutFilter}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {[
+                        { value: 'tous', label: 'Tous' },
+                        { value: 'active', label: 'Active' },
+                        { value: 'utilisee', label: 'Utilisée' },
+                        { value: 'annulee', label: 'Annulée' },
+                        { value: 'expiree', label: 'Expirée' },
+                      ].map((option) => (
+                        <DropdownMenuItem
+                          key={option.value}
+                          onClick={() => setStatutFilter(option.value as any)}
+                        >
+                          {option.label}
+                        </DropdownMenuItem>
+                      ))}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setStatutFilter('tous')}>
+                        Réinitialiser
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>,
+                ]}
+              />
+            }
+          >
+            <div className="space-y-6 p-6 pt-2">
+              <ReservationStats reservations={reservations} />
 
-          <ReservationTable
-            reservations={reservations}
-            onEdit={handleEdit}
-            onCreerEngagement={handleCreerEngagement}
-            onAnnuler={handleAnnuler}
-            onDelete={handleDelete}
-            onCreerDepenseUrgence={handleCreerDepenseUrgence}
-            onViewDetails={handleOpenSnapshot}
-          />
+              <ReservationTable
+                reservations={filteredReservations}
+                onEdit={handleEdit}
+                onCreerEngagement={handleCreerEngagement}
+                onAnnuler={handleAnnuler}
+                onDelete={handleDelete}
+                onCreerDepenseUrgence={handleCreerDepenseUrgence}
+                onViewDetails={handleOpenSnapshot}
+              />
+            </div>
+          </ListLayout>
         </div>
       )}
 

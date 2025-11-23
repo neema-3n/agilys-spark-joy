@@ -26,6 +26,17 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { useSnapshotState } from '@/hooks/useSnapshotState';
+import { ListLayout } from '@/components/lists/ListLayout';
+import { ListToolbar } from '@/components/lists/ListToolbar';
+import { ListPageLoading } from '@/components/lists/ListPageLoading';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { CTA_REVEAL_STYLES, useHeaderCtaReveal } from '@/hooks/useHeaderCtaReveal';
 
 const BonsCommande = () => {
   const navigate = useNavigate();
@@ -44,6 +55,9 @@ const BonsCommande = () => {
   const [receptionBonCommandeId, setReceptionBonCommandeId] = useState<string | undefined>();
   const [annulationBonCommandeId, setAnnulationBonCommandeId] = useState<string | undefined>();
   const [factureBonCommandeId, setFactureBonCommandeId] = useState<string | undefined>();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statutFilter, setStatutFilter] = useState<'tous' | 'brouillon' | 'valide' | 'en_cours' | 'receptionne' | 'facture' | 'annule'>('tous');
+  const { headerCtaRef, isHeaderCtaVisible } = useHeaderCtaReveal([statutFilter]);
   
   const {
     bonsCommande,
@@ -226,23 +240,42 @@ const BonsCommande = () => {
     }
   }, [navigate]);
 
+  const filteredBonsCommande = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return bonsCommande
+      .filter((bc) => (statutFilter === 'tous' ? true : bc.statut === statutFilter))
+      .filter((bc) => {
+        if (!term) return true;
+        return (
+          bc.numero.toLowerCase().includes(term) ||
+          bc.objet.toLowerCase().includes(term) ||
+          bc.fournisseur?.nom.toLowerCase().includes(term) ||
+          bc.engagement?.numero?.toLowerCase().includes(term)
+        );
+      })
+      .sort((a, b) => new Date(b.dateCommande).getTime() - new Date(a.dateCommande).getTime());
+  }, [bonsCommande, statutFilter, searchTerm]);
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div>Chargement...</div>
-      </div>
+      <ListPageLoading
+        title="Gestion des Bons de Commande"
+        description="Gérez les bons de commande et leurs statuts"
+        stickyHeader={false}
+      />
     );
   }
 
   return (
     <div className="space-y-6">
+      <style>{CTA_REVEAL_STYLES}</style>
       {!isSnapshotOpen && (
         <PageHeader
           title="Gestion des Bons de Commande"
           description="Gérez les bons de commande et leurs statuts"
           scrollProgress={snapshotBonCommandeId ? scrollProgress : 0}
           actions={
-            <Button onClick={handleCreate}>
+            <Button onClick={handleCreate} ref={headerCtaRef}>
               <Plus className="mr-2 h-4 w-4" />
               Nouveau BC
             </Button>
@@ -272,19 +305,72 @@ const BonsCommande = () => {
           <div className="py-12 text-center text-muted-foreground">Chargement du snapshot...</div>
         ) : (
           <>
-            <BonCommandeStats bonsCommande={bonsCommande} />
+            <ListLayout
+              title="Liste des bons de commande"
+              description="Recherche, filtres et actions sur les bons de commande"
+              actions={
+                !isHeaderCtaVisible ? (
+                  <Button onClick={handleCreate} className="sticky-cta-appear">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nouveau BC
+                  </Button>
+                ) : undefined
+              }
+              toolbar={
+                <ListToolbar
+                  searchValue={searchTerm}
+                  onSearchChange={setSearchTerm}
+                  searchPlaceholder="Rechercher par numéro, objet, fournisseur..."
+                  filters={[
+                    <DropdownMenu key="statut">
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline">
+                          Statut: {statutFilter === 'tous' ? 'Tous' : statutFilter}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {[
+                          { value: 'tous', label: 'Tous' },
+                          { value: 'brouillon', label: 'Brouillon' },
+                          { value: 'valide', label: 'Validé' },
+                          { value: 'en_cours', label: 'En cours' },
+                          { value: 'receptionne', label: 'Réceptionné' },
+                          { value: 'facture', label: 'Facturé' },
+                          { value: 'annule', label: 'Annulé' },
+                        ].map((option) => (
+                          <DropdownMenuItem
+                            key={option.value}
+                            onClick={() => setStatutFilter(option.value as any)}
+                          >
+                            {option.label}
+                          </DropdownMenuItem>
+                        ))}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => setStatutFilter('tous')}>
+                          Réinitialiser
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>,
+                  ]}
+                />
+              }
+            >
+              <div className="space-y-6 p-6 pt-2">
+                <BonCommandeStats bonsCommande={bonsCommande} />
 
-            <BonCommandeTable
-              bonsCommande={bonsCommande}
-              onEdit={(bc) => handleEdit(bc.id)}
-              onDelete={(id) => deleteBonCommande(id)}
-              onValider={(id) => validerBonCommande(id)}
-              onMettreEnCours={(id) => mettreEnCours(id)}
-              onReceptionner={(bc) => handleReceptionner(bc.id)}
-              onAnnuler={(bc) => handleAnnuler(bc.id)}
-              onCreateFacture={(bc) => handleCreateFacture(bc.id)}
-              onViewDetails={openBonCommandeSnapshot}
-            />
+                <BonCommandeTable
+                  bonsCommande={filteredBonsCommande}
+                  onEdit={(bc) => handleEdit(bc.id)}
+                  onDelete={(id) => deleteBonCommande(id)}
+                  onValider={(id) => validerBonCommande(id)}
+                  onMettreEnCours={(id) => mettreEnCours(id)}
+                  onReceptionner={(bc) => handleReceptionner(bc.id)}
+                  onAnnuler={(bc) => handleAnnuler(bc.id)}
+                  onCreateFacture={(bc) => handleCreateFacture(bc.id)}
+                  onViewDetails={openBonCommandeSnapshot}
+                />
+              </div>
+            </ListLayout>
           </>
         )}
       </div>
