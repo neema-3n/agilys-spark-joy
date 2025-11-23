@@ -86,6 +86,33 @@ Deno.serve(async (req) => {
       throw new Error(error.message);
     }
 
+    console.log('create-bon-commande: BC created successfully:', data.id);
+
+    // Generate accounting entries automatically
+    try {
+      console.log('create-bon-commande: Generating ecritures comptables');
+      
+      const { error: ecrituresError } = await supabaseAdmin.functions.invoke(
+        'generate-ecritures-comptables',
+        {
+          body: {
+            typeOperation: 'bon_commande',
+            sourceId: data.id,
+            clientId: body.clientId,
+            exerciceId: body.exerciceId
+          }
+        }
+      );
+      
+      if (ecrituresError) {
+        console.error('create-bon-commande: Error generating ecritures', ecrituresError);
+      } else {
+        console.log('create-bon-commande: Ecritures generated successfully');
+      }
+    } catch (ecrituresError) {
+      console.error('create-bon-commande: Exception generating ecritures', ecrituresError);
+    }
+
     // Convert snake_case to camelCase
     const toCamelCase = (obj: any): any => {
       if (obj === null || obj === undefined) return obj;

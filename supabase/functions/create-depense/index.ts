@@ -117,6 +117,31 @@ Deno.serve(async (req) => {
 
     console.log('Depense created successfully:', data);
 
+    // Generate accounting entries automatically
+    try {
+      console.log('create-depense: Generating ecritures comptables');
+      
+      const { error: ecrituresError } = await supabase.functions.invoke(
+        'generate-ecritures-comptables',
+        {
+          body: {
+            typeOperation: 'depense',
+            sourceId: data.id,
+            clientId: client_id,
+            exerciceId: exercice_id
+          }
+        }
+      );
+      
+      if (ecrituresError) {
+        console.error('create-depense: Error generating ecritures', ecrituresError);
+      } else {
+        console.log('create-depense: Ecritures generated successfully');
+      }
+    } catch (ecrituresError) {
+      console.error('create-depense: Exception generating ecritures', ecrituresError);
+    }
+
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

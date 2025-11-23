@@ -86,6 +86,31 @@ Deno.serve(async (req) => {
 
     console.log('create-engagement: Engagement created successfully', data);
 
+    // Generate accounting entries automatically
+    try {
+      console.log('create-engagement: Generating ecritures comptables');
+      
+      const { error: ecrituresError } = await supabaseAdmin.functions.invoke(
+        'generate-ecritures-comptables',
+        {
+          body: {
+            typeOperation: 'engagement',
+            sourceId: data.id,
+            clientId: body.clientId,
+            exerciceId: body.exerciceId
+          }
+        }
+      );
+      
+      if (ecrituresError) {
+        console.error('create-engagement: Error generating ecritures', ecrituresError);
+      } else {
+        console.log('create-engagement: Ecritures generated successfully');
+      }
+    } catch (ecrituresError) {
+      console.error('create-engagement: Exception generating ecritures', ecrituresError);
+    }
+
     // 6. Transformer les clés snake_case en camelCase
     const toCamelCase = (obj: any): any => {
       if (Array.isArray(obj)) {
