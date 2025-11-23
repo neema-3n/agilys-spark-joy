@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, FolderOpen, Folder, FileText, File } from 'lucide-react';
 import { Compte } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ interface CompteNode extends Compte {
 
 interface CompteTreeItemProps {
   node: CompteNode;
+  expandAll?: boolean | null;
   onEdit: (compte: Compte) => void;
   onDelete: (compte: Compte) => void;
   getTypeLabel: (type: string) => string;
@@ -24,6 +25,7 @@ interface CompteTreeItemProps {
 
 export const CompteTreeItem = ({ 
   node, 
+  expandAll,
   onEdit, 
   onDelete,
   getTypeLabel,
@@ -31,6 +33,12 @@ export const CompteTreeItem = ({
 }: CompteTreeItemProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = node.children.length > 0;
+
+  useEffect(() => {
+    if (expandAll !== null) {
+      setIsExpanded(expandAll);
+    }
+  }, [expandAll]);
 
   const getIcon = () => {
     if (hasChildren) {
@@ -104,6 +112,7 @@ export const CompteTreeItem = ({
             <CompteTreeItem
               key={child.id}
               node={child}
+              expandAll={expandAll}
               onEdit={onEdit}
               onDelete={onDelete}
               getTypeLabel={getTypeLabel}
