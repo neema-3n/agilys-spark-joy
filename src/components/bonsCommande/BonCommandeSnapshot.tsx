@@ -30,12 +30,12 @@ interface BonCommandeSnapshotProps {
   onNavigateToEntity?: (type: string, id: string) => void;
 }
 
-const statutConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; description: string }> = {
-  brouillon: { label: 'Brouillon', variant: 'outline', description: 'En cours de préparation' },
-  valide: { label: 'Validé', variant: 'secondary', description: 'Prêt à être exécuté' },
+const statutConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'; description: string }> = {
+  brouillon: { label: 'Brouillon', variant: 'warning', description: 'En cours de préparation' },
+  valide: { label: 'Validé', variant: 'success', description: 'Prêt à être exécuté' },
   en_cours: { label: 'En cours', variant: 'default', description: 'Commande en exécution' },
-  receptionne: { label: 'Réceptionné', variant: 'default', description: 'Livraison confirmée' },
-  facture: { label: 'Facturé', variant: 'default', description: 'Factures associées' },
+  receptionne: { label: 'Réceptionné', variant: 'success', description: 'Livraison confirmée' },
+  facture: { label: 'Facturé', variant: 'secondary', description: 'Factures associées' },
   annule: { label: 'Annulé', variant: 'destructive', description: 'Commande annulée' },
 };
 

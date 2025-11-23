@@ -44,9 +44,9 @@ const calculerSolde = (reservation: ReservationCredit): number => {
 const formatDate = (dateString: string) => format(new Date(dateString), 'dd/MM/yyyy', { locale: fr });
 
 const getStatutBadge = (statut: ReservationCredit['statut']) => {
-  const variants: Record<ReservationCredit['statut'], 'default' | 'secondary' | 'destructive' | 'outline'> = {
-    active: 'secondary',
-    utilisee: 'outline',
+  const variants: Record<ReservationCredit['statut'], 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'> = {
+    active: 'success',
+    utilisee: 'secondary',
     annulee: 'destructive',
     expiree: 'outline',
   };

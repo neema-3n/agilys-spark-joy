@@ -31,11 +31,11 @@ interface EngagementTableProps {
 const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('fr-FR');
 
 const getStatusBadge = (statut: Engagement['statut']) => {
-  const variants: Record<Engagement['statut'], { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
-    brouillon: { variant: 'secondary', label: 'Brouillon' },
-    valide: { variant: 'default', label: 'Validé' },
-    engage: { variant: 'default', label: 'Engagé' },
-    liquide: { variant: 'default', label: 'Liquidé' },
+  const variants: Record<Engagement['statut'], { variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'; label: string }> = {
+    brouillon: { variant: 'warning', label: 'Brouillon' },
+    valide: { variant: 'success', label: 'Validé' },
+    engage: { variant: 'success', label: 'Engagé' },
+    liquide: { variant: 'success', label: 'Liquidé' },
     annule: { variant: 'destructive', label: 'Annulé' },
   };
   const config = variants[statut] || variants.brouillon;
