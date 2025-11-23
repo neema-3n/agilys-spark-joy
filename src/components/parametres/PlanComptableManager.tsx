@@ -170,6 +170,27 @@ const PlanComptableManager = () => {
     }
   };
 
+  const handleToggleStatus = async (compte: Compte) => {
+    try {
+      const newStatut = compte.statut === 'actif' ? 'inactif' : 'actif';
+      await comptesService.update(compte.id, { statut: newStatut });
+      
+      toast({
+        title: 'Succès',
+        description: `Compte ${newStatut === 'actif' ? 'activé' : 'désactivé'} avec succès`
+      });
+      
+      await loadComptes();
+    } catch (error) {
+      console.error('Erreur lors du changement de statut:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de modifier le statut du compte',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const openEditDialog = (compte: Compte) => {
     setSelectedCompte(compte);
     setDialogOpen(true);
@@ -314,6 +335,7 @@ const PlanComptableManager = () => {
                     setCompteToDelete(compte);
                     setDeleteDialogOpen(true);
                   }}
+                  onToggleStatus={handleToggleStatus}
                   getTypeLabel={getTypeLabel}
                   getCategorieLabel={getCategorieLabel}
                 />
