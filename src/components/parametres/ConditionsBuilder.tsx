@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import type { Condition, TypeOperation } from '@/types/regle-comptable.types';
+import type { Condition, TypeOperation, OperateurCondition } from '@/types/regle-comptable.types';
 import { OPERATION_FIELDS, OPERATEUR_LABELS } from '@/lib/regles-comptables-fields';
 
 interface ConditionsBuilderProps {
@@ -60,9 +60,9 @@ export const ConditionsBuilder = ({ typeOperation, conditions, onChange }: Condi
         const fieldType = getFieldType(condition.champ);
         const fieldOptions = getFieldOptions(condition.champ);
         const allowedOperators = getOperatorsForType(fieldType);
-        const currentOperateur = allowedOperators.includes(condition.operateur)
+        const currentOperateur = (allowedOperators.includes(condition.operateur)
           ? condition.operateur
-          : allowedOperators[0];
+          : allowedOperators[0]) as OperateurCondition;
         if (currentOperateur !== condition.operateur) {
           updateCondition(index, { operateur: currentOperateur });
         }
