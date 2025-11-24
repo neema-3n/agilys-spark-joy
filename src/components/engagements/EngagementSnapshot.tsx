@@ -6,6 +6,11 @@ import { Progress } from '@/components/ui/progress';
 import type { Engagement } from '@/types/engagement.types';
 import { SnapshotBase } from '@/components/shared/SnapshotBase';
 import { formatMontant, formatDate, formatDateTime, getEntityUrl } from '@/lib/snapshot-utils';
+import { useEcrituresBySource } from '@/hooks/useEcrituresComptables';
+import { useGenerateEcritures } from '@/hooks/useGenerateEcritures';
+import { useClient } from '@/contexts/ClientContext';
+import { useExercice } from '@/contexts/ExerciceContext';
+import { EcrituresSection } from '@/components/ecritures/EcrituresSection';
 
 interface EngagementSnapshotProps {
   engagement: Engagement;
@@ -38,12 +43,30 @@ export const EngagementSnapshot = ({
   onCreerDepense,
   onNavigateToEntity,
 }: EngagementSnapshotProps) => {
+  const { currentClient } = useClient();
+  const { currentExercice } = useExercice();
+  const { ecritures, isLoading: ecrituresLoading } = useEcrituresBySource('engagement', engagement.id);
+  const generateMutation = useGenerateEcritures();
+
+  const handleGenerateEcritures = () => {
+    if (!currentClient?.id || !currentExercice?.id) return;
+    
+    generateMutation.mutate({
+      typeOperation: 'engagement',
+      sourceId: engagement.id,
+      clientId: currentClient.id,
+      exerciceId: currentExercice.id
+    });
+  };
+
+  const canGenerateEcritures = engagement.statut !== 'brouillon';
+
   const getStatutBadge = (statut: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-      brouillon: 'secondary',
-      valide: 'default',
-      engage: 'default',
-      liquide: 'default',
+    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'> = {
+      brouillon: 'outline',
+      valide: 'success',
+      engage: 'success',
+      liquide: 'success',
       annule: 'destructive',
     };
 
@@ -325,6 +348,15 @@ export const EngagementSnapshot = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Écritures comptables */}
+      <EcrituresSection
+        ecritures={ecritures}
+        isLoading={ecrituresLoading}
+        onGenerate={canGenerateEcritures ? handleGenerateEcritures : undefined}
+        isGenerating={generateMutation.isPending}
+        disabledReason={!canGenerateEcritures ? "Les écritures ne peuvent être générées que pour les opérations validées" : undefined}
+      />
     </SnapshotBase>
   );
 };

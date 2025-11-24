@@ -7,6 +7,11 @@ import { SnapshotBase } from '@/components/shared/SnapshotBase';
 import type { Depense } from '@/types/depense.types';
 import type { Paiement } from '@/types/paiement.types';
 import { formatMontant, formatDate, formatDateTime, getEntityUrl } from '@/lib/snapshot-utils';
+import { useEcrituresBySource } from '@/hooks/useEcrituresComptables';
+import { useGenerateEcritures } from '@/hooks/useGenerateEcritures';
+import { useClient } from '@/contexts/ClientContext';
+import { useExercice } from '@/contexts/ExerciceContext';
+import { EcrituresSection } from '@/components/ecritures/EcrituresSection';
 
 interface DepenseSnapshotProps {
   depense: Depense;
@@ -45,14 +50,32 @@ export const DepenseSnapshot = ({
   onDelete,
   disableActions,
 }: DepenseSnapshotProps) => {
+  const { currentClient } = useClient();
+  const { currentExercice } = useExercice();
+  const { ecritures, isLoading: ecrituresLoading } = useEcrituresBySource('depense', depense.id);
+  const generateMutation = useGenerateEcritures();
+
+  const handleGenerateEcritures = () => {
+    if (!currentClient?.id || !currentExercice?.id) return;
+    
+    generateMutation.mutate({
+      typeOperation: 'depense',
+      sourceId: depense.id,
+      clientId: currentClient.id,
+      exerciceId: currentExercice.id
+    });
+  };
+
+  const canGenerateEcritures = depense.statut !== 'brouillon';
+
   const montantRestant = depense.montant - depense.montantPaye;
   const pourcentagePaye = depense.montant > 0 ? (depense.montantPaye / depense.montant) * 100 : 0;
   const getStatutBadge = (statut: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'> = {
       brouillon: 'outline',
-      validee: 'secondary',
-      ordonnancee: 'default',
-      payee: 'default',
+      validee: 'success',
+      ordonnancee: 'secondary',
+      payee: 'success',
       annulee: 'destructive',
     };
 
@@ -423,6 +446,15 @@ export const DepenseSnapshot = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Écritures comptables */}
+      <EcrituresSection
+        ecritures={ecritures}
+        isLoading={ecrituresLoading}
+        onGenerate={canGenerateEcritures ? handleGenerateEcritures : undefined}
+        isGenerating={generateMutation.isPending}
+        disabledReason={!canGenerateEcritures ? "Les écritures ne peuvent être générées que pour les dépenses validées" : undefined}
+      />
     </SnapshotBase>
   );
 };
