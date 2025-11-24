@@ -480,21 +480,6 @@ export default function Factures() {
                   ]}
                 />
               }
-              footer={
-                <PaginationControls
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  totalCount={totalCount}
-                  pageSize={pageSize}
-                  pageSizeOptions={[10, 25, 50, 100]}
-                  onPageChange={goToPage}
-                  onPageSizeChange={setPageSize}
-                  isLoading={isLoading}
-                  isFetching={isFetching}
-                  itemLabel="factures"
-                  showKeyboardHint
-                />
-              }
             >
               <FactureTable
                 factures={factures}
@@ -509,6 +494,21 @@ export default function Factures() {
                 stickyHeader
                 stickyHeaderOffset={0}
                 scrollContainerClassName="max-h-[calc(100vh-220px)] overflow-auto"
+                footer={
+                  <PaginationControls
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalCount={totalCount}
+                    pageSize={pageSize}
+                    pageSizeOptions={[10, 25, 50, 100]}
+                    onPageChange={goToPage}
+                    onPageSizeChange={setPageSize}
+                    isLoading={isLoading}
+                    isFetching={isFetching}
+                    itemLabel="factures"
+                    showKeyboardHint
+                  />
+                }
               />
             </ListLayout>
           </>
