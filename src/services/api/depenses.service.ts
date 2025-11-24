@@ -48,14 +48,22 @@ export const getDepenses = async (exerciceId: string, clientId: string): Promise
       ligne_budgetaire:lignes_budgetaires(id, libelle, disponible),
       facture:factures(id, numero, montant_ttc, statut),
       fournisseur:fournisseurs(id, nom, code),
-      projet:projets(id, code, nom)
+      projet:projets(id, code, nom),
+      ecritures_comptables!depense_id(count)
     `)
     .eq('exercice_id', exerciceId)
     .eq('client_id', clientId)
     .order('date_depense', { ascending: false });
 
   if (error) throw error;
-  return toCamelCase(data) as Depense[];
+  
+  const depensesWithCount = (data || []).map(dep => {
+    const ecrituresCount = dep.ecritures_comptables?.[0]?.count || 0;
+    const { ecritures_comptables, ...depenseData } = dep;
+    return { ...depenseData, ecritures_count: ecrituresCount };
+  });
+  
+  return toCamelCase(depensesWithCount) as Depense[];
 };
 
 export const createDepense = async (
@@ -100,6 +108,36 @@ export const updateDepense = async (
   id: string,
   updates: Partial<DepenseFormData>
 ): Promise<Depense> => {
+  // 1. Récupérer la dépense actuelle
+  const { data: currentDepense, error: fetchError } = await supabase
+    .from('depenses')
+    .select('statut')
+    .eq('id', id)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  // 2. Vérifier s'il existe des écritures validées
+  const { data: ecritures, error: ecrituresError } = await supabase
+    .from('ecritures_comptables')
+    .select('id')
+    .eq('depense_id', id)
+    .eq('statut_ecriture', 'validee')
+    .limit(1);
+
+  if (ecrituresError) throw ecrituresError;
+
+  // 3. Si écritures validées existent → BLOQUER (les brouillons ne génèrent jamais d'écritures)
+  if (ecritures && ecritures.length > 0) {
+    throw new Error(
+      '❌ Modification impossible : Cette opération a été comptabilisée.\n\n' +
+      '💡 Pour effectuer une correction :\n' +
+      '1. Annulez cette dépense (génère des écritures d\'annulation)\n' +
+      '2. Créez une nouvelle dépense avec les bonnes valeurs'
+    );
+  }
+
+  // 4. Procéder à la modification
   const cleanedData = cleanData(toSnakeCase(updates));
   
   const { data, error } = await supabase
@@ -122,6 +160,16 @@ export const updateDepense = async (
 };
 
 export const validerDepense = async (id: string): Promise<Depense> => {
+  // 1. Récupérer la dépense pour avoir client_id et exercice_id
+  const { data: depense, error: fetchError } = await supabase
+    .from('depenses')
+    .select('client_id, exercice_id')
+    .eq('id', id)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  // 2. Mettre à jour le statut
   const { data, error } = await supabase
     .from('depenses')
     .update({
@@ -141,10 +189,35 @@ export const validerDepense = async (id: string): Promise<Depense> => {
     .single();
 
   if (error) throw error;
+
+  // 3. Générer les écritures comptables automatiquement
+  try {
+    await supabase.functions.invoke('generate-ecritures-comptables', {
+      body: {
+        typeOperation: 'depense',
+        sourceId: id,
+        clientId: depense.client_id,
+        exerciceId: depense.exercice_id
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la génération des écritures:', error);
+  }
+
   return toCamelCase(data) as Depense;
 };
 
 export const ordonnancerDepense = async (id: string): Promise<Depense> => {
+  // 1. Récupérer la dépense pour avoir client_id et exercice_id
+  const { data: depense, error: fetchError } = await supabase
+    .from('depenses')
+    .select('client_id, exercice_id')
+    .eq('id', id)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  // 2. Mettre à jour le statut
   const { data, error } = await supabase
     .from('depenses')
     .update({
@@ -164,6 +237,21 @@ export const ordonnancerDepense = async (id: string): Promise<Depense> => {
     .single();
 
   if (error) throw error;
+
+  // 3. Générer les écritures comptables automatiquement
+  try {
+    await supabase.functions.invoke('generate-ecritures-comptables', {
+      body: {
+        typeOperation: 'depense',
+        sourceId: id,
+        clientId: depense.client_id,
+        exerciceId: depense.exercice_id
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la génération des écritures:', error);
+  }
+
   return toCamelCase(data) as Depense;
 };
 
@@ -173,12 +261,16 @@ export const marquerPayee = async (
   modePaiement: string,
   referencePaiement?: string
 ): Promise<Depense> => {
-  const { data: depense } = await supabase
+  // 1. Récupérer la dépense
+  const { data: depense, error: fetchError } = await supabase
     .from('depenses')
-    .select('montant')
+    .select('montant, client_id, exercice_id')
     .eq('id', id)
     .single();
 
+  if (fetchError) throw fetchError;
+
+  // 2. Mettre à jour le statut
   const { data, error } = await supabase
     .from('depenses')
     .update({
@@ -201,6 +293,21 @@ export const marquerPayee = async (
     .single();
 
   if (error) throw error;
+
+  // 3. Générer les écritures comptables automatiquement
+  try {
+    await supabase.functions.invoke('generate-ecritures-comptables', {
+      body: {
+        typeOperation: 'depense',
+        sourceId: id,
+        clientId: depense.client_id,
+        exerciceId: depense.exercice_id
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la génération des écritures:', error);
+  }
+
   return toCamelCase(data) as Depense;
 };
 
@@ -253,6 +360,29 @@ export const annulerMultipleDepenses = async (depenseIds: string[], motif: strin
 };
 
 export const annulerDepense = async (id: string, motif: string): Promise<Depense> => {
+  // 1. Vérifier s'il existe des écritures validées
+  const { data: ecritures, error: ecrituresError } = await supabase
+    .from('ecritures_comptables')
+    .select('id')
+    .eq('depense_id', id)
+    .eq('statut_ecriture', 'validee');
+
+  if (ecrituresError) throw ecrituresError;
+
+  // 2. Si écritures existent → Contrepasser
+  if (ecritures && ecritures.length > 0) {
+    const { error: contrepasserError } = await supabase.functions.invoke('contrepasser-ecritures', {
+      body: {
+        typeOperation: 'depense',
+        sourceId: id,
+        motifAnnulation: motif,
+      }
+    });
+
+    if (contrepasserError) throw contrepasserError;
+  }
+
+  // 3. Mettre à jour le statut
   const { data, error } = await supabase
     .from('depenses')
     .update({
@@ -276,6 +406,24 @@ export const annulerDepense = async (id: string, motif: string): Promise<Depense
 };
 
 export const deleteDepense = async (id: string): Promise<void> => {
+  // 1. Vérifier le statut
+  const { data: depense, error: fetchError } = await supabase
+    .from('depenses')
+    .select('statut')
+    .eq('id', id)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  // 2. Bloquer si pas brouillon (les brouillons n'ont jamais d'écritures)
+  if (depense.statut !== 'brouillon') {
+    throw new Error(
+      '❌ Suppression impossible\n\n' +
+      '💡 Utilisez l\'annulation au lieu de la suppression pour conserver l\'historique comptable'
+    );
+  }
+
+  // 4. OK pour suppression
   const { error } = await supabase
     .from('depenses')
     .delete()

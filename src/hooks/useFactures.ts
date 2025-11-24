@@ -23,6 +23,7 @@ export const useFactures = () => {
       facturesService.create(facture),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['factures'] });
+      queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       if (!variables.skipToast) {
         toast.success('Facture créée avec succès');
       }
@@ -83,6 +84,7 @@ export const useFactures = () => {
     mutationFn: (id: string) => facturesService.validerFacture(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['factures'] });
+      queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       toast.success('Facture validée avec succès');
     },
     onError: (error: Error) => {
@@ -94,6 +96,7 @@ export const useFactures = () => {
     mutationFn: (id: string) => facturesService.marquerPayee(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['factures'] });
+      queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       toast.success('Facture marquée comme payée');
     },
     onError: (error: Error) => {
@@ -106,6 +109,7 @@ export const useFactures = () => {
       facturesService.annuler(id, motif),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['factures'] });
+      queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       toast.success('Facture annulée avec succès');
     },
     onError: (error: Error) => {

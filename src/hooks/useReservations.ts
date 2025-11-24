@@ -31,6 +31,7 @@ export const useReservations = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
     },
   });
 
@@ -46,6 +47,7 @@ export const useReservations = () => {
     mutationFn: (id: string) => reservationsService.utiliserReservation(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
     },
   });
 
@@ -54,6 +56,7 @@ export const useReservations = () => {
       reservationsService.annulerReservation(id, motif),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
     },
   });
 

@@ -5,14 +5,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import { useReglesComptables } from '@/hooks/useReglesComptables';
 import { useComptes } from '@/hooks/useComptes';
 import { useClient } from '@/contexts/ClientContext';
 import { ConditionsBuilder } from './ConditionsBuilder';
 import { TYPE_OPERATION_LABELS } from '@/lib/regles-comptables-fields';
 import type { RegleComptable, TypeOperation, Condition } from '@/types/regle-comptable.types';
+import { CompteDoubleSelect } from './CompteDoubleSelect';
 
 interface RegleComptableDialogProps {
   open: boolean;
@@ -270,46 +271,13 @@ export const RegleComptableDialog = ({
           {/* Section 5: Comptes comptables */}
           <div className="space-y-4">
             <h3 className="font-semibold text-sm">Comptes comptables</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="compteDebit">Compte à débiter *</Label>
-                <Select
-                  value={compteDebitId}
-                  onValueChange={setCompteDebitId}
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un compte" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {comptesOptions.map((compte) => (
-                      <SelectItem key={compte.id} value={compte.id}>
-                        {compte.numero} - {compte.libelle}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="compteCredit">Compte à créditer *</Label>
-                <Select
-                  value={compteCreditId}
-                  onValueChange={setCompteCreditId}
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un compte" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {comptesOptions.map((compte) => (
-                      <SelectItem key={compte.id} value={compte.id}>
-                        {compte.numero} - {compte.libelle}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            <CompteDoubleSelect
+              comptes={comptesOptions}
+              debitValue={compteDebitId}
+              creditValue={compteCreditId}
+              onChangeDebit={setCompteDebitId}
+              onChangeCredit={setCompteCreditId}
+            />
           </div>
 
           <Separator />
@@ -317,15 +285,7 @@ export const RegleComptableDialog = ({
           {/* Section 6: Paramètres */}
           <div className="space-y-4">
             <h3 className="font-semibold text-sm">Paramètres</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="actif"
-                  checked={actif}
-                  onCheckedChange={setActif}
-                />
-                <Label htmlFor="actif">Règle active</Label>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="ordre">Ordre d'exécution</Label>
                 <Input

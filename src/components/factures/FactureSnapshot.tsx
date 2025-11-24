@@ -6,6 +6,11 @@ import { Progress } from '@/components/ui/progress';
 import type { Facture } from '@/types/facture.types';
 import { SnapshotBase } from '@/components/shared/SnapshotBase';
 import { formatMontant, formatDate, formatDateTime, getEntityUrl } from '@/lib/snapshot-utils';
+import { useEcrituresBySource } from '@/hooks/useEcrituresComptables';
+import { useGenerateEcritures } from '@/hooks/useGenerateEcritures';
+import { useClient } from '@/contexts/ClientContext';
+import { useExercice } from '@/contexts/ExerciceContext';
+import { EcrituresSection } from '@/components/ecritures/EcrituresSection';
 
 interface FactureSnapshotProps {
   facture: Facture;
@@ -58,11 +63,29 @@ export const FactureSnapshot = ({
   onCreerDepense,
   onNavigateToEntity,
 }: FactureSnapshotProps) => {
+  const { currentClient } = useClient();
+  const { currentExercice } = useExercice();
+  const { ecritures, isLoading: ecrituresLoading } = useEcrituresBySource('facture', facture.id);
+  const generateMutation = useGenerateEcritures();
+
+  const handleGenerateEcritures = () => {
+    if (!currentClient?.id || !currentExercice?.id) return;
+    
+    generateMutation.mutate({
+      typeOperation: 'facture',
+      sourceId: facture.id,
+      clientId: currentClient.id,
+      exerciceId: currentExercice.id
+    });
+  };
+
+  const canGenerateEcritures = facture.statut !== 'brouillon';
+
   const getStatutBadge = (statut: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'> = {
       brouillon: 'outline',
-      validee: 'secondary',
-      payee: 'default',
+      validee: 'success',
+      payee: 'success',
       annulee: 'destructive',
     };
 
@@ -344,6 +367,15 @@ export const FactureSnapshot = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Écritures comptables */}
+      <EcrituresSection
+        ecritures={ecritures}
+        isLoading={ecrituresLoading}
+        onGenerate={canGenerateEcritures ? handleGenerateEcritures : undefined}
+        isGenerating={generateMutation.isPending}
+        disabledReason={!canGenerateEcritures ? "Les écritures ne peuvent être générées que pour les factures validées" : undefined}
+      />
     </SnapshotBase>
   );
 };
