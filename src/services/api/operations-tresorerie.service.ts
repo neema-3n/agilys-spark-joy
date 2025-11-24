@@ -70,7 +70,7 @@ export const operationsTresorerieService = {
             ligne_budgetaire:lignes_budgetaires(
               id,
               libelle,
-              action:actions(code, libelle)
+              action:actions!action_id(code, libelle)
             )
           )
         )

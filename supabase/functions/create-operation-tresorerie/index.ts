@@ -34,6 +34,13 @@ serve(async (req) => {
 
     console.log('Création d\'une opération de trésorerie:', { clientId, typeOperation, montant });
 
+    // Nettoyer les champs UUID optionnels : convertir les chaînes vides en null
+    const cleanCompteContrepartieId = compteContrepartieId?.trim() ? compteContrepartieId : null;
+    const cleanModePaiement = modePaiement?.trim() || null;
+    const cleanReferenceBancaire = referenceBancaire?.trim() || null;
+    const cleanCategorie = categorie?.trim() || null;
+    const cleanObservations = observations?.trim() || null;
+
     // Générer le numéro d'opération
     const { data: lastOperation } = await supabase
       .from('operations_tresorerie')
@@ -68,13 +75,13 @@ serve(async (req) => {
         date_operation: dateOperation,
         type_operation: typeOperation,
         compte_id: compteId,
-        compte_contrepartie_id: compteContrepartieId,
+        compte_contrepartie_id: cleanCompteContrepartieId,
         montant,
-        mode_paiement: modePaiement,
-        reference_bancaire: referenceBancaire,
+        mode_paiement: cleanModePaiement,
+        reference_bancaire: cleanReferenceBancaire,
         libelle,
-        categorie,
-        observations,
+        categorie: cleanCategorie,
+        observations: cleanObservations,
         statut: 'validee',
         created_by: user?.id,
       })
