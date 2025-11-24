@@ -38,6 +38,23 @@ export interface OperationTresorerie {
     libelle: string;
     type: string;
   };
+  paiement?: {
+    id: string;
+    numero: string;
+    depense?: {
+      id: string;
+      numero: string;
+      objet: string;
+      ligneBudgetaire?: {
+        id: string;
+        libelle: string;
+        action?: {
+          code: string;
+          libelle: string;
+        };
+      };
+    };
+  };
 }
 
 export interface OperationTresorerieFormData {

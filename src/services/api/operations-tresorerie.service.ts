@@ -36,6 +36,20 @@ const mapDbToOperation = (data: any): OperationTresorerie => ({
     libelle: data.compte_contrepartie.libelle,
     type: data.compte_contrepartie.type,
   } : undefined,
+  paiement: data.paiement ? {
+    id: data.paiement.id,
+    numero: data.paiement.numero,
+    depense: data.paiement.depense ? {
+      id: data.paiement.depense.id,
+      numero: data.paiement.depense.numero,
+      objet: data.paiement.depense.objet,
+      ligneBudgetaire: data.paiement.depense.ligne_budgetaire ? {
+        id: data.paiement.depense.ligne_budgetaire.id,
+        libelle: data.paiement.depense.ligne_budgetaire.libelle,
+        action: data.paiement.depense.ligne_budgetaire.action,
+      } : undefined,
+    } : undefined,
+  } : undefined,
 });
 
 export const operationsTresorerieService = {
@@ -44,8 +58,22 @@ export const operationsTresorerieService = {
       .from('operations_tresorerie')
       .select(`
         *,
-        compte:comptes_tresorerie!compte_id(code, libelle, type),
-        compte_contrepartie:comptes_tresorerie!compte_contrepartie_id(code, libelle, type)
+        compte:comptes_tresorerie!operations_tresorerie_compte_id_fkey(code, libelle, type),
+        compte_contrepartie:comptes_tresorerie!operations_tresorerie_compte_contrepartie_id_fkey(code, libelle, type),
+        paiement:paiements(
+          id,
+          numero,
+          depense:depenses(
+            id,
+            numero,
+            objet,
+            ligne_budgetaire:lignes_budgetaires(
+              id,
+              libelle,
+              action:actions(code, libelle)
+            )
+          )
+        )
       `)
       .eq('client_id', clientId)
       .eq('exercice_id', exerciceId)
