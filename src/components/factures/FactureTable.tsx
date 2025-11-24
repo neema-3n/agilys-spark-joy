@@ -53,6 +53,7 @@ interface FactureTableProps {
   stickyHeader?: boolean;
   stickyHeaderOffset?: number;
   scrollContainerClassName?: string;
+  footer?: React.ReactNode;
 }
 
 export const FactureTable = ({
@@ -68,6 +69,7 @@ export const FactureTable = ({
   stickyHeader = false,
   stickyHeaderOffset = 0,
   scrollContainerClassName,
+  footer,
 }: FactureTableProps) => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const factureIds = useMemo(() => factures.map((facture) => facture.id), [factures]);
@@ -251,6 +253,7 @@ export const FactureTable = ({
         stickyHeader={stickyHeader}
         stickyHeaderOffset={stickyHeaderOffset}
         scrollContainerClassName={scrollContainerClassName}
+        footer={footer}
       />
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
