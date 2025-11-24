@@ -87,6 +87,22 @@ export const OperationTresorerieTable = ({ operations }: OperationTresorerieTabl
       ),
     },
     {
+      id: 'ligneBudgetaire',
+      header: 'Ligne budgétaire',
+      render: (operation) => {
+        const lb = operation.paiement?.depense?.ligneBudgetaire;
+        if (!lb) return <span className="text-muted-foreground">-</span>;
+        return (
+          <div className="text-sm">
+            <div className="font-medium">{lb.action?.code}</div>
+            <div className="text-muted-foreground truncate max-w-[200px]" title={lb.libelle}>
+              {lb.libelle}
+            </div>
+          </div>
+        );
+      },
+    },
+    {
       id: 'rapproche',
       header: 'Rapproché',
       render: (operation) => (
