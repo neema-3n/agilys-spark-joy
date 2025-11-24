@@ -58,8 +58,8 @@ export const operationsTresorerieService = {
       .from('operations_tresorerie')
       .select(`
         *,
-        compte:comptes_tresorerie!operations_tresorerie_compte_id_fkey(code, libelle, type),
-        compte_contrepartie:comptes_tresorerie!operations_tresorerie_compte_contrepartie_id_fkey(code, libelle, type),
+        compte:comptes_tresorerie!compte_id(code, libelle, type),
+        compte_contrepartie:comptes_tresorerie!compte_contrepartie_id(code, libelle, type),
         paiement:paiements(
           id,
           numero,
