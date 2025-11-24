@@ -5,8 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import { useReglesComptables } from '@/hooks/useReglesComptables';
 import { useComptes } from '@/hooks/useComptes';
 import { useClient } from '@/contexts/ClientContext';
@@ -285,15 +285,7 @@ export const RegleComptableDialog = ({
           {/* Section 6: Paramètres */}
           <div className="space-y-4">
             <h3 className="font-semibold text-sm">Paramètres</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="actif"
-                  checked={actif}
-                  onCheckedChange={setActif}
-                />
-                <Label htmlFor="actif">Règle active</Label>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="ordre">Ordre d'exécution</Label>
                 <Input
