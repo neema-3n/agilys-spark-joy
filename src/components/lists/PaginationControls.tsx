@@ -87,27 +87,76 @@ export function PaginationControls({
   }
 
   return (
-    <div className="flex flex-col gap-4 py-4 px-2">
-      {/* Ligne supérieure : Info + PageSize selector */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          {isFetching && (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          )}
+    <div className="flex flex-col gap-2 py-2 px-3 sm:px-4 w-full max-w-4xl mx-auto">
+      <div className="flex flex-wrap items-center gap-2 justify-between">
+        <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+          {isFetching && <Loader2 className="h-4 w-4 animate-spin" />}
           <span>
             Affichage <span className="font-medium text-foreground">{startIndex}-{endIndex}</span> sur{' '}
             <span className="font-medium text-foreground">{totalCount}</span> {itemLabel}
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Afficher</span>
+        <div className="flex flex-1 justify-center order-3 w-full sm:w-auto sm:order-none">
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={currentPage === 1 || isLoading}
+              className="gap-1"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Précédent
+            </Button>
+
+            {pageNumbers.map((page, idx) => {
+              if (page === 'ellipsis') {
+                return (
+                  <span key={`ellipsis-${idx}`} className="px-1.5 text-muted-foreground text-sm">
+                    ...
+                  </span>
+                );
+              }
+
+              return (
+                <Button
+                  key={page}
+                  variant={page === currentPage ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => onPageChange(page)}
+                  disabled={isLoading}
+                  className={cn(
+                    'min-w-[34px] px-2',
+                    page === currentPage && 'pointer-events-none'
+                  )}
+                >
+                  {page}
+                </Button>
+              );
+            })}
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={currentPage === totalPages || isLoading}
+              className="gap-1"
+            >
+              Suivant
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-muted-foreground">
+          <span>Afficher</span>
           <Select
             value={pageSize.toString()}
             onValueChange={(value) => onPageSizeChange(parseInt(value, 10))}
             disabled={isLoading}
           >
-            <SelectTrigger className="w-[70px] h-8">
+            <SelectTrigger className="w-[68px] h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -118,68 +167,16 @@ export function PaginationControls({
               ))}
             </SelectContent>
           </Select>
-          <span className="text-sm text-muted-foreground">par page</span>
+          <span>par page</span>
         </div>
       </div>
 
-      {/* Ligne centrale : Navigation */}
-      <div className="flex items-center justify-center gap-1">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage === 1 || isLoading}
-          className="gap-1"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Précédent
-        </Button>
-
-        {pageNumbers.map((page, idx) => {
-          if (page === 'ellipsis') {
-            return (
-              <span key={`ellipsis-${idx}`} className="px-2 text-muted-foreground">
-                ...
-              </span>
-            );
-          }
-
-          return (
-            <Button
-              key={page}
-              variant={page === currentPage ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => onPageChange(page)}
-              disabled={isLoading}
-              className={cn(
-                'min-w-[36px]',
-                page === currentPage && 'pointer-events-none'
-              )}
-            >
-              {page}
-            </Button>
-          );
-        })}
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage === totalPages || isLoading}
-          className="gap-1"
-        >
-          Suivant
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {/* Ligne inférieure : Hint clavier */}
       {showKeyboardHint && (
-        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
           <Keyboard className="h-3 w-3" />
           <span>
-            Utilisez <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">←</kbd> et{' '}
-            <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">→</kbd> pour naviguer
+            Utilisez <kbd className="px-1 py-0.5 bg-muted rounded text-[10px] font-mono">←</kbd> et{' '}
+            <kbd className="px-1 py-0.5 bg-muted rounded text-[10px] font-mono">→</kbd> pour naviguer
           </span>
         </div>
       )}
