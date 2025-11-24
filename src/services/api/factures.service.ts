@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { Facture, CreateFactureInput, UpdateFactureInput } from '@/types/facture.types';
+import { Facture, CreateFactureInput, UpdateFactureInput, PaginatedResponse, PaginationParams } from '@/types/facture.types';
 
 function mapFactureFromDB(data: any): Facture {
   return {
@@ -83,6 +83,73 @@ function mapFactureToDB(data: CreateFactureInput | UpdateFactureInput) {
 }
 
 export const facturesService = {
+  async getPaginated(
+    clientId: string,
+    exerciceId: string | undefined,
+    params: PaginationParams
+  ): Promise<PaginatedResponse<Facture>> {
+    const start = (params.page - 1) * params.pageSize;
+    const end = start + params.pageSize - 1;
+
+    let query = supabase
+      .from('factures')
+      .select(`
+        *,
+        fournisseurs (id, nom, code),
+        bons_commande (id, numero),
+        engagements (id, numero),
+        lignes_budgetaires (id, libelle),
+        projets (id, nom)
+      `, { count: 'exact' })
+      .eq('client_id', clientId);
+
+    if (exerciceId) {
+      query = query.eq('exercice_id', exerciceId);
+    }
+
+    // Appliquer les filtres
+    if (params.filters) {
+      if (params.filters.statut) {
+        query = query.eq('statut', params.filters.statut);
+      }
+      if (params.filters.searchTerm) {
+        query = query.or(`numero.ilike.%${params.filters.searchTerm}%,objet.ilike.%${params.filters.searchTerm}%`);
+      }
+      if (params.filters.fournisseurId) {
+        query = query.eq('fournisseur_id', params.filters.fournisseurId);
+      }
+      if (params.filters.dateDebut) {
+        query = query.gte('date_facture', params.filters.dateDebut);
+      }
+      if (params.filters.dateFin) {
+        query = query.lte('date_facture', params.filters.dateFin);
+      }
+    }
+
+    // Appliquer le tri
+    query = query.order(params.sortBy || 'date_facture', { 
+      ascending: params.sortOrder === 'asc' 
+    });
+
+    // Appliquer la pagination
+    query = query.range(start, end);
+
+    const { data, error, count } = await query;
+
+    if (error) throw error;
+
+    const totalCount = count || 0;
+    const totalPages = Math.ceil(totalCount / params.pageSize);
+
+    return {
+      data: data.map(mapFactureFromDB),
+      totalCount,
+      page: params.page,
+      pageSize: params.pageSize,
+      totalPages,
+    };
+  },
+
   async getAll(clientId: string, exerciceId?: string): Promise<Facture[]> {
     let query = supabase
       .from('factures')
@@ -402,5 +469,42 @@ export const facturesService = {
       statut: 'annulee',
       observations: motif,
     });
+  },
+
+  async getStats(clientId: string, exerciceId?: string): Promise<{
+    nombreTotal: number;
+    nombreBrouillon: number;
+    nombreValidee: number;
+    nombrePayee: number;
+    montantTotal: number;
+    montantBrouillon: number;
+    montantValidee: number;
+    montantLiquide: number;
+  }> {
+    let query = supabase
+      .from('factures')
+      .select('statut, montant_ttc, montant_liquide')
+      .eq('client_id', clientId);
+
+    if (exerciceId) {
+      query = query.eq('exercice_id', exerciceId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    const stats = {
+      nombreTotal: data.length,
+      nombreBrouillon: data.filter(f => f.statut === 'brouillon').length,
+      nombreValidee: data.filter(f => f.statut === 'validee').length,
+      nombrePayee: data.filter(f => f.statut === 'payee').length,
+      montantTotal: data.reduce((sum, f) => sum + parseFloat(f.montant_ttc.toString()), 0),
+      montantBrouillon: data.filter(f => f.statut === 'brouillon').reduce((sum, f) => sum + parseFloat(f.montant_ttc.toString()), 0),
+      montantValidee: data.filter(f => f.statut === 'validee').reduce((sum, f) => sum + parseFloat(f.montant_ttc.toString()), 0),
+      montantLiquide: data.reduce((sum, f) => sum + parseFloat(f.montant_liquide.toString()), 0),
+    };
+
+    return stats;
   },
 };

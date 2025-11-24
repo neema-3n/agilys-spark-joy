@@ -1,10 +1,11 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { showNavigationToast } from '@/lib/navigation-toast';
-import { useFactures } from '@/hooks/useFactures';
+import { useFacturesPaginated } from '@/hooks/useFactures';
 import { useDepenses } from '@/hooks/useDepenses';
 import { useFournisseurs } from '@/hooks/useFournisseurs';
 import { useProjets } from '@/hooks/useProjets';
@@ -37,6 +38,7 @@ import { Label } from '@/components/ui/label';
 import { ListLayout } from '@/components/lists/ListLayout';
 import { ListToolbar } from '@/components/lists/ListToolbar';
 import { ListPageLoading } from '@/components/lists/ListPageLoading';
+import { PaginationControls } from '@/components/lists/PaginationControls';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,6 +48,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useListSelection } from '@/hooks/useListSelection';
 import { CTA_REVEAL_STYLES, useHeaderCtaReveal } from '@/hooks/useHeaderCtaReveal';
+import { testDataService } from '@/services/api/test-data.service';
 
 export default function Factures() {
   const navigate = useNavigate();
@@ -60,12 +63,44 @@ export default function Factures() {
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
   const [annulationFactureId, setAnnulationFactureId] = useState<string | undefined>();
   const [selectedFactureForDepense, setSelectedFactureForDepense] = useState<Facture | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statutFilter, setStatutFilter] = useState<'tous' | StatutFacture>('tous');
 
-  const { factures, isLoading, createFacture, updateFacture, deleteFacture, genererNumero, validerFacture, marquerPayee, annulerFacture } = useFactures();
+  // Pagination côté serveur
+  const {
+    data: factures,
+    totalCount,
+    currentPage,
+    pageSize,
+    totalPages,
+    goToPage,
+    setPageSize,
+    filters,
+    setFilters,
+    isLoading,
+    isFetching,
+    canGoNext,
+    canGoPrevious,
+    createFacture,
+    updateFacture,
+    deleteFacture,
+    validerFacture,
+    marquerPayee,
+    annulerFacture,
+  } = useFacturesPaginated();
+
   const { createDepenseFromFacture } = useDepenses();
   const [motifAnnulation, setMotifAnnulation] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  // Récupérer les stats globales côté serveur
+  const { data: stats } = useQuery({
+    queryKey: ['factures-stats', currentClient?.id, currentExercice?.id],
+    queryFn: async () => {
+      if (!currentClient) return null;
+      const { facturesService } = await import('@/services/api/factures.service');
+      return facturesService.getStats(currentClient.id, currentExercice?.id);
+    },
+    enabled: !!currentClient,
+  });
 
   const { fournisseurs } = useFournisseurs();
   const { projets } = useProjets();
@@ -78,33 +113,53 @@ export default function Factures() {
     [factures, editingFactureId]
   );
 
-  const filteredFactures = useMemo(() => {
-    const searchLower = searchTerm.trim().toLowerCase();
+  // Synchroniser filtres avec le hook de pagination
+  useEffect(() => {
+    const newFilters: Record<string, any> = {};
+    const searchTerm = filters.searchTerm as string | undefined;
+    const statutFilter = filters.statut as StatutFacture | undefined;
 
-    return factures
-      .filter((facture) => (statutFilter === 'tous' ? true : facture.statut === statutFilter))
-      .filter((facture) => {
-        if (!searchLower) return true;
+    if (searchTerm) newFilters.searchTerm = searchTerm;
+    if (statutFilter) newFilters.statut = statutFilter;
 
-        return (
-          facture.numero.toLowerCase().includes(searchLower) ||
-          facture.objet?.toLowerCase().includes(searchLower) ||
-          facture.fournisseur?.nom.toLowerCase().includes(searchLower) ||
-          facture.bonCommande?.numero?.toLowerCase().includes(searchLower)
-        );
-      })
-      .sort((a, b) => new Date(b.dateFacture).getTime() - new Date(a.dateFacture).getTime());
-  }, [factures, searchTerm, statutFilter]);
+    // Ne mettre à jour que si les filtres ont changé
+    const currentKeys = Object.keys(filters).sort().join(',');
+    const newKeys = Object.keys(newFilters).sort().join(',');
+    if (currentKeys !== newKeys) {
+      setFilters(newFilters);
+    }
+  }, []);
+
+  const handleSearchChange = useCallback((value: string) => {
+    setFilters({ ...filters, searchTerm: value || undefined });
+  }, [filters, setFilters]);
+
+  const handleStatutChange = useCallback((value: 'tous' | StatutFacture) => {
+    const newFilters = { ...filters };
+    if (value === 'tous') {
+      delete newFilters.statut;
+    } else {
+      newFilters.statut = value;
+    }
+    setFilters(newFilters);
+  }, [filters, setFilters]);
 
   const selectionIds = useMemo(
-    () => filteredFactures.map((facture) => facture.id),
-    [filteredFactures]
+    () => factures.map((facture) => facture.id),
+    [factures]
   );
-  const { selectedIds, allSelected, toggleOne, toggleAll, clearSelection } = useListSelection(selectionIds);
+
+  const {
+    selectedIds,
+    allSelected,
+    clearSelection,
+    toggleOne,
+    toggleAll,
+  } = useListSelection(selectionIds);
 
   const selectedFactures = useMemo(
-    () => filteredFactures.filter((facture) => selectedIds.has(facture.id)),
-    [filteredFactures, selectedIds]
+    () => factures.filter((facture) => selectedIds.has(facture.id)),
+    [factures, selectedIds]
   );
 
   const handleBatchValider = useCallback(async () => {
@@ -127,8 +182,8 @@ export default function Factures() {
 
   const handleExportFactures = useCallback(() => {
     // Exporter toutes les factures filtrées (CSV/Excel) – brancher ici l'implémentation
-    // Exemple : exportFactures(filteredFactures);
-  }, [filteredFactures]);
+    // Exemple : exportFactures(factures);
+  }, [factures]);
 
   const {
     snapshotId: snapshotFactureId,
@@ -207,11 +262,17 @@ export default function Factures() {
 
   const handleGenererNumero = useCallback(async () => {
     if (!currentClient || !currentExercice) return '';
-    return await genererNumero({
-      clientId: currentClient.id,
-      exerciceId: currentExercice.id,
-    });
-  }, [currentClient, currentExercice, genererNumero]);
+    // Générer le prochain numéro côté client (pattern FAC000001)
+    const lastFacture = factures[0];
+    if (!lastFacture) return 'FAC000001';
+    
+    const match = lastFacture.numero.match(/FAC(\d+)/);
+    if (match) {
+      const nextNumber = parseInt(match[1]) + 1;
+      return `FAC${nextNumber.toString().padStart(6, '0')}`;
+    }
+    return 'FAC000001';
+  }, [currentClient, currentExercice, factures]);
 
   const handleAnnuler = useCallback((id: string) => {
     setAnnulationFactureId(id);
@@ -248,6 +309,33 @@ export default function Factures() {
     }
   }, [navigate]);
 
+  const handleGenerateTestData = async () => {
+    if (!currentClient || !currentExercice) return;
+    
+    const count = parseInt(prompt('Combien de factures de test voulez-vous générer ? (max 1000)', '500') || '0');
+    if (count <= 0 || count > 1000) {
+      toast.error('Nombre invalide (entre 1 et 1000)');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const result = await testDataService.generateTestFactures(
+        currentClient.id,
+        currentExercice.id,
+        count
+      );
+      toast.success(result.message);
+      // Rafraîchir les données
+      window.location.reload();
+    } catch (error) {
+      console.error('Erreur:', error);
+      toast.error(error instanceof Error ? error.message : 'Erreur lors de la génération');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <ListPageLoading
@@ -265,10 +353,26 @@ export default function Factures() {
       scrollProgress={scrollProgress}
       sticky={false}
       actions={
-        <Button onClick={handleCreate} ref={headerCtaRef}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nouvelle facture
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleGenerateTestData}
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Génération...
+              </>
+            ) : (
+              'Générer des données de test'
+            )}
+          </Button>
+          <Button onClick={handleCreate} ref={headerCtaRef}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nouvelle facture
+          </Button>
+        </div>
       }
     />
   );
@@ -282,7 +386,7 @@ export default function Factures() {
   ];
 
   const activeStatutLabel =
-    statutOptions.find((option) => option.value === statutFilter)?.label || 'Tous';
+    statutOptions.find((option) => option.value === (filters.statut as StatutFacture || 'tous'))?.label || 'Tous';
 
   return (
     <div className="space-y-6">
@@ -310,7 +414,7 @@ export default function Factures() {
           <div className="py-12 text-center text-muted-foreground">Chargement du snapshot...</div>
         ) : (
           <>
-            <FactureStats factures={factures} />
+            {stats && <FactureStats factures={factures} stats={stats} />}
 
             <ListLayout
               title="Liste des factures"
@@ -325,8 +429,8 @@ export default function Factures() {
               }
               toolbar={
                 <ListToolbar
-                  searchValue={searchTerm}
-                  onSearchChange={setSearchTerm}
+                  searchValue={(filters.searchTerm as string) || ''}
+                  onSearchChange={handleSearchChange}
                   searchPlaceholder="Rechercher par numéro, objet, fournisseur..."
                   filters={[
                     <DropdownMenu key="statut">
@@ -337,7 +441,7 @@ export default function Factures() {
                         {statutOptions.map((option) => (
                           <DropdownMenuItem
                             key={option.value}
-                            onClick={() => setStatutFilter(option.value)}
+                            onClick={() => handleStatutChange(option.value)}
                           >
                             {option.label}
                           </DropdownMenuItem>
@@ -378,7 +482,7 @@ export default function Factures() {
               }
             >
               <FactureTable
-                factures={filteredFactures}
+                factures={factures}
                 onEdit={(facture) => handleEdit(facture.id)}
                 onDelete={deleteFacture}
                 onValider={validerFacture}
@@ -390,6 +494,21 @@ export default function Factures() {
                 stickyHeader
                 stickyHeaderOffset={0}
                 scrollContainerClassName="max-h-[calc(100vh-220px)] overflow-auto"
+                footer={
+                  <PaginationControls
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalCount={totalCount}
+                    pageSize={pageSize}
+                    pageSizeOptions={[10, 25, 50, 100]}
+                    onPageChange={goToPage}
+                    onPageSizeChange={setPageSize}
+                    isLoading={isLoading}
+                    isFetching={isFetching}
+                    itemLabel="factures"
+                    showKeyboardHint
+                  />
+                }
               />
             </ListLayout>
           </>

@@ -7,6 +7,7 @@ Référence pour les listes factorisées basées sur `ListLayout`, `ListToolbar`
 - `ListLayout` : carte contenant titre, description optionnelle, actions (optionnel aligné à droite), toolbar et footer optionnel.
 - `ListToolbar` : barre de recherche + filtres (ReactNode[]) + slot droit (bouton principal). Gère uniquement l’UI, pas le state.
 - `ListTable` : tableau générique (shadcn/ui) avec colonnes typées et gestion d’état vide.
+- `PaginationControls` : contrôle de pagination serveur (flèches, numéros, page size, raccourcis ← →).
 
 ## API principale
 
@@ -29,6 +30,7 @@ type ListColumn<T> = {
   stickyHeader // optionnel
   stickyHeaderOffset={0} // top pour le sticky
   scrollContainerClassName="max-h-[calc(100vh-220px)] overflow-auto" // conteneur scroll vertical
+  footer={/* PaginationControls ici */}
 />
 ```
 
@@ -42,6 +44,81 @@ type ListColumn<T> = {
 - Style : aucune couleur directe; uniquement les tokens du design system (classes shadcn/Tailwind existantes).
 - Performance : dériver `columns` et `filteredItems` avec `useMemo` si nécessaire pour éviter les recalculs.
 - Scroll : utiliser `scrollContainerClassName` pour définir la hauteur max (`max-h[...]`) et `overflow-auto`; le sticky s’applique sur les `th` avec `stickyHeader` + `stickyHeaderOffset`.
+
+## Pagination serveur (recommandée)
+
+- Pattern : `useServerPagination` + service `getPaginated` (Supabase) + `PaginationControls` dans le footer du `ListTable`.
+- Stockage : `pageSize` persisté via `storageKey`, synchro URL (`page`, `pageSize`, filtres), préfetch ±1 page, raccourcis clavier ← →, Ctrl+Home/End.
+- Tri/filtre : passer `sortBy`, `sortOrder`, `filters` au service; `setFilters` remet la page à 1. Utiliser des filtres typés (ex: `FactureFilters`).
+- Loading : `isLoading` (initial) et `isFetching` (changement page/filtre) alimentent `PaginationControls` (spinner discret).
+
+### Exemple simplifié (dérivé de Factures)
+
+```tsx
+// Hook
+const {
+  data: factures,
+  totalCount,
+  currentPage,
+  pageSize,
+  totalPages,
+  goToPage,
+  setPageSize,
+  setFilters,
+  filters,
+  isLoading,
+  isFetching,
+} = useFacturesPaginated(); // wrap de useServerPagination + mutations CRUD
+
+// Service (supabase)
+facturesService.getPaginated = (clientId, exerciceId, params) => {
+  const start = (params.page - 1) * params.pageSize;
+  const end = start + params.pageSize - 1;
+  let query = supabase
+    .from('factures')
+    .select('*, fournisseurs (id, nom, code)', { count: 'exact' })
+    .eq('client_id', clientId);
+  if (exerciceId) query = query.eq('exercice_id', exerciceId);
+  if (params.filters?.statut) query = query.eq('statut', params.filters.statut);
+  if (params.filters?.searchTerm) {
+    query = query.or(`numero.ilike.%${params.filters.searchTerm}%,objet.ilike.%${params.filters.searchTerm}%`);
+  }
+  query = query.order(params.sortBy || 'date_facture', { ascending: params.sortOrder === 'asc' });
+  query = query.range(start, end);
+  return query.then(({ data, count, error }) => {
+    if (error) throw error;
+    const totalPages = Math.ceil((count || 0) / params.pageSize);
+    return { data: data.map(mapFactureFromDB), totalCount: count || 0, page: params.page, pageSize: params.pageSize, totalPages };
+  });
+};
+
+// Table + footer
+<ListTable
+  items={factures}
+  columns={columns}
+  getRowId={(f) => f.id}
+  onRowDoubleClick={(f) => onViewDetails(f.id)}
+  emptyMessage="Aucune facture trouvée"
+  stickyHeader
+  stickyHeaderOffset={0}
+  scrollContainerClassName="max-h-[calc(100vh-220px)] overflow-auto"
+  footer={
+    <PaginationControls
+      currentPage={currentPage}
+      totalPages={totalPages}
+      totalCount={totalCount}
+      pageSize={pageSize}
+      pageSizeOptions={[10, 25, 50, 100]}
+      onPageChange={goToPage}
+      onPageSizeChange={setPageSize}
+      isLoading={isLoading}
+      isFetching={isFetching}
+      itemLabel="factures"
+      showKeyboardHint
+    />
+  }
+/>
+```
 
 ### Sélection batch (optionnel)
 
@@ -155,3 +232,4 @@ return (
 - [ ] Responsive : conteneur scroll horizontal (`overflow-x-auto`) déjà géré
 - [ ] State `isLoading` factorisé : composant `ListPageLoading` pour header + message de chargement
 - [ ] Scroll vertical : `scrollContainerClassName` pour la hauteur + `overflow-auto`, stickyHeader + offset configuré
+- [ ] Pagination serveur : `useServerPagination` + service `getPaginated` + `PaginationControls` en footer (URL sync, raccourcis clavier)
