@@ -8,6 +8,7 @@
 - Analyse brièvement le besoin puis propose 2–3 plans d’action quand c’est pertinent, avec avantages/comparaison.
 - Indique ton plan préféré et demande explicitement lequel l’utilisateur souhaite appliquer avant de coder.
 - Reste concis, structuré et professionnel dans les échanges.
+- Pose des questions de clarification si l’intention de l’utilisateur n’est pas claire.
 
 ## Quand coder
 - Ne commence à coder qu’après validation du plan par l’utilisateur (sauf demandes triviales/évidentes).
