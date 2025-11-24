@@ -36,6 +36,7 @@ export const useDepenses = () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
       queryClient.invalidateQueries({ queryKey: ['factures'] });
       queryClient.invalidateQueries({ queryKey: ['lignes-budgetaires'] });
+      queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       toast({
         title: 'Succès',
         description: 'Dépense créée avec succès',
@@ -73,6 +74,7 @@ export const useDepenses = () => {
     mutationFn: (id: string) => depensesService.validerDepense(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depenses'] });
+      queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       toast({
         title: 'Succès',
         description: 'Dépense validée avec succès',
@@ -91,6 +93,7 @@ export const useDepenses = () => {
     mutationFn: (id: string) => depensesService.ordonnancerDepense(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depenses'] });
+      queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       toast({
         title: 'Succès',
         description: 'Dépense ordonnancée avec succès',
@@ -119,6 +122,7 @@ export const useDepenses = () => {
     }) => depensesService.marquerPayee(id, datePaiement, modePaiement, referencePaiement),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depenses'] });
+      queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       toast({
         title: 'Succès',
         description: 'Dépense marquée comme payée',
@@ -141,6 +145,7 @@ export const useDepenses = () => {
       queryClient.invalidateQueries({ queryKey: ['engagements'] });
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
       queryClient.invalidateQueries({ queryKey: ['paiements'] });
+      queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       toast({
         title: 'Dépense annulée',
         description: 'La dépense et ses paiements associés ont été annulés avec succès',
@@ -163,6 +168,7 @@ export const useDepenses = () => {
       queryClient.invalidateQueries({ queryKey: ['engagements'] });
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
       queryClient.invalidateQueries({ queryKey: ['paiements'] });
+      queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       toast({
         title: 'Dépenses annulées',
         description: `${variables.ids.length} dépense${variables.ids.length > 1 ? 's ont' : ' a'} été annulée${variables.ids.length > 1 ? 's' : ''} avec succès`,

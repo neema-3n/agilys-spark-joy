@@ -11,15 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ListColumn, ListTable } from '@/components/lists/ListTable';
 import { formatCurrency, cn } from '@/lib/utils';
-import {
-  AlertOctagon,
-  CheckCircle,
-  Eye,
-  MoreHorizontal,
-  Pencil,
-  Trash,
-  XCircle,
-} from 'lucide-react';
+import { Edit, Trash2, Eye, MoreHorizontal, XCircle, CheckCircle, AlertOctagon } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { ReservationCredit } from '@/types/reservation.types';
@@ -52,9 +44,9 @@ const calculerSolde = (reservation: ReservationCredit): number => {
 const formatDate = (dateString: string) => format(new Date(dateString), 'dd/MM/yyyy', { locale: fr });
 
 const getStatutBadge = (statut: ReservationCredit['statut']) => {
-  const variants: Record<ReservationCredit['statut'], 'default' | 'secondary' | 'destructive' | 'outline'> = {
-    active: 'secondary',
-    utilisee: 'outline',
+  const variants: Record<ReservationCredit['statut'], 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'> = {
+    active: 'success',
+    utilisee: 'secondary',
     annulee: 'destructive',
     expiree: 'outline',
   };
@@ -204,7 +196,7 @@ export const ReservationTable = ({
 
                 {isActive && onEdit && (
                   <DropdownMenuItem onClick={() => onEdit(reservation.id)}>
-                    <Pencil className="h-4 w-4 mr-2" />
+                    <Edit className="h-4 w-4 mr-2" />
                     Modifier
                   </DropdownMenuItem>
                 )}
@@ -237,7 +229,7 @@ export const ReservationTable = ({
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => onDelete(reservation.id)} className="text-destructive">
-                      <Trash className="h-4 w-4 mr-2" />
+                      <Trash2 className="h-4 w-4 mr-2" />
                       Supprimer
                     </DropdownMenuItem>
                   </>
