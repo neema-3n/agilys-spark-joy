@@ -14,7 +14,7 @@ export const useOperationsTresorerie = () => {
   const exerciceId = currentExercice?.id || '';
 
   const { data: operations = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['operations-tresorerie', clientId, exerciceId],
+    queryKey: ['operations-tresorerie-v2', clientId, exerciceId],
     queryFn: () => operationsTresorerieService.getAll(clientId, exerciceId),
     enabled: !!clientId && !!exerciceId,
   });
@@ -29,7 +29,8 @@ export const useOperationsTresorerie = () => {
     mutationFn: (data: OperationTresorerieFormData) =>
       operationsTresorerieService.create(clientId, exerciceId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['operations-tresorerie'] });
+      queryClient.invalidateQueries({ queryKey: ['operations-tresorerie-v2'] });
+      queryClient.invalidateQueries({ queryKey: ['operations-tresorerie-stats'] });
       queryClient.invalidateQueries({ queryKey: ['comptes-tresorerie'] });
       toast.success('Opération enregistrée avec succès');
     },
@@ -42,7 +43,7 @@ export const useOperationsTresorerie = () => {
     mutationFn: (operationIds: string[]) =>
       operationsTresorerieService.rapprocher(operationIds),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['operations-tresorerie'] });
+      queryClient.invalidateQueries({ queryKey: ['operations-tresorerie-v2'] });
       toast.success('Opérations rapprochées');
     },
     onError: () => {
