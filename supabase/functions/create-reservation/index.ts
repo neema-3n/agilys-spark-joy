@@ -82,6 +82,31 @@ Deno.serve(async (req) => {
 
     console.log('create-reservation: Reservation created successfully', data);
 
+    // Generate accounting entries automatically
+    try {
+      console.log('create-reservation: Generating ecritures comptables');
+      
+      const { error: ecrituresError } = await supabaseAdmin.functions.invoke(
+        'generate-ecritures-comptables',
+        {
+          body: {
+            typeOperation: 'reservation',
+            sourceId: data.id,
+            clientId: body.clientId,
+            exerciceId: body.exerciceId
+          }
+        }
+      );
+      
+      if (ecrituresError) {
+        console.error('create-reservation: Error generating ecritures', ecrituresError);
+      } else {
+        console.log('create-reservation: Ecritures generated successfully');
+      }
+    } catch (ecrituresError) {
+      console.error('create-reservation: Exception generating ecritures', ecrituresError);
+    }
+
     // 6. Transformer les clés snake_case en camelCase
     const toCamelCase = (obj: any): any => {
       if (Array.isArray(obj)) {

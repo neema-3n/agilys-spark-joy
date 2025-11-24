@@ -127,6 +127,36 @@ Deno.serve(async (req) => {
 
     console.log('Paiement created successfully:', paiement);
 
+    // Generate accounting entries automatically
+    try {
+      console.log('create-paiement: Generating ecritures comptables');
+      
+      const supabaseAdmin = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+      
+      const { error: ecrituresError } = await supabaseAdmin.functions.invoke(
+        'generate-ecritures-comptables',
+        {
+          body: {
+            typeOperation: 'paiement',
+            sourceId: paiement.id,
+            clientId: depense.client_id,
+            exerciceId: depense.exercice_id
+          }
+        }
+      );
+      
+      if (ecrituresError) {
+        console.error('create-paiement: Error generating ecritures', ecrituresError);
+      } else {
+        console.log('create-paiement: Ecritures generated successfully');
+      }
+    } catch (ecrituresError) {
+      console.error('create-paiement: Exception generating ecritures', ecrituresError);
+    }
+
     return new Response(
       JSON.stringify(paiement),
       { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

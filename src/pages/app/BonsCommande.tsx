@@ -14,7 +14,6 @@ import { BonCommandeSnapshot } from '@/components/bonsCommande/BonCommandeSnapsh
 import { FactureDialog } from '@/components/factures/FactureDialog';
 import { CreateBonCommandeInput, UpdateBonCommandeInput } from '@/types/bonCommande.types';
 import { CreateFactureInput } from '@/types/facture.types';
-import { useToast } from '@/hooks/use-toast';
 import { showNavigationToast } from '@/lib/navigation-toast';
 import { useFournisseurs } from '@/hooks/useFournisseurs';
 import { useProjets } from '@/hooks/useProjets';
@@ -43,7 +42,6 @@ const BonsCommande = () => {
   const { bonCommandeId } = useParams<{ bonCommandeId?: string }>();
   const { currentClient } = useClient();
   const { currentExercice } = useExercice();
-  const { toast } = useToast();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [factureDialogOpen, setFactureDialogOpen] = useState(false);
@@ -427,7 +425,6 @@ const BonsCommande = () => {
           setFactureDialogOpen(open);
           if (!open) setFactureBonCommandeId(undefined);
         }}
-        facture={undefined}
         onSubmit={handleSaveFacture}
         fournisseurs={fournisseurs}
         bonsCommande={bonsCommandeReceptionnes}

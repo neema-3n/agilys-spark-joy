@@ -15,6 +15,12 @@ interface ConditionsBuilderProps {
 export const ConditionsBuilder = ({ typeOperation, conditions, onChange }: ConditionsBuilderProps) => {
   const fields = OPERATION_FIELDS[typeOperation] || [];
 
+  const getOperatorsForType = (fieldType: string) => {
+    if (fieldType === 'number') return ['==', '!=', '>', '<', '>=', '<='];
+    if (fieldType === 'select' || fieldType === 'boolean') return ['==', '!='];
+    return ['==', '!=', 'contient', 'commence_par'];
+  };
+
   const addCondition = () => {
     onChange([
       ...conditions,
@@ -53,6 +59,13 @@ export const ConditionsBuilder = ({ typeOperation, conditions, onChange }: Condi
       {conditions.map((condition, index) => {
         const fieldType = getFieldType(condition.champ);
         const fieldOptions = getFieldOptions(condition.champ);
+        const allowedOperators = getOperatorsForType(fieldType);
+        const currentOperateur = allowedOperators.includes(condition.operateur)
+          ? condition.operateur
+          : allowedOperators[0];
+        if (currentOperateur !== condition.operateur) {
+          updateCondition(index, { operateur: currentOperateur });
+        }
 
         return (
           <Card key={index} className="p-4">
@@ -77,16 +90,16 @@ export const ConditionsBuilder = ({ typeOperation, conditions, onChange }: Condi
 
                 {/* Opérateur */}
                 <Select
-                  value={condition.operateur}
+                  value={currentOperateur}
                   onValueChange={(value: any) => updateCondition(index, { operateur: value })}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(OPERATEUR_LABELS).map(([value, label]) => (
+                    {allowedOperators.map((value) => (
                       <SelectItem key={value} value={value}>
-                        {label}
+                        {OPERATEUR_LABELS[value]}
                       </SelectItem>
                     ))}
                   </SelectContent>

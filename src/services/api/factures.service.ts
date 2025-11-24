@@ -26,6 +26,7 @@ function mapFactureFromDB(data: any): Facture {
     createdAt: data.created_at,
     updatedAt: data.updated_at,
     createdBy: data.created_by,
+    ecrituresCount: data.ecritures_comptables?.[0]?.count || 0,
     fournisseur: data.fournisseurs ? {
       id: data.fournisseurs.id,
       nom: data.fournisseurs.nom,
@@ -158,7 +159,8 @@ export const facturesService = {
         bons_commande (id, numero),
         engagements (id, numero),
         lignes_budgetaires (id, libelle),
-        projets (id, nom)
+        projets (id, nom),
+        ecritures_comptables!facture_id(count)
       `)
       .eq('client_id', clientId)
       .order('date_facture', { ascending: false });
@@ -170,7 +172,7 @@ export const facturesService = {
     const { data, error } = await query;
 
     if (error) throw error;
-    return data.map(mapFactureFromDB);
+    return (data || []).map(mapFactureFromDB);
   },
 
   async getById(id: string): Promise<Facture> {
@@ -251,7 +253,7 @@ export const facturesService = {
   },
 
   async update(id: string, facture: UpdateFactureInput): Promise<Facture> {
-    // Vérifier que la facture est en brouillon avant modification
+    // 1. Récupérer la facture actuelle
     const { data: currentFacture, error: fetchError } = await supabase
       .from('factures')
       .select('statut, bon_commande_id, montant_ttc')
@@ -259,12 +261,36 @@ export const facturesService = {
       .single();
 
     if (fetchError) throw fetchError;
+
+    // 2. Si le nouveau statut est 'annulee', autoriser sans vérification d'écritures
+    const isAnnulation = facture.statut === 'annulee';
+
+    if (!isAnnulation) {
+      // 3. Vérifier s'il existe des écritures validées
+      const { data: ecritures, error: ecrituresError } = await supabase
+        .from('ecritures_comptables')
+        .select('id')
+        .eq('facture_id', id)
+        .eq('statut_ecriture', 'validee')
+        .limit(1);
+
+      if (ecrituresError) throw ecrituresError;
+
+      // 4. Si écritures validées existent → BLOQUER
+      if (ecritures && ecritures.length > 0) {
+        throw new Error(
+          'Cette facture ne peut plus être modifiée car elle a déjà été comptabilisée.\n\n' +
+          'Pour effectuer une correction, vous devez l\'annuler puis créer une nouvelle facture.'
+        );
+      }
+    }
     
-    if (currentFacture.statut !== 'brouillon' && currentFacture.statut !== 'validee') {
+    // 5. Vérifier que la facture peut être modifiée
+    if (currentFacture.statut !== 'brouillon' && currentFacture.statut !== 'validee' && !isAnnulation) {
       throw new Error('Seules les factures en brouillon ou validées peuvent être modifiées');
     }
 
-    // Vérifier le montant si un BC est lié (dans l'ancienne OU la nouvelle facture)
+    // 6. Vérifier le montant si un BC est lié (dans l'ancienne OU la nouvelle facture)
     const bonCommandeId = facture.bonCommandeId || currentFacture.bon_commande_id;
     
     if (bonCommandeId) {
@@ -366,10 +392,27 @@ export const facturesService = {
       throw new Error('Seules les factures en brouillon peuvent être validées');
     }
 
-    return this.update(id, {
+    // 1. Valider la facture
+    const factureValidee = await this.update(id, {
       statut: 'validee',
       dateValidation: new Date().toISOString().split('T')[0],
     });
+
+    // 2. Générer les écritures comptables automatiquement (en arrière-plan)
+    try {
+      await supabase.functions.invoke('generate-ecritures-comptables', {
+        body: {
+          typeOperation: 'facture',
+          sourceId: id,
+          clientId: facture.clientId,
+          exerciceId: facture.exerciceId
+        }
+      });
+    } catch (error) {
+      console.error('Erreur lors de la génération des écritures:', error);
+    }
+
+    return factureValidee;
   },
 
   async marquerPayee(id: string): Promise<Facture> {
@@ -388,9 +431,40 @@ export const facturesService = {
     const facture = await this.getById(id);
 
     if (facture.statut === 'payee') {
-      throw new Error('Les factures payées ne peuvent pas être annulées');
+      throw new Error('Une facture payée ne peut pas être annulée');
     }
 
+    // 1. Vérifier s'il existe des écritures validées
+    const { data: ecritures, error: ecrituresError } = await supabase
+      .from('ecritures_comptables')
+      .select('id')
+      .eq('facture_id', id)
+      .eq('statut_ecriture', 'validee');
+
+    if (ecrituresError) throw ecrituresError;
+
+    // 2. Si écritures existent → Contrepasser (silencieusement)
+    if (ecritures && ecritures.length > 0) {
+      try {
+        const { error: contrepasserError } = await supabase.functions.invoke('contrepasser-ecritures', {
+          body: {
+            typeOperation: 'facture',
+            sourceId: id,
+            motifAnnulation: motif,
+          }
+        });
+
+        if (contrepasserError) {
+          console.error('Erreur lors de la contrepassation:', contrepasserError);
+          throw new Error('Une erreur est survenue lors de l\'annulation. Veuillez réessayer.');
+        }
+      } catch (error) {
+        console.error('Erreur lors de la contrepassation:', error);
+        throw new Error('Une erreur est survenue lors de l\'annulation. Veuillez réessayer.');
+      }
+    }
+
+    // 3. Mettre à jour le statut
     return this.update(id, {
       statut: 'annulee',
       observations: motif,

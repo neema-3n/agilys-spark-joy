@@ -44,7 +44,8 @@ export const getPaiements = async (exerciceId: string, clientId: string): Promis
           nom,
           code
         )
-      )
+      ),
+      ecritures_comptables!paiement_id(count)
     `)
     .eq('exercice_id', exerciceId)
     .eq('client_id', clientId)
@@ -55,7 +56,13 @@ export const getPaiements = async (exerciceId: string, clientId: string): Promis
     throw error;
   }
 
-  return toCamelCase(data || []);
+  const paiementsWithCount = (data || []).map(paie => {
+    const ecrituresCount = paie.ecritures_comptables?.[0]?.count || 0;
+    const { ecritures_comptables, ...paiementData } = paie;
+    return { ...paiementData, ecritures_count: ecrituresCount };
+  });
+
+  return toCamelCase(paiementsWithCount);
 };
 
 // Récupérer les paiements d'une dépense spécifique
@@ -95,6 +102,29 @@ export const createPaiement = async (
 
 // Annuler un paiement
 export const annulerPaiement = async (id: string, motif: string): Promise<Paiement> => {
+  // 1. Vérifier s'il existe des écritures validées
+  const { data: ecritures, error: ecrituresError } = await supabase
+    .from('ecritures_comptables')
+    .select('id')
+    .eq('paiement_id', id)
+    .eq('statut_ecriture', 'validee');
+
+  if (ecrituresError) throw ecrituresError;
+
+  // 2. Si écritures existent → Contrepasser
+  if (ecritures && ecritures.length > 0) {
+    const { error: contrepasserError } = await supabase.functions.invoke('contrepasser-ecritures', {
+      body: {
+        typeOperation: 'paiement',
+        sourceId: id,
+        motifAnnulation: motif,
+      }
+    });
+
+    if (contrepasserError) throw contrepasserError;
+  }
+
+  // 3. Mettre à jour le statut
   const { data, error } = await supabase
     .from('paiements')
     .update({
@@ -117,6 +147,24 @@ export const annulerPaiement = async (id: string, motif: string): Promise<Paieme
 
 // Supprimer un paiement (super admin uniquement)
 export const deletePaiement = async (id: string): Promise<void> => {
+  // 1. Vérifier le statut
+  const { data: paiement, error: fetchError } = await supabase
+    .from('paiements')
+    .select('statut')
+    .eq('id', id)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  // 2. Bloquer si validé (les paiements validés peuvent avoir des écritures)
+  if (paiement.statut === 'valide') {
+    throw new Error(
+      '❌ Suppression impossible\n\n' +
+      '💡 Utilisez l\'annulation au lieu de la suppression pour conserver l\'historique comptable'
+    );
+  }
+
+  // 4. OK pour suppression
   const { error } = await supabase
     .from('paiements')
     .delete()
