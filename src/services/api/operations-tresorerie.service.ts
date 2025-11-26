@@ -46,7 +46,6 @@ const mapDbToOperation = (data: any): OperationTresorerie => ({
       ligneBudgetaire: data.paiement.depense.ligne_budgetaire ? {
         id: data.paiement.depense.ligne_budgetaire.id,
         libelle: data.paiement.depense.ligne_budgetaire.libelle,
-        action: data.paiement.depense.ligne_budgetaire.action,
       } : undefined,
     } : undefined,
   } : undefined,
@@ -70,8 +69,7 @@ export const operationsTresorerieService = {
             ligne_budgetaire:lignes_budgetaires(
               id,
               libelle,
-              action_id,
-              action:actions(code, libelle)
+              action_id
             )
           )
         )
