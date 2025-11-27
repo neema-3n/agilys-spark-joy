@@ -6,6 +6,7 @@ interface SearchResultsSummaryProps {
     montantModifie: number;
     montantReserve: number;
     montantEngage: number;
+    montantLiquide: number;
     montantPaye: number;
     disponible: number;
   };
@@ -27,7 +28,7 @@ export const SearchResultsSummary = ({
 
   return (
     <Card className="border-primary/20 bg-primary/5 p-4">
-      <div className="grid gap-4 md:grid-cols-6">
+      <div className="grid gap-4 md:grid-cols-7">
         <div className="space-y-1">
           <p className="text-xs text-muted-foreground">Montant initial</p>
           <p className="text-lg font-semibold">{formatMontant(totals.montantInitial)}</p>
@@ -46,6 +47,12 @@ export const SearchResultsSummary = ({
           <p className="text-xs text-muted-foreground">Engagé</p>
           <p className="text-lg font-semibold text-red-600 dark:text-red-400">
             {formatMontant(totals.montantEngage)}
+          </p>
+        </div>
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground">Liquidé</p>
+          <p className="text-lg font-semibold text-blue-600 dark:text-blue-400">
+            {formatMontant(totals.montantLiquide)}
           </p>
         </div>
         <div className="space-y-1">
