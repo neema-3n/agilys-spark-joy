@@ -62,6 +62,7 @@ export function exportBudgetToCSV(
     'Montant Modifié',
     'Réservé',
     'Engagé',
+    'Liquidé',
     'Payé',
     'Disponible',
     'Taux Exécution',
@@ -84,6 +85,7 @@ export function exportBudgetToCSV(
       ligne.montantModifie,
       ligne.montantReserve || 0,
       ligne.montantEngage,
+      ligne.montantLiquide,
       ligne.montantPaye,
       ligne.disponible,
       `${tauxExecution}%`,
@@ -116,6 +118,7 @@ export function printBudgetResults(
     montantModifie: number;
     montantReserve: number;
     montantEngage: number;
+    montantLiquide: number;
     montantPaye: number;
     disponible: number;
   }
@@ -142,6 +145,7 @@ export function printBudgetResults(
         <td class="text-right font-bold">${formatMontant(ligne.montantModifie)}</td>
         <td class="text-right">${formatMontant(ligne.montantReserve || 0)}</td>
         <td class="text-right">${formatMontant(ligne.montantEngage)}</td>
+        <td class="text-right">${formatMontant(ligne.montantLiquide)}</td>
         <td class="text-right">${formatMontant(ligne.montantPaye)}</td>
         <td class="text-right font-bold">${formatMontant(ligne.disponible)}</td>
         <td class="text-center">${tauxExecution}%</td>
@@ -157,6 +161,7 @@ export function printBudgetResults(
       <td class="text-right">${formatMontant(totals.montantModifie)}</td>
       <td class="text-right">${formatMontant(totals.montantReserve)}</td>
       <td class="text-right">${formatMontant(totals.montantEngage)}</td>
+      <td class="text-right">${formatMontant(totals.montantLiquide)}</td>
       <td class="text-right">${formatMontant(totals.montantPaye)}</td>
       <td class="text-right">${formatMontant(totals.disponible)}</td>
       <td colspan="2"></td>
@@ -231,6 +236,7 @@ export function printBudgetResults(
               <th class="text-right">Modifié</th>
               <th class="text-right">Réservé</th>
               <th class="text-right">Engagé</th>
+              <th class="text-right">Liquidé</th>
               <th class="text-right">Payé</th>
               <th class="text-right">Disponible</th>
               <th class="text-center">Taux</th>
