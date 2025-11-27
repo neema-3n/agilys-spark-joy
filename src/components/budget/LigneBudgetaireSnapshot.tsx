@@ -109,6 +109,10 @@ export const LigneBudgetaireSnapshot = ({
             <p className="text-lg font-medium text-red-600">{formatMontant(ligne.montantEngage)}</p>
           </div>
           <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">Liquidé</p>
+            <p className="text-lg font-medium text-blue-600">{formatMontant(ligne.montantLiquide)}</p>
+          </div>
+          <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Payé</p>
             <p className="text-lg font-medium text-green-600">{formatMontant(ligne.montantPaye)}</p>
           </div>
