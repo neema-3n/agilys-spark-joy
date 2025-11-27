@@ -157,6 +157,7 @@ export function useBudgetSearch({
         montantModifie: acc.montantModifie + ligne.montantModifie,
         montantReserve: acc.montantReserve + (ligne.montantReserve || 0),
         montantEngage: acc.montantEngage + ligne.montantEngage,
+        montantLiquide: acc.montantLiquide + ligne.montantLiquide,
         montantPaye: acc.montantPaye + ligne.montantPaye,
         disponible: acc.disponible + ligne.disponible,
       }),
@@ -164,7 +165,8 @@ export function useBudgetSearch({
         montantInitial: 0, 
         montantModifie: 0, 
         montantReserve: 0, 
-        montantEngage: 0, 
+        montantEngage: 0,
+        montantLiquide: 0,
         montantPaye: 0, 
         disponible: 0 
       }
