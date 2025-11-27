@@ -36,7 +36,10 @@ export const budgetService = {
 
     if (error) throw error;
     
-    return (data || []).map(toCamelCase);
+    return (data || []).map(row => ({
+      ...toCamelCase(row),
+      montantLiquide: row.montant_liquide || 0
+    }));
   },
 
   // Créer une ligne budgétaire

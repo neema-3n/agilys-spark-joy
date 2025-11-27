@@ -1044,6 +1044,7 @@ export type Database = {
           libelle: string
           montant_engage: number
           montant_initial: number
+          montant_liquide: number
           montant_modifie: number
           montant_paye: number
           montant_reserve: number
@@ -1063,6 +1064,7 @@ export type Database = {
           libelle: string
           montant_engage?: number
           montant_initial?: number
+          montant_liquide?: number
           montant_modifie?: number
           montant_paye?: number
           montant_reserve?: number
@@ -1082,6 +1084,7 @@ export type Database = {
           libelle?: string
           montant_engage?: number
           montant_initial?: number
+          montant_liquide?: number
           montant_modifie?: number
           montant_paye?: number
           montant_reserve?: number
@@ -2294,6 +2297,10 @@ export type Database = {
         Returns: undefined
       }
       recalculate_montant_engage: {
+        Args: { p_ligne_budgetaire_id: string }
+        Returns: undefined
+      }
+      recalculate_montant_liquide: {
         Args: { p_ligne_budgetaire_id: string }
         Returns: undefined
       }
