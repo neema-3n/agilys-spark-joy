@@ -14,7 +14,6 @@ import { BonCommandeSnapshot } from '@/components/bonsCommande/BonCommandeSnapsh
 import { FactureDialog } from '@/components/factures/FactureDialog';
 import { CreateBonCommandeInput, UpdateBonCommandeInput } from '@/types/bonCommande.types';
 import { CreateFactureInput } from '@/types/facture.types';
-import { useToast } from '@/hooks/use-toast';
 import { showNavigationToast } from '@/lib/navigation-toast';
 import { useFournisseurs } from '@/hooks/useFournisseurs';
 import { useProjets } from '@/hooks/useProjets';
@@ -43,7 +42,6 @@ const BonsCommande = () => {
   const { bonCommandeId } = useParams<{ bonCommandeId?: string }>();
   const { currentClient } = useClient();
   const { currentExercice } = useExercice();
-  const { toast } = useToast();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [factureDialogOpen, setFactureDialogOpen] = useState(false);
@@ -398,13 +396,7 @@ const BonsCommande = () => {
         onOpenChange={handleDialogClose}
         onSubmit={handleSubmit}
         bonCommande={editingBonCommande}
-        fournisseurs={fournisseurs}
-        lignesBudgetaires={lignesBudgetaires}
-        projets={projets}
-        engagements={engagements.filter((e) => e.statut === 'valide' || e.statut === 'engage')}
         onGenererNumero={handleGenererNumero}
-        currentClientId={currentClient?.id || ''}
-        currentExerciceId={currentExercice?.id || ''}
       />
 
       <ReceptionnerBCDialog
@@ -413,7 +405,7 @@ const BonsCommande = () => {
           setReceptionnerDialogOpen(open);
           if (!open) setReceptionBonCommandeId(undefined);
         }}
-        bonCommande={receptionBonCommande}
+        bonCommandeNumero={receptionBonCommande?.numero || ''}
         onConfirm={handleReceptionnerConfirm}
       />
 
@@ -423,7 +415,7 @@ const BonsCommande = () => {
           setAnnulerDialogOpen(open);
           if (!open) setAnnulationBonCommandeId(undefined);
         }}
-        bonCommande={annulationBonCommande}
+        bonCommandeNumero={annulationBonCommande?.numero || ''}
         onConfirm={handleAnnulerConfirm}
       />
 
@@ -433,14 +425,16 @@ const BonsCommande = () => {
           setFactureDialogOpen(open);
           if (!open) setFactureBonCommandeId(undefined);
         }}
-        bonCommande={bonsCommande.find((bc) => bc.id === factureBonCommandeId)}
+        onSubmit={handleSaveFacture}
         fournisseurs={fournisseurs}
         bonsCommande={bonsCommandeReceptionnes}
         lignesBudgetaires={lignesBudgetaires}
         projets={projets}
         engagements={engagements.filter((e) => e.statut === 'valide')}
-        onSubmit={handleSaveFacture}
+        currentClientId={currentClient?.id || ''}
+        currentExerciceId={currentExercice?.id || ''}
         onGenererNumero={handleGenererNumeroFacture}
+        initialBonCommandeId={factureBonCommandeId}
       />
     </div>
   );

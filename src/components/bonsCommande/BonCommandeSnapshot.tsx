@@ -7,6 +7,11 @@ import type { BonCommande } from '@/types/bonCommande.types';
 import { formatMontant, formatDate } from '@/lib/snapshot-utils';
 import { ShoppingCart, Building2, FileText, FolderOpen, Calendar, Truck, ClipboardCheck, Receipt } from 'lucide-react';
 import { ReactNode } from 'react';
+import { useEcrituresBySource } from '@/hooks/useEcrituresComptables';
+import { useGenerateEcritures } from '@/hooks/useGenerateEcritures';
+import { useClient } from '@/contexts/ClientContext';
+import { useExercice } from '@/contexts/ExerciceContext';
+import { EcrituresSection } from '@/components/ecritures/EcrituresSection';
 
 interface BonCommandeSnapshotProps {
   bonCommande: BonCommande;
@@ -25,13 +30,31 @@ interface BonCommandeSnapshotProps {
   onNavigateToEntity?: (type: string, id: string) => void;
 }
 
-const statutConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; description: string }> = {
-  brouillon: { label: 'Brouillon', variant: 'outline', description: 'En cours de préparation' },
-  valide: { label: 'Validé', variant: 'secondary', description: 'Prêt à être exécuté' },
-  en_cours: { label: 'En cours', variant: 'default', description: 'Commande en exécution' },
-  receptionne: { label: 'Réceptionné', variant: 'default', description: 'Livraison confirmée' },
-  facture: { label: 'Facturé', variant: 'default', description: 'Factures associées' },
-  annule: { label: 'Annulé', variant: 'destructive', description: 'Commande annulée' },
+const variants: Record<BonCommande['statut'], 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'> = {
+  brouillon: 'outline',
+  valide: 'success',
+  en_cours: 'secondary',
+  receptionne: 'success',
+  facture: 'secondary',
+  annule: 'destructive',
+};
+
+const labels: Record<BonCommande['statut'], string> = {
+  brouillon: 'Brouillon',
+  valide: 'Validé',
+  en_cours: 'En cours',
+  receptionne: 'Réceptionné',
+  facture: 'Facturé',
+  annule: 'Annulé',
+};
+
+const descriptions: Record<BonCommande['statut'], string> = {
+  brouillon: 'En cours de préparation',
+  valide: 'Prêt à être exécuté',
+  en_cours: 'Commande en exécution',
+  receptionne: 'Livraison confirmée',
+  facture: 'Factures associées',
+  annule: 'Commande annulée',
 };
 
 const entityButton = (
@@ -71,7 +94,25 @@ export const BonCommandeSnapshot = ({
   onCreateFacture,
   onNavigateToEntity,
 }: BonCommandeSnapshotProps) => {
-  const statut = statutConfig[bonCommande.statut] || statutConfig.brouillon;
+  const { currentClient } = useClient();
+  const { currentExercice } = useExercice();
+  const { ecritures, isLoading: ecrituresLoading } = useEcrituresBySource('bon_commande', bonCommande.id);
+  const generateMutation = useGenerateEcritures();
+
+  const handleGenerateEcritures = () => {
+    if (!currentClient?.id || !currentExercice?.id) return;
+    
+    generateMutation.mutate({
+      typeOperation: 'bon_commande',
+      sourceId: bonCommande.id,
+      clientId: currentClient.id,
+      exerciceId: currentExercice.id
+    });
+  };
+
+  const canGenerateEcritures = bonCommande.statut !== 'brouillon';
+
+  const statut = { variant: variants[bonCommande.statut] || 'outline', label: labels[bonCommande.statut] || bonCommande.statut, description: descriptions[bonCommande.statut] || '' };
   const montantFacture = bonCommande.montantFacture || 0;
   const progression = bonCommande.montant > 0 ? (montantFacture / bonCommande.montant) * 100 : 0;
 
@@ -200,6 +241,15 @@ export const BonCommandeSnapshot = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Écritures comptables */}
+      <EcrituresSection
+        ecritures={ecritures}
+        isLoading={ecrituresLoading}
+        onGenerate={canGenerateEcritures ? handleGenerateEcritures : undefined}
+        isGenerating={generateMutation.isPending}
+        disabledReason={!canGenerateEcritures ? "Les écritures ne peuvent être générées que pour les bons de commande validés" : undefined}
+      />
     </SnapshotBase>
   );
 };

@@ -27,6 +27,7 @@ interface ListTableProps<T> {
   stickyHeader?: boolean;
   stickyHeaderOffset?: number;
   scrollContainerClassName?: string;
+  footer?: ReactNode;
 }
 
 const getAlignClass = (align?: ListColumn<unknown>['align']) => {
@@ -44,6 +45,7 @@ export const ListTable = <T,>({
   stickyHeader = false,
   stickyHeaderOffset = 0,
   scrollContainerClassName,
+  footer,
 }: ListTableProps<T>) => {
   return (
     <div className="rounded-md border">
@@ -100,6 +102,11 @@ export const ListTable = <T,>({
             )}
           </TableBody>
         </Table>
+        {footer && (
+          <div className="border-t bg-muted/20 px-3 py-2">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );

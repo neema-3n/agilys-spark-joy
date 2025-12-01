@@ -9,7 +9,6 @@ import {
   Pencil,
   Trash2,
   CheckCircle,
-  DollarSign,
   XCircle,
   Eye,
   FileText,
@@ -53,6 +52,7 @@ interface FactureTableProps {
   stickyHeader?: boolean;
   stickyHeaderOffset?: number;
   scrollContainerClassName?: string;
+  footer?: React.ReactNode;
 }
 
 export const FactureTable = ({
@@ -68,6 +68,7 @@ export const FactureTable = ({
   stickyHeader = false,
   stickyHeaderOffset = 0,
   scrollContainerClassName,
+  footer,
 }: FactureTableProps) => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const factureIds = useMemo(() => factures.map((facture) => facture.id), [factures]);
@@ -76,11 +77,11 @@ export const FactureTable = ({
   const getStatutBadge = (statut: string) => {
     const variants: Record<
       string,
-      { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }
+      { variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'; label: string }
     > = {
       brouillon: { variant: 'outline', label: 'Brouillon' },
-      validee: { variant: 'secondary', label: 'Validée' },
-      payee: { variant: 'default', label: 'Payée' },
+      validee: { variant: 'success', label: 'Validée' },
+      payee: { variant: 'success', label: 'Payée' },
       annulee: { variant: 'destructive', label: 'Annulée' },
     };
     const config = variants[statut] || variants.brouillon;
@@ -251,6 +252,7 @@ export const FactureTable = ({
         stickyHeader={stickyHeader}
         stickyHeaderOffset={stickyHeaderOffset}
         scrollContainerClassName={scrollContainerClassName}
+        footer={footer}
       />
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>

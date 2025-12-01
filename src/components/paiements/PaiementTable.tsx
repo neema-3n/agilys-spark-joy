@@ -79,7 +79,7 @@ export const PaiementTable = ({
         id: 'statut',
         header: 'Statut',
         render: (paiement) => (
-          <Badge variant={paiement.statut === 'valide' ? 'secondary' : 'destructive'}>
+          <Badge variant={paiement.statut === 'valide' ? 'success' : 'destructive'}>
             {paiement.statut === 'valide' ? 'Validé' : 'Annulé'}
           </Badge>
         ),
