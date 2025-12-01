@@ -12,6 +12,7 @@ import { useActions } from '@/hooks/useActions';
 import { useComptes } from '@/hooks/useComptes';
 import { useEnveloppes } from '@/hooks/useEnveloppes';
 import { useReservations } from '@/hooks/useReservations';
+import { useBudgetSearch } from '@/hooks/useBudgetSearch';
 import { LigneBudgetaire, ModificationBudgetaire } from '@/types/budget.types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,11 @@ import { LigneBudgetaireSnapshot } from '@/components/budget/LigneBudgetaireSnap
 import { LigneBudgetaireDialog } from '@/components/budget/LigneBudgetaireDialog';
 import { ModificationBudgetaireDialog } from '@/components/budget/ModificationBudgetaireDialog';
 import { ReservationDialog } from '@/components/reservations/ReservationDialog';
+import { BudgetSearchPanel } from '@/components/search/BudgetSearchPanel';
+import { ActiveFiltersBar } from '@/components/search/ActiveFiltersBar';
+import { SearchResultsSummary } from '@/components/search/SearchResultsSummary';
+import { ExportResultsBar } from '@/components/export/ExportResultsBar';
+import { exportBudgetToCSV, exportBudgetToPDF, printBudgetResults } from '@/lib/export-utils';
 import { useToast } from '@/hooks/use-toast';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { useSnapshotState } from '@/hooks/useSnapshotState';
@@ -61,6 +67,26 @@ const Budgets = () => {
 
   const [lignes, setLignes] = useState<LigneBudgetaire[]>([]);
   const [modifications, setModifications] = useState<ModificationBudgetaire[]>([]);
+
+  // Hook de recherche multi-critères
+  const {
+    filters,
+    setFilter,
+    resetFilters,
+    resetFilter,
+    activeFiltersCount,
+    filteredLignes,
+    totals,
+    availableProgrammes,
+    availableActions,
+  } = useBudgetSearch({
+    lignes,
+    sections,
+    programmes,
+    actions,
+    comptes,
+    enveloppes,
+  });
   const [loading, setLoading] = useState(true);
 
   const [ligneDialogOpen, setLigneDialogOpen] = useState(false);
@@ -460,14 +486,48 @@ const Budgets = () => {
                   Nouvelle ligne
                 </Button>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                {/* Panneau de recherche multi-critères */}
+                <BudgetSearchPanel
+                  filters={filters}
+                  onFilterChange={setFilter}
+                  onResetFilters={resetFilters}
+                  activeFiltersCount={activeFiltersCount}
+                  sections={sections}
+                  programmes={availableProgrammes}
+                  actions={availableActions}
+                  comptes={comptes}
+                  enveloppes={enveloppes}
+                />
+
+                {/* Barre des filtres actifs */}
+                <ActiveFiltersBar
+                  filters={filters}
+                  onRemoveFilter={resetFilter}
+                  onClearAll={resetFilters}
+                  resultCount={filteredLignes.length}
+                  totalCount={lignes.length}
+                  sections={sections}
+                  programmes={programmes}
+                  actions={actions}
+                  comptes={comptes}
+                  enveloppes={enveloppes}
+                />
+
+                {/* Résumé avec totaux */}
+                <SearchResultsSummary
+                  totals={totals}
+                  resultCount={filteredLignes.length}
+                />
+
+                {/* Tableau */}
                 <BudgetTable
                   clientId={currentClient?.id || ''}
                   exerciceId={currentExercice?.id || ''}
                   sections={sections}
                   programmes={programmes}
                   actions={actions}
-                  lignes={lignes}
+                  lignes={filteredLignes}
                   comptes={comptes}
                   enveloppes={enveloppes}
                   onEdit={(ligne) => {
@@ -480,10 +540,31 @@ const Budgets = () => {
                   }}
                   onReserver={handleReserverCredit}
                   onCreateModification={handleCreateModificationFromLigne}
-              onViewDetails={(ligne) => openLigneSnapshot(ligne.id)}
-            />
-          </CardContent>
-        </Card>
+                  onViewDetails={(ligne) => openLigneSnapshot(ligne.id)}
+                />
+
+                {/* Barre d'export */}
+                <ExportResultsBar
+                  resultCount={filteredLignes.length}
+                  onExportCSV={() => exportBudgetToCSV(
+                    filteredLignes,
+                    { sections, programmes, actions, comptes, enveloppes },
+                    `budget_${currentExercice?.code}_${new Date().toISOString().split('T')[0]}.csv`
+                  )}
+                  onExportPDF={() => exportBudgetToPDF(
+                    filteredLignes,
+                    { sections, programmes, actions, comptes, enveloppes },
+                    `budget_${currentExercice?.code}_${new Date().toISOString().split('T')[0]}.pdf`
+                  )}
+                  onPrint={() => printBudgetResults(
+                    filteredLignes,
+                    { sections, programmes, actions, comptes, enveloppes },
+                    `Plan Budgétaire ${currentExercice?.libelle}`,
+                    totals
+                  )}
+                />
+              </CardContent>
+            </Card>
           )}
         </TabsContent>
 

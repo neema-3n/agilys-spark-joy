@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { Facture, CreateFactureInput, UpdateFactureInput } from '@/types/facture.types';
+import { Facture, CreateFactureInput, UpdateFactureInput, PaginatedResponse, PaginationParams } from '@/types/facture.types';
 
 function mapFactureFromDB(data: any): Facture {
   return {
@@ -26,6 +26,7 @@ function mapFactureFromDB(data: any): Facture {
     createdAt: data.created_at,
     updatedAt: data.updated_at,
     createdBy: data.created_by,
+    ecrituresCount: data.ecritures_comptables?.[0]?.count || 0,
     fournisseur: data.fournisseurs ? {
       id: data.fournisseurs.id,
       nom: data.fournisseurs.nom,
@@ -82,7 +83,14 @@ function mapFactureToDB(data: CreateFactureInput | UpdateFactureInput) {
 }
 
 export const facturesService = {
-  async getAll(clientId: string, exerciceId?: string): Promise<Facture[]> {
+  async getPaginated(
+    clientId: string,
+    exerciceId: string | undefined,
+    params: PaginationParams
+  ): Promise<PaginatedResponse<Facture>> {
+    const start = (params.page - 1) * params.pageSize;
+    const end = start + params.pageSize - 1;
+
     let query = supabase
       .from('factures')
       .select(`
@@ -92,6 +100,67 @@ export const facturesService = {
         engagements (id, numero),
         lignes_budgetaires (id, libelle),
         projets (id, nom)
+      `, { count: 'exact' })
+      .eq('client_id', clientId);
+
+    if (exerciceId) {
+      query = query.eq('exercice_id', exerciceId);
+    }
+
+    // Appliquer les filtres
+    if (params.filters) {
+      if (params.filters.statut) {
+        query = query.eq('statut', params.filters.statut);
+      }
+      if (params.filters.searchTerm) {
+        query = query.or(`numero.ilike.%${params.filters.searchTerm}%,objet.ilike.%${params.filters.searchTerm}%`);
+      }
+      if (params.filters.fournisseurId) {
+        query = query.eq('fournisseur_id', params.filters.fournisseurId);
+      }
+      if (params.filters.dateDebut) {
+        query = query.gte('date_facture', params.filters.dateDebut);
+      }
+      if (params.filters.dateFin) {
+        query = query.lte('date_facture', params.filters.dateFin);
+      }
+    }
+
+    // Appliquer le tri
+    query = query.order(params.sortBy || 'date_facture', { 
+      ascending: params.sortOrder === 'asc' 
+    });
+
+    // Appliquer la pagination
+    query = query.range(start, end);
+
+    const { data, error, count } = await query;
+
+    if (error) throw error;
+
+    const totalCount = count || 0;
+    const totalPages = Math.ceil(totalCount / params.pageSize);
+
+    return {
+      data: data.map(mapFactureFromDB),
+      totalCount,
+      page: params.page,
+      pageSize: params.pageSize,
+      totalPages,
+    };
+  },
+
+  async getAll(clientId: string, exerciceId?: string): Promise<Facture[]> {
+    let query = supabase
+      .from('factures')
+      .select(`
+        *,
+        fournisseurs (id, nom, code),
+        bons_commande (id, numero),
+        engagements (id, numero),
+        lignes_budgetaires (id, libelle),
+        projets (id, nom),
+        ecritures_comptables!facture_id(count)
       `)
       .eq('client_id', clientId)
       .order('date_facture', { ascending: false });
@@ -103,7 +172,7 @@ export const facturesService = {
     const { data, error } = await query;
 
     if (error) throw error;
-    return data.map(mapFactureFromDB);
+    return (data || []).map(mapFactureFromDB);
   },
 
   async getById(id: string): Promise<Facture> {
@@ -184,7 +253,7 @@ export const facturesService = {
   },
 
   async update(id: string, facture: UpdateFactureInput): Promise<Facture> {
-    // Vérifier que la facture est en brouillon avant modification
+    // 1. Récupérer la facture actuelle
     const { data: currentFacture, error: fetchError } = await supabase
       .from('factures')
       .select('statut, bon_commande_id, montant_ttc')
@@ -192,12 +261,36 @@ export const facturesService = {
       .single();
 
     if (fetchError) throw fetchError;
+
+    // 2. Si le nouveau statut est 'annulee', autoriser sans vérification d'écritures
+    const isAnnulation = facture.statut === 'annulee';
+
+    if (!isAnnulation) {
+      // 3. Vérifier s'il existe des écritures validées
+      const { data: ecritures, error: ecrituresError } = await supabase
+        .from('ecritures_comptables')
+        .select('id')
+        .eq('facture_id', id)
+        .eq('statut_ecriture', 'validee')
+        .limit(1);
+
+      if (ecrituresError) throw ecrituresError;
+
+      // 4. Si écritures validées existent → BLOQUER
+      if (ecritures && ecritures.length > 0) {
+        throw new Error(
+          'Cette facture ne peut plus être modifiée car elle a déjà été comptabilisée.\n\n' +
+          'Pour effectuer une correction, vous devez l\'annuler puis créer une nouvelle facture.'
+        );
+      }
+    }
     
-    if (currentFacture.statut !== 'brouillon' && currentFacture.statut !== 'validee') {
+    // 5. Vérifier que la facture peut être modifiée
+    if (currentFacture.statut !== 'brouillon' && currentFacture.statut !== 'validee' && !isAnnulation) {
       throw new Error('Seules les factures en brouillon ou validées peuvent être modifiées');
     }
 
-    // Vérifier le montant si un BC est lié (dans l'ancienne OU la nouvelle facture)
+    // 6. Vérifier le montant si un BC est lié (dans l'ancienne OU la nouvelle facture)
     const bonCommandeId = facture.bonCommandeId || currentFacture.bon_commande_id;
     
     if (bonCommandeId) {
@@ -299,10 +392,27 @@ export const facturesService = {
       throw new Error('Seules les factures en brouillon peuvent être validées');
     }
 
-    return this.update(id, {
+    // 1. Valider la facture
+    const factureValidee = await this.update(id, {
       statut: 'validee',
       dateValidation: new Date().toISOString().split('T')[0],
     });
+
+    // 2. Générer les écritures comptables automatiquement (en arrière-plan)
+    try {
+      await supabase.functions.invoke('generate-ecritures-comptables', {
+        body: {
+          typeOperation: 'facture',
+          sourceId: id,
+          clientId: facture.clientId,
+          exerciceId: facture.exerciceId
+        }
+      });
+    } catch (error) {
+      console.error('Erreur lors de la génération des écritures:', error);
+    }
+
+    return factureValidee;
   },
 
   async marquerPayee(id: string): Promise<Facture> {
@@ -321,12 +431,80 @@ export const facturesService = {
     const facture = await this.getById(id);
 
     if (facture.statut === 'payee') {
-      throw new Error('Les factures payées ne peuvent pas être annulées');
+      throw new Error('Une facture payée ne peut pas être annulée');
     }
 
+    // 1. Vérifier s'il existe des écritures validées
+    const { data: ecritures, error: ecrituresError } = await supabase
+      .from('ecritures_comptables')
+      .select('id')
+      .eq('facture_id', id)
+      .eq('statut_ecriture', 'validee');
+
+    if (ecrituresError) throw ecrituresError;
+
+    // 2. Si écritures existent → Contrepasser (silencieusement)
+    if (ecritures && ecritures.length > 0) {
+      try {
+        const { error: contrepasserError } = await supabase.functions.invoke('contrepasser-ecritures', {
+          body: {
+            typeOperation: 'facture',
+            sourceId: id,
+            motifAnnulation: motif,
+          }
+        });
+
+        if (contrepasserError) {
+          console.error('Erreur lors de la contrepassation:', contrepasserError);
+          throw new Error('Une erreur est survenue lors de l\'annulation. Veuillez réessayer.');
+        }
+      } catch (error) {
+        console.error('Erreur lors de la contrepassation:', error);
+        throw new Error('Une erreur est survenue lors de l\'annulation. Veuillez réessayer.');
+      }
+    }
+
+    // 3. Mettre à jour le statut
     return this.update(id, {
       statut: 'annulee',
       observations: motif,
     });
+  },
+
+  async getStats(clientId: string, exerciceId?: string): Promise<{
+    nombreTotal: number;
+    nombreBrouillon: number;
+    nombreValidee: number;
+    nombrePayee: number;
+    montantTotal: number;
+    montantBrouillon: number;
+    montantValidee: number;
+    montantLiquide: number;
+  }> {
+    let query = supabase
+      .from('factures')
+      .select('statut, montant_ttc, montant_liquide')
+      .eq('client_id', clientId);
+
+    if (exerciceId) {
+      query = query.eq('exercice_id', exerciceId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    const stats = {
+      nombreTotal: data.length,
+      nombreBrouillon: data.filter(f => f.statut === 'brouillon').length,
+      nombreValidee: data.filter(f => f.statut === 'validee').length,
+      nombrePayee: data.filter(f => f.statut === 'payee').length,
+      montantTotal: data.reduce((sum, f) => sum + parseFloat(f.montant_ttc.toString()), 0),
+      montantBrouillon: data.filter(f => f.statut === 'brouillon').reduce((sum, f) => sum + parseFloat(f.montant_ttc.toString()), 0),
+      montantValidee: data.filter(f => f.statut === 'validee').reduce((sum, f) => sum + parseFloat(f.montant_ttc.toString()), 0),
+      montantLiquide: data.reduce((sum, f) => sum + parseFloat(f.montant_liquide.toString()), 0),
+    };
+
+    return stats;
   },
 };

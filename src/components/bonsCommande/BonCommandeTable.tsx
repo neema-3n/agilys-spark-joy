@@ -41,12 +41,12 @@ const formatDate = (dateString?: string | null): string => {
 };
 
 const getStatutBadge = (statut: BonCommande['statut']) => {
-  const variants: Record<BonCommande['statut'], { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
+  const variants: Record<BonCommande['statut'], { variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'; label: string }> = {
     brouillon: { variant: 'outline', label: 'Brouillon' },
-    valide: { variant: 'secondary', label: 'Validé' },
-    en_cours: { variant: 'default', label: 'En cours' },
-    receptionne: { variant: 'default', label: 'Réceptionné' },
-    facture: { variant: 'default', label: 'Facturé' },
+    valide: { variant: 'success', label: 'Validé' },
+    en_cours: { variant: 'secondary', label: 'En cours' },
+    receptionne: { variant: 'success', label: 'Réceptionné' },
+    facture: { variant: 'secondary', label: 'Facturé' },
     annule: { variant: 'destructive', label: 'Annulé' },
   };
 
