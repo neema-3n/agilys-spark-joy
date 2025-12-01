@@ -52,6 +52,7 @@ export interface LigneBudgetaire {
   montantModifie: number;
   montantReserve?: number;
   montantEngage: number;
+  montantLiquide: number;
   montantPaye: number;
   disponible: number;
   dateCreation: string;

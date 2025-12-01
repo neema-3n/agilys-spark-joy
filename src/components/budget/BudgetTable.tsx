@@ -19,7 +19,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -114,7 +113,6 @@ export const BudgetTable = ({
   const [viewMode, setViewMode] = useState<'hierarchical' | 'compact' | 'monitoring'>(
     () => getInitialViewMode(clientId, exerciceId)
   );
-  const [searchFilter, setSearchFilter] = useState('');
 
   const formatMontant = (montant: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -184,29 +182,7 @@ export const BudgetTable = ({
       };
     });
 
-    // Filtrer selon la recherche
-    const filteredItems = searchFilter
-      ? allLignesWithHierarchy.filter(item => {
-          const searchLower = searchFilter.toLowerCase();
-          const compte = comptes.find(c => c.id === item.ligne.compteId);
-          const enveloppe = enveloppes.find(e => e.id === item.ligne.enveloppeId);
-          
-          return (
-            item.ligne.libelle.toLowerCase().includes(searchLower) ||
-            item.section?.code.toLowerCase().includes(searchLower) ||
-            item.section?.libelle.toLowerCase().includes(searchLower) ||
-            item.programme?.code.toLowerCase().includes(searchLower) ||
-            item.programme?.libelle.toLowerCase().includes(searchLower) ||
-            item.action?.code.toLowerCase().includes(searchLower) ||
-            item.action?.libelle.toLowerCase().includes(searchLower) ||
-            compte?.numero.toLowerCase().includes(searchLower) ||
-            compte?.libelle.toLowerCase().includes(searchLower) ||
-            enveloppe?.code.toLowerCase().includes(searchLower)
-          );
-        })
-      : allLignesWithHierarchy;
-
-    // Grouper par action
+    // Grouper par action (le filtrage est fait au niveau parent)
     const grouped = new Map<string, {
       section: Section | undefined;
       programme: Programme | undefined;
@@ -214,7 +190,7 @@ export const BudgetTable = ({
       lignes: LigneBudgetaire[];
     }>();
 
-    filteredItems.forEach(({ ligne, section, programme, action }) => {
+    allLignesWithHierarchy.forEach(({ ligne, section, programme, action }) => {
       const actionId = action?.id || 'unknown';
       
       if (!grouped.has(actionId)) {
@@ -230,7 +206,7 @@ export const BudgetTable = ({
     });
 
     return Array.from(grouped.values());
-  }, [lignes, actions, programmes, sections, comptes, enveloppes, searchFilter]);
+  }, [lignes, actions, programmes, sections]);
 
   // Composant pour l'en-tête de groupe
   const GroupHeader = ({ 
@@ -387,6 +363,7 @@ export const BudgetTable = ({
         <TableCell className="text-right font-medium">{formatMontant(ligne.montantModifie)}</TableCell>
         <TableCell className="text-right text-orange-600 dark:text-orange-400">{formatMontant(ligne.montantReserve || 0)}</TableCell>
         <TableCell className="text-right text-red-600 dark:text-red-400">{formatMontant(ligne.montantEngage)}</TableCell>
+        <TableCell className="text-right text-blue-600 dark:text-blue-400">{formatMontant(ligne.montantLiquide)}</TableCell>
         <TableCell className="text-right text-green-600 dark:text-green-400">{formatMontant(ligne.montantPaye)}</TableCell>
         <TableCell className="text-right font-bold text-primary">{formatMontant(ligne.disponible)}</TableCell>
         <TableCell className="text-center">
@@ -650,42 +627,32 @@ export const BudgetTable = ({
 
   return (
     <div className="space-y-4">
-      {/* Toggle and Search Bar */}
-      <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg border">
-        <div className="flex gap-2">
-          <Button
-            variant={viewMode === 'hierarchical' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => handleViewModeChange('hierarchical')}
-          >
-            <Layers className="h-4 w-4 mr-2" />
-            Vue hiérarchique
-          </Button>
-          <Button
-            variant={viewMode === 'compact' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => handleViewModeChange('compact')}
-          >
-            <LayoutList className="h-4 w-4 mr-2" />
-            Vue compacte
-          </Button>
-          <Button
-            variant={viewMode === 'monitoring' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => handleViewModeChange('monitoring')}
-          >
-            <Activity className="h-4 w-4 mr-2" />
-            Suivi d'exécution
-          </Button>
-        </div>
-        {viewMode === 'compact' && (
-          <Input
-            placeholder="Rechercher une ligne..."
-            value={searchFilter}
-            onChange={(e) => setSearchFilter(e.target.value)}
-            className="max-w-xs"
-          />
-        )}
+      {/* Toggle View Modes */}
+      <div className="flex gap-2 p-3 bg-muted/50 rounded-lg border">
+        <Button
+          variant={viewMode === 'hierarchical' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => handleViewModeChange('hierarchical')}
+        >
+          <Layers className="h-4 w-4 mr-2" />
+          Vue hiérarchique
+        </Button>
+        <Button
+          variant={viewMode === 'compact' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => handleViewModeChange('compact')}
+        >
+          <LayoutList className="h-4 w-4 mr-2" />
+          Vue compacte
+        </Button>
+        <Button
+          variant={viewMode === 'monitoring' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => handleViewModeChange('monitoring')}
+        >
+          <Activity className="h-4 w-4 mr-2" />
+          Suivi d'exécution
+        </Button>
       </div>
 
       {/* Conditional Rendering based on viewMode */}
@@ -706,6 +673,7 @@ export const BudgetTable = ({
                   <TableHead className="text-right font-semibold">Modifié</TableHead>
                   <TableHead className="text-right font-semibold">Réservé</TableHead>
                   <TableHead className="text-right font-semibold">Engagé</TableHead>
+                  <TableHead className="text-right font-semibold">Liquidé</TableHead>
                   <TableHead className="text-right font-semibold">Payé</TableHead>
                   <TableHead className="text-right font-semibold">Disponible</TableHead>
                   <TableHead className="text-center font-semibold">Taux Exec.</TableHead>
