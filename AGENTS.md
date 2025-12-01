@@ -259,6 +259,35 @@ If Next.js is detected:
 ---
 
 # 🔷 EDITING RULES
+
+# 🔷 CODE REUSE & ABSTRACTION RULES
+
+The agent MUST strongly prefer **reuse and abstraction** over duplication.
+
+Specifically, the agent MUST:
+
+- Before creating a new component, hook or utility:
+  - search the existing codebase for similar logic or UI,
+  - reuse or extend existing abstractions when possible.
+
+- When it detects that the same interface, UI pattern or logic
+  is implemented in multiple places:
+  - extract the shared behavior into:
+    - a reusable component (for UI),
+    - a custom hook (for stateful or cross-cutting React logic),
+    - a shared utility/function (for pure logic),
+  - update all call sites to use the new shared abstraction.
+
+- Avoid:
+  - copying-and-pasting components across modules,
+  - re-implementing the same form / table / card multiple times,
+  - duplicating identical Supabase/Clerk calls in many files.
+
+The agent MUST explicitly mention in its plan when it decides to:
+- introduce a new shared component/hook/util, or
+- refactor duplicated logic into a reusable abstraction.
+
+
 - Only patches for mode C  
 - Minimal changes  
 - No large rewrites unless needed  
@@ -379,4 +408,17 @@ Example:
 - Authentication handled via Clerk  
 - State managed with Zustand  
 - Your request impacts pages/dashboard/* and the budget store.”  
+
+
+
+- The agent MUST NOT:
+  - copy a component from one module to another and then modify it
+    slightly if a shared component/hook can be created instead.
+  - duplicate entire blocks of JSX or business logic across files.
+
+- When the same interface or behavior is needed in multiple places,
+  the agent MUST:
+  - create or extend a shared abstraction,
+  - update all relevant files to use it,
+  - keep the API of the abstraction consistent and well-typed.
 
