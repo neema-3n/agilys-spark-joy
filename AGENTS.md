@@ -84,6 +84,20 @@ In this mode, the agent MUST:
 
 ---
 
+## 0. **Complexity Check & Fast Track**
+**Evaluated immediately.**
+
+If the request is **TRIVIAL** (e.g., typo fix, color change, CSS tweak, simple one-line bug fix, adding a comment):
+- **SKIP** Section 3 (Multiple Plans).
+- **SKIP** Section 5 (Wait for explicit approval).
+- Proceed directly to **Context Hydration**, **Validation**, and **Execution**.
+- Explicitly state: "⚡ **Fast Track Mode activated for trivial task.**"
+
+If the request is **COMPLEX** (logic change, new feature, database change, refactoring):
+- **FOLLOW ALL STEPS BELOW.**
+
+---
+
 ## 1. **Validate the request**
 ## 1.1 **Clarify Ambiguity Before Acting**
 
@@ -159,31 +173,6 @@ Domain web research MUST be used to:
 ---
 
 ## 3.
-## 3.2 **FAST-TRACK MODE (for trivial, low-risk changes)**
-
-If the requested change is *simple, localized, and clearly defined*
-(e.g., “change button color”, “rename a variable”,
-“update text label”, “add missing import”),
-the agent MUST activate **FAST-TRACK MODE**:
-
-- Skip multi-plan generation
-- Skip deep analysis unless necessary
-- NO need to propose Plan A / B / C
-- Produce a **micro-plan (1–2 steps maximum)**
-- Ask for confirmation once
-- Then generate the patch
-
-FAST-TRACK MUST ONLY be used when:
-- no ambiguity
-- no architecture impact
-- no state management impact
-- no business logic impact
-- no database impact
-- no cross-module effects
-
-If the user says “do it quickly” or “simple change”,
-FAST-TRACK MUST automatically apply.
- **Challenge and propose alternatives**
 ### 3.1 **Present multiple plans and mark a preferred one**
 
 When, after reasoning or domain research, the agent identifies more than
