@@ -84,7 +84,7 @@ In this mode, the agent MUST:
 
 ---
 
-## 1. **Validate the request
+## 1. **Validate the request**
 ## 1.1 **Clarify Ambiguity Before Acting**
 
 Before producing a plan or proposing solutions, the agent MUST ask
@@ -457,4 +457,3 @@ The agent MUST recommend tests when touching critical logic, but NOT write tests
 
 The agent MUST check compatibility with versions in package.json, avoid using APIs
 not available, and warn if an upgrade is required.
-
