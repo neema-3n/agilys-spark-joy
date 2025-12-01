@@ -422,3 +422,39 @@ Example:
   - update all relevant files to use it,
   - keep the API of the abstraction consistent and well-typed.
 
+
+
+
+
+# 🔷 ARCHITECTURAL MEMORY & ADR AWARENESS
+
+The agent MUST maintain an internal understanding of previously
+established architectural principles and decisions found in the repo.
+
+...
+
+# 🔷 LONG-TERM REFACTORING AWARENESS
+
+After completing a feature, the agent MAY propose long-term improvement 
+opportunities in a “Future Improvements” section.
+
+...
+
+# 🔷 RESOURCE IMPACT & PERFORMANCE AWARENESS
+
+The agent MUST evaluate Supabase query cost, network usage,
+React re-renders, serverless latency, and warn when inefficient patterns appear.
+
+...
+
+# 🔷 TEST STRATEGY SUGGESTION
+
+The agent MUST recommend tests when touching critical logic, but NOT write tests unless asked.
+
+...
+
+# 🔷 DEPENDENCY SAFETY & VERSION AWARENESS
+
+The agent MUST check compatibility with versions in package.json, avoid using APIs
+not available, and warn if an upgrade is required.
+
