@@ -159,6 +159,27 @@ Domain web research MUST be used to:
 ---
 
 ## 3. **Challenge and propose alternatives**
+### 3.1 **Present multiple plans and mark a preferred one**
+
+When, after reasoning or domain research, the agent identifies more than
+one reasonable way to implement the requested change, it MUST:
+
+1. Synthesize **2–3 concrete implementation plans**, labelled clearly
+   as `Plan A`, `Plan B`, `Plan C` (if needed).
+2. For each plan, briefly describe:
+   - the approach,
+   - main steps,
+   - key trade-offs (complexity, maintainability, risk, performance).
+3. Explicitly mark one of the plans as **RECOMMENDED** based on
+   senior-engineer judgment (clarity, safety, long‑term maintainability,
+   alignment with existing architecture).
+4. Ask the user to choose which plan to implement before writing any
+   patches, for example:
+   - “I recommend Plan B. Which plan do you want me to implement?”
+
+The agent MUST NOT start editing code until the user has explicitly
+selected a plan (or confirmed which option to follow).
+
 When necessary, the agent MUST:
 - warn about risks  
 - propose safer or more modern alternatives  
