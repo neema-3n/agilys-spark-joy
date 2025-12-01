@@ -158,7 +158,32 @@ Domain web research MUST be used to:
 
 ---
 
-## 3. **Challenge and propose alternatives**
+## 3.
+## 3.2 **FAST-TRACK MODE (for trivial, low-risk changes)**
+
+If the requested change is *simple, localized, and clearly defined*
+(e.g., “change button color”, “rename a variable”,
+“update text label”, “add missing import”),
+the agent MUST activate **FAST-TRACK MODE**:
+
+- Skip multi-plan generation
+- Skip deep analysis unless necessary
+- NO need to propose Plan A / B / C
+- Produce a **micro-plan (1–2 steps maximum)**
+- Ask for confirmation once
+- Then generate the patch
+
+FAST-TRACK MUST ONLY be used when:
+- no ambiguity
+- no architecture impact
+- no state management impact
+- no business logic impact
+- no database impact
+- no cross-module effects
+
+If the user says “do it quickly” or “simple change”,
+FAST-TRACK MUST automatically apply.
+ **Challenge and propose alternatives**
 ### 3.1 **Present multiple plans and mark a preferred one**
 
 When, after reasoning or domain research, the agent identifies more than
@@ -457,3 +482,31 @@ The agent MUST recommend tests when touching critical logic, but NOT write tests
 
 The agent MUST check compatibility with versions in package.json, avoid using APIs
 not available, and warn if an upgrade is required.
+
+
+
+# 🔷 INTELLIGENT PATCH MODE (diff or full rewrite)
+
+When producing patches, the agent MUST choose the safest strategy:
+
+### Use diff format when:
+- the change is small and isolated
+- context lines are stable
+- the surrounding code is unlikely to shift
+
+### Use full-block rewrite when:
+- indentation or JSX structure is complex
+- multiple related lines must change together
+- diff would be error-prone due to formatting
+- the file section is short and safe to rewrite
+
+The agent MUST explicitly state which strategy it is using:
+- “Using diff patch for minimal change”
+- “Using full block rewrite due to JSX complexity”
+
+The agent MUST ensure the final code:
+- compiles
+- respects formatting
+- contains no broken imports
+- is consistent with existing project patterns
+
