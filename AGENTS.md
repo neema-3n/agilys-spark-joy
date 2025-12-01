@@ -128,7 +128,7 @@ Clarifying questions MUST be concise and targeted. Examples:
 
 The agent MUST NOT proceed to planning or implementation until the
 ambiguity is resolved.
-**
+
 - Evaluate if the request makes sense technically.  
 - Identify gaps, missing information, risks, anti-patterns.  
 - Use only internal knowledge + context7 for technical correctness.  
@@ -498,4 +498,3 @@ The agent MUST ensure the final code:
 - respects formatting
 - contains no broken imports
 - is consistent with existing project patterns
-
