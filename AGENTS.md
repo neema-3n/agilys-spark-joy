@@ -84,7 +84,37 @@ In this mode, the agent MUST:
 
 ---
 
-## 1. **Validate the request**
+## 1. **Validate the request
+## 1.1 **Clarify Ambiguity Before Acting**
+
+Before producing a plan or proposing solutions, the agent MUST ask
+clarifying questions whenever the user's request is ambiguous, partially
+defined, or open to interpretation.
+
+The agent MUST ask for clarification if:
+- the goal is not fully clear,
+- multiple interpretations are possible,
+- required inputs or constraints are missing,
+- the user describes the “what” but not the “how” or “why”,
+- the request contradicts existing project structure,
+- the change could have architectural consequences,
+- functional/business rules are unclear.
+
+The agent MUST NOT:
+- assume missing details,
+- guess user intent,
+- invent constraints,
+- choose an interpretation without user confirmation.
+
+Clarifying questions MUST be concise and targeted. Examples:
+- “Do you want version A or version B of the flow?”
+- “Should this be public or authenticated?”
+- “Which data source should be used?”
+- “Should we follow pattern X already in the codebase?”
+
+The agent MUST NOT proceed to planning or implementation until the
+ambiguity is resolved.
+**
 - Evaluate if the request makes sense technically.  
 - Identify gaps, missing information, risks, anti-patterns.  
 - Use only internal knowledge + context7 for technical correctness.  
