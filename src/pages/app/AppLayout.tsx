@@ -1,7 +1,8 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useClient } from '@/contexts/ClientContext';
+import { useExercice } from '@/contexts/ExerciceContext';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Wallet, FileText, Receipt, BarChart3, Settings, ChevronLeft, ChevronRight, ChevronDown, Users, CreditCard, Wallet2, ShieldCheck, LineChart, TrendingUp, BookmarkCheck, ShoppingCart, DollarSign, FolderKanban, Layers, PlayCircle, Target, Building2, BookOpen } from 'lucide-react';
+import { LayoutDashboard, Wallet, FileText, Receipt, BarChart3, Settings, ChevronLeft, ChevronRight, ChevronDown, Users, CreditCard, Wallet2, ShieldCheck, LineChart, TrendingUp, BookmarkCheck, ShoppingCart, DollarSign, FolderKanban, Layers, PlayCircle, Target, BookOpen } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -9,7 +10,8 @@ import { AppHeader } from '@/components/app/AppHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const AppLayout = () => {
-  const { user } = useAuth();
+  const { isLoading: clientLoading, hasLoaded: clientLoaded, currentClient } = useClient();
+  const { isLoading: exerciceLoading, hasLoaded: exerciceLoaded } = useExercice();
   const location = useLocation();
   const isMobile = useIsMobile();
   const mainRef = useRef<HTMLElement | null>(null);
@@ -248,6 +250,8 @@ const AppLayout = () => {
   const navigationSections = allNavigationSections.filter(section => 
     menuGroups[activeGroup].sections.includes(section.title)
   );
+
+  const showDataLoader = clientLoading || !clientLoaded || !currentClient || exerciceLoading || !exerciceLoaded;
   
   return <div className="min-h-screen bg-background flex w-full">
       {/* Overlay backdrop for mobile */}
@@ -449,7 +453,13 @@ const AppLayout = () => {
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <AppHeader onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
         <main ref={mainRef} className="flex-1 overflow-auto">
-          <Outlet />
+          {showDataLoader ? (
+            <div className="flex min-h-screen items-center justify-center">
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-muted-foreground border-t-primary" />
+            </div>
+          ) : (
+            <Outlet />
+          )}
         </main>
       </div>
     </div>;

@@ -11,9 +11,15 @@ export const ExerciceProvider = ({ children }: { children: ReactNode }) => {
   const [exercices, setExercices] = useState<Exercice[]>([]);
   const [currentExercice, setCurrentExercice] = useState<Exercice | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   const loadExercices = useCallback(async () => {
-    if (!currentClient) return;
+    if (!currentClient) {
+      setExercices([]);
+      setCurrentExercice(null);
+      setHasLoaded(false);
+      return;
+    }
     
     setIsLoading(true);
     try {
@@ -28,12 +34,17 @@ export const ExerciceProvider = ({ children }: { children: ReactNode }) => {
       toast.error('Impossible de charger les exercices');
     } finally {
       setIsLoading(false);
+      setHasLoaded(true);
     }
   }, [currentClient]);
 
   useEffect(() => {
     if (currentClient) {
       loadExercices();
+    } else {
+      setExercices([]);
+      setCurrentExercice(null);
+      setHasLoaded(false);
     }
   }, [currentClient, loadExercices]);
 
@@ -104,8 +115,9 @@ export const ExerciceProvider = ({ children }: { children: ReactNode }) => {
     cloturerExercice,
     deleteExercice,
     isLoading,
+    hasLoaded,
     refreshExercices: loadExercices
-  }), [currentExercice, exercices, isLoading, loadExercices, createExercice, updateExercice, cloturerExercice, deleteExercice]);
+  }), [currentExercice, exercices, isLoading, hasLoaded, loadExercices, createExercice, updateExercice, cloturerExercice, deleteExercice]);
 
   return (
     <ExerciceContext.Provider value={contextValue}>
