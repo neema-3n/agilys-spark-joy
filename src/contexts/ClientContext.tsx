@@ -9,8 +9,11 @@ export const ClientProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [currentClient, setCurrentClient] = useState<Client | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   const loadClients = useCallback(async () => {
+    setIsLoading(true);
     const allClients = await clientsService.getAll();
     setClients(allClients);
     
@@ -24,19 +27,27 @@ export const ClientProvider = ({ children }: { children: ReactNode }) => {
       const userClient = allClients.find(c => c.id === user?.clientId);
       setCurrentClient(userClient || null);
     }
+    setHasLoaded(true);
+    setIsLoading(false);
   }, [user]);
 
   useEffect(() => {
     if (user) {
       loadClients();
+    } else {
+      setClients([]);
+      setCurrentClient(null);
+      setHasLoaded(false);
     }
   }, [user, loadClients]);
 
   const contextValue = useMemo(() => ({
     currentClient,
     clients,
-    setCurrentClient
-  }), [currentClient, clients]);
+    setCurrentClient,
+    isLoading,
+    hasLoaded
+  }), [currentClient, clients, isLoading, hasLoaded]);
 
   return (
     <ClientContext.Provider value={contextValue}>

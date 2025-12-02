@@ -53,6 +53,7 @@ export interface AuthContextType {
   user: User | null;
   session: any | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
   hasRole: (role: AppRole) => boolean;
   hasAnyRole: (roles: AppRole[]) => boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
@@ -64,12 +65,15 @@ export interface ClientContextType {
   currentClient: Client | null;
   clients: Client[];
   setCurrentClient: (client: Client) => void;
+  isLoading: boolean;
+  hasLoaded: boolean;
 }
 
 export interface ExerciceContextType {
   currentExercice: Exercice | null;
   exercices: Exercice[];
   setCurrentExercice: (exercice: Exercice) => void;
+  hasLoaded: boolean;
   createExercice: (exercice: Omit<Exercice, 'id'>) => Promise<Exercice>;
   updateExercice: (id: string, updates: Partial<Omit<Exercice, 'id' | 'clientId'>>) => Promise<Exercice>;
   cloturerExercice: (id: string) => Promise<Exercice>;

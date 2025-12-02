@@ -663,20 +663,20 @@ export const BudgetTable = ({
         </div>
       ) : (
         /* Table */
-        <div className="rounded-md border max-h-[600px] overflow-auto">
+        <div className="rounded-md border">
           <div className="[&>div]:max-h-none [&>div]:overflow-visible">
             <Table>
               <TableHeader>
                 <TableRow className="bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/15">
-                  <TableHead className="w-[350px] font-semibold">Libellé</TableHead>
-                  <TableHead className="text-right font-semibold">Montant Initial</TableHead>
-                  <TableHead className="text-right font-semibold">Modifié</TableHead>
-                  <TableHead className="text-right font-semibold">Réservé</TableHead>
-                  <TableHead className="text-right font-semibold">Engagé</TableHead>
-                  <TableHead className="text-right font-semibold">Liquidé</TableHead>
-                  <TableHead className="text-right font-semibold">Payé</TableHead>
-                  <TableHead className="text-right font-semibold">Disponible</TableHead>
-                  <TableHead className="text-center font-semibold">Taux Exec.</TableHead>
+                  <TableHead className="w-[350px] font-semibold sticky top-0 z-30 bg-background shadow-sm border-b">Libellé</TableHead>
+                  <TableHead className="text-right font-semibold sticky top-0 z-30 bg-background shadow-sm border-b">Montant Initial</TableHead>
+                  <TableHead className="text-right font-semibold sticky top-0 z-30 bg-background shadow-sm border-b">Modifié</TableHead>
+                  <TableHead className="text-right font-semibold sticky top-0 z-30 bg-background shadow-sm border-b">Réservé</TableHead>
+                  <TableHead className="text-right font-semibold sticky top-0 z-30 bg-background shadow-sm border-b">Engagé</TableHead>
+                  <TableHead className="text-right font-semibold sticky top-0 z-30 bg-background shadow-sm border-b">Liquidé</TableHead>
+                  <TableHead className="text-right font-semibold sticky top-0 z-30 bg-background shadow-sm border-b">Payé</TableHead>
+                  <TableHead className="text-right font-semibold sticky top-0 z-30 bg-background shadow-sm border-b">Disponible</TableHead>
+                  <TableHead className="text-center font-semibold sticky top-0 z-30 bg-background shadow-sm border-b">Taux Exec.</TableHead>
                   <TableHead className="text-center font-semibold">Statut</TableHead>
                   <TableHead className="text-right w-[100px] font-semibold">Actions</TableHead>
                 </TableRow>

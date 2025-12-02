@@ -423,17 +423,18 @@ const Budgets = () => {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="space-y-6">
       {!isSnapshotOpen && (
         <PageHeader
           title="Gestion des Budgets"
           description="Plan budgétaire, modifications et suivi d'exécution"
           scrollProgress={scrollProgress}
+          sticky={false}
         />
       )}
 
-      {/* CONTENU SCROLLABLE */}
-      <div className={`flex-1 overflow-y-auto p-8 ${isSnapshotOpen ? 'pt-0' : 'pt-6'}`}>
+      {/* CONTENU */}
+      <div className={`px-8 ${isSnapshotOpen ? 'pt-0' : 'pt-6'} space-y-6`}>
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         {!isSnapshotOpen && (
           <TabsList>

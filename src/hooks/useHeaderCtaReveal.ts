@@ -36,15 +36,19 @@ export function useHeaderCtaReveal(observeDeps: DependencyList = []) {
   const headerCtaRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
     const target = headerCtaRef.current;
-    if (!target || typeof IntersectionObserver === 'undefined') return;
+    if (!target) return;
+
+    const scrollRoot = document.querySelector('main');
 
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
-        setIsHeaderCtaVisible(entry.isIntersecting);
+        setIsHeaderCtaVisible(entry?.isIntersecting ?? false);
       },
-      { root: null, threshold: 0 }
+      { root: scrollRoot ?? null, threshold: 0 }
     );
 
     observer.observe(target);

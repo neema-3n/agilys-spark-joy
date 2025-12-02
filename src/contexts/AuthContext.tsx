@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { AuthContextType, User, AppRole } from '@/types';
 import { authService } from '@/services/api/auth.service';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,48 +10,116 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const isMountedRef = useRef(true);
+  const activeUserIdRef = useRef<string | null>(null);
+  const fallbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasUserLoadedRef = useRef(false);
+
+  const loadUserFromSession = (nextSession: Session | null) => {
+    if (!isMountedRef.current) return;
+
+    setIsLoading(true);
+    setSession(nextSession);
+
+    const nextUserId = nextSession?.user?.id ?? null;
+    activeUserIdRef.current = nextUserId;
+
+    if (nextUserId) {
+      // Charger le profil complet avec les rôles (différé pour éviter deadlock)
+      setTimeout(async () => {
+        const expectedUserId = activeUserIdRef.current;
+        try {
+          const fullUser = await authService.getUserWithRoles(nextUserId);
+
+          if (!isMountedRef.current || expectedUserId !== nextUserId) return;
+
+          setUser(fullUser);
+          hasUserLoadedRef.current = !!fullUser;
+        } catch (error) {
+          console.error('Erreur lors du chargement de l\'utilisateur', error);
+        } finally {
+          if (isMountedRef.current && activeUserIdRef.current === expectedUserId) {
+            setIsLoading(false);
+          }
+        }
+      }, 0);
+    } else {
+      setUser(null);
+      hasUserLoadedRef.current = false;
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Écouter les changements d'authentification
+    const clearFallback = () => {
+      if (fallbackTimeoutRef.current) {
+        clearTimeout(fallbackTimeoutRef.current);
+        fallbackTimeoutRef.current = null;
+      }
+    };
+
+    // Source unique de vérité : onAuthStateChange (inclut INITIAL_SESSION)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        setSession(session);
-        
-        if (session?.user) {
-          // Charger le profil complet avec les rôles (différé pour éviter deadlock)
-          setTimeout(async () => {
-            const fullUser = await authService.getUserWithRoles(session.user.id);
-            setUser(fullUser);
-          }, 0);
-        } else {
-          setUser(null);
+        // Gestion dédiée de INITIAL_SESSION pour éviter un flash quand le token est rechargé juste après
+        if (event === 'INITIAL_SESSION') {
+          if (session?.user) {
+            clearFallback();
+            loadUserFromSession(session);
+          } else {
+            // On attend un bref délai pour laisser une éventuelle signature silencieuse arriver
+            clearFallback();
+            fallbackTimeoutRef.current = setTimeout(() => {
+              if (!isMountedRef.current) return;
+              loadUserFromSession(null);
+            }, 400);
+          }
+          return;
         }
-        
-        setIsLoading(false);
+
+        if (event === 'TOKEN_REFRESHED') {
+          clearFallback();
+          if (session?.user?.id && activeUserIdRef.current === session.user.id && hasUserLoadedRef.current) {
+            setSession(session);
+            setIsLoading(false);
+            return;
+          }
+          loadUserFromSession(session);
+          return;
+        }
+
+        if (event === 'SIGNED_IN') {
+          clearFallback();
+          loadUserFromSession(session);
+          return;
+        }
+
+        if (event === 'SIGNED_OUT') {
+          clearFallback();
+          loadUserFromSession(null);
+          return;
+        }
+
+        // Fallback pour tout autre événement (ex: USER_UPDATED)
+        clearFallback();
+        loadUserFromSession(session);
       }
     );
 
-    // Vérifier la session au chargement
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        setTimeout(async () => {
-          const fullUser = await authService.getUserWithRoles(session.user.id);
-          setUser(fullUser);
-          setIsLoading(false);
-        }, 0);
-      } else {
-        setIsLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      isMountedRef.current = false;
+      clearFallback();
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
     const result = await authService.login(email, password);
     if (result.user) {
       setUser(result.user);
+      // Récupérer immédiatement la session pour éviter un flash avant l'événement Supabase
+      const { data } = await supabase.auth.getSession();
+      setSession(data.session);
       return { success: true };
     }
     return { success: false, error: result.error };
@@ -70,6 +138,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     setSession(null);
   };
+
+  const isAuthenticated = !!(session || user);
 
   const hasRole = (role: AppRole): boolean => {
     return user?.roles.includes(role) || false;
@@ -91,9 +161,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider value={{ 
       user, 
       session,
-      isAuthenticated: !!session, 
-      hasRole, 
-      hasAnyRole, 
+      isAuthenticated,
+      isLoading,
+      hasRole,
+      hasAnyRole,
       login,
       signup,
       logout 
