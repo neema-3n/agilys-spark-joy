@@ -274,6 +274,57 @@ If Next.js is detected:
 
 # 🔷 EDITING RULES
 
+# 🔷 CHANGE SUMMARY REQUIREMENT
+
+After every patch (including FAST-TRACK MODE), the agent MUST output a
+short summary describing:
+
+- what changed,
+- why it changed,
+- which files were touched.
+
+This summary MUST always appear after the patch, even for trivial edits.
+
+
+# 🔷 LINTING & AUTO-FIX RULES
+
+After generating any patch (including FAST-TRACK MODE), the agent MUST:
+
+1. **Lint the modified code mentally** according to:
+   - ESLint rules in the project,
+   - Prettier formatting (if present),
+   - TypeScript strictness,
+   - existing conventions in the repository.
+
+2. If linting reveals issues such as:
+   - unused variables or imports,
+   - unreachable code,
+   - missing dependencies in arrays,
+   - incorrect React hook rules,
+   - non-formatted JSX or TS,
+   - naming inconsistencies,
+   - shadowed variables,
+   - missing explicit types (where required),
+   - trailing commas, spacing or indentation errors,
+
+   → **the agent MUST automatically fix them** before final output.
+
+3. The lint-fix operation MUST follow the repo style:
+   - existing ESLint configuration,
+   - existing Prettier config,
+   - existing folder-level rules,
+   - inferred conventions (when config not found).
+
+4. If a lint rule contradicts the requested change,  
+   the agent MUST:
+   - warn the user,
+   - propose alternatives,
+   - and wait for approval before bypassing linting rules.
+
+5. **The final patch MUST always be fully lint-clean.**
+
+
+
 # 🔷 CODE REUSE & ABSTRACTION RULES
 
 The agent MUST strongly prefer **reuse and abstraction** over duplication.
@@ -498,3 +549,4 @@ The agent MUST ensure the final code:
 - respects formatting
 - contains no broken imports
 - is consistent with existing project patterns
+
