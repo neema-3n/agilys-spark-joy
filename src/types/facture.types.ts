@@ -17,13 +17,14 @@ export interface Facture {
   montantHT: number;
   montantTVA: number;
   montantTTC: number;
-  montantPaye: number;
+  montantLiquide: number;
   statut: StatutFacture;
   dateValidation?: string;
   observations?: string;
   createdAt: string;
   updatedAt: string;
   createdBy?: string;
+  ecrituresCount?: number;
   
   // Relations optionnelles
   fournisseur?: {
@@ -64,5 +65,27 @@ export interface FactureStats {
   montantTotal: number;
   montantBrouillon: number;
   montantValidee: number;
-  montantPayee: number;
+  montantLiquide: number;
+}
+
+export interface PaginationParams {
+  page: number;
+  pageSize: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  filters?: {
+    statut?: StatutFacture;
+    searchTerm?: string;
+    fournisseurId?: string;
+    dateDebut?: string;
+    dateFin?: string;
+  };
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }

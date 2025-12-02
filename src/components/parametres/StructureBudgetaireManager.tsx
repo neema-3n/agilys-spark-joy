@@ -31,7 +31,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-const StructureBudgetaire = () => {
+export const StructureBudgetaireManager = () => {
   const { currentClient } = useClient();
   const { currentExercice } = useExercice();
   const { sections, createSection, updateSection, deleteSection, isLoading: loadingSections } = useSections();
@@ -51,9 +51,11 @@ const StructureBudgetaire = () => {
 
   if (!currentClient || !currentExercice) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-muted-foreground">Veuillez sélectionner un exercice</p>
-      </div>
+      <Card>
+        <CardContent className="py-12">
+          <p className="text-center text-muted-foreground">Veuillez sélectionner un exercice</p>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -116,23 +118,18 @@ const StructureBudgetaire = () => {
 
   if (loadingSections || loadingProgrammes || loadingActions) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
+      <Card>
+        <CardContent className="py-12">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-6 p-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Structure Budgétaire</h1>
-          <p className="text-muted-foreground">
-            Gestion de la nomenclature budgétaire (Sections &gt; Programmes &gt; Actions)
-          </p>
-        </div>
-      </div>
-
+    <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
@@ -193,32 +190,40 @@ const StructureBudgetaire = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sections.map((section) => (
-                    <TableRow key={section.id}>
-                      <TableCell className="font-medium">{section.code}</TableCell>
-                      <TableCell>{section.libelle}</TableCell>
-                      <TableCell>{section.ordre}</TableCell>
-                      <TableCell>{getSectionProgrammesCount(section.id)}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex gap-2 justify-end">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => { setSelectedSection(section); setSectionDialogOpen(true); }}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => { setDeleteItem({ type: 'section', id: section.id }); setDeleteDialogOpen(true); }}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
+                  {sections.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-muted-foreground">
+                        Aucune section créée
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    sections.map((section) => (
+                      <TableRow key={section.id}>
+                        <TableCell className="font-medium">{section.code}</TableCell>
+                        <TableCell>{section.libelle}</TableCell>
+                        <TableCell>{section.ordre}</TableCell>
+                        <TableCell>{getSectionProgrammesCount(section.id)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex gap-2 justify-end">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => { setSelectedSection(section); setSectionDialogOpen(true); }}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => { setDeleteItem({ type: 'section', id: section.id }); setDeleteDialogOpen(true); }}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -230,7 +235,7 @@ const StructureBudgetaire = () => {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Programmes</CardTitle>
-                <Button onClick={() => { setSelectedProgramme(null); setProgrammeDialogOpen(true); }}>
+                <Button onClick={() => { setSelectedProgramme(null); setProgrammeDialogOpen(true); }} disabled={sections.length === 0}>
                   <Plus className="h-4 w-4 mr-2" />
                   Nouveau Programme
                 </Button>
@@ -249,36 +254,44 @@ const StructureBudgetaire = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {programmes.map((programme) => {
-                    const section = sections.find(s => s.id === programme.section_id);
-                    return (
-                      <TableRow key={programme.id}>
-                        <TableCell>{section?.code}</TableCell>
-                        <TableCell className="font-medium">{programme.code}</TableCell>
-                        <TableCell>{programme.libelle}</TableCell>
-                        <TableCell>{programme.ordre}</TableCell>
-                        <TableCell>{getProgrammeActionsCount(programme.id)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex gap-2 justify-end">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => { setSelectedProgramme(programme); setProgrammeDialogOpen(true); }}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => { setDeleteItem({ type: 'programme', id: programme.id }); setDeleteDialogOpen(true); }}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {programmes.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground">
+                        {sections.length === 0 ? 'Créez d\'abord des sections' : 'Aucun programme créé'}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    programmes.map((programme) => {
+                      const section = sections.find(s => s.id === programme.section_id);
+                      return (
+                        <TableRow key={programme.id}>
+                          <TableCell>{section?.code}</TableCell>
+                          <TableCell className="font-medium">{programme.code}</TableCell>
+                          <TableCell>{programme.libelle}</TableCell>
+                          <TableCell>{programme.ordre}</TableCell>
+                          <TableCell>{getProgrammeActionsCount(programme.id)}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex gap-2 justify-end">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => { setSelectedProgramme(programme); setProgrammeDialogOpen(true); }}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => { setDeleteItem({ type: 'programme', id: programme.id }); setDeleteDialogOpen(true); }}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -290,7 +303,7 @@ const StructureBudgetaire = () => {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Actions Budgétaires</CardTitle>
-                <Button onClick={() => { setSelectedAction(null); setActionDialogOpen(true); }}>
+                <Button onClick={() => { setSelectedAction(null); setActionDialogOpen(true); }} disabled={programmes.length === 0}>
                   <Plus className="h-4 w-4 mr-2" />
                   Nouvelle Action
                 </Button>
@@ -308,35 +321,43 @@ const StructureBudgetaire = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {actions.map((action) => {
-                    const programme = programmes.find(p => p.id === action.programme_id);
-                    return (
-                      <TableRow key={action.id}>
-                        <TableCell>{programme?.code}</TableCell>
-                        <TableCell className="font-medium">{action.code}</TableCell>
-                        <TableCell>{action.libelle}</TableCell>
-                        <TableCell>{action.ordre}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex gap-2 justify-end">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => { setSelectedAction(action); setActionDialogOpen(true); }}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => { setDeleteItem({ type: 'action', id: action.id }); setDeleteDialogOpen(true); }}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {actions.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-muted-foreground">
+                        {programmes.length === 0 ? 'Créez d\'abord des programmes' : 'Aucune action créée'}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    actions.map((action) => {
+                      const programme = programmes.find(p => p.id === action.programme_id);
+                      return (
+                        <TableRow key={action.id}>
+                          <TableCell>{programme?.code}</TableCell>
+                          <TableCell className="font-medium">{action.code}</TableCell>
+                          <TableCell>{action.libelle}</TableCell>
+                          <TableCell>{action.ordre}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex gap-2 justify-end">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => { setSelectedAction(action); setActionDialogOpen(true); }}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => { setDeleteItem({ type: 'action', id: action.id }); setDeleteDialogOpen(true); }}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -394,5 +415,3 @@ const StructureBudgetaire = () => {
     </div>
   );
 };
-
-export default StructureBudgetaire;

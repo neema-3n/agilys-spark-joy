@@ -47,7 +47,6 @@ const factureSchema = z.object({
   montantHT: z.string().min(1, 'Le montant HT est requis'),
   montantTVA: z.string().min(1, 'Le montant TVA est requis'),
   montantTTC: z.string().min(1, 'Le montant TTC est requis'),
-  montantPaye: z.string().optional(),
   observations: z.string().optional(),
 });
 
@@ -113,11 +112,11 @@ export const FactureDialog = ({
       montantHT: '',
       montantTVA: '',
       montantTTC: '',
-      montantPaye: '0',
       dateEcheance: '',
       observations: '',
     },
   });
+  const bonCommandeId = form.watch('bonCommandeId');
 
   useEffect(() => {
     if (open && !facture) {
@@ -144,7 +143,6 @@ export const FactureDialog = ({
         montantHT,
         montantTVA,
         montantTTC,
-        montantPaye: '0',
         dateEcheance: '',
         observations: '',
         });
@@ -164,11 +162,9 @@ export const FactureDialog = ({
         montantHT: facture.montantHT.toString(),
         montantTVA: facture.montantTVA.toString(),
         montantTTC: facture.montantTTC.toString(),
-        montantPaye: (facture.montantPaye || 0).toString(),
         observations: facture.observations || '',
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, facture, onGenererNumero, initialBonCommandeId]);
 
   const handleSubmit = async (values: z.infer<typeof factureSchema>) => {
@@ -189,14 +185,17 @@ export const FactureDialog = ({
         montantHT: parseFloat(values.montantHT),
         montantTVA: parseFloat(values.montantTVA),
         montantTTC: parseFloat(values.montantTTC),
-        montantPaye: parseFloat(values.montantPaye || '0'),
+        montantLiquide: facture ? facture.montantLiquide : 0,
         statut: 'brouillon',
         observations: values.observations || undefined,
       };
 
       await onSubmit(factureData);
+      // Fermer le dialog seulement si la création a réussi
       onOpenChange(false);
     } catch (error) {
+      // L'erreur est gérée par le hook useFactures qui affiche le message détaillé
+      // Le dialog reste ouvert pour permettre la correction
       console.error('Erreur lors de la soumission:', error);
     }
   };
@@ -220,35 +219,56 @@ export const FactureDialog = ({
         shouldTouch: false
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchMontantHT, watchMontantTVA]);
 
   // Calculer le montant disponible sur le BC
   useEffect(() => {
-    const bonCommandeId = form.watch('bonCommandeId');
-    
-    if (bonCommandeId && bonCommandeId !== 'none') {
-      const bc = bonsCommande.find(b => b.id === bonCommandeId);
-      if (bc && bc.montant) {
-        supabase
-          .from('factures')
-          .select('montant_ttc')
-          .eq('bon_commande_id', bonCommandeId)
-          .neq('statut', 'annulee')
-          .neq('id', facture?.id || '00000000-0000-0000-0000-000000000000')
-          .then(({ data }) => {
-            const dejaFacture = data?.reduce((sum, f) => sum + parseFloat(f.montant_ttc.toString()), 0) || 0;
-            setMontantBC(bc.montant);
-            setMontantDejaFacture(dejaFacture);
-            setMontantDisponibleBC(bc.montant - dejaFacture);
-          });
-      }
-    } else {
+    let isActive = true;
+
+    if (!bonCommandeId || bonCommandeId === 'none') {
       setMontantDisponibleBC(null);
       setMontantBC(null);
       setMontantDejaFacture(0);
+      return;
     }
-  }, [form.watch('bonCommandeId'), bonsCommande, facture?.id]);
+
+    const bc = bonsCommande.find((b) => b.id === bonCommandeId);
+    if (!bc || !bc.montant) {
+      setMontantDisponibleBC(null);
+      setMontantBC(null);
+      setMontantDejaFacture(0);
+      return;
+    }
+
+    const fetchMontantDejaFacture = async () => {
+      const { data, error } = await supabase
+        .from('factures')
+        .select('id, montant_ttc, statut')
+        .eq('bon_commande_id', bonCommandeId)
+        .neq('statut', 'annulee');
+
+      if (error) {
+        console.error('Erreur récupération factures BC:', error);
+        return;
+      }
+
+      const dejaFacture = (data || [])
+        .filter((f) => f.id !== (facture?.id || '00000000-0000-0000-0000-000000000000'))
+        .reduce((sum, f) => sum + parseFloat(f.montant_ttc.toString()), 0);
+
+      if (!isActive) return;
+
+      setMontantBC(bc.montant);
+      setMontantDejaFacture(dejaFacture);
+      setMontantDisponibleBC(bc.montant - dejaFacture);
+    };
+
+    fetchMontantDejaFacture();
+
+    return () => {
+      isActive = false;
+    };
+  }, [bonCommandeId, bonsCommande, facture?.id]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -457,28 +477,8 @@ export const FactureDialog = ({
                     <FormMessage />
                   </FormItem>
                 )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="montantPaye"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Montant payé</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      step="0.01" 
-                      {...field} 
-                      disabled={isReadOnly}
-                      placeholder="0.00"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
             />
+          </div>
 
             <FormField
               control={form.control}

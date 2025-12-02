@@ -1,25 +1,18 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React from 'react';
+import { PageHeader } from '@/components/PageHeader';
+import { PlanComptableManager } from '@/components/parametres/PlanComptableManager';
 
 const PlanComptable = () => {
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Plan Comptable</h1>
-        <p className="text-muted-foreground">
-          Import et structuration hiérarchique du plan comptable
-        </p>
+    <div className="space-y-6">
+      <PageHeader
+        title="Plan Comptable"
+        description="Import et structuration hiérarchique du plan comptable"
+      />
+      
+      <div className="px-8">
+        <PlanComptableManager />
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Module en construction</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            Le module de plan comptable sera développé prochainement.
-          </p>
-        </CardContent>
-      </Card>
     </div>
   );
 };

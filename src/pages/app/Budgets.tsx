@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { useClient } from '@/contexts/ClientContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { PageHeader } from '@/components/PageHeader';
+import { showNavigationToast } from '@/lib/navigation-toast';
 import { budgetService } from '@/services/api/budget.service';
 import { useSections } from '@/hooks/useSections';
 import { useProgrammes } from '@/hooks/useProgrammes';
@@ -10,6 +12,7 @@ import { useActions } from '@/hooks/useActions';
 import { useComptes } from '@/hooks/useComptes';
 import { useEnveloppes } from '@/hooks/useEnveloppes';
 import { useReservations } from '@/hooks/useReservations';
+import { useBudgetSearch } from '@/hooks/useBudgetSearch';
 import { LigneBudgetaire, ModificationBudgetaire } from '@/types/budget.types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,10 +20,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Plus, FileEdit, CheckCircle, XCircle, Clock, Send, ArrowDown } from 'lucide-react';
 import { BudgetTable } from '@/components/budget/BudgetTable';
+import { LigneBudgetaireSnapshot } from '@/components/budget/LigneBudgetaireSnapshot';
 import { LigneBudgetaireDialog } from '@/components/budget/LigneBudgetaireDialog';
 import { ModificationBudgetaireDialog } from '@/components/budget/ModificationBudgetaireDialog';
 import { ReservationDialog } from '@/components/reservations/ReservationDialog';
+import { BudgetSearchPanel } from '@/components/search/BudgetSearchPanel';
+import { ActiveFiltersBar } from '@/components/search/ActiveFiltersBar';
+import { SearchResultsSummary } from '@/components/search/SearchResultsSummary';
+import { ExportResultsBar } from '@/components/export/ExportResultsBar';
+import { exportBudgetToCSV, exportBudgetToPDF, printBudgetResults } from '@/lib/export-utils';
 import { useToast } from '@/hooks/use-toast';
+import { useScrollProgress } from '@/hooks/useScrollProgress';
+import { useSnapshotState } from '@/hooks/useSnapshotState';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,6 +56,7 @@ const Budgets = () => {
   const { currentClient } = useClient();
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const { sections, isLoading: loadingSections } = useSections();
   const { programmes, isLoading: loadingProgrammes } = useProgrammes();
@@ -55,6 +67,26 @@ const Budgets = () => {
 
   const [lignes, setLignes] = useState<LigneBudgetaire[]>([]);
   const [modifications, setModifications] = useState<ModificationBudgetaire[]>([]);
+
+  // Hook de recherche multi-critères
+  const {
+    filters,
+    setFilter,
+    resetFilters,
+    resetFilter,
+    activeFiltersCount,
+    filteredLignes,
+    totals,
+    availableProgrammes,
+    availableActions,
+  } = useBudgetSearch({
+    lignes,
+    sections,
+    programmes,
+    actions,
+    comptes,
+    enveloppes,
+  });
   const [loading, setLoading] = useState(true);
 
   const [ligneDialogOpen, setLigneDialogOpen] = useState(false);
@@ -66,11 +98,20 @@ const Budgets = () => {
   const [ligneForModification, setLigneForModification] = useState<LigneBudgetaire | null>(null);
   const [ligneToDelete, setLigneToDelete] = useState<string | null>(null);
   
+  const { ligneId: ligneIdFromRoute } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'lignes';
   
   const handleTabChange = (value: string) => {
-    setSearchParams({ tab: value });
+    if (value !== 'lignes' && ligneIdFromRoute) {
+      const params = new URLSearchParams(searchParams);
+      params.set('tab', value);
+      navigate(`/app/budgets?${params.toString()}`);
+      return;
+    }
+    const params = new URLSearchParams(searchParams);
+    params.set('tab', value);
+    setSearchParams(params);
   };
 
   useEffect(() => {
@@ -170,17 +211,27 @@ const Budgets = () => {
     if (!currentExercice || !currentClient) return;
 
     try {
+      const ligne = ligneForModification;
+      
       await budgetService.createModification({
         ...data,
         exerciceId: currentExercice.id,
         statut: 'brouillon' as const,
       }, currentClient.id);
-      toast({
-        title: 'Succès',
-        description: 'Modification budgétaire créée avec succès',
-      });
+
+      setModificationDialogOpen(false);
+      setLigneForModification(null);
       loadData();
-      setSearchParams({ tab: 'modifications' });
+
+      showNavigationToast({
+        title: 'Modification budgétaire créée',
+        description: `La modification a été créée depuis la ligne ${ligne?.libelle || ''}.`,
+        targetPage: {
+          name: 'Onglet Modifications',
+          path: '/app/budgets?tab=modifications',
+        },
+        navigate,
+      });
     } catch (error) {
       toast({
         title: 'Erreur',
@@ -255,14 +306,22 @@ const Budgets = () => {
 
   const handleSaveReservation = async (data: any) => {
     try {
+      const ligne = ligneForReservation;
       await createReservation(data);
-      toast({
-        title: 'Succès',
-        description: 'Réservation de crédit créée avec succès',
-      });
+      
       setReservationDialogOpen(false);
       setLigneForReservation(null);
       loadData();
+      
+      showNavigationToast({
+        title: 'Réservation créée',
+        description: `La réservation a été créée depuis la ligne budgétaire ${ligne?.libelle || ''}.`,
+        targetPage: {
+          name: 'Réservations',
+          path: '/app/reservations',
+        },
+        navigate,
+      });
     } catch (error) {
       toast({
         title: 'Erreur',
@@ -309,6 +368,52 @@ const Budgets = () => {
     return labels[type] || type;
   };
 
+  const envelopeOrNull = (id?: string) => (id ? enveloppes.find(e => e.id === id) || null : null);
+
+  const buildTabQuery = useCallback((tab: string) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('tab', tab);
+    return params.toString();
+  }, [searchParams]);
+
+  const navigateToSnapshot = useCallback((id: string) => {
+    navigate(`/app/budgets/${id}?${buildTabQuery('lignes')}`);
+  }, [navigate, buildTabQuery]);
+
+  const navigateToList = useCallback((tab: string = activeTab) => {
+    navigate(`/app/budgets?${buildTabQuery(tab)}`);
+  }, [navigate, buildTabQuery, activeTab]);
+
+  const {
+    snapshotId: snapshotLigneId,
+    snapshotItem: snapshotLigne,
+    snapshotIndex,
+    isSnapshotOpen,
+    isSnapshotLoading,
+    openSnapshot: openLigneSnapshot,
+    closeSnapshot: closeLigneSnapshot,
+    navigateSnapshot: navigateLigneSnapshot,
+  } = useSnapshotState({
+    items: activeTab === 'lignes' ? lignes : [],
+    getId: l => l.id,
+    initialId: activeTab === 'lignes' ? (ligneIdFromRoute || null) : null,
+    onNavigateToId: id => id ? navigateToSnapshot(id) : navigateToList('lignes'),
+    onMissingId: () => navigateToList('lignes'),
+    isLoadingItems: loading || loadingSections || loadingProgrammes || loadingActions || loadingComptes || loadingEnveloppes,
+  });
+
+  const snapshotContext = useMemo(() => {
+    if (!snapshotLigne) return null;
+    const action = actions.find(a => a.id === snapshotLigne.actionId);
+    const programme = programmes.find(p => p.id === action?.programme_id);
+    const section = sections.find(s => s.id === programme?.section_id);
+    const compte = comptes.find(c => c.id === snapshotLigne.compteId);
+    const enveloppe = envelopeOrNull(snapshotLigne.enveloppeId);
+    return { action, programme, section, compte, enveloppe };
+  }, [snapshotLigne, actions, programmes, sections, comptes, enveloppes]);
+
+  const scrollProgress = useScrollProgress(!!snapshotLigneId);
+
   if (loading || loadingSections || loadingProgrammes || loadingActions || loadingComptes || loadingEnveloppes) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -319,63 +424,148 @@ const Budgets = () => {
 
   return (
     <div className="flex flex-col h-full">
-      {/* EN-TÊTE STICKY */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border">
-        <div className="p-8 pb-6">
-          <h1 className="text-3xl font-bold mb-2">Gestion des Budgets</h1>
-          <p className="text-muted-foreground">
-            Plan budgétaire, modifications et suivi d'exécution
-          </p>
-        </div>
-      </div>
+      {!isSnapshotOpen && (
+        <PageHeader
+          title="Gestion des Budgets"
+          description="Plan budgétaire, modifications et suivi d'exécution"
+          scrollProgress={scrollProgress}
+        />
+      )}
 
       {/* CONTENU SCROLLABLE */}
-      <div className="flex-1 overflow-y-auto p-8 pt-6">
+      <div className={`flex-1 overflow-y-auto p-8 ${isSnapshotOpen ? 'pt-0' : 'pt-6'}`}>
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="lignes">Lignes Budgétaires</TabsTrigger>
-          <TabsTrigger value="modifications">
-            Modifications Budgétaires
-            {modifications.filter(m => m.statut === 'en_attente').length > 0 && (
-              <Badge variant="warning" className="ml-2">
-                {modifications.filter(m => m.statut === 'en_attente').length}
-              </Badge>
-            )}
-          </TabsTrigger>
-        </TabsList>
+        {!isSnapshotOpen && (
+          <TabsList>
+            <TabsTrigger value="lignes">Lignes Budgétaires</TabsTrigger>
+            <TabsTrigger value="modifications">
+              Modifications Budgétaires
+              {modifications.filter(m => m.statut === 'en_attente').length > 0 && (
+                <Badge variant="warning" className="ml-2">
+                  {modifications.filter(m => m.statut === 'en_attente').length}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+        )}
 
         <TabsContent value="lignes" className="space-y-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Plan Budgétaire {currentExercice?.libelle}</CardTitle>
-              <Button onClick={() => setLigneDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Nouvelle ligne
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <BudgetTable
-                clientId={currentClient?.id || ''}
-                exerciceId={currentExercice?.id || ''}
-                sections={sections}
-                programmes={programmes}
-                actions={actions}
-                lignes={lignes}
-                comptes={comptes}
-                enveloppes={enveloppes}
-                onEdit={(ligne) => {
-                  setSelectedLigne(ligne);
-                  setLigneDialogOpen(true);
-                }}
-                onDelete={(id) => {
-                  setLigneToDelete(id);
-                  setDeleteDialogOpen(true);
-                }}
-                onReserver={handleReserverCredit}
-                onCreateModification={handleCreateModificationFromLigne}
-              />
-            </CardContent>
-          </Card>
+          {isSnapshotOpen && snapshotLigne && snapshotContext ? (
+            <LigneBudgetaireSnapshot
+              ligne={snapshotLigne}
+              section={snapshotContext.section}
+              programme={snapshotContext.programme}
+              action={snapshotContext.action}
+              compte={snapshotContext.compte}
+              enveloppe={snapshotContext.enveloppe}
+              onClose={closeLigneSnapshot}
+              onNavigate={navigateLigneSnapshot}
+              hasPrev={snapshotIndex > 0}
+              hasNext={snapshotIndex < lignes.length - 1}
+              currentIndex={snapshotIndex}
+              totalCount={lignes.length}
+              onEdit={() => {
+                setSelectedLigne(snapshotLigne);
+                setLigneDialogOpen(true);
+              }}
+              onReserver={() => handleReserverCredit(snapshotLigne)}
+              onCreateModification={() => handleCreateModificationFromLigne(snapshotLigne)}
+              onDelete={() => {
+                setLigneToDelete(snapshotLigne.id);
+                setDeleteDialogOpen(true);
+              }}
+            />
+          ) : isSnapshotOpen && isSnapshotLoading ? (
+            <div className="py-12 text-center text-muted-foreground">Chargement du snapshot...</div>
+          ) : (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Plan Budgétaire {currentExercice?.libelle}</CardTitle>
+                <Button onClick={() => setLigneDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nouvelle ligne
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Panneau de recherche multi-critères */}
+                <BudgetSearchPanel
+                  filters={filters}
+                  onFilterChange={setFilter}
+                  onResetFilters={resetFilters}
+                  activeFiltersCount={activeFiltersCount}
+                  sections={sections}
+                  programmes={availableProgrammes}
+                  actions={availableActions}
+                  comptes={comptes}
+                  enveloppes={enveloppes}
+                />
+
+                {/* Barre des filtres actifs */}
+                <ActiveFiltersBar
+                  filters={filters}
+                  onRemoveFilter={resetFilter}
+                  onClearAll={resetFilters}
+                  resultCount={filteredLignes.length}
+                  totalCount={lignes.length}
+                  sections={sections}
+                  programmes={programmes}
+                  actions={actions}
+                  comptes={comptes}
+                  enveloppes={enveloppes}
+                />
+
+                {/* Résumé avec totaux */}
+                <SearchResultsSummary
+                  totals={totals}
+                  resultCount={filteredLignes.length}
+                />
+
+                {/* Tableau */}
+                <BudgetTable
+                  clientId={currentClient?.id || ''}
+                  exerciceId={currentExercice?.id || ''}
+                  sections={sections}
+                  programmes={programmes}
+                  actions={actions}
+                  lignes={filteredLignes}
+                  comptes={comptes}
+                  enveloppes={enveloppes}
+                  onEdit={(ligne) => {
+                    setSelectedLigne(ligne);
+                    setLigneDialogOpen(true);
+                  }}
+                  onDelete={(id) => {
+                    setLigneToDelete(id);
+                    setDeleteDialogOpen(true);
+                  }}
+                  onReserver={handleReserverCredit}
+                  onCreateModification={handleCreateModificationFromLigne}
+                  onViewDetails={(ligne) => openLigneSnapshot(ligne.id)}
+                />
+
+                {/* Barre d'export */}
+                <ExportResultsBar
+                  resultCount={filteredLignes.length}
+                  onExportCSV={() => exportBudgetToCSV(
+                    filteredLignes,
+                    { sections, programmes, actions, comptes, enveloppes },
+                    `budget_${currentExercice?.code}_${new Date().toISOString().split('T')[0]}.csv`
+                  )}
+                  onExportPDF={() => exportBudgetToPDF(
+                    filteredLignes,
+                    { sections, programmes, actions, comptes, enveloppes },
+                    `budget_${currentExercice?.code}_${new Date().toISOString().split('T')[0]}.pdf`
+                  )}
+                  onPrint={() => printBudgetResults(
+                    filteredLignes,
+                    { sections, programmes, actions, comptes, enveloppes },
+                    `Plan Budgétaire ${currentExercice?.libelle}`,
+                    totals
+                  )}
+                />
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="modifications" className="space-y-4">

@@ -62,81 +62,69 @@ export const AppHeader = ({ onMenuClick }: AppHeaderProps) => {
         {/* Zone gauche/centre: Sélecteurs */}
         <div className="flex items-center gap-1 md:gap-2 lg:gap-3 flex-1 min-w-0">
           {/* Sélecteur CLIENT */}
-          <div className="flex flex-col gap-1 min-w-0">
-            <label className="hidden md:block text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              CLIENT
-            </label>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="min-w-[90px] md:min-w-[140px] lg:min-w-[180px] justify-between bg-card hover:bg-accent h-9"
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="min-w-[140px] md:min-w-[180px] lg:min-w-[220px] justify-start bg-card hover:bg-accent h-10 px-4"
+              >
+                <span className="truncate text-sm font-medium">
+                  {currentClient?.nom || 'Sélectionner un client'}
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-full min-w-[220px]">
+              {clients.map((client) => (
+                <DropdownMenuItem
+                  key={client.id}
+                  onClick={() => setCurrentClient(client)}
+                  className={
+                    currentClient?.id === client.id
+                      ? 'bg-primary/10 text-primary'
+                      : ''
+                  }
                 >
-                  <span className="truncate text-xs md:text-sm">
-                    {currentClient?.nom || 'Client'}
-                  </span>
-                  <ChevronDown className="ml-1 md:ml-2 h-3 w-3 md:h-4 md:w-4 shrink-0" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-[200px]">
-                {clients.map((client) => (
-                  <DropdownMenuItem
-                    key={client.id}
-                    onClick={() => setCurrentClient(client)}
-                    className={
-                      currentClient?.id === client.id
-                        ? 'bg-primary/10 text-primary'
-                        : ''
-                    }
-                  >
-                    {client.nom}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+                  {client.nom}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Sélecteur EXERCICE */}
-          <div className="flex flex-col gap-1 min-w-0">
-            <label className="hidden md:block text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              EXERCICE
-            </label>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="min-w-[90px] md:min-w-[140px] lg:min-w-[180px] justify-between bg-card hover:bg-accent h-9"
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="min-w-[180px] md:min-w-[220px] lg:min-w-[280px] justify-start bg-card hover:bg-accent h-10 px-4"
+              >
+                <span className="truncate text-sm font-medium">
+                  {currentExercice?.libelle || 'Sélectionner un exercice'}
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-full min-w-[280px]">
+              {exercices.map((exercice) => (
+                <DropdownMenuItem
+                  key={exercice.id}
+                  onClick={() => setCurrentExercice(exercice)}
+                  className={
+                    currentExercice?.id === exercice.id
+                      ? 'bg-primary/10 text-primary'
+                      : ''
+                  }
                 >
-                  <span className="truncate text-xs md:text-sm">
-                    {currentExercice?.libelle || 'Exercice'}
-                  </span>
-                  <ChevronDown className="ml-1 md:ml-2 h-3 w-3 md:h-4 md:w-4 shrink-0" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-[200px]">
-                {exercices.map((exercice) => (
-                  <DropdownMenuItem
-                    key={exercice.id}
-                    onClick={() => setCurrentExercice(exercice)}
-                    className={
-                      currentExercice?.id === exercice.id
-                        ? 'bg-primary/10 text-primary'
-                        : ''
-                    }
-                  >
-                    <div className="flex flex-col">
-                      <span className="font-medium">{exercice.libelle}</span>
-                      {exercice.code && (
-                        <span className="text-xs text-muted-foreground">
-                          {exercice.code}
-                        </span>
-                      )}
-                    </div>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+                  <div className="flex flex-col">
+                    <span className="font-medium">{exercice.libelle}</span>
+                    {exercice.code && (
+                      <span className="text-xs text-muted-foreground">
+                        {exercice.code}
+                      </span>
+                    )}
+                  </div>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Zone droite: Recherche et actions */}

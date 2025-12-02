@@ -58,6 +58,7 @@ export const useBonsCommande = () => {
     mutationFn: (id: string) => bonsCommandeService.validerBonCommande(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bons-commande'] });
+      queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       toast.success('Bon de commande validé avec succès');
     },
     onError: (error: any) => {
@@ -69,6 +70,7 @@ export const useBonsCommande = () => {
     mutationFn: (id: string) => bonsCommandeService.mettreEnCours(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bons-commande'] });
+      queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       toast.success('Bon de commande mis en cours');
     },
     onError: (error: any) => {
@@ -81,6 +83,8 @@ export const useBonsCommande = () => {
       bonsCommandeService.receptionner(id, date),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bons-commande'] });
+      queryClient.invalidateQueries({ queryKey: ['bons-commande-receptionnes'] });
+      queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       toast.success('Bon de commande réceptionné avec succès');
     },
     onError: (error: any) => {
@@ -93,6 +97,7 @@ export const useBonsCommande = () => {
       bonsCommandeService.annuler(id, motif),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bons-commande'] });
+      queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       toast.success('Bon de commande annulé avec succès');
     },
     onError: (error: any) => {

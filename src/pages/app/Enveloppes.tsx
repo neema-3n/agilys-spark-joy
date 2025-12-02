@@ -1,25 +1,30 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PageHeader } from '@/components/PageHeader';
+import { Card, CardContent } from '@/components/ui/card';
+import { Construction } from 'lucide-react';
 
 const Enveloppes = () => {
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Enveloppes & Financement</h1>
-        <p className="text-muted-foreground">
-          Sources de financement par bailleur, projet et ligne
-        </p>
+    <div className="space-y-6">
+      <PageHeader
+        title="Enveloppes & Financement"
+        description="Sources de financement par bailleur, projet et ligne"
+      />
+      
+      <div className="px-8">
+        <Card>
+          <CardContent className="py-12">
+            <div className="text-center space-y-4">
+              <Construction className="h-16 w-16 mx-auto text-muted-foreground" />
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Module en construction</h3>
+                <p className="text-muted-foreground">
+                  Le module de gestion des enveloppes et financement sera développé prochainement.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Module en construction</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            Le module de gestion des enveloppes et financement sera développé prochainement.
-          </p>
-        </CardContent>
-      </Card>
     </div>
   );
 };

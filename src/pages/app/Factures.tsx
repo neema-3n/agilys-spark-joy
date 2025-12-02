@@ -1,19 +1,26 @@
-import { useState, useCallback, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
-import { useFactures } from '@/hooks/useFactures';
+import { Plus, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { showNavigationToast } from '@/lib/navigation-toast';
+import { useFacturesPaginated } from '@/hooks/useFactures';
+import { useDepenses } from '@/hooks/useDepenses';
 import { useFournisseurs } from '@/hooks/useFournisseurs';
 import { useProjets } from '@/hooks/useProjets';
 import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
 import { useEngagements } from '@/hooks/useEngagements';
+import { useScrollProgress } from '@/hooks/useScrollProgress';
+import { useSnapshotState } from '@/hooks/useSnapshotState';
 import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { FactureStats } from '@/components/factures/FactureStats';
 import { FactureTable } from '@/components/factures/FactureTable';
 import { FactureDialog } from '@/components/factures/FactureDialog';
-import { Facture, CreateFactureInput } from '@/types/facture.types';
+import { FactureSnapshot } from '@/components/factures/FactureSnapshot';
+import { CreateDepenseFromFactureDialog } from '@/components/depenses/CreateDepenseFromFactureDialog';
+import { CreateFactureInput, Facture, StatutFacture } from '@/types/facture.types';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -28,34 +35,178 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ListLayout } from '@/components/lists/ListLayout';
+import { ListToolbar } from '@/components/lists/ListToolbar';
+import { ListPageLoading } from '@/components/lists/ListPageLoading';
+import { PaginationControls } from '@/components/lists/PaginationControls';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useListSelection } from '@/hooks/useListSelection';
+import { CTA_REVEAL_STYLES, useHeaderCtaReveal } from '@/hooks/useHeaderCtaReveal';
+import { testDataService } from '@/services/api/test-data.service';
 
 export default function Factures() {
+  const navigate = useNavigate();
+  const { factureId } = useParams<{ factureId: string }>();
   const { currentClient } = useClient();
   const { currentExercice } = useExercice();
-  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // États basés sur les IDs uniquement
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedFacture, setSelectedFacture] = useState<Facture | undefined>();
+  const [editingFactureId, setEditingFactureId] = useState<string | undefined>();
   const [selectedBonCommandeId, setSelectedBonCommandeId] = useState<string | undefined>();
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
-  const [factureToAnnuler, setFactureToAnnuler] = useState<string | null>(null);
-  const [motifAnnulation, setMotifAnnulation] = useState('');
+  const [annulationFactureId, setAnnulationFactureId] = useState<string | undefined>();
+  const [selectedFactureForDepense, setSelectedFactureForDepense] = useState<Facture | null>(null);
 
+  // Pagination côté serveur
   const {
-    factures,
+    data: factures,
+    totalCount,
+    currentPage,
+    pageSize,
+    totalPages,
+    goToPage,
+    setPageSize,
+    filters,
+    setFilters,
     isLoading,
+    isFetching,
+    canGoNext,
+    canGoPrevious,
     createFacture,
     updateFacture,
     deleteFacture,
-    genererNumero,
     validerFacture,
     marquerPayee,
     annulerFacture,
-  } = useFactures();
+  } = useFacturesPaginated();
+
+  const { createDepenseFromFacture } = useDepenses();
+  const [motifAnnulation, setMotifAnnulation] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  // Récupérer les stats globales côté serveur
+  const { data: stats } = useQuery({
+    queryKey: ['factures-stats', currentClient?.id, currentExercice?.id],
+    queryFn: async () => {
+      if (!currentClient) return null;
+      const { facturesService } = await import('@/services/api/factures.service');
+      return facturesService.getStats(currentClient.id, currentExercice?.id);
+    },
+    enabled: !!currentClient,
+  });
 
   const { fournisseurs } = useFournisseurs();
   const { projets } = useProjets();
   const { lignes: lignesBudgetaires } = useLignesBudgetaires();
   const { engagements } = useEngagements();
+
+  // Helper pour récupérer la facture depuis l'ID (source unique de vérité)
+  const editingFacture = useMemo(
+    () => factures.find(f => f.id === editingFactureId),
+    [factures, editingFactureId]
+  );
+
+  // Synchroniser filtres avec le hook de pagination
+  useEffect(() => {
+    const newFilters: Record<string, any> = {};
+    const searchTerm = filters.searchTerm as string | undefined;
+    const statutFilter = filters.statut as StatutFacture | undefined;
+
+    if (searchTerm) newFilters.searchTerm = searchTerm;
+    if (statutFilter) newFilters.statut = statutFilter;
+
+    // Ne mettre à jour que si les filtres ont changé
+    const currentKeys = Object.keys(filters).sort().join(',');
+    const newKeys = Object.keys(newFilters).sort().join(',');
+    if (currentKeys !== newKeys) {
+      setFilters(newFilters);
+    }
+  }, []);
+
+  const handleSearchChange = useCallback((value: string) => {
+    setFilters({ ...filters, searchTerm: value || undefined });
+  }, [filters, setFilters]);
+
+  const handleStatutChange = useCallback((value: 'tous' | StatutFacture) => {
+    const newFilters = { ...filters };
+    if (value === 'tous') {
+      delete newFilters.statut;
+    } else {
+      newFilters.statut = value;
+    }
+    setFilters(newFilters);
+  }, [filters, setFilters]);
+
+  const selectionIds = useMemo(
+    () => factures.map((facture) => facture.id),
+    [factures]
+  );
+
+  const {
+    selectedIds,
+    allSelected,
+    clearSelection,
+    toggleOne,
+    toggleAll,
+  } = useListSelection(selectionIds);
+
+  const selectedFactures = useMemo(
+    () => factures.filter((facture) => selectedIds.has(facture.id)),
+    [factures, selectedIds]
+  );
+
+  const handleBatchValider = useCallback(async () => {
+    const candidates = selectedFactures.filter((facture) => facture.statut === 'brouillon');
+    if (candidates.length === 0) return;
+    await Promise.all(candidates.map((facture) => validerFacture(facture.id)));
+    clearSelection();
+  }, [selectedFactures, validerFacture, clearSelection]);
+
+  const handleBatchMarquerPayee = useCallback(async () => {
+    const candidates = selectedFactures.filter((facture) => facture.statut === 'validee');
+    if (candidates.length === 0) return;
+    await Promise.all(candidates.map((facture) => marquerPayee(facture.id)));
+    clearSelection();
+  }, [selectedFactures, marquerPayee, clearSelection]);
+
+  const hasSelection = selectedIds.size > 0;
+  const hasBrouillonsSelected = selectedFactures.some((facture) => facture.statut === 'brouillon');
+  const hasValideesSelected = selectedFactures.some((facture) => facture.statut === 'validee');
+
+  const handleExportFactures = useCallback(() => {
+    // Exporter toutes les factures filtrées (CSV/Excel) – brancher ici l'implémentation
+    // Exemple : exportFactures(factures);
+  }, [factures]);
+
+  const {
+    snapshotId: snapshotFactureId,
+    snapshotItem: snapshotFacture,
+    snapshotIndex,
+    isSnapshotOpen,
+    isSnapshotLoading,
+    openSnapshot: handleOpenSnapshot,
+    closeSnapshot: handleCloseSnapshot,
+    navigateSnapshot: handleNavigateSnapshot,
+  } = useSnapshotState({
+    items: factures,
+    getId: f => f.id,
+    initialId: factureId,
+    onNavigateToId: id => navigate(id ? `/app/factures/${id}` : '/app/factures'),
+    onMissingId: () => navigate('/app/factures', { replace: true }),
+    isLoadingItems: isLoading,
+  });
+
+  const { headerCtaRef, isHeaderCtaVisible } = useHeaderCtaReveal([isSnapshotOpen]);
+
+  // Gérer le scroll pour l'effet de disparition du header
+  const scrollProgress = useScrollProgress(!!snapshotFactureId);
 
   // Récupérer les bons de commande réceptionnés
   const { data: bonsCommande = [] } = useQuery({
@@ -81,103 +232,293 @@ export default function Factures() {
     enabled: !!currentClient,
   });
 
-  // Gérer la création depuis un BC via query param
-  useEffect(() => {
-    const bonCommandeId = searchParams.get('from_bon_commande');
-    if (bonCommandeId && bonsCommande.length > 0 && !dialogOpen) {
-      const bonCommande = bonsCommande.find(bc => bc.id === bonCommandeId);
-      if (bonCommande) {
-        setSelectedBonCommandeId(bonCommandeId);
-        setDialogOpen(true);
-        setSearchParams({});
-      }
-    }
-  }, [searchParams, bonsCommande, dialogOpen, setSearchParams]);
-
-  const handleCreate = () => {
-    setSelectedFacture(undefined);
+  // Callbacks stables avec dépendances minimales
+  const handleCreate = useCallback(() => {
+    setEditingFactureId(undefined);
     setSelectedBonCommandeId(undefined);
     setDialogOpen(true);
-  };
+  }, []);
 
-  const handleDialogClose = (open: boolean) => {
+  const handleDialogClose = useCallback((open: boolean) => {
     setDialogOpen(open);
     if (!open) {
-      setSelectedFacture(undefined);
+      setEditingFactureId(undefined);
       setSelectedBonCommandeId(undefined);
     }
-  };
+  }, []);
 
-  const handleEdit = (facture: Facture) => {
-    setSelectedFacture(facture);
+  const handleEdit = useCallback((id: string) => {
+    setEditingFactureId(id);
     setDialogOpen(true);
-  };
+  }, []);
 
-  const handleSubmit = async (data: CreateFactureInput) => {
-    if (selectedFacture) {
-      await updateFacture({ id: selectedFacture.id, facture: data });
+  const handleSubmit = useCallback(async (data: CreateFactureInput) => {
+    if (editingFactureId) {
+      await updateFacture({ id: editingFactureId, facture: data });
     } else {
-      await createFacture(data);
+      await createFacture({ facture: data });
     }
-  };
+  }, [editingFactureId, updateFacture, createFacture]);
 
   const handleGenererNumero = useCallback(async () => {
     if (!currentClient || !currentExercice) return '';
-    return await genererNumero({
-      clientId: currentClient.id,
-      exerciceId: currentExercice.id,
-    });
-  }, [currentClient, currentExercice, genererNumero]);
+    // Générer le prochain numéro côté client (pattern FAC000001)
+    const lastFacture = factures[0];
+    if (!lastFacture) return 'FAC000001';
+    
+    const match = lastFacture.numero.match(/FAC(\d+)/);
+    if (match) {
+      const nextNumber = parseInt(match[1]) + 1;
+      return `FAC${nextNumber.toString().padStart(6, '0')}`;
+    }
+    return 'FAC000001';
+  }, [currentClient, currentExercice, factures]);
 
-  const handleAnnuler = (id: string) => {
-    setFactureToAnnuler(id);
+  const handleAnnuler = useCallback((id: string) => {
+    setAnnulationFactureId(id);
     setMotifAnnulation('');
     setAnnulerDialogOpen(true);
-  };
+  }, []);
 
-  const handleConfirmAnnulation = async () => {
-    if (factureToAnnuler && motifAnnulation.trim()) {
-      await annulerFacture({ id: factureToAnnuler, motif: motifAnnulation });
+  const handleConfirmAnnulation = useCallback(async () => {
+    if (annulationFactureId && motifAnnulation.trim()) {
+      await annulerFacture({ id: annulationFactureId, motif: motifAnnulation });
       setAnnulerDialogOpen(false);
-      setFactureToAnnuler(null);
+      setAnnulationFactureId(undefined);
       setMotifAnnulation('');
+    }
+  }, [annulationFactureId, motifAnnulation, annulerFacture]);
+
+  const handleNavigateToEntity = useCallback((type: string, id: string) => {
+    switch (type) {
+      case 'fournisseur':
+        navigate(`/app/fournisseurs/${id}`);
+        break;
+      case 'bonCommande':
+        navigate(`/app/bons-commande/${id}`);
+        break;
+      case 'engagement':
+        navigate(`/app/engagements/${id}`);
+        break;
+      case 'ligneBudgetaire':
+        navigate(`/app/budgets/${id}?tab=lignes`);
+        break;
+      case 'projet':
+        navigate(`/app/projets/${id}`);
+        break;
+    }
+  }, [navigate]);
+
+  const handleGenerateTestData = async () => {
+    if (!currentClient || !currentExercice) return;
+    
+    const count = parseInt(prompt('Combien de factures de test voulez-vous générer ? (max 1000)', '500') || '0');
+    if (count <= 0 || count > 1000) {
+      toast.error('Nombre invalide (entre 1 et 1000)');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const result = await testDataService.generateTestFactures(
+        currentClient.id,
+        currentExercice.id,
+        count
+      );
+      toast.success(result.message);
+      // Rafraîchir les données
+      window.location.reload();
+    } catch (error) {
+      console.error('Erreur:', error);
+      toast.error(error instanceof Error ? error.message : 'Erreur lors de la génération');
+    } finally {
+      setIsGenerating(false);
     }
   };
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-full">Chargement...</div>;
-  }
-
-  return (
-    <div className="space-y-6">
-      <PageHeader
+    return (
+      <ListPageLoading
         title="Gestion des Factures"
         description="Gérez les factures fournisseurs"
-        actions={
-          <Button onClick={handleCreate}>
+        stickyHeader={false}
+      />
+    );
+  }
+
+  const pageHeaderContent = (
+    <PageHeader
+      title="Gestion des Factures"
+      description="Gérez les factures fournisseurs"
+      scrollProgress={scrollProgress}
+      sticky={false}
+      actions={
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleGenerateTestData}
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Génération...
+              </>
+            ) : (
+              'Générer des données de test'
+            )}
+          </Button>
+          <Button onClick={handleCreate} ref={headerCtaRef}>
             <Plus className="mr-2 h-4 w-4" />
             Nouvelle facture
           </Button>
-        }
-      />
+        </div>
+      }
+    />
+  );
+
+  const statutOptions: { value: 'tous' | StatutFacture; label: string }[] = [
+    { value: 'tous', label: 'Tous' },
+    { value: 'brouillon', label: 'Brouillon' },
+    { value: 'validee', label: 'Validée' },
+    { value: 'payee', label: 'Payée' },
+    { value: 'annulee', label: 'Annulée' },
+  ];
+
+  const activeStatutLabel =
+    statutOptions.find((option) => option.value === (filters.statut as StatutFacture || 'tous'))?.label || 'Tous';
+
+  return (
+    <div className="space-y-6">
+      <style>{CTA_REVEAL_STYLES}</style>
+      {!isSnapshotOpen && pageHeaderContent}
 
       <div className="px-8 space-y-6">
-        <FactureStats factures={factures} />
+        {isSnapshotOpen && snapshotFacture ? (
+          <FactureSnapshot
+            facture={snapshotFacture}
+            onClose={handleCloseSnapshot}
+            onNavigate={handleNavigateSnapshot}
+            hasPrev={snapshotIndex > 0}
+            hasNext={snapshotIndex < factures.length - 1}
+            currentIndex={snapshotIndex}
+            totalCount={factures.length}
+            onNavigateToEntity={handleNavigateToEntity}
+            onValider={snapshotFacture.statut === 'brouillon' ? () => validerFacture(snapshotFacture.id) : undefined}
+            onMarquerPayee={snapshotFacture.statut === 'validee' ? () => marquerPayee(snapshotFacture.id) : undefined}
+            onAnnuler={snapshotFacture.statut !== 'annulee' && snapshotFacture.statut !== 'payee' ? () => handleAnnuler(snapshotFacture.id) : undefined}
+            onEdit={snapshotFacture.statut === 'brouillon' ? () => handleEdit(snapshotFacture.id) : undefined}
+            onCreerDepense={(snapshotFacture.statut === 'validee' || snapshotFacture.statut === 'payee') ? () => setSelectedFactureForDepense(snapshotFacture) : undefined}
+          />
+        ) : isSnapshotOpen && isSnapshotLoading ? (
+          <div className="py-12 text-center text-muted-foreground">Chargement du snapshot...</div>
+        ) : (
+          <>
+            {stats && <FactureStats factures={factures} stats={stats} />}
 
-        <FactureTable
-          factures={factures}
-          onEdit={handleEdit}
-          onDelete={deleteFacture}
-          onValider={validerFacture}
-          onMarquerPayee={marquerPayee}
-          onAnnuler={handleAnnuler}
-        />
+            <ListLayout
+              title="Liste des factures"
+              description="Visualisez, filtrez et gérez vos factures fournisseurs"
+              actions={
+                !isHeaderCtaVisible ? (
+                  <Button onClick={handleCreate} className="sticky-cta-appear">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nouvelle facture
+                  </Button>
+                ) : undefined
+              }
+              toolbar={
+                <ListToolbar
+                  searchValue={(filters.searchTerm as string) || ''}
+                  onSearchChange={handleSearchChange}
+                  searchPlaceholder="Rechercher par numéro, objet, fournisseur..."
+                  filters={[
+                    <DropdownMenu key="statut">
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline">Statut: {activeStatutLabel}</Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {statutOptions.map((option) => (
+                          <DropdownMenuItem
+                            key={option.value}
+                            onClick={() => handleStatutChange(option.value)}
+                          >
+                            {option.label}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>,
+                    <DropdownMenu key="batch-actions">
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline">
+                          Actions groupées
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          disabled={!hasBrouillonsSelected}
+                          onClick={handleBatchValider}
+                        >
+                          Valider les brouillons
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={!hasValideesSelected}
+                          onClick={handleBatchMarquerPayee}
+                        >
+                          Marquer comme payées
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem disabled={!hasSelection} onClick={() => clearSelection()}>
+                          Effacer la sélection
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleExportFactures}>
+                          Exporter (toutes les factures filtrées)
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>,
+                  ]}
+                />
+              }
+            >
+              <FactureTable
+                factures={factures}
+                onEdit={(facture) => handleEdit(facture.id)}
+                onDelete={deleteFacture}
+                onValider={validerFacture}
+                onMarquerPayee={marquerPayee}
+                onAnnuler={handleAnnuler}
+                onCreerDepense={(facture) => setSelectedFactureForDepense(facture)}
+                onViewDetails={handleOpenSnapshot}
+                selection={{ selectedIds, allSelected, toggleOne, toggleAll }}
+                stickyHeader
+                stickyHeaderOffset={0}
+                scrollContainerClassName="max-h-[calc(100vh-220px)] overflow-auto"
+                footer={
+                  <PaginationControls
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalCount={totalCount}
+                    pageSize={pageSize}
+                    pageSizeOptions={[10, 25, 50, 100]}
+                    onPageChange={goToPage}
+                    onPageSizeChange={setPageSize}
+                    isLoading={isLoading}
+                    isFetching={isFetching}
+                    itemLabel="factures"
+                    showKeyboardHint
+                  />
+                }
+              />
+            </ListLayout>
+          </>
+        )}
       </div>
 
       <FactureDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
-        facture={selectedFacture}
+        facture={editingFacture}
         onSubmit={handleSubmit}
         fournisseurs={fournisseurs}
         bonsCommande={bonsCommande}
@@ -220,6 +561,32 @@ export default function Factures() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CreateDepenseFromFactureDialog
+        open={!!selectedFactureForDepense}
+        onOpenChange={(open) => !open && setSelectedFactureForDepense(null)}
+        facture={selectedFactureForDepense}
+        onSave={async (data) => {
+          try {
+            const facture = selectedFactureForDepense;
+            await createDepenseFromFacture(data);
+            
+            setSelectedFactureForDepense(null);
+            
+            showNavigationToast({
+              title: 'Dépense créée',
+              description: `La dépense a été créée depuis la facture ${facture?.numero || ''}.`,
+              targetPage: {
+                name: 'Dépenses',
+                path: '/app/depenses',
+              },
+              navigate,
+            });
+          } catch (error) {
+            console.error('Erreur création dépense:', error);
+          }
+        }}
+      />
     </div>
   );
 }

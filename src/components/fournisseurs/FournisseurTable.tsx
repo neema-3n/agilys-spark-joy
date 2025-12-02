@@ -1,17 +1,17 @@
-import { useState } from 'react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, Pencil, Trash2, Search } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Fournisseur } from '@/types/fournisseur.types';
+import { ListTable, ListColumn } from '@/components/lists/ListTable';
+import { ListToolbar } from '@/components/lists/ListToolbar';
+import { ListLayout } from '@/components/lists/ListLayout';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,159 +22,183 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { MoreHorizontal, Eye, Edit, Trash2 } from 'lucide-react';
+import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/selectionColumn';
 
 interface FournisseurTableProps {
   fournisseurs: Fournisseur[];
+  onViewDetails: (id: string) => void;
   onEdit: (fournisseur: Fournisseur) => void;
   onDelete: (id: string) => void;
+  selection?: ListSelectionHandlers;
+  stickyHeader?: boolean;
+  stickyHeaderOffset?: number;
+  scrollContainerClassName?: string;
 }
 
-export const FournisseurTable = ({ fournisseurs, onEdit, onDelete }: FournisseurTableProps) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+const formatMontant = (montant: number): string => {
+  return new Intl.NumberFormat('fr-FR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(montant);
+};
 
-  const formatMontant = (montant: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(montant);
+const getStatutBadge = (statut: string) => {
+  const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'; label: string }> = {
+    actif: { variant: 'success', label: 'Actif' },
+    inactif: { variant: 'secondary', label: 'Inactif' },
+    blackliste: { variant: 'destructive', label: 'Blacklisté' },
+    en_attente_validation: { variant: 'outline', label: 'En attente' },
   };
+  const config = variants[statut] || variants.actif;
+  return <Badge variant={config.variant}>{config.label}</Badge>;
+};
 
-  const getStatutBadge = (statut: string) => {
-    const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
-      actif: { variant: 'default', label: 'Actif' },
-      inactif: { variant: 'secondary', label: 'Inactif' },
-      blackliste: { variant: 'destructive', label: 'Blacklisté' },
-      en_attente_validation: { variant: 'outline', label: 'En attente' },
-    };
-    const config = variants[statut] || variants.actif;
-    return <Badge variant={config.variant}>{config.label}</Badge>;
-  };
+export const FournisseurTable = ({
+  fournisseurs,
+  onViewDetails,
+  onEdit,
+  onDelete,
+  selection,
+  stickyHeader = false,
+  stickyHeaderOffset = 0,
+  scrollContainerClassName,
+}: FournisseurTableProps) => {
 
-  const filteredFournisseurs = fournisseurs.filter(f =>
-    f.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    f.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    f.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const columns = useMemo<ListColumn<Fournisseur>[]>(() => {
+    const baseColumns: ListColumn<Fournisseur>[] = [
+      {
+        id: 'code',
+        header: 'Code',
+        className: 'w-[120px]',
+        render: (f) => (
+          <Link
+            to={`/app/fournisseurs/${f.id}`}
+            className="font-medium text-primary hover:underline"
+            onClick={(e) => {
+              e.preventDefault();
+              onViewDetails(f.id);
+            }}
+          >
+            {f.code}
+          </Link>
+        ),
+      },
+      {
+        id: 'nom',
+        header: 'Nom',
+        render: (f) => (
+          <Link
+            to={`/app/fournisseurs/${f.id}`}
+            className="hover:underline"
+            onClick={(e) => {
+              e.preventDefault();
+              onViewDetails(f.id);
+            }}
+          >
+            {f.nom}
+          </Link>
+        ),
+      },
+      {
+        id: 'categorie',
+        header: 'Catégorie',
+        className: 'w-[150px]',
+        render: (f) => <span className="text-muted-foreground">{f.categorie || '-'}</span>,
+      },
+      {
+        id: 'telephone',
+        header: 'Téléphone',
+        className: 'w-[140px]',
+        render: (f) => <span className="text-muted-foreground">{f.telephone || '-'}</span>,
+      },
+      {
+        id: 'email',
+        header: 'Email',
+        className: 'w-[200px]',
+        render: (f) => <span className="text-muted-foreground">{f.email || '-'}</span>,
+      },
+      {
+        id: 'statut',
+        header: 'Statut',
+        className: 'w-[120px]',
+        render: (f) => getStatutBadge(f.statut),
+      },
+      {
+        id: 'montantTotalEngage',
+        header: 'Montant engagé',
+        className: 'w-[140px]',
+        align: 'right',
+        render: (f) => <span className="font-medium">{formatMontant(f.montantTotalEngage)}</span>,
+      },
+      {
+        id: 'nombreEngagements',
+        header: 'Engagements',
+        className: 'w-[120px]',
+        align: 'center',
+        render: (f) => <span>{f.nombreEngagements}</span>,
+      },
+      {
+        id: 'actions',
+        header: '',
+        className: 'w-[60px]',
+        cellClassName: 'text-right',
+        render: (f) => (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onViewDetails(f.id)}>
+                <Eye className="mr-2 h-4 w-4" />
+                Voir détails
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onEdit(f)}>
+                <Edit className="mr-2 h-4 w-4" />
+                Modifier
+              </DropdownMenuItem>
+              {f.nombreEngagements === 0 && (
+                <DropdownMenuItem
+                  onClick={() => onDelete(f.id)}
+                  className="text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Supprimer
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ),
+      },
+    ];
+
+    if (selection) {
+      return [
+        buildSelectionColumn({
+          selection,
+          getId: (f) => f.id,
+          getLabel: (f) => `Sélectionner ${f.nom}`,
+          allLabel: 'Sélectionner tous les fournisseurs',
+        }),
+        ...baseColumns,
+      ];
+    }
+
+    return baseColumns;
+  }, [selection, onViewDetails, onEdit]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher par nom, code ou email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8"
-          />
-        </div>
-      </div>
-
-      <div className="rounded-md border max-h-[600px] overflow-auto">
-        <div className="[&>div]:max-h-none [&>div]:overflow-visible">
-          <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Code</TableHead>
-              <TableHead>Nom</TableHead>
-              <TableHead>Catégorie</TableHead>
-              <TableHead>Téléphone</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Statut</TableHead>
-              <TableHead className="text-right">Montant engagé</TableHead>
-              <TableHead className="text-right">Nb engagements</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredFournisseurs.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={9} className="text-center text-muted-foreground">
-                  Aucun fournisseur trouvé
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredFournisseurs.map((fournisseur) => (
-                <TableRow key={fournisseur.id}>
-                  <TableCell className="font-medium">{fournisseur.code}</TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{fournisseur.nom}</div>
-                      {fournisseur.nomCourt && (
-                        <div className="text-xs text-muted-foreground">{fournisseur.nomCourt}</div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>{fournisseur.categorie || '-'}</TableCell>
-                  <TableCell>{fournisseur.telephone || '-'}</TableCell>
-                  <TableCell>{fournisseur.email || '-'}</TableCell>
-                  <TableCell>{getStatutBadge(fournisseur.statut)}</TableCell>
-                  <TableCell className="text-right">
-                    {formatMontant(fournisseur.montantTotalEngage)}
-                  </TableCell>
-                  <TableCell className="text-right">{fournisseur.nombreEngagements}</TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEdit(fournisseur)}>
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Modifier
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => setDeleteId(fournisseur.id)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Supprimer
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-        </div>
-      </div>
-
-      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-            <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer ce fournisseur ? Cette action est irréversible.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (deleteId) {
-                  onDelete(deleteId);
-                  setDeleteId(null);
-                }
-              }}
-            >
-              Supprimer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+    <ListTable
+      items={fournisseurs}
+      columns={columns}
+      getRowId={(f) => f.id}
+      onRowDoubleClick={(f) => onViewDetails(f.id)}
+      emptyMessage="Aucun fournisseur trouvé"
+      stickyHeader={stickyHeader}
+      stickyHeaderOffset={stickyHeaderOffset}
+      scrollContainerClassName={scrollContainerClassName}
+    />
   );
 };

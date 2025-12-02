@@ -1,8 +1,8 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Wallet, FileText, Receipt, BarChart3, Settings, ChevronLeft, ChevronRight, ChevronDown, Users, CreditCard, Wallet2, ShieldCheck, LineChart, TrendingUp, BookmarkCheck, ShoppingCart, DollarSign, FolderKanban, Layers, PlayCircle, Target, Building2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { LayoutDashboard, Wallet, FileText, Receipt, BarChart3, Settings, ChevronLeft, ChevronRight, ChevronDown, Users, CreditCard, Wallet2, ShieldCheck, LineChart, TrendingUp, BookmarkCheck, ShoppingCart, DollarSign, FolderKanban, Layers, PlayCircle, Target, Building2, BookOpen } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AppHeader } from '@/components/app/AppHeader';
@@ -12,12 +12,15 @@ const AppLayout = () => {
   const { user } = useAuth();
   const location = useLocation();
   const isMobile = useIsMobile();
+  const mainRef = useRef<HTMLElement | null>(null);
+  const scrollPositionsRef = useRef<Record<string, number>>({});
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     'Fournisseurs': true,
     'Budget': true,
     'Opérations': true,
     'Trésorerie': true,
+    'Comptabilité': true,
     'Conformité': true,
     'Analyse': true,
     'Système': true
@@ -26,14 +29,14 @@ const AppLayout = () => {
   // Groupes principaux inspirés d'AirBooks
   const menuGroups = {
     operationnel: {
-      label: 'Opérationnel',
+      label: 'Opérations',
       icon: PlayCircle,
       sections: ['Fournisseurs', 'Budget', 'Opérations', 'Trésorerie']
     },
     pilotage: {
       label: 'Pilotage & Contrôle',
       icon: Target,
-      sections: ['Conformité', 'Analyse', 'Système']
+      sections: ['Comptabilité', 'Conformité', 'Analyse', 'Système']
     }
   };
 
@@ -52,10 +55,6 @@ const AppLayout = () => {
       name: 'Budget',
       href: '/app/budgets',
       icon: Wallet
-    }, {
-      name: 'Structure Budgétaire',
-      href: '/app/structure-budgetaire',
-      icon: Layers
     }, {
       name: 'Prévisions Budgétaires',
       href: '/app/previsions',
@@ -98,6 +97,18 @@ const AppLayout = () => {
       icon: Wallet2
     }]
   }, {
+    title: 'Comptabilité',
+    icon: BookOpen,
+    items: [{
+      name: 'Plan Comptable',
+      href: '/app/plan-comptable',
+      icon: Layers
+    }, {
+      name: 'Journal Comptable',
+      href: '/app/journal-comptable',
+      icon: BookOpen
+    }]
+  }, {
     title: 'Conformité',
     icon: ShieldCheck,
     items: [{
@@ -130,16 +141,28 @@ const AppLayout = () => {
     icon: Settings,
     items: [{
       name: 'Paramètres',
-      href: '/app/parametres',
+      href: '/app/parametres/exercices',
       icon: Settings
     }]
   }];
 
+  const isPathActive = (targetPath: string) => {
+    if (targetPath.startsWith('/app/parametres')) {
+      return location.pathname === targetPath || location.pathname.startsWith('/app/parametres/');
+    }
+
+    return location.pathname === targetPath || location.pathname.startsWith(`${targetPath}/`);
+  };
+
   // Fonction pour déterminer le groupe actif basé sur le pathname
   const getGroupFromPath = (pathname: string): 'operationnel' | 'pilotage' => {
+    if (pathname.startsWith('/app/parametres')) {
+      return 'pilotage';
+    }
+
     // Chercher la section qui contient cette route
     const section = allNavigationSections.find(s => 
-      s.items.some(item => item.href === pathname)
+      s.items.some(item => pathname.startsWith(item.href))
     );
     
     if (!section) return 'operationnel'; // Par défaut
@@ -164,8 +187,9 @@ const AppLayout = () => {
   };
 
   // Helper pour rendre les items en mode collapsé avec tooltip
-  const renderCollapsedItem = (item: any, isActive: boolean) => {
+  const renderCollapsedItem = (item: any) => {
     const Icon = item.icon;
+    const isActive = isPathActive(item.href);
     
     return (
       <Tooltip key={item.href}>
@@ -197,6 +221,28 @@ const AppLayout = () => {
       setSidebarOpen(false);
     }
   }, [isMobile]);
+
+  // Sauvegarde la position de scroll pour chaque route
+  useEffect(() => {
+    const mainElement = mainRef.current;
+    if (!mainElement) return;
+
+    const handleScroll = () => {
+      scrollPositionsRef.current[location.pathname] = mainElement.scrollTop;
+    };
+
+    mainElement.addEventListener('scroll', handleScroll);
+    return () => mainElement.removeEventListener('scroll', handleScroll);
+  }, [location.pathname]);
+
+  // Restaure la position de scroll de la route visitée
+  useEffect(() => {
+    const mainElement = mainRef.current;
+    if (!mainElement) return;
+
+    const savedScrollTop = scrollPositionsRef.current[location.pathname] ?? 0;
+    mainElement.scrollTo({ top: savedScrollTop, behavior: 'auto' });
+  }, [location.pathname]);
 
   // Filtrer les sections selon le groupe actif
   const navigationSections = allNavigationSections.filter(section => 
@@ -233,26 +279,8 @@ const AppLayout = () => {
           </div>}
         </div>
 
-        {/* Toggle Button */}
-        <div className="p-2 flex justify-center border-b border-sidebar-border">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="hover:bg-sidebar-accent w-10 h-10"
-                >
-                  {sidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                {sidebarOpen ? 'Réduire' : 'Étendre'} la barre latérale
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
+        {/* Séparateur élégant */}
+        <div className="h-3 border-b border-sidebar-border/50" />
 
         {/* Group Selector */}
         {sidebarOpen ? (
@@ -262,19 +290,19 @@ const AppLayout = () => {
                 variant={activeGroup === 'operationnel' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setActiveGroup('operationnel')}
-                className="flex-1 gap-2"
+                className="flex-1 gap-2 transition-all duration-200 hover:scale-105"
               >
-                <PlayCircle className="h-4 w-4" />
-                <span className="text-xs font-medium">Opérationnel</span>
+                <PlayCircle className="h-5 w-5" />
+                <span className="text-sm font-semibold">Opérations</span>
               </Button>
               <Button
                 variant={activeGroup === 'pilotage' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setActiveGroup('pilotage')}
-                className="flex-1 gap-2"
+                className="flex-1 gap-2 transition-all duration-200 hover:scale-105"
               >
-                <Target className="h-4 w-4" />
-                <span className="text-xs font-medium">Pilotage</span>
+                <Target className="h-5 w-5" />
+                <span className="text-sm font-semibold">Pilotage</span>
               </Button>
             </div>
           </div>
@@ -292,7 +320,7 @@ const AppLayout = () => {
                     <PlayCircle className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="right">Opérationnel</TooltipContent>
+                <TooltipContent side="right">Opérations</TooltipContent>
               </Tooltip>
               
               <Tooltip>
@@ -325,7 +353,7 @@ const AppLayout = () => {
                   
                   if (isSingleItem) {
                     const item = section.items[0];
-                    const isActive = location.pathname === item.href;
+                    const isActive = isPathActive(item.href);
                     const Icon = item.icon;
                     
                     return (
@@ -365,7 +393,7 @@ const AppLayout = () => {
                       
                       <CollapsibleContent className="space-y-1">
                         {section.items.map(item => {
-                          const isActive = location.pathname === item.href;
+                          const isActive = isPathActive(item.href);
                           const Icon = item.icon;
                           
                           return (
@@ -393,8 +421,7 @@ const AppLayout = () => {
               <>
                 {navigationSections.map((section) =>
                   section.items.map((item) => {
-                    const isActive = location.pathname === item.href;
-                    return renderCollapsedItem(item, isActive);
+                    return renderCollapsedItem(item);
                   })
                 )}
               </>
@@ -421,7 +448,7 @@ const AppLayout = () => {
       {/* Main Content with Header */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <AppHeader onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-        <main className="flex-1 overflow-auto">
+        <main ref={mainRef} className="flex-1 overflow-auto">
           <Outlet />
         </main>
       </div>

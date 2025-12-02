@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { Facture, CreateFactureInput, UpdateFactureInput } from '@/types/facture.types';
+import { Facture, CreateFactureInput, UpdateFactureInput, PaginatedResponse, PaginationParams } from '@/types/facture.types';
 
 function mapFactureFromDB(data: any): Facture {
   return {
@@ -19,13 +19,14 @@ function mapFactureFromDB(data: any): Facture {
     montantHT: parseFloat(data.montant_ht) || 0,
     montantTVA: parseFloat(data.montant_tva) || 0,
     montantTTC: parseFloat(data.montant_ttc) || 0,
-    montantPaye: parseFloat(data.montant_paye) || 0,
+    montantLiquide: parseFloat(data.montant_liquide) || 0,
     statut: data.statut,
     dateValidation: data.date_validation,
     observations: data.observations,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
     createdBy: data.created_by,
+    ecrituresCount: data.ecritures_comptables?.[0]?.count || 0,
     fournisseur: data.fournisseurs ? {
       id: data.fournisseurs.id,
       nom: data.fournisseurs.nom,
@@ -51,31 +52,45 @@ function mapFactureFromDB(data: any): Facture {
 }
 
 function mapFactureToDB(data: CreateFactureInput | UpdateFactureInput) {
-  return {
-    client_id: 'clientId' in data ? data.clientId : undefined,
-    exercice_id: 'exerciceId' in data ? data.exerciceId : undefined,
-    numero: data.numero,
-    date_facture: data.dateFacture,
-    date_echeance: data.dateEcheance || null,
-    fournisseur_id: data.fournisseurId,
-    bon_commande_id: data.bonCommandeId || null,
-    engagement_id: data.engagementId || null,
-    ligne_budgetaire_id: data.ligneBudgetaireId || null,
-    projet_id: data.projetId || null,
-    objet: data.objet,
-    numero_facture_fournisseur: data.numeroFactureFournisseur || null,
-    montant_ht: data.montantHT,
-    montant_tva: data.montantTVA,
-    montant_ttc: data.montantTTC,
-    montant_paye: 'montantPaye' in data ? data.montantPaye : 0,
-    statut: data.statut,
-    date_validation: data.dateValidation || null,
-    observations: data.observations || null,
-  };
+  const result: any = {};
+  
+  // Champs obligatoires toujours présents
+  if ('clientId' in data && data.clientId !== undefined) result.client_id = data.clientId;
+  if ('exerciceId' in data && data.exerciceId !== undefined) result.exercice_id = data.exerciceId;
+  if (data.numero !== undefined) result.numero = data.numero;
+  if (data.dateFacture !== undefined) result.date_facture = data.dateFacture;
+  if (data.fournisseurId !== undefined) result.fournisseur_id = data.fournisseurId;
+  if (data.objet !== undefined) result.objet = data.objet;
+  if (data.statut !== undefined) result.statut = data.statut;
+  
+  // Champs optionnels - inclure seulement s'ils sont définis (même si null)
+  if (data.dateEcheance !== undefined) result.date_echeance = data.dateEcheance || null;
+  if (data.bonCommandeId !== undefined) result.bon_commande_id = data.bonCommandeId || null;
+  if (data.engagementId !== undefined) result.engagement_id = data.engagementId || null;
+  if (data.ligneBudgetaireId !== undefined) result.ligne_budgetaire_id = data.ligneBudgetaireId || null;
+  if (data.projetId !== undefined) result.projet_id = data.projetId || null;
+  if (data.numeroFactureFournisseur !== undefined) result.numero_facture_fournisseur = data.numeroFactureFournisseur || null;
+  if (data.dateValidation !== undefined) result.date_validation = data.dateValidation || null;
+  if (data.observations !== undefined) result.observations = data.observations || null;
+  
+  // Champs numériques
+  if (data.montantHT !== undefined) result.montant_ht = data.montantHT;
+  if (data.montantTVA !== undefined) result.montant_tva = data.montantTVA;
+  if (data.montantTTC !== undefined) result.montant_ttc = data.montantTTC;
+  if ('montantLiquide' in data && data.montantLiquide !== undefined) result.montant_liquide = data.montantLiquide;
+  
+  return result;
 }
 
 export const facturesService = {
-  async getAll(clientId: string, exerciceId?: string): Promise<Facture[]> {
+  async getPaginated(
+    clientId: string,
+    exerciceId: string | undefined,
+    params: PaginationParams
+  ): Promise<PaginatedResponse<Facture>> {
+    const start = (params.page - 1) * params.pageSize;
+    const end = start + params.pageSize - 1;
+
     let query = supabase
       .from('factures')
       .select(`
@@ -85,6 +100,67 @@ export const facturesService = {
         engagements (id, numero),
         lignes_budgetaires (id, libelle),
         projets (id, nom)
+      `, { count: 'exact' })
+      .eq('client_id', clientId);
+
+    if (exerciceId) {
+      query = query.eq('exercice_id', exerciceId);
+    }
+
+    // Appliquer les filtres
+    if (params.filters) {
+      if (params.filters.statut) {
+        query = query.eq('statut', params.filters.statut);
+      }
+      if (params.filters.searchTerm) {
+        query = query.or(`numero.ilike.%${params.filters.searchTerm}%,objet.ilike.%${params.filters.searchTerm}%`);
+      }
+      if (params.filters.fournisseurId) {
+        query = query.eq('fournisseur_id', params.filters.fournisseurId);
+      }
+      if (params.filters.dateDebut) {
+        query = query.gte('date_facture', params.filters.dateDebut);
+      }
+      if (params.filters.dateFin) {
+        query = query.lte('date_facture', params.filters.dateFin);
+      }
+    }
+
+    // Appliquer le tri
+    query = query.order(params.sortBy || 'date_facture', { 
+      ascending: params.sortOrder === 'asc' 
+    });
+
+    // Appliquer la pagination
+    query = query.range(start, end);
+
+    const { data, error, count } = await query;
+
+    if (error) throw error;
+
+    const totalCount = count || 0;
+    const totalPages = Math.ceil(totalCount / params.pageSize);
+
+    return {
+      data: data.map(mapFactureFromDB),
+      totalCount,
+      page: params.page,
+      pageSize: params.pageSize,
+      totalPages,
+    };
+  },
+
+  async getAll(clientId: string, exerciceId?: string): Promise<Facture[]> {
+    let query = supabase
+      .from('factures')
+      .select(`
+        *,
+        fournisseurs (id, nom, code),
+        bons_commande (id, numero),
+        engagements (id, numero),
+        lignes_budgetaires (id, libelle),
+        projets (id, nom),
+        ecritures_comptables!facture_id(count)
       `)
       .eq('client_id', clientId)
       .order('date_facture', { ascending: false });
@@ -96,7 +172,7 @@ export const facturesService = {
     const { data, error } = await query;
 
     if (error) throw error;
-    return data.map(mapFactureFromDB);
+    return (data || []).map(mapFactureFromDB);
   },
 
   async getById(id: string): Promise<Facture> {
@@ -118,68 +194,66 @@ export const facturesService = {
   },
 
   async create(facture: CreateFactureInput): Promise<Facture> {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    // Vérifier le montant si un BC est lié
-    if (facture.bonCommandeId) {
-      // 1. Récupérer le montant du BC
-      const { data: bc, error: bcError } = await supabase
-        .from('bons_commande')
-        .select('montant')
-        .eq('id', facture.bonCommandeId)
-        .single();
-      
-      if (bcError) throw bcError;
-      
-      // 2. Calculer le montant déjà facturé sur ce BC (hors factures annulées)
-      const { data: facturesExistantes, error: facturesError } = await supabase
-        .from('factures')
-        .select('montant_ttc')
-        .eq('bon_commande_id', facture.bonCommandeId)
-        .neq('statut', 'annulee');
-      
-      if (facturesError) throw facturesError;
-      
-      const montantDejaFacture = facturesExistantes?.reduce(
-        (sum, f) => sum + parseFloat(f.montant_ttc.toString()), 
-        0
-      ) || 0;
-      
-      // 3. Vérifier que le total ne dépasse pas le montant du BC
-      const montantTotal = montantDejaFacture + facture.montantTTC;
-      
-      if (montantTotal > bc.montant) {
-        throw new Error(
-          `Le montant total des factures (${montantTotal.toLocaleString('fr-FR')} €) ` +
-          `dépasserait le montant du bon de commande (${bc.montant.toLocaleString('fr-FR')} €). ` +
-          `Montant déjà facturé : ${montantDejaFacture.toLocaleString('fr-FR')} €. ` +
-          `Montant disponible : ${(bc.montant - montantDejaFacture).toLocaleString('fr-FR')} €.`
-        );
-      }
-    }
-    
-    const { data, error } = await supabase
-      .from('factures')
-      .insert({
-        ...mapFactureToDB(facture),
-        created_by: user?.id,
-      })
-      .select(`
-        *,
-        fournisseurs (id, nom, code),
-        bons_commande (id, numero),
-        engagements (id, numero),
-        lignes_budgetaires (id, libelle),
-        projets (id, nom)
-      `)
-      .single();
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Non authentifié');
 
-    if (error) throw error;
-    return mapFactureFromDB(data);
+      // Appeler l'edge function pour créer la facture avec numéro généré atomiquement
+      const { data, error } = await supabase.functions.invoke('create-facture', {
+        body: {
+          exerciceId: facture.exerciceId,
+          clientId: facture.clientId,
+          fournisseurId: facture.fournisseurId,
+          objet: facture.objet,
+          dateFacture: facture.dateFacture,
+          dateEcheance: facture.dateEcheance,
+          montantHT: facture.montantHT,
+          montantTVA: facture.montantTVA,
+          montantTTC: facture.montantTTC,
+          numeroFactureFournisseur: facture.numeroFactureFournisseur,
+          bonCommandeId: facture.bonCommandeId,
+          engagementId: facture.engagementId,
+          ligneBudgetaireId: facture.ligneBudgetaireId,
+          projetId: facture.projetId,
+          observations: facture.observations,
+        }
+      });
+
+      if (error) {
+        // Extraire le vrai message d'erreur depuis l'edge function
+        let errorMessage = error.message;
+        
+        console.log('Error from edge function:', error);
+        console.log('Error has context?', !!error.context);
+        
+        // Si c'est une FunctionsHttpError, extraire le body JSON
+        if (error.context) {
+          try {
+            const errorBody = await error.context.json();
+            console.log('Error body from context:', errorBody);
+            if (errorBody && errorBody.error) {
+              errorMessage = errorBody.error;
+              console.log('Extracted error message:', errorMessage);
+            }
+          } catch (e) {
+            console.error('Impossible de parser l\'erreur:', e);
+          }
+        }
+        
+        console.log('Final error message to throw:', errorMessage);
+        throw new Error(errorMessage);
+      }
+      if (!data) throw new Error('Facture non créée');
+
+      return data as Facture;
+    } catch (error) {
+      console.error('Erreur lors de la création de la facture:', error);
+      throw error;
+    }
   },
 
   async update(id: string, facture: UpdateFactureInput): Promise<Facture> {
-    // Vérifier que la facture est en brouillon avant modification
+    // 1. Récupérer la facture actuelle
     const { data: currentFacture, error: fetchError } = await supabase
       .from('factures')
       .select('statut, bon_commande_id, montant_ttc')
@@ -187,12 +261,36 @@ export const facturesService = {
       .single();
 
     if (fetchError) throw fetchError;
+
+    // 2. Si le nouveau statut est 'annulee', autoriser sans vérification d'écritures
+    const isAnnulation = facture.statut === 'annulee';
+
+    if (!isAnnulation) {
+      // 3. Vérifier s'il existe des écritures validées
+      const { data: ecritures, error: ecrituresError } = await supabase
+        .from('ecritures_comptables')
+        .select('id')
+        .eq('facture_id', id)
+        .eq('statut_ecriture', 'validee')
+        .limit(1);
+
+      if (ecrituresError) throw ecrituresError;
+
+      // 4. Si écritures validées existent → BLOQUER
+      if (ecritures && ecritures.length > 0) {
+        throw new Error(
+          'Cette facture ne peut plus être modifiée car elle a déjà été comptabilisée.\n\n' +
+          'Pour effectuer une correction, vous devez l\'annuler puis créer une nouvelle facture.'
+        );
+      }
+    }
     
-    if (currentFacture.statut !== 'brouillon' && currentFacture.statut !== 'validee') {
+    // 5. Vérifier que la facture peut être modifiée
+    if (currentFacture.statut !== 'brouillon' && currentFacture.statut !== 'validee' && !isAnnulation) {
       throw new Error('Seules les factures en brouillon ou validées peuvent être modifiées');
     }
 
-    // Vérifier le montant si un BC est lié (dans l'ancienne OU la nouvelle facture)
+    // 6. Vérifier le montant si un BC est lié (dans l'ancienne OU la nouvelle facture)
     const bonCommandeId = facture.bonCommandeId || currentFacture.bon_commande_id;
     
     if (bonCommandeId) {
@@ -294,10 +392,27 @@ export const facturesService = {
       throw new Error('Seules les factures en brouillon peuvent être validées');
     }
 
-    return this.update(id, {
+    // 1. Valider la facture
+    const factureValidee = await this.update(id, {
       statut: 'validee',
       dateValidation: new Date().toISOString().split('T')[0],
     });
+
+    // 2. Générer les écritures comptables automatiquement (en arrière-plan)
+    try {
+      await supabase.functions.invoke('generate-ecritures-comptables', {
+        body: {
+          typeOperation: 'facture',
+          sourceId: id,
+          clientId: facture.clientId,
+          exerciceId: facture.exerciceId
+        }
+      });
+    } catch (error) {
+      console.error('Erreur lors de la génération des écritures:', error);
+    }
+
+    return factureValidee;
   },
 
   async marquerPayee(id: string): Promise<Facture> {
@@ -316,12 +431,80 @@ export const facturesService = {
     const facture = await this.getById(id);
 
     if (facture.statut === 'payee') {
-      throw new Error('Les factures payées ne peuvent pas être annulées');
+      throw new Error('Une facture payée ne peut pas être annulée');
     }
 
+    // 1. Vérifier s'il existe des écritures validées
+    const { data: ecritures, error: ecrituresError } = await supabase
+      .from('ecritures_comptables')
+      .select('id')
+      .eq('facture_id', id)
+      .eq('statut_ecriture', 'validee');
+
+    if (ecrituresError) throw ecrituresError;
+
+    // 2. Si écritures existent → Contrepasser (silencieusement)
+    if (ecritures && ecritures.length > 0) {
+      try {
+        const { error: contrepasserError } = await supabase.functions.invoke('contrepasser-ecritures', {
+          body: {
+            typeOperation: 'facture',
+            sourceId: id,
+            motifAnnulation: motif,
+          }
+        });
+
+        if (contrepasserError) {
+          console.error('Erreur lors de la contrepassation:', contrepasserError);
+          throw new Error('Une erreur est survenue lors de l\'annulation. Veuillez réessayer.');
+        }
+      } catch (error) {
+        console.error('Erreur lors de la contrepassation:', error);
+        throw new Error('Une erreur est survenue lors de l\'annulation. Veuillez réessayer.');
+      }
+    }
+
+    // 3. Mettre à jour le statut
     return this.update(id, {
       statut: 'annulee',
       observations: motif,
     });
+  },
+
+  async getStats(clientId: string, exerciceId?: string): Promise<{
+    nombreTotal: number;
+    nombreBrouillon: number;
+    nombreValidee: number;
+    nombrePayee: number;
+    montantTotal: number;
+    montantBrouillon: number;
+    montantValidee: number;
+    montantLiquide: number;
+  }> {
+    let query = supabase
+      .from('factures')
+      .select('statut, montant_ttc, montant_liquide')
+      .eq('client_id', clientId);
+
+    if (exerciceId) {
+      query = query.eq('exercice_id', exerciceId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    const stats = {
+      nombreTotal: data.length,
+      nombreBrouillon: data.filter(f => f.statut === 'brouillon').length,
+      nombreValidee: data.filter(f => f.statut === 'validee').length,
+      nombrePayee: data.filter(f => f.statut === 'payee').length,
+      montantTotal: data.reduce((sum, f) => sum + parseFloat(f.montant_ttc.toString()), 0),
+      montantBrouillon: data.filter(f => f.statut === 'brouillon').reduce((sum, f) => sum + parseFloat(f.montant_ttc.toString()), 0),
+      montantValidee: data.filter(f => f.statut === 'validee').reduce((sum, f) => sum + parseFloat(f.montant_ttc.toString()), 0),
+      montantLiquide: data.reduce((sum, f) => sum + parseFloat(f.montant_liquide.toString()), 0),
+    };
+
+    return stats;
   },
 };

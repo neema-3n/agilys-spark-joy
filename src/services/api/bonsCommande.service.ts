@@ -22,6 +22,7 @@ const mapBonCommandeFromDB = (data: any): BonCommande => ({
   createdAt: data.created_at,
   updatedAt: data.updated_at,
   createdBy: data.created_by,
+  ecrituresCount: data.ecritures_comptables?.[0]?.count || 0,
   fournisseur: data.fournisseurs ? {
     id: data.fournisseurs.id,
     nom: data.fournisseurs.nom,
@@ -69,7 +70,8 @@ export const bonsCommandeService = {
         fournisseurs(id, nom, code),
         engagements(id, numero),
         lignes_budgetaires(id, libelle),
-        projets(id, nom)
+        projets(id, nom),
+        ecritures_comptables!bon_commande_id(count)
       `)
       .eq('client_id', clientId)
       .order('date_commande', { ascending: false });
@@ -125,25 +127,36 @@ export const bonsCommandeService = {
   },
 
   async create(bonCommande: CreateBonCommandeInput): Promise<BonCommande> {
-    const { data: userData } = await supabase.auth.getUser();
-    
-    const { data, error } = await supabase
-      .from('bons_commande')
-      .insert({
-        ...mapBonCommandeToDB(bonCommande),
-        created_by: userData.user?.id,
-      })
-      .select(`
-        *,
-        fournisseurs(id, nom, code),
-        engagements(id, numero),
-        lignes_budgetaires(id, libelle),
-        projets(id, nom)
-      `)
-      .single();
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Non authentifié');
 
-    if (error) throw error;
-    return mapBonCommandeFromDB(data);
+      // Appeler l'edge function pour créer le bon de commande avec numéro généré atomiquement
+      const { data, error } = await supabase.functions.invoke('create-bon-commande', {
+        body: {
+          exerciceId: bonCommande.exerciceId,
+          clientId: bonCommande.clientId,
+          fournisseurId: bonCommande.fournisseurId,
+          objet: bonCommande.objet,
+          montant: bonCommande.montant,
+          dateCommande: bonCommande.dateCommande,
+          dateLivraisonPrevue: bonCommande.dateLivraisonPrevue,
+          conditionsLivraison: bonCommande.conditionsLivraison,
+          engagementId: bonCommande.engagementId,
+          ligneBudgetaireId: bonCommande.ligneBudgetaireId,
+          projetId: bonCommande.projetId,
+          observations: bonCommande.observations,
+        }
+      });
+
+      if (error) throw error;
+      if (!data) throw new Error('Bon de commande non créé');
+
+      return data as BonCommande;
+    } catch (error) {
+      console.error('Erreur lors de la création du bon de commande:', error);
+      throw error;
+    }
   },
 
   async update(id: string, bonCommande: UpdateBonCommandeInput): Promise<BonCommande> {
@@ -256,13 +269,28 @@ export const bonsCommandeService = {
       .single();
 
     if (error) throw error;
+
+    // Générer les écritures comptables automatiquement
+    try {
+      await supabase.functions.invoke('generate-ecritures-comptables', {
+        body: {
+          typeOperation: 'bon_commande',
+          sourceId: id,
+          clientId: bc.client_id,
+          exerciceId: bc.exercice_id
+        }
+      });
+    } catch (error) {
+      console.error('Erreur lors de la génération des écritures:', error);
+    }
+
     return mapBonCommandeFromDB(data);
   },
 
   async mettreEnCours(id: string): Promise<BonCommande> {
     const { data: bc, error: fetchError } = await supabase
       .from('bons_commande')
-      .select('statut')
+      .select('statut, client_id, exercice_id')
       .eq('id', id)
       .single();
 
@@ -285,13 +313,28 @@ export const bonsCommandeService = {
       .single();
 
     if (error) throw error;
+
+    // Générer les écritures comptables automatiquement
+    try {
+      await supabase.functions.invoke('generate-ecritures-comptables', {
+        body: {
+          typeOperation: 'bon_commande',
+          sourceId: id,
+          clientId: bc.client_id,
+          exerciceId: bc.exercice_id
+        }
+      });
+    } catch (error) {
+      console.error('Erreur lors de la génération des écritures:', error);
+    }
+
     return mapBonCommandeFromDB(data);
   },
 
   async receptionner(id: string, dateLivraisonReelle: string): Promise<BonCommande> {
     const { data: bc, error: fetchError } = await supabase
       .from('bons_commande')
-      .select('statut')
+      .select('statut, client_id, exercice_id')
       .eq('id', id)
       .single();
 
@@ -317,6 +360,21 @@ export const bonsCommandeService = {
       .single();
 
     if (error) throw error;
+
+    // Générer les écritures comptables automatiquement
+    try {
+      await supabase.functions.invoke('generate-ecritures-comptables', {
+        body: {
+          typeOperation: 'bon_commande',
+          sourceId: id,
+          clientId: bc.client_id,
+          exerciceId: bc.exercice_id
+        }
+      });
+    } catch (error) {
+      console.error('Erreur lors de la génération des écritures:', error);
+    }
+
     return mapBonCommandeFromDB(data);
   },
 
@@ -328,8 +386,8 @@ export const bonsCommandeService = {
       .single();
 
     if (fetchError) throw fetchError;
-    if (bc.statut === 'receptionne') {
-      throw new Error('Impossible d\'annuler un bon de commande déjà réceptionné');
+    if (bc.statut === 'facture') {
+      throw new Error('Impossible d\'annuler un bon de commande déjà facturé');
     }
     if (bc.statut === 'annule') {
       throw new Error('Ce bon de commande est déjà annulé');

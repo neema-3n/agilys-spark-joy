@@ -14,7 +14,6 @@ import InitTestUsers from "./pages/auth/InitTestUsers";
 import AppLayout from "./pages/app/AppLayout";
 import Dashboard from "./pages/app/Dashboard";
 import Budgets from "./pages/app/Budgets";
-import StructureBudgetaire from "./pages/app/StructureBudgetaire";
 import Engagements from "./pages/app/Engagements";
 import Factures from "./pages/app/Factures";
 import Tresorerie from "./pages/app/Tresorerie";
@@ -33,53 +32,78 @@ import BonsCommande from "./pages/app/BonsCommande";
 import Depenses from "./pages/app/Depenses";
 import Enveloppes from "./pages/app/Enveloppes";
 import Projets from "./pages/app/Projets";
+import JournalComptable from "./pages/app/JournalComptable";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <ClientProvider>
-            <ExerciceProvider>
-        <Routes>
+    <BrowserRouter>
+      <AuthProvider>
+        <ClientProvider>
+          <ExerciceProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth/login" element={<Login />} />
-          <Route path="/auth/init-test-users" element={<InitTestUsers />} />
+                  <Route path="/auth/init-test-users" element={<InitTestUsers />} />
                 <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                   <Route path="dashboard" element={<Dashboard />} />
-                  <Route path="budgets" element={<Budgets />} />
-                  <Route path="structure-budgetaire" element={<StructureBudgetaire />} />
+                  <Route path="budgets">
+                    <Route index element={<Budgets />} />
+                    <Route path=":ligneId" element={<Budgets />} />
+                  </Route>
                   <Route path="enveloppes" element={<Enveloppes />} />
                   <Route path="previsions" element={<Previsions />} />
-                  <Route path="reservations" element={<Reservations />} />
-                  <Route path="engagements" element={<Engagements />} />
-                  <Route path="bons-commande" element={<BonsCommande />} />
-                  <Route path="depenses" element={<Depenses />} />
+                  <Route path="reservations">
+                    <Route index element={<Reservations />} />
+                    <Route path=":reservationId" element={<Reservations />} />
+                  </Route>
+                  <Route path="engagements">
+                    <Route index element={<Engagements />} />
+                    <Route path=":engagementId" element={<Engagements />} />
+                  </Route>
+                  <Route path="bons-commande">
+                    <Route index element={<BonsCommande />} />
+                    <Route path=":bonCommandeId" element={<BonsCommande />} />
+                  </Route>
+                  <Route path="depenses">
+                    <Route index element={<Depenses />} />
+                    <Route path=":depenseId" element={<Depenses />} />
+                  </Route>
                   <Route path="mandats" element={<Mandats />} />
-                  <Route path="factures" element={<Factures />} />
+                  <Route path="factures">
+                    <Route index element={<Factures />} />
+                    <Route path=":factureId" element={<Factures />} />
+                  </Route>
                   <Route path="paiements" element={<Paiements />} />
                   <Route path="tresorerie" element={<Tresorerie />} />
                   <Route path="plan-comptable" element={<PlanComptable />} />
+                  <Route path="journal-comptable" element={<JournalComptable />} />
                   <Route path="controle-interne" element={<ControleInterne />} />
                   <Route path="projets" element={<Projets />} />
                   <Route path="analyses" element={<Analyses />} />
                   <Route path="reporting" element={<Reporting />} />
                   <Route path="structure" element={<Structure />} />
-                  <Route path="fournisseurs" element={<Fournisseurs />} />
-                  <Route path="parametres" element={<Parametres />} />
+                  <Route path="fournisseurs">
+                    <Route index element={<Fournisseurs />} />
+                    <Route path=":fournisseurId" element={<Fournisseurs />} />
+                  </Route>
+                  <Route path="parametres">
+                    <Route index element={<Parametres />} />
+                    <Route path=":sectionId" element={<Parametres />} />
+                  </Route>
                 </Route>
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </ExerciceProvider>
-          </ClientProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
+            </TooltipProvider>
+          </ExerciceProvider>
+        </ClientProvider>
+      </AuthProvider>
+    </BrowserRouter>
   </QueryClientProvider>
 );
 

@@ -1,23 +1,17 @@
-import { useState } from 'react';
-import { Facture, StatutFacture } from '@/types/facture.types';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { useMemo, useState } from 'react';
+import { Facture } from '@/types/facture.types';
+import { ListColumn, ListTable } from '@/components/lists/ListTable';
+import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/selectionColumn';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  MoreHorizontal, 
-  Pencil, 
-  Trash2, 
-  CheckCircle, 
-  DollarSign,
+import {
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  CheckCircle,
   XCircle,
-  Eye
+  Eye,
+  FileText,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -38,7 +32,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Link } from 'react-router-dom';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useListSelection } from '@/hooks/useListSelection';
+import { formatCurrency } from '@/lib/utils';
 
+type FactureTableSelection = ListSelectionHandlers;
 
 interface FactureTableProps {
   factures: Facture[];
@@ -47,6 +46,13 @@ interface FactureTableProps {
   onValider: (id: string) => void;
   onMarquerPayee: (id: string) => void;
   onAnnuler: (id: string) => void;
+  onCreerDepense: (facture: Facture) => void;
+  onViewDetails: (factureId: string) => void;
+  selection: FactureTableSelection;
+  stickyHeader?: boolean;
+  stickyHeaderOffset?: number;
+  scrollContainerClassName?: string;
+  footer?: React.ReactNode;
 }
 
 export const FactureTable = ({
@@ -56,25 +62,34 @@ export const FactureTable = ({
   onValider,
   onMarquerPayee,
   onAnnuler,
+  onCreerDepense,
+  onViewDetails,
+  selection,
+  stickyHeader = false,
+  stickyHeaderOffset = 0,
+  scrollContainerClassName,
+  footer,
 }: FactureTableProps) => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const factureIds = useMemo(() => factures.map((facture) => facture.id), [factures]);
+  const { selectedIds, allSelected, toggleOne, toggleAll } = selection;
 
   const getStatutBadge = (statut: string) => {
-    const variants: Record<string, any> = {
-      brouillon: { variant: 'outline' as const, label: 'Brouillon' },
-      validee: { variant: 'secondary' as const, label: 'Validée' },
-      payee: { variant: 'default' as const, label: 'Payée' },
-      annulee: { variant: 'destructive' as const, label: 'Annulée' },
+    const variants: Record<
+      string,
+      { variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'; label: string }
+    > = {
+      brouillon: { variant: 'outline', label: 'Brouillon' },
+      validee: { variant: 'success', label: 'Validée' },
+      payee: { variant: 'success', label: 'Payée' },
+      annulee: { variant: 'destructive', label: 'Annulée' },
     };
     const config = variants[statut] || variants.brouillon;
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
   const formatMontant = (montant: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(montant);
+    return formatCurrency(montant);
   };
 
   const formatDate = (dateString?: string) => {
@@ -82,112 +97,163 @@ export const FactureTable = ({
     return format(new Date(dateString), 'dd/MM/yyyy', { locale: fr });
   };
 
-  const hasAvailableActions = (statut: StatutFacture) => {
-    // "Voir les détails" est disponible pour TOUS les statuts
-    return true;
-  };
+  const columns: ListColumn<Facture>[] = [
+    buildSelectionColumn<Facture>({
+      selection: { selectedIds, allSelected, toggleOne, toggleAll },
+      getId: (facture) => facture.id,
+      getLabel: (facture) => `Sélectionner la facture ${facture.numero}`,
+      allLabel: 'Sélectionner toutes les factures',
+    }),
+    {
+      id: 'numero',
+      header: 'Numéro',
+      render: (facture) => (
+        <Link
+          to={`/app/factures/${facture.id}`}
+          className="text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded"
+          onClick={(event) => {
+            if (
+              event.button !== 0 ||
+              event.metaKey ||
+              event.ctrlKey ||
+              event.shiftKey ||
+              event.altKey
+            ) {
+              return;
+            }
+            event.preventDefault();
+            onViewDetails(facture.id);
+          }}
+        >
+          {facture.numero}
+        </Link>
+      ),
+    },
+    {
+      id: 'date',
+      header: 'Date',
+      render: (facture) => formatDate(facture.dateFacture),
+    },
+    {
+      id: 'fournisseur',
+      header: 'Fournisseur',
+      render: (facture) => facture.fournisseur?.nom || '-',
+    },
+    {
+      id: 'objet',
+      header: 'Objet',
+      cellClassName: 'max-w-[220px] truncate',
+      render: (facture) => facture.objet,
+    },
+    {
+      id: 'bonCommande',
+      header: 'Bon de commande',
+      render: (facture) => facture.bonCommande?.numero || '-',
+    },
+    {
+      id: 'montant',
+      header: 'Montant (TTC)',
+      align: 'right',
+      render: (facture) => (
+        <span className="font-medium">{formatCurrency(facture.montantTTC)}</span>
+      ),
+    },
+    {
+      id: 'paye',
+      header: 'Liquidé',
+      align: 'right',
+      render: (facture) => formatCurrency(facture.montantLiquide || 0),
+    },
+    {
+      id: 'solde',
+      header: 'Solde',
+      align: 'right',
+      render: (facture) => {
+        const solde = facture.montantTTC - (facture.montantLiquide || 0);
+        const soldeClass = solde > 0 ? 'text-orange-600 font-medium' : 'text-green-600';
+        return <span className={soldeClass}>{formatMontant(solde)}</span>;
+      },
+    },
+    {
+      id: 'statut',
+      header: 'Statut',
+      render: (facture) => getStatutBadge(facture.statut),
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      align: 'right',
+      cellClassName: 'text-right w-[70px]',
+      render: (facture) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onViewDetails(facture.id)}>
+              <Eye className="mr-2 h-4 w-4" />
+              Voir les détails
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            {facture.statut === 'brouillon' && (
+              <DropdownMenuItem onClick={() => onEdit(facture)}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Modifier
+              </DropdownMenuItem>
+            )}
+
+            {facture.statut === 'brouillon' && (
+              <DropdownMenuItem onClick={() => onValider(facture.id)}>
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Valider
+              </DropdownMenuItem>
+            )}
+            {facture.statut === 'validee' && (
+              <>
+                <DropdownMenuItem onClick={() => onCreerDepense(facture)}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Créer une dépense
+                </DropdownMenuItem>
+              </>
+            )}
+            {facture.statut !== 'payee' && facture.statut !== 'annulee' && (
+              <DropdownMenuItem onClick={() => onAnnuler(facture.id)}>
+                <XCircle className="mr-2 h-4 w-4" />
+                Annuler
+              </DropdownMenuItem>
+            )}
+            {facture.statut === 'brouillon' && (
+              <DropdownMenuItem
+                onClick={() => setDeleteId(facture.id)}
+                className="text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Supprimer
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ];
 
   return (
     <>
-      <div className="rounded-md border max-h-[600px] overflow-auto">
-        <div className="[&>div]:max-h-none [&>div]:overflow-visible">
-          <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Numéro</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Fournisseur</TableHead>
-              <TableHead>Objet</TableHead>
-              <TableHead>Bon de commande</TableHead>
-              <TableHead className="text-right">Montant (TTC)</TableHead>
-              <TableHead className="text-right">Payé</TableHead>
-              <TableHead className="text-right">Solde</TableHead>
-              <TableHead>Statut</TableHead>
-              <TableHead className="w-[70px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {factures.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={10} className="text-center text-muted-foreground">
-                  Aucune facture trouvée
-                </TableCell>
-              </TableRow>
-            ) : (
-              factures.map((facture) => (
-                <TableRow key={facture.id}>
-                  <TableCell className="font-medium">{facture.numero}</TableCell>
-                  <TableCell>{formatDate(facture.dateFacture)}</TableCell>
-                  <TableCell>{facture.fournisseur?.nom || '-'}</TableCell>
-                  <TableCell className="max-w-[200px] truncate">
-                    {facture.objet}
-                  </TableCell>
-                  <TableCell>{facture.bonCommande?.numero || '-'}</TableCell>
-                  <TableCell className="text-right font-medium">
-                    {formatMontant(facture.montantTTC)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatMontant(facture.montantPaye || 0)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <span className={facture.montantTTC - (facture.montantPaye || 0) > 0 ? 'text-orange-600 font-medium' : 'text-green-600'}>
-                      {formatMontant(facture.montantTTC - (facture.montantPaye || 0))}
-                    </span>
-                  </TableCell>
-                  <TableCell>{getStatutBadge(facture.statut)}</TableCell>
-                  <TableCell>
-                    {hasAvailableActions(facture.statut) && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => onEdit(facture)}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            Voir les détails
-                          </DropdownMenuItem>
-                          
-                          <DropdownMenuSeparator />
-                        {facture.statut === 'brouillon' && (
-                          <DropdownMenuItem onClick={() => onValider(facture.id)}>
-                            <CheckCircle className="mr-2 h-4 w-4" />
-                            Valider
-                          </DropdownMenuItem>
-                        )}
-                        {facture.statut === 'validee' && (
-                          <DropdownMenuItem onClick={() => onMarquerPayee(facture.id)}>
-                            <DollarSign className="mr-2 h-4 w-4" />
-                            Marquer payée
-                          </DropdownMenuItem>
-                        )}
-                        {facture.statut !== 'payee' && facture.statut !== 'annulee' && (
-                          <DropdownMenuItem onClick={() => onAnnuler(facture.id)}>
-                            <XCircle className="mr-2 h-4 w-4" />
-                            Annuler
-                          </DropdownMenuItem>
-                        )}
-                        {facture.statut === 'brouillon' && (
-                          <DropdownMenuItem
-                            onClick={() => setDeleteId(facture.id)}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Supprimer
-                          </DropdownMenuItem>
-                        )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </TableCell>
-                </TableRow>
-            ))
-          )}
-        </TableBody>
-          </Table>
-        </div>
-      </div>
+      <ListTable
+        items={factures}
+        columns={columns}
+        getRowId={(facture) => facture.id}
+        onRowDoubleClick={(facture) => onViewDetails(facture.id)}
+        emptyMessage="Aucune facture trouvée"
+        stickyHeader={stickyHeader}
+        stickyHeaderOffset={stickyHeaderOffset}
+        scrollContainerClassName={scrollContainerClassName}
+        footer={footer}
+      />
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>

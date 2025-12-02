@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -115,21 +116,20 @@ const Projets = () => {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Projets & Analytique</h1>
-          <p className="text-muted-foreground">
-            Suivi financier multi-projet avec axe analytique
-          </p>
-        </div>
-        {canEdit && (
-          <Button onClick={handleCreate}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nouveau projet
-          </Button>
-        )}
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Projets & Analytique"
+        description="Suivi financier multi-projet avec axe analytique"
+        actions={
+          canEdit ? (
+            <Button onClick={handleCreate}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nouveau projet
+            </Button>
+          ) : undefined
+        }
+      />
+      <div className="px-8">
 
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>
@@ -185,7 +185,8 @@ const Projets = () => {
             </div>
           )}
         </TabsContent>
-      </Tabs>
+        </Tabs>
+      </div>
 
       <ProjetDialog
         open={dialogOpen}
