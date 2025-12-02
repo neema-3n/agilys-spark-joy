@@ -39,55 +39,20 @@ export function useHeaderCtaReveal(observeDeps: DependencyList = []) {
     if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
     const target = headerCtaRef.current;
-
     if (!target) return;
 
-    // Utiliser le conteneur scroll principal (main) pour fiabiliser la détection
     const scrollRoot = document.querySelector('main');
 
-    const computeVisibility = () => {
-      const rect = target.getBoundingClientRect();
-      const rootRect = scrollRoot?.getBoundingClientRect();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        setIsHeaderCtaVisible(entry?.isIntersecting ?? false);
+      },
+      { root: scrollRoot ?? null, threshold: 0 }
+    );
 
-      // Rect du viewport par défaut si aucun root spécifique n'est trouvé
-      const viewportTop = rootRect?.top ?? 0;
-      const viewportLeft = rootRect?.left ?? 0;
-      const viewportHeight = rootRect?.height ?? window.innerHeight;
-      const viewportWidth = rootRect?.width ?? window.innerWidth;
-
-      const isIntersecting =
-        rect.bottom > viewportTop &&
-        rect.top < viewportTop + viewportHeight &&
-        rect.right > viewportLeft &&
-        rect.left < viewportLeft + viewportWidth;
-
-      setIsHeaderCtaVisible(isIntersecting);
-    };
-
-    // Mesure initiale pour éviter les faux négatifs au montage
-    computeVisibility();
-
-    const observer = typeof IntersectionObserver !== 'undefined'
-      ? new IntersectionObserver(
-          (entries) => {
-            const entry = entries[0];
-            setIsHeaderCtaVisible(entry.isIntersecting);
-          },
-          { root: scrollRoot ?? null, threshold: 0 }
-        )
-      : null;
-
-    observer?.observe(target);
-
-    const scrollElement: HTMLElement | Window = scrollRoot ?? window;
-    scrollElement.addEventListener('scroll', computeVisibility, { passive: true });
-    window.addEventListener('resize', computeVisibility);
-
-    return () => {
-      observer?.disconnect();
-      scrollElement.removeEventListener('scroll', computeVisibility);
-      window.removeEventListener('resize', computeVisibility);
-    };
+    observer.observe(target);
+    return () => observer.disconnect();
   }, [headerCtaRef, ...observeDeps]);
 
   return { headerCtaRef, isHeaderCtaVisible };
