@@ -35,7 +35,8 @@ import {
 import { Link } from 'react-router-dom';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useListSelection } from '@/hooks/useListSelection';
-import { formatCurrency } from '@/lib/utils';
+import { formatMontant } from '@/lib/utils';
+import { FactureStatusBadge } from '@/components/ui/status-badge';
 
 type FactureTableSelection = ListSelectionHandlers;
 
@@ -74,23 +75,7 @@ export const FactureTable = ({
   const factureIds = useMemo(() => factures.map((facture) => facture.id), [factures]);
   const { selectedIds, allSelected, toggleOne, toggleAll } = selection;
 
-  const getStatutBadge = (statut: string) => {
-    const variants: Record<
-      string,
-      { variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'; label: string }
-    > = {
-      brouillon: { variant: 'outline', label: 'Brouillon' },
-      validee: { variant: 'success', label: 'Validée' },
-      payee: { variant: 'success', label: 'Payée' },
-      annulee: { variant: 'destructive', label: 'Annulée' },
-    };
-    const config = variants[statut] || variants.brouillon;
-    return <Badge variant={config.variant}>{config.label}</Badge>;
-  };
 
-  const formatMontant = (montant: number) => {
-    return formatCurrency(montant);
-  };
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '-';
@@ -155,14 +140,14 @@ export const FactureTable = ({
       header: 'Montant (TTC)',
       align: 'right',
       render: (facture) => (
-        <span className="font-medium">{formatCurrency(facture.montantTTC)}</span>
+        <span className="font-medium">{formatMontant(facture.montantTTC)}</span>
       ),
     },
     {
       id: 'paye',
       header: 'Liquidé',
       align: 'right',
-      render: (facture) => formatCurrency(facture.montantLiquide || 0),
+      render: (facture) => formatMontant(facture.montantLiquide || 0),
     },
     {
       id: 'solde',
@@ -177,7 +162,7 @@ export const FactureTable = ({
     {
       id: 'statut',
       header: 'Statut',
-      render: (facture) => getStatutBadge(facture.statut),
+      render: (facture) => <FactureStatusBadge status={facture.statut} />,
     },
     {
       id: 'actions',

@@ -9,32 +9,45 @@ import { ClientProvider } from "@/contexts/ClientContext";
 import { ExerciceProvider } from "@/contexts/ExerciceContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
+// Public pages
 const Index = lazy(() => import("./pages/Index"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+
+// Auth pages
 const Login = lazy(() => import("./pages/auth/Login"));
 const InitTestUsers = lazy(() => import("./pages/auth/InitTestUsers"));
+
+// App layout and main pages
 const AppLayout = lazy(() => import("./pages/app/AppLayout"));
 const Dashboard = lazy(() => import("./pages/app/Dashboard"));
+
+// Budget & Finance pages
 const Budgets = lazy(() => import("./pages/app/Budgets"));
 const Engagements = lazy(() => import("./pages/app/Engagements"));
+const Depenses = lazy(() => import("./pages/app/Depenses"));
 const Factures = lazy(() => import("./pages/app/Factures"));
-const Tresorerie = lazy(() => import("./pages/app/Tresorerie"));
-const Reporting = lazy(() => import("./pages/app/Reporting"));
-const Parametres = lazy(() => import("./pages/app/Parametres"));
-const Structure = lazy(() => import("./pages/app/Structure"));
-const Fournisseurs = lazy(() => import("./pages/app/Fournisseurs"));
-const Mandats = lazy(() => import("./pages/app/Mandats"));
+const BonsCommande = lazy(() => import("./pages/app/BonsCommande"));
 const Paiements = lazy(() => import("./pages/app/Paiements"));
-const PlanComptable = lazy(() => import("./pages/app/PlanComptable"));
-const ControleInterne = lazy(() => import("./pages/app/ControleInterne"));
-const Analyses = lazy(() => import("./pages/app/Analyses"));
+const Tresorerie = lazy(() => import("./pages/app/Tresorerie"));
 const Previsions = lazy(() => import("./pages/app/Previsions"));
 const Reservations = lazy(() => import("./pages/app/Reservations"));
-const BonsCommande = lazy(() => import("./pages/app/BonsCommande"));
-const Depenses = lazy(() => import("./pages/app/Depenses"));
 const Enveloppes = lazy(() => import("./pages/app/Enveloppes"));
+
+// Administration pages
+const Fournisseurs = lazy(() => import("./pages/app/Fournisseurs"));
 const Projets = lazy(() => import("./pages/app/Projets"));
+const Structure = lazy(() => import("./pages/app/Structure"));
+const Parametres = lazy(() => import("./pages/app/Parametres"));
+const PlanComptable = lazy(() => import("./pages/app/PlanComptable"));
+
+// Reporting & Analysis pages
+const Reporting = lazy(() => import("./pages/app/Reporting"));
+const Analyses = lazy(() => import("./pages/app/Analyses"));
 const JournalComptable = lazy(() => import("./pages/app/JournalComptable"));
+const ControleInterne = lazy(() => import("./pages/app/ControleInterne"));
+
+// Legacy pages (to be reviewed)
+const Mandats = lazy(() => import("./pages/app/Mandats"));
 
 const queryClient = new QueryClient();
 
@@ -55,11 +68,18 @@ const App = () => (
                 }
               >
                 <Routes>
+                  {/* Public routes */}
                   <Route path="/" element={<Index />} />
+
+                  {/* Auth routes */}
                   <Route path="/auth/login" element={<Login />} />
                   <Route path="/auth/init-test-users" element={<InitTestUsers />} />
+
+                  {/* Protected app routes */}
                   <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                     <Route path="dashboard" element={<Dashboard />} />
+
+                    {/* Budget & Finance */}
                     <Route path="budgets">
                       <Route index element={<Budgets />} />
                       <Route path=":ligneId" element={<Budgets />} />
@@ -82,30 +102,37 @@ const App = () => (
                       <Route index element={<Depenses />} />
                       <Route path=":depenseId" element={<Depenses />} />
                     </Route>
-                    <Route path="mandats" element={<Mandats />} />
                     <Route path="factures">
                       <Route index element={<Factures />} />
                       <Route path=":factureId" element={<Factures />} />
                     </Route>
                     <Route path="paiements" element={<Paiements />} />
                     <Route path="tresorerie" element={<Tresorerie />} />
-                    <Route path="plan-comptable" element={<PlanComptable />} />
-                    <Route path="journal-comptable" element={<JournalComptable />} />
-                    <Route path="controle-interne" element={<ControleInterne />} />
-                    <Route path="projets" element={<Projets />} />
-                    <Route path="analyses" element={<Analyses />} />
-                    <Route path="reporting" element={<Reporting />} />
-                    <Route path="structure" element={<Structure />} />
+
+                    {/* Administration */}
                     <Route path="fournisseurs">
                       <Route index element={<Fournisseurs />} />
                       <Route path=":fournisseurId" element={<Fournisseurs />} />
                     </Route>
+                    <Route path="projets" element={<Projets />} />
+                    <Route path="structure" element={<Structure />} />
                     <Route path="parametres">
                       <Route index element={<Parametres />} />
                       <Route path=":sectionId" element={<Parametres />} />
                     </Route>
+                    <Route path="plan-comptable" element={<PlanComptable />} />
+
+                    {/* Reporting & Analysis */}
+                    <Route path="reporting" element={<Reporting />} />
+                    <Route path="analyses" element={<Analyses />} />
+                    <Route path="journal-comptable" element={<JournalComptable />} />
+                    <Route path="controle-interne" element={<ControleInterne />} />
+
+                    {/* Legacy routes (to be reviewed) */}
+                    <Route path="mandats" element={<Mandats />} />
                   </Route>
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+
+                  {/* Catch-all route */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
