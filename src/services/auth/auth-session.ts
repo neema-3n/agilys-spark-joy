@@ -11,6 +11,7 @@ export interface AccessTokenClaims {
 }
 
 const BASE64URL_PADDING = 4;
+const utf8Decoder = new TextDecoder();
 
 const normalizeBase64Url = (value: string): string => {
   const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
@@ -24,7 +25,9 @@ const normalizeBase64Url = (value: string): string => {
 
 const decodeBase64 = (value: string): string => {
   const normalized = normalizeBase64Url(value);
-  return atob(normalized);
+  const binary = atob(normalized);
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return utf8Decoder.decode(bytes);
 };
 
 export const decodeAccessTokenClaims = (token: string): AccessTokenClaims | null => {

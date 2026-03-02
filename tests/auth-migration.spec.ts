@@ -137,6 +137,62 @@ test('http client clears session and notifies when refresh fails', async () => {
   expect(storage.read()).toBeNull();
 });
 
+test('http client preserves requested path on auth failure redirect flow', async () => {
+  const storage = createTokenStorage(new MockStorage());
+  storage.write({ accessToken: 'expired-access', refreshToken: 'expired-refresh' });
+
+  const originalWindow = (globalThis as { window?: unknown }).window;
+  Object.defineProperty(globalThis, 'window', {
+    value: {
+      location: {
+        pathname: '/app/engagements',
+        search: '?status=open',
+        hash: '#details'
+      }
+    },
+    configurable: true
+  });
+
+  const fetchImpl: typeof fetch = (async (url: RequestInfo | URL) => {
+    const requestUrl = typeof url === 'string' ? url : url.toString();
+
+    if (requestUrl.endsWith('/auth/refresh')) {
+      return new Response(JSON.stringify({ message: 'invalid token' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (requestUrl.endsWith('/secure')) {
+      return new Response('{}', { status: 401, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    return new Response('{}', { status: 404 });
+  }) as typeof fetch;
+
+  const client = createHttpClient({
+    baseUrl: 'http://localhost:3001',
+    fetchImpl,
+    storage
+  });
+
+  let preservedPath: string | undefined;
+  client.setAuthFailureHandler((path) => {
+    preservedPath = path;
+  });
+
+  await client.request('/secure', { method: 'GET' });
+
+  expect(preservedPath).toBe('/app/engagements?status=open#details');
+  expect(storage.read()).toBeNull();
+
+  if (originalWindow === undefined) {
+    Reflect.deleteProperty(globalThis, 'window');
+  } else {
+    Object.defineProperty(globalThis, 'window', { value: originalWindow, configurable: true });
+  }
+});
+
 test('http client clears session when retried request is still unauthorized', async () => {
   const storage = createTokenStorage(new MockStorage());
   storage.write({ accessToken: 'expired-access', refreshToken: 'refresh-token' });
@@ -205,6 +261,25 @@ test('JWT claims parsing and expiry detection', async () => {
   expect(isTokenExpired(expiredToken)).toBeTruthy();
 });
 
+test('JWT claims parsing supports UTF-8 payload values', async () => {
+  const utf8Token = makeJwt({
+    sub: 'user-2',
+    tenantId: 'tenant-2',
+    roles: ['admin_client'],
+    nom: 'Élodie',
+    prenom: 'João',
+    exp: Math.floor(Date.now() / 1000) + 120
+  });
+
+  expect(decodeAccessTokenClaims(utf8Token)).toMatchObject({
+    sub: 'user-2',
+    tenantId: 'tenant-2',
+    roles: ['admin_client'],
+    nom: 'Élodie',
+    prenom: 'João'
+  });
+});
+
 test('resolve post-login redirect from state, query then fallback', async () => {
   expect(resolveLoginRedirect({ stateFrom: '/app/depenses?tab=all' })).toBe('/app/depenses?tab=all');
   expect(resolveLoginRedirect({ search: '?from=%2Fapp%2Fengagements%3Fq%3Dopen' })).toBe('/app/engagements?q=open');
@@ -237,4 +312,19 @@ test('logout calls /auth/logout and clears token storage', async () => {
 
   expect(logoutCalled).toBeTruthy();
   expect(tokenStorage.read()).toBeNull();
+});
+
+test('signup returns actionable error when network call fails', async () => {
+  const originalRequest = httpClient.request;
+
+  httpClient.request = (async () => {
+    throw new Error('network down');
+  }) as typeof httpClient.request;
+
+  try {
+    const result = await authService.signup('user@example.com', 'ChangeMe123!', 'Nom', 'Prenom');
+    expect(result.error).toContain("Impossible de joindre l'API d'inscription");
+  } finally {
+    httpClient.request = originalRequest;
+  }
 });
