@@ -1,6 +1,6 @@
 # Story CC-01.03 - Migrations DB versionnees
 
-Status: ready-for-dev
+Status: review
 Epic: CC-01 - Fondations techniques migration
 Story Key: cc-01-03-migrations-db-versionnees
 Created: 2026-03-02
@@ -27,9 +27,62 @@ so that l'etat PostgreSQL est stable et reproductible entre developpeurs.
 
 ## Tasks / Subtasks
 
-- [ ] Ajouter/normaliser scripts `db:migrate`, `db:reset`, `db:seed` via `pnpm` (AC: 1, 2)
-- [ ] Verifier la rejouabilite complete sur base vierge (AC: 1, 2, 3)
-- [ ] Documenter prerequis et ordre d'execution (AC: 3)
+- [x] Ajouter/normaliser scripts `db:migrate`, `db:reset`, `db:seed` via `pnpm` (AC: 1, 2)
+- [x] Verifier la rejouabilite complete sur base vierge (AC: 1, 2, 3)
+- [x] Documenter prerequis et ordre d'execution (AC: 3)
+
+## Dev Agent Record
+
+### Debug Log
+
+- RED: `pnpm run db:migrate` en echec initial attendu (`Missing script: db:migrate`).
+- Validation technique effectuee avec:
+  - `POSTGRES_DB=agilys POSTGRES_USER=agilys_app POSTGRES_PASSWORD=change-me-local-only POSTGRES_PORT=5432 pnpm run db:verify`
+  - `pnpm run lint`
+- Ajustements de robustesse implementes pendant verification:
+  - execution SQL dans le conteneur Docker (pas de dependance TLS/host locale),
+  - retries de readiness SQL apres startup DB,
+  - tracking des migrations appliquees via `public.schema_migrations`,
+  - correction de 3 migrations legacy pour les rendre idempotentes/rejouables (`20250207120000`, `20250207123000`, `20251127033510`).
+
+### Completion Notes
+
+- Scripts `pnpm` normalises pour `db:migrate`, `db:reset`, `db:seed` avec script de verification complete `db:verify`.
+- Procedure `reset -> migrate -> seed` validee sur base vierge avec PostgreSQL local Docker.
+- Documentation runbook + README mise a jour avec prerequis, ordre d'execution et commande de verification.
+- Seed rendu idempotent et compatible avec le schema reel (`exercices.code/libelle`).
+- Flux `db:migrate` desormais complet avec integration des migrations legacy corrigees (plus d'exclusion).
+- `db:import:remote` sauvegarde desormais un dataset local persisté (`output/db-seeds/remote-public-data.sql`).
+- `db:seed` recharge en priorite ce dataset local pour restaurer rapidement les vraies donnees.
+- `db:snapshot:local` permet de rafraichir ce dataset a partir de l'etat local courant.
+
+## File List
+
+- `package.json` (mise a jour scripts `db:*`)
+- `scripts/db-migrate.sh` (nouveau)
+- `scripts/db-reset.sh` (nouveau)
+- `scripts/db-seed.sh` (nouveau)
+- `scripts/verify-db-workflow.sh` (nouveau)
+- `scripts/db-import-remote.sh` (nouveau)
+- `scripts/db-snapshot-local.sh` (nouveau)
+- `scripts/sql/local-supabase-compat.sql` (nouveau)
+- `scripts/sql/seed-base.sql` (nouveau)
+- `docs/runbooks/postgresql-local-docker.md` (mise a jour)
+- `README.md` (mise a jour)
+- `supabase/migrations/20250207120000_update_facture_liquidation.sql` (mise a jour idempotence)
+- `supabase/migrations/20250207123000_rename_facture_montant_liquide.sql` (mise a jour idempotence)
+- `supabase/migrations/20251127033510_schema-improvements.sql` (mise a jour idempotence)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (sync statut sprint)
+- `_bmad-output/implementation-artifacts/cc-01-03-migrations-db-versionnees.md` (mise a jour story)
+
+## Change Log
+
+- 2026-03-02: Ajout des scripts DB versionnes (`db:migrate`, `db:reset`, `db:seed`) et verification automatisable (`db:verify`).
+- 2026-03-02: Ajout bootstrap compatibilite locale + seed idempotent pour base vierge.
+- 2026-03-02: Documentation procedure DB mise a jour (runbook + README), validation complete reussie.
+- 2026-03-02: Corrections idempotence sur 3 migrations legacy + reactivation dans `db:migrate` avec validation `db:verify` OK.
+- 2026-03-02: Ajout d'un import réel Supabase -> local (`db:import:remote`) valide en execution complete.
+- 2026-03-02: Persist du dataset importe en local + seed prioritaire sur ce dataset + commande `db:snapshot:local`.
 
 ## Dependencies / Blockers
 
@@ -44,4 +97,4 @@ so that l'etat PostgreSQL est stable et reproductible entre developpeurs.
 
 - Story ID: `CC-01.03`
 - Story Key: `cc-01-03-migrations-db-versionnees`
-- Final Status: `ready-for-dev`
+- Final Status: `review`
