@@ -41,10 +41,26 @@ else
   cat "${SEED_FALLBACK_SQL}" | docker compose exec -T "${SERVICE}" sh -lc "psql -v ON_ERROR_STOP=1 -U \"${DB_USER}\" -d \"${APP_DB}\"" >/dev/null
 fi
 
-public_rows="$(docker compose exec -T "${SERVICE}" sh -lc "psql -v ON_ERROR_STOP=1 -U \"${DB_USER}\" -d \"${APP_DB}\" -At -c \"SELECT COALESCE(sum(rows),0) FROM (SELECT n_live_tup::bigint AS rows FROM pg_stat_user_tables WHERE schemaname='public' AND relname <> 'schema_migrations') t;\"")"
-if [[ "${public_rows}" -lt 1 ]]; then
-  echo "Seed verification failed: no data loaded into public schema." >&2
-  exit 1
-fi
+docker compose exec -T "${SERVICE}" sh -lc "psql -v ON_ERROR_STOP=1 -U \"${DB_USER}\" -d \"${APP_DB}\" -c \"DO \\\$\\\$
+DECLARE
+  has_data BOOLEAN := FALSE;
+  tbl RECORD;
+BEGIN
+  FOR tbl IN
+    SELECT schemaname, tablename
+    FROM pg_tables
+    WHERE schemaname = 'public'
+      AND tablename <> 'schema_migrations'
+  LOOP
+    EXECUTE format('SELECT EXISTS (SELECT 1 FROM %I.%I LIMIT 1)', tbl.schemaname, tbl.tablename)
+      INTO has_data;
+    EXIT WHEN has_data;
+  END LOOP;
+
+  IF NOT has_data THEN
+    RAISE EXCEPTION 'Seed verification failed: no data loaded into public schema.';
+  END IF;
+END
+\\\$\\\$;\"" >/dev/null
 
 echo "Seed data applied successfully."
