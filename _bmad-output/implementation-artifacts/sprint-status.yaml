@@ -45,7 +45,7 @@ development_status:
   epic-2-retrospective: optional
 
   epic-3: in-progress
-  3-1-configurer-referentiels-budgetaires-de-base: ready-for-dev
+  3-1-configurer-referentiels-budgetaires-de-base: review
   3-2-gerer-allocations-et-reallocations-de-credits: backlog
   3-3-versionner-les-decisions-budgetaires: backlog
   3-4-produire-previsions-et-ecarts-prevision-execution: backlog
@@ -99,3 +99,9 @@ development_status:
   10-3-produire-dsf-conforme-ohada-sycebnl: backlog
   10-4-mesurer-les-temps-de-traitement-par-etape: backlog
   epic-10-retrospective: optional
+
+  epic-cc-01: in-progress
+  cc-01-02-postgresql-local-docker: ready-for-dev
+  cc-01-03-migrations-db-versionnees: ready-for-dev
+  cc-01-04-migration-npm-vers-pnpm: ready-for-dev
+  cc-01-05-commande-dev-unique-et-ports: ready-for-dev

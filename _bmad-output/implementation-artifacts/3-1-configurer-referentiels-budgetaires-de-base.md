@@ -1,6 +1,6 @@
 # Story 3.1: Configurer referentiels budgetaires de base
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -36,14 +36,14 @@ so that le cadre de gestion est operationnel.
 
 ## Tasks / Subtasks
 
-- [ ] Concevoir et exposer les API backend referentiels (AC: 1, 3, 4)
-- [ ] Definir DTO NestJS de creation/mise a jour avec validations `class-validator` (AC: 3)
-- [ ] Ajouter la couche service/use-case avec controles metier (AC: 1, 3, 4)
-- [ ] Implementer l'historisation/audit des changements referentiels (AC: 2)
-- [ ] Integrer le front via client API unifie (pas d'appel Supabase direct) (AC: 1, 4)
-- [ ] Mettre a jour les ecrans de parametrage (`exercices`, `enveloppes`, `sections`, `programmes`, `actions`) (AC: 1, 3)
-- [ ] Ajouter la gestion des erreurs utilisateur actionnables (AC: 3)
-- [ ] Verifier l'isolation `client_id` + `exercice_id` sur toutes les lectures/ecritures (AC: 4)
+- [x] Concevoir et exposer les API backend referentiels (AC: 1, 3, 4)
+- [x] Definir DTO NestJS de creation/mise a jour avec validations `class-validator` (AC: 3)
+- [x] Ajouter la couche service/use-case avec controles metier (AC: 1, 3, 4)
+- [x] Implementer l'historisation/audit des changements referentiels (AC: 2)
+- [x] Integrer le front via client API unifie (pas d'appel Supabase direct) (AC: 1, 4)
+- [x] Mettre a jour les ecrans de parametrage (`exercices`, `enveloppes`, `sections`, `programmes`, `actions`) (AC: 1, 3)
+- [x] Ajouter la gestion des erreurs utilisateur actionnables (AC: 3)
+- [x] Verifier l'isolation `client_id` + `exercice_id` sur toutes les lectures/ecritures (AC: 4)
 
 ## Dev Notes
 
@@ -190,23 +190,54 @@ GPT-5 Codex
 
 ### Debug Log References
 
-- Workflow: `/_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml`
-- Instructions: `/_bmad/bmm/workflows/4-implementation/create-story/instructions.xml`
+- Workflow: `/_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml`
+- Instructions: `/_bmad/bmm/workflows/4-implementation/dev-story/instructions.xml`
 - Engine: `/_bmad/core/tasks/workflow.xml`
 
 ### Completion Notes List
 
-- Ultimate context engine analysis completed - comprehensive developer guide created.
-- Story cible detectee depuis input utilisateur: `3-1-configurer-referentiels-budgetaires-de-base`.
-- Story status fixe a `ready-for-dev`.
+- Module backend `budget-referentiels` implemente (controller/service/dto/guards JWT+RBAC) avec CRUD et archivage non destructif pour `exercices`, `enveloppes`, `sections`, `programmes`, `actions`.
+- Validation metier activee: unicite `code` par scope, coherence parent/enfant, coherence exercice et refus acces hors `tenant`.
+- Journal d'audit ajoute (`create/update/archive`) avec `authorId`, `timestamp`, `before/after`.
+- Services front cibles migres vers `httpClient` backend (`exercices`, `enveloppes`, `sections`, `programmes`, `actions`) avec erreurs utilisateur actionnables.
+- Hooks budget ajustes pour requetes filtrees par `exerciceId` en lecture parent/enfant.
+- Tests executes et passants: `npm --prefix backend test`, `npm run lint`, `npm run build`.
 
 ### File List
 
 - `_bmad-output/implementation-artifacts/3-1-configurer-referentiels-budgetaires-de-base.md`
+- `backend/src/app.module.ts`
+- `backend/src/users/users.service.ts`
+- `backend/src/auth/authenticated-user.interface.ts`
+- `backend/src/auth/current-user.decorator.ts`
+- `backend/src/auth/jwt-auth.guard.ts`
+- `backend/src/auth/roles.decorator.ts`
+- `backend/src/auth/roles.guard.ts`
+- `backend/src/budget-referentiels/budget-referentiels.module.ts`
+- `backend/src/budget-referentiels/budget-referentiels.controller.ts`
+- `backend/src/budget-referentiels/budget-referentiels.service.ts`
+- `backend/src/budget-referentiels/budget-referentiels.types.ts`
+- `backend/src/budget-referentiels/budget-referentiels.service.spec.ts`
+- `backend/src/budget-referentiels/dto/referentiels.dto.ts`
+- `backend/test/auth.e2e.spec.ts`
+- `backend/test/budget-referentiels.e2e.spec.ts`
+- `src/services/api/api-utils.ts`
+- `src/services/api/exercices.service.ts`
+- `src/services/api/enveloppes.service.ts`
+- `src/services/api/sections.service.ts`
+- `src/services/api/programmes.service.ts`
+- `src/services/api/actions.service.ts`
+- `src/hooks/useProgrammes.ts`
+- `src/hooks/useActions.ts`
+- `tests/auth-migration.spec.ts`
+
+### Change Log
+
+- 2026-03-02: Implementation complete de la story 3.1 (backend NestJS referentiels + migration services front + tests backend e2e/unit + validation lint/build).
 
 ## Story Completion Status
 
 - Story ID: `3.1`
 - Story Key: `3-1-configurer-referentiels-budgetaires-de-base`
-- Final Status: `ready-for-dev`
-- Validation checklist: effectuee manuellement selon `checklist.md` (coherence AC, taches, contexte dev, references).
+- Final Status: `review`
+- Validation checklist: DoD validee sur execution reelle des tests/qualite (backend tests 18/18, lint OK, build OK).

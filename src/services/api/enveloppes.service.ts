@@ -1,105 +1,110 @@
-import { supabase } from '@/integrations/supabase/client';
 import type { Enveloppe, CreateEnveloppeInput, UpdateEnveloppeInput } from '@/types/enveloppe.types';
+import { requestJson } from '@/services/api/api-utils';
 
-const mapFromDatabase = (row: any): Enveloppe => ({
+interface EnveloppeApiModel {
+  id: string;
+  clientId: string;
+  exerciceId: string;
+  code: string;
+  nom: string;
+  sourceFinancement: string;
+  montantAlloue: number;
+  montantConsomme: number;
+  statut: 'actif' | 'cloture';
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+}
+
+const mapFromApi = (row: EnveloppeApiModel): Enveloppe => ({
   id: row.id,
-  clientId: row.client_id,
-  exerciceId: row.exercice_id,
+  clientId: row.clientId,
+  exerciceId: row.exerciceId,
   code: row.code,
   nom: row.nom,
-  sourceFinancement: row.source_financement,
-  montantAlloue: parseFloat(row.montant_alloue),
-  montantConsomme: parseFloat(row.montant_consomme),
-  montantDisponible: parseFloat(row.montant_alloue) - parseFloat(row.montant_consomme),
+  sourceFinancement: row.sourceFinancement,
+  montantAlloue: row.montantAlloue,
+  montantConsomme: row.montantConsomme,
+  montantDisponible: row.montantAlloue - row.montantConsomme,
   statut: row.statut,
-  createdAt: row.created_at,
-  updatedAt: row.updated_at,
-  createdBy: row.created_by,
+  createdAt: row.createdAt,
+  updatedAt: row.updatedAt,
+  createdBy: row.createdBy
 });
 
 export const enveloppesService = {
-  async getAll(clientId: string, exerciceId?: string): Promise<Enveloppe[]> {
-    let query = supabase
-      .from('enveloppes')
-      .select('*')
-      .eq('client_id', clientId)
-      .order('created_at', { ascending: false });
-
-    if (exerciceId) {
-      query = query.eq('exercice_id', exerciceId);
+  async getAll(_clientId: string, exerciceId?: string): Promise<Enveloppe[]> {
+    if (!exerciceId) {
+      return [];
     }
 
-    const { data, error } = await query;
+    const payload = await requestJson<EnveloppeApiModel[]>(
+      `/budget-referentiels/enveloppes?exerciceId=${encodeURIComponent(exerciceId)}`,
+      { method: 'GET' },
+      'Erreur lors de la récupération des enveloppes'
+    );
 
-    if (error) throw error;
-    return (data || []).map(mapFromDatabase);
+    return payload.map(mapFromApi);
   },
 
-  async getById(id: string): Promise<Enveloppe> {
-    const { data, error } = await supabase
-      .from('enveloppes')
-      .select('*')
-      .eq('id', id)
-      .single();
+  async getById(id: string, exerciceId: string): Promise<Enveloppe> {
+    const payload = await requestJson<EnveloppeApiModel[]>(
+      `/budget-referentiels/enveloppes?exerciceId=${encodeURIComponent(exerciceId)}`,
+      { method: 'GET' },
+      'Erreur lors de la récupération de l\'enveloppe'
+    );
 
-    if (error) throw error;
-    return mapFromDatabase(data);
+    const item = payload.find((entry) => entry.id === id);
+    if (!item) {
+      throw new Error('Enveloppe introuvable');
+    }
+
+    return mapFromApi(item);
   },
 
   async create(input: CreateEnveloppeInput): Promise<Enveloppe> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const payload = await requestJson<EnveloppeApiModel>(
+      '/budget-referentiels/enveloppes',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          exerciceId: input.exerciceId,
+          code: input.code,
+          nom: input.nom,
+          sourceFinancement: input.sourceFinancement,
+          montantAlloue: input.montantAlloue,
+          montantConsomme: input.montantConsomme,
+          statut: input.statut
+        })
+      },
+      'Erreur lors de la création de l\'enveloppe'
+    );
 
-    const { data, error } = await supabase
-      .from('enveloppes')
-      .insert({
-        client_id: input.clientId,
-        exercice_id: input.exerciceId,
-        code: input.code,
-        nom: input.nom,
-        source_financement: input.sourceFinancement,
-        montant_alloue: input.montantAlloue,
-        montant_consomme: input.montantConsomme,
-        statut: input.statut,
-        created_by: user?.id,
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return mapFromDatabase(data);
+    return mapFromApi(payload);
   },
 
   async update(id: string, input: UpdateEnveloppeInput): Promise<Enveloppe> {
-    const updateData: any = {};
-    
-    if (input.code !== undefined) updateData.code = input.code;
-    if (input.nom !== undefined) updateData.nom = input.nom;
-    if (input.sourceFinancement !== undefined) updateData.source_financement = input.sourceFinancement;
-    if (input.montantAlloue !== undefined) updateData.montant_alloue = input.montantAlloue;
-    if (input.montantConsomme !== undefined) updateData.montant_consomme = input.montantConsomme;
-    if (input.statut !== undefined) updateData.statut = input.statut;
+    const payload = await requestJson<EnveloppeApiModel>(
+      `/budget-referentiels/enveloppes/${id}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(input)
+      },
+      'Erreur lors de la mise à jour de l\'enveloppe'
+    );
 
-    const { data, error } = await supabase
-      .from('enveloppes')
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return mapFromDatabase(data);
+    return mapFromApi(payload);
   },
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('enveloppes')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
+    await requestJson(
+      `/budget-referentiels/enveloppes/${id}`,
+      { method: 'DELETE' },
+      'Erreur lors de l\'archivage de l\'enveloppe'
+    );
   },
 
   async cloturer(id: string): Promise<Enveloppe> {
     return this.update(id, { statut: 'cloture' });
-  },
+  }
 };

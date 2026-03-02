@@ -141,21 +141,21 @@ test('JWT claims parsing and expiry detection', async () => {
   const validToken = makeJwt({
     sub: 'user-1',
     tenantId: 'tenant-1',
-    roles: ['USER'],
+    roles: ['admin_client'],
     exp: Math.floor(Date.now() / 1000) + 120
   });
 
   const expiredToken = makeJwt({
     sub: 'user-1',
     tenantId: 'tenant-1',
-    roles: ['USER'],
+    roles: ['admin_client'],
     exp: Math.floor(Date.now() / 1000) - 120
   });
 
   expect(decodeAccessTokenClaims(validToken)).toMatchObject({
     sub: 'user-1',
     tenantId: 'tenant-1',
-    roles: ['USER']
+    roles: ['admin_client']
   });
 
   expect(isTokenExpired(validToken)).toBeFalsy();
