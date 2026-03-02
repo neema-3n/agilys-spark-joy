@@ -79,8 +79,8 @@ Errors:
 ## Variables d'environnement
 
 - `PORT` (default: `3001`)
-- `JWT_ACCESS_SECRET`
-- `JWT_REFRESH_SECRET`
+- `JWT_ACCESS_SECRET` (required)
+- `JWT_REFRESH_SECRET` (required)
 - `JWT_ACCESS_TTL_SECONDS` (default: `900`)
 - `JWT_REFRESH_TTL_SECONDS` (default: `604800`)
 - `AUTH_TEST_USER_EMAIL` (default: `user@agilys.local`)

@@ -1,6 +1,6 @@
 # Story 2.1 - Mettre en place l'auth NestJS JWT + refresh
 
-Status: review
+Status: done
 Epic: 2 - Gouvernance d'acces, roles et isolation multi-tenant
 Story Key: 2-1-mettre-en-place-lauth-nestjs-jwt-refresh
 Created: 2026-03-01
@@ -91,6 +91,14 @@ So that j'accede aux fonctionnalites selon mes droits.
 - [x] Documenter routes et payloads (DoD)
   - [x] Ajouter exemples de payload request/response
   - [x] Documenter codes erreurs attendus
+
+### Review Follow-ups (AI)
+
+- [x] [AI-Review][HIGH] Remplacer le store in-memory des refresh tokens par une persistence durable (fichier local atomique) pour eviter la perte de revocation au redemarrage. [backend/src/auth/refresh-token.store.ts:1]
+- [x] [AI-Review][HIGH] Supprimer les secrets JWT de secours hardcodes et forcer la presence de `JWT_ACCESS_SECRET` et `JWT_REFRESH_SECRET` via validation de configuration au demarrage. [backend/src/auth/auth.service.ts:1]
+- [x] [AI-Review][MEDIUM] Ajouter la configuration de test e2e equivalente au runtime (`ValidationPipe`) et couvrir les cas payload invalide pour verifier les DTO. [backend/test/auth.e2e.spec.ts:1]
+- [x] [AI-Review][MEDIUM] Nettoyer les artefacts non source (`backend/node_modules`, `backend/dist`) et ajouter les ignores necessaires pour eviter un commit massif accidentel. [backend/.gitignore:1]
+- [x] [AI-Review][MEDIUM] Mettre en coherence la File List de la story avec la realite git (inclure fichiers ajoutes pendant remediation). [_bmad-output/implementation-artifacts/2-1-mettre-en-place-lauth-nestjs-jwt-refresh.md:188]
 
 ## Dev Notes
 
@@ -183,6 +191,7 @@ GPT-5 Codex
 - _bmad-output/implementation-artifacts/sprint-status.yaml
 - backend/package.json
 - backend/package-lock.json
+- backend/.gitignore
 - backend/tsconfig.json
 - backend/tsconfig.build.json
 - backend/jest.config.ts
@@ -201,8 +210,47 @@ GPT-5 Codex
 - backend/src/auth/dto/logout.dto.ts
 - backend/src/users/users.service.ts
 - backend/test/auth.e2e.spec.ts
+- backend/test/test-env.ts
 
 ## Change Log
 
 - 2026-03-01: Story enrichie en mode validation (VS) avec sections manquantes, AC detaillees, tasks/subtasks, dev notes et references.
 - 2026-03-01: Implementation completee (NestJS auth JWT + refresh rotation + logout revoke + logs + tests + doc), statut passe a `review`.
+- 2026-03-02: Revue senior adversariale realisee. Statut repasse a `in-progress` avec action items AI review (HIGH/MEDIUM) a traiter.
+- 2026-03-02: Remediation automatique des findings HIGH/MEDIUM (persistence durable des refresh tokens, validation stricte des secrets JWT, durcissement e2e DTO, hygiene git backend), statut passe a `done`.
+
+## Senior Developer Review (AI)
+
+Date: 2026-03-02
+Reviewer: Max
+Outcome: Changes Requested
+
+### Resume
+
+- AC 1, 2, 3 et 4 sont globalement implantees sur les endpoints et les tests nominaux.
+- La quality gate n'est pas validee pour passage a `done` en raison de risques de securite/persistence et d'un ecart entre declaration story et realite git.
+
+### Findings
+
+1. **[HIGH] Persistence refresh token non conforme au scope**
+   - Evidence: implementation exclusivement en memoire via `Map`, sans stockage durable.
+   - Impact: revocations perdues au redemarrage, non compatible multi-instance, contrainte "Persistence" non respectee.
+   - Reference: `backend/src/auth/refresh-token.store.ts:14`
+
+2. **[HIGH] Secrets JWT fallback hardcodes**
+   - Evidence: `JWT_ACCESS_SECRET`/`JWT_REFRESH_SECRET` tombent sur des valeurs par defaut statiques.
+   - Impact: risque de compromission en environnement mal configure.
+   - Reference: `backend/src/auth/auth.service.ts:12`
+
+3. **[MEDIUM] Couverture e2e partiellement representative du runtime**
+   - Evidence: app e2e initialisee sans `ValidationPipe` global.
+   - Impact: les validations DTO ne sont pas verifiees dans les tests d'integration API.
+   - Reference: `backend/test/auth.e2e.spec.ts:14`
+
+4. **[MEDIUM] Ecart story vs realite git (traçabilite)**
+   - Evidence: la story liste des fichiers backend comme modifies, mais git indique `?? backend/` globalement non versionne.
+   - Impact: taches `[x]` difficilement auditables tant que les fichiers ne sont pas suivis proprement.
+
+5. **[MEDIUM] Hygiene repository insuffisante pour la nouvelle app backend**
+   - Evidence: presence de `backend/node_modules` et `backend/dist` dans l'arborescence de travail.
+   - Impact: risque eleve de commit accidentel de milliers de fichiers et bruit de review.

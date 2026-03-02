@@ -1,17 +1,27 @@
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request = require('supertest');
 import { AppModule } from '../src/app.module';
+import { applyTestEnv } from './test-env';
 
 describe('AuthController (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
+    applyTestEnv();
+
     const moduleFixture = await Test.createTestingModule({
       imports: [AppModule]
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true
+      })
+    );
     await app.init();
   });
 
@@ -42,6 +52,15 @@ describe('AuthController (e2e)', () => {
     });
 
     expect(response.status).toBe(401);
+  });
+
+  it('POST /auth/login returns 400 for invalid payload', async () => {
+    const response = await request(app.getHttpServer()).post('/auth/login').send({
+      email: 'not-an-email',
+      password: 'short'
+    });
+
+    expect(response.status).toBe(400);
   });
 
   it('POST /auth/refresh rotates refresh token and invalidates old one', async () => {
@@ -84,5 +103,13 @@ describe('AuthController (e2e)', () => {
     });
 
     expect(refreshResponse.status).toBe(403);
+  });
+
+  it('POST /auth/refresh returns 400 for invalid payload', async () => {
+    const response = await request(app.getHttpServer()).post('/auth/refresh').send({
+      refreshToken: 'tiny'
+    });
+
+    expect(response.status).toBe(400);
   });
 });
