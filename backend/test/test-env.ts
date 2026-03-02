@@ -1,6 +1,7 @@
 import { existsSync, rmSync } from 'fs';
 
 export function applyTestEnv(): void {
+  process.env.AUTH_STORAGE_MODE = process.env.AUTH_STORAGE_MODE ?? 'memory';
   process.env.JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET ?? 'test-access-secret';
   process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET ?? 'test-refresh-secret';
   process.env.JWT_ACCESS_TTL_SECONDS = process.env.JWT_ACCESS_TTL_SECONDS ?? '900';

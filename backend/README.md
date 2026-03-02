@@ -79,9 +79,15 @@ Errors:
 ## Variables d'environnement
 
 - `PORT` (default: `3001`)
+- `AUTH_STORAGE_MODE` (`postgres` par defaut, `memory` pour tests locaux rapides)
 - `JWT_ACCESS_SECRET` (required)
 - `JWT_REFRESH_SECRET` (required)
 - `JWT_ACCESS_TTL_SECONDS` (default: `900`)
 - `JWT_REFRESH_TTL_SECONDS` (default: `604800`)
 - `AUTH_TEST_USER_EMAIL` (default: `user@agilys.local`)
 - `AUTH_TEST_USER_PASSWORD` (default: `ChangeMe123!`)
+- `POSTGRES_HOST` (default: `127.0.0.1`)
+- `POSTGRES_PORT` (default: `5432`)
+- `POSTGRES_DB` (default: `agilys`)
+- `POSTGRES_USER` (default: `agilys_app`)
+- `POSTGRES_PASSWORD` (default: `change-me-local-only`)

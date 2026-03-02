@@ -51,6 +51,8 @@ VITE_API_BASE_URL="http://localhost:3001"
 Notes:
 - Si `VITE_API_BASE_URL` est absent, le client frontend utilise des chemins relatifs (`/auth/*`) vers le même host.
 - Les variables `AUTH_TEST_USER_EMAIL` et `AUTH_TEST_USER_PASSWORD` se configurent côté backend (voir `backend/README.md`).
+- Si le frontend tourne sur un port différent de l'API (`localhost:8082` par exemple), définir `CORS_ORIGINS` côté backend (ex: `CORS_ORIGINS=http://localhost:8080,http://localhost:8082`).
+- Le backend auth utilise PostgreSQL local par défaut (`AUTH_STORAGE_MODE=postgres`). Pour les tests backend rapides, basculer en `AUTH_STORAGE_MODE=memory`.
 
 ## 🐘 PostgreSQL Local via Docker (Story CC-01.02)
 

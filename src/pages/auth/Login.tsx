@@ -54,6 +54,10 @@ const Login = () => {
     }
   }, [isAuthenticated, navigate, from]);
 
+  if (isAuthenticated) {
+    return null;
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginErrors({});

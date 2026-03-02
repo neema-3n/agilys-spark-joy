@@ -154,10 +154,17 @@ export const createHttpClient = (options?: HttpClientOptions) => {
     retryHeaders.set('Authorization', `Bearer ${nextAccessToken}`);
     applyBodyHeader(retryHeaders, body);
 
-    return fetchImpl(makeUrl(path), {
+    const retriedResponse = await fetchImpl(makeUrl(path), {
       ...fetchOptions,
       headers: retryHeaders
     });
+
+    if (retriedResponse.status === 401) {
+      storage.clear();
+      notifyAuthFailure();
+    }
+
+    return retriedResponse;
   };
 
   return {
