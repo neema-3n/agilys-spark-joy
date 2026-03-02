@@ -244,6 +244,7 @@ GPT-5 Codex
 - Hints comptes de test login alignes backend NestJS (`AUTH_TEST_USER_EMAIL` / `AUTH_TEST_USER_PASSWORD`).
 - Tests auth ajoutes et passes (4 scenarii): storage, refresh success retry, refresh fail cleanup, parsing claims/expiration.
 - Documentation mise a jour: variable `VITE_API_BASE_URL` et checklist de decommission Supabase auth (lot 2.4).
+- Correctifs review appliques: suppression navigation login redondante, redirection explicite vers login sur auth failure/logout avec preservation `from`, suppression du couplage Supabase auth dans `auth.service`, alignement README endpoints, extension couverture tests auth.
 
 ### File List
 
@@ -251,6 +252,7 @@ GPT-5 Codex
 - _bmad-output/implementation-artifacts/sprint-status.yaml
 - src/services/auth/token-storage.ts
 - src/services/auth/auth-session.ts
+- src/services/auth/auth-routing.ts
 - src/services/api/http-client.ts
 - src/services/api/auth.service.ts
 - src/contexts/AuthContext.tsx
@@ -265,3 +267,4 @@ GPT-5 Codex
 
 - 2026-03-02: Creation de la story 2.4 en format context-filled, avec contraintes d'implementation, intelligence stories precedentes et references techniques officielles.
 - 2026-03-02: Implementation complete de la migration auth frontend vers API NestJS (login/refresh/logout), tests front ajoutes, documentation et checklist de decommission mises a jour.
+- 2026-03-02: Correctifs post-review HIGH/MEDIUM appliques (redirections auth explicites, suppression supabase auth runtime dans `auth.service`, couverture tests et documentation endpoint harmonisee).

@@ -131,10 +131,10 @@ Le frontend est prêt à se connecter à une API REST. Endpoints attendus :
 
 ### Authentification
 ```
-POST   /api/auth/login
-POST   /api/auth/register
-POST   /api/auth/logout
-GET    /api/auth/me
+POST   /auth/login
+POST   /auth/register
+POST   /auth/logout
+POST   /auth/refresh
 ```
 
 ### Clients
