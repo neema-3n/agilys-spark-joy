@@ -37,7 +37,7 @@ development_status:
   epic-1-retrospective: optional
 
   epic-2: in-progress
-  2-1-mettre-en-place-lauth-nestjs-jwt-refresh: ready-for-dev
+  2-1-mettre-en-place-lauth-nestjs-jwt-refresh: review
   2-2-appliquer-rbac-et-separation-des-responsabilites: backlog
   2-3-isoler-les-donnees-et-politiques-par-tenant: backlog
   2-4-migrer-le-frontend-auth-sans-rupture-ux: backlog
