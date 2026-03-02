@@ -22,7 +22,7 @@ export class UsersService {
         email,
         passwordHash: hashSync(password, 10),
         tenantId: 'tenant-1',
-        roles: ['USER']
+        roles: ['admin_client']
       }
     ];
   }

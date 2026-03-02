@@ -17,7 +17,7 @@ export const useProgrammes = (sectionId?: string) => {
       ? ['programmes', 'section', sectionId]
       : ['programmes', clientId, exerciceId],
     queryFn: () => sectionId 
-      ? programmesService.getBySectionId(sectionId)
+      ? programmesService.getBySectionId(sectionId, exerciceId)
       : programmesService.getAll(clientId, exerciceId),
     enabled: sectionId ? !!sectionId : (!!clientId && !!exerciceId),
   });

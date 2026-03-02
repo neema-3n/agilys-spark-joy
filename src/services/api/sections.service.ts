@@ -1,59 +1,96 @@
-import { supabase } from '@/integrations/supabase/client';
 import { Section } from '@/types/budget.types';
+import { requestJson } from '@/services/api/api-utils';
+
+interface SectionApiModel {
+  id: string;
+  clientId: string;
+  exerciceId: string;
+  code: string;
+  libelle: string;
+  ordre: number;
+  statut: 'actif' | 'archive';
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+}
+
+const mapSection = (input: SectionApiModel): Section => ({
+  id: input.id,
+  client_id: input.clientId,
+  exercice_id: input.exerciceId,
+  code: input.code,
+  libelle: input.libelle,
+  ordre: input.ordre,
+  statut: input.statut,
+  created_at: input.createdAt,
+  updated_at: input.updatedAt,
+  created_by: input.createdBy
+});
 
 export const sectionsService = {
-  async getAll(clientId: string, exerciceId: string): Promise<Section[]> {
-    const { data, error } = await supabase
-      .from('sections')
-      .select('*')
-      .eq('client_id', clientId)
-      .eq('exercice_id', exerciceId)
-      .order('ordre', { ascending: true });
+  async getAll(_clientId: string, exerciceId: string): Promise<Section[]> {
+    const payload = await requestJson<SectionApiModel[]>(
+      `/budget-referentiels/sections?exerciceId=${encodeURIComponent(exerciceId)}`,
+      { method: 'GET' },
+      'Erreur lors de la récupération des sections'
+    );
 
-    if (error) throw error;
-    return (data || []) as Section[];
+    return payload.map(mapSection);
   },
 
-  async getById(id: string): Promise<Section> {
-    const { data, error } = await supabase
-      .from('sections')
-      .select('*')
-      .eq('id', id)
-      .single();
+  async getById(id: string, exerciceId: string): Promise<Section> {
+    const sections = await this.getAll('', exerciceId);
+    const item = sections.find((section) => section.id === id);
 
-    if (error) throw error;
-    return data as Section;
+    if (!item) {
+      throw new Error('Section introuvable');
+    }
+
+    return item;
   },
 
   async create(section: Omit<Section, 'id' | 'created_at' | 'updated_at'>): Promise<Section> {
-    const { data, error } = await supabase
-      .from('sections')
-      .insert(section)
-      .select()
-      .single();
+    const payload = await requestJson<SectionApiModel>(
+      '/budget-referentiels/sections',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          exerciceId: section.exercice_id,
+          code: section.code,
+          libelle: section.libelle,
+          ordre: section.ordre,
+          statut: section.statut
+        })
+      },
+      'Erreur lors de la création de la section'
+    );
 
-    if (error) throw error;
-    return data as Section;
+    return mapSection(payload);
   },
 
   async update(id: string, updates: Partial<Section>): Promise<Section> {
-    const { data, error } = await supabase
-      .from('sections')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
+    const payload = await requestJson<SectionApiModel>(
+      `/budget-referentiels/sections/${id}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({
+          code: updates.code,
+          libelle: updates.libelle,
+          ordre: updates.ordre,
+          statut: updates.statut
+        })
+      },
+      'Erreur lors de la mise à jour de la section'
+    );
 
-    if (error) throw error;
-    return data as Section;
+    return mapSection(payload);
   },
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('sections')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
+    await requestJson(
+      `/budget-referentiels/sections/${id}`,
+      { method: 'DELETE' },
+      'Erreur lors de l\'archivage de la section'
+    );
   }
 };

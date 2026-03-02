@@ -42,7 +42,7 @@ describe('AuthController (e2e)', () => {
     const decodedPayload = JSON.parse(Buffer.from(response.body.accessToken.split('.')[1], 'base64').toString('utf8'));
     expect(decodedPayload.sub).toBe('user-1');
     expect(decodedPayload.tenantId).toBe('tenant-1');
-    expect(decodedPayload.roles).toEqual(['USER']);
+    expect(decodedPayload.roles).toEqual(['admin_client']);
   });
 
   it('POST /auth/login returns 401 for invalid credentials', async () => {
