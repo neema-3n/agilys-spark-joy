@@ -202,6 +202,10 @@ GPT-5 Codex
 - Services front cibles migres vers `httpClient` backend (`exercices`, `enveloppes`, `sections`, `programmes`, `actions`) avec erreurs utilisateur actionnables.
 - Hooks budget ajustes pour requetes filtrees par `exerciceId` en lecture parent/enfant.
 - Tests executes et passants: `npm --prefix backend test`, `npm run lint`, `npm run build`.
+- Correctif review applique: persistance durable des referentiels + audit via snapshot disque (`.data/budget-referentiels.json`) au lieu d'un stockage purement memoire.
+- Correctif review applique: ajout d'un garde scope tenant/exercice (`TenantExerciceScopeGuard`) et test e2e d'acces inter-tenant refuse.
+- Correctif review applique: propagation des messages d'erreur backend dans `useProgrammes` et `useActions` + cles React Query scopees par `clientId`/`exerciceId`.
+- Correctif review applique: validation metier `@Min(0)` sur montants enveloppes.
 
 ### File List
 
@@ -213,9 +217,11 @@ GPT-5 Codex
 - `backend/src/auth/jwt-auth.guard.ts`
 - `backend/src/auth/roles.decorator.ts`
 - `backend/src/auth/roles.guard.ts`
+- `backend/src/auth/tenant-exercice-scope.guard.ts`
 - `backend/src/budget-referentiels/budget-referentiels.module.ts`
 - `backend/src/budget-referentiels/budget-referentiels.controller.ts`
 - `backend/src/budget-referentiels/budget-referentiels.service.ts`
+- `backend/src/budget-referentiels/budget-referentiels.store.ts`
 - `backend/src/budget-referentiels/budget-referentiels.types.ts`
 - `backend/src/budget-referentiels/budget-referentiels.service.spec.ts`
 - `backend/src/budget-referentiels/dto/referentiels.dto.ts`
@@ -234,10 +240,12 @@ GPT-5 Codex
 ### Change Log
 
 - 2026-03-02: Implementation complete de la story 3.1 (backend NestJS referentiels + migration services front + tests backend e2e/unit + validation lint/build).
+- 2026-03-02: Correctifs de review appliques (persistance durable referentiels/audit, garde scope tenant/exercice, cles React Query scopees, messages d'erreurs actionnables, validations montants >= 0).
+- Baseline de traçabilite review: `HEAD 9dc6a6f93cab6ec9597fca508060c3100430b9b1` (verification reproducible a partir de cet etat git).
 
 ## Story Completion Status
 
 - Story ID: `3.1`
 - Story Key: `3-1-configurer-referentiels-budgetaires-de-base`
 - Final Status: `review`
-- Validation checklist: DoD validee sur execution reelle des tests/qualite (backend tests 18/18, lint OK, build OK).
+- Validation checklist: DoD validee sur execution reelle des tests/qualite (backend tests 19/19, lint OK, build OK).

@@ -16,6 +16,7 @@ import type {
   ReferentielEntityType,
   SectionEntity
 } from './budget-referentiels.types';
+import { BudgetReferentielsStore } from './budget-referentiels.store';
 import type {
   ActionCreateDto,
   ActionUpdateDto,
@@ -37,6 +38,16 @@ export class BudgetReferentielsService {
   private readonly programmes = new Map<string, ProgrammeEntity>();
   private readonly actions = new Map<string, ActionEntity>();
   private readonly auditLog: AuditEntry[] = [];
+
+  constructor(private readonly store: BudgetReferentielsStore = new BudgetReferentielsStore()) {
+    const snapshot = this.store.load();
+    this.exercices = new Map(snapshot.exercices.map((entry) => [entry.id, entry]));
+    this.enveloppes = new Map(snapshot.enveloppes.map((entry) => [entry.id, entry]));
+    this.sections = new Map(snapshot.sections.map((entry) => [entry.id, entry]));
+    this.programmes = new Map(snapshot.programmes.map((entry) => [entry.id, entry]));
+    this.actions = new Map(snapshot.actions.map((entry) => [entry.id, entry]));
+    this.auditLog.push(...snapshot.auditLog);
+  }
 
   getExercices(user: AuthenticatedUser): ExerciceEntity[] {
     return this.filterByTenant(this.exercices, user.tenantId);
@@ -63,6 +74,7 @@ export class BudgetReferentielsService {
 
     this.exercices.set(exercice.id, exercice);
     this.appendAudit(user, 'exercice', exercice.id, 'create', null, exercice);
+    this.persist();
 
     return exercice;
   }
@@ -87,6 +99,7 @@ export class BudgetReferentielsService {
 
     this.exercices.set(id, updated);
     this.appendAudit(user, 'exercice', id, 'update', current, updated);
+    this.persist();
 
     return updated;
   }
@@ -104,6 +117,7 @@ export class BudgetReferentielsService {
 
     this.exercices.set(id, archived);
     this.appendAudit(user, 'exercice', id, 'archive', current, archived);
+    this.persist();
 
     return archived;
   }
@@ -138,6 +152,7 @@ export class BudgetReferentielsService {
 
     this.enveloppes.set(entity.id, entity);
     this.appendAudit(user, 'enveloppe', entity.id, 'create', null, entity);
+    this.persist();
 
     return entity;
   }
@@ -158,6 +173,7 @@ export class BudgetReferentielsService {
 
     this.enveloppes.set(id, updated);
     this.appendAudit(user, 'enveloppe', id, 'update', current, updated);
+    this.persist();
 
     return updated;
   }
@@ -173,6 +189,7 @@ export class BudgetReferentielsService {
 
     this.enveloppes.set(id, archived);
     this.appendAudit(user, 'enveloppe', id, 'archive', current, archived);
+    this.persist();
 
     return archived;
   }
@@ -205,6 +222,7 @@ export class BudgetReferentielsService {
 
     this.sections.set(entity.id, entity);
     this.appendAudit(user, 'section', entity.id, 'create', null, entity);
+    this.persist();
 
     return entity;
   }
@@ -225,6 +243,7 @@ export class BudgetReferentielsService {
 
     this.sections.set(id, updated);
     this.appendAudit(user, 'section', id, 'update', current, updated);
+    this.persist();
 
     return updated;
   }
@@ -249,6 +268,7 @@ export class BudgetReferentielsService {
 
     this.sections.set(id, archived);
     this.appendAudit(user, 'section', id, 'archive', current, archived);
+    this.persist();
 
     return archived;
   }
@@ -283,6 +303,7 @@ export class BudgetReferentielsService {
 
     this.programmes.set(entity.id, entity);
     this.appendAudit(user, 'programme', entity.id, 'create', null, entity);
+    this.persist();
 
     return entity;
   }
@@ -307,6 +328,7 @@ export class BudgetReferentielsService {
 
     this.programmes.set(id, updated);
     this.appendAudit(user, 'programme', id, 'update', current, updated);
+    this.persist();
 
     return updated;
   }
@@ -331,6 +353,7 @@ export class BudgetReferentielsService {
 
     this.programmes.set(id, archived);
     this.appendAudit(user, 'programme', id, 'archive', current, archived);
+    this.persist();
 
     return archived;
   }
@@ -365,6 +388,7 @@ export class BudgetReferentielsService {
 
     this.actions.set(entity.id, entity);
     this.appendAudit(user, 'action', entity.id, 'create', null, entity);
+    this.persist();
 
     return entity;
   }
@@ -389,6 +413,7 @@ export class BudgetReferentielsService {
 
     this.actions.set(id, updated);
     this.appendAudit(user, 'action', id, 'update', current, updated);
+    this.persist();
 
     return updated;
   }
@@ -405,6 +430,7 @@ export class BudgetReferentielsService {
 
     this.actions.set(id, archived);
     this.appendAudit(user, 'action', id, 'archive', current, archived);
+    this.persist();
 
     return archived;
   }
@@ -555,6 +581,17 @@ export class BudgetReferentielsService {
       authorId: user.sub,
       before,
       after
+    });
+  }
+
+  private persist(): void {
+    this.store.save({
+      exercices: [...this.exercices.values()],
+      enveloppes: [...this.enveloppes.values()],
+      sections: [...this.sections.values()],
+      programmes: [...this.programmes.values()],
+      actions: [...this.actions.values()],
+      auditLog: this.auditLog
     });
   }
 }

@@ -14,12 +14,12 @@ export const useProgrammes = (sectionId?: string) => {
 
   const { data: programmes = [], isLoading, error, refetch } = useQuery({
     queryKey: sectionId 
-      ? ['programmes', 'section', sectionId]
+      ? ['programmes', 'section', sectionId, clientId, exerciceId]
       : ['programmes', clientId, exerciceId],
     queryFn: () => sectionId 
       ? programmesService.getBySectionId(sectionId, exerciceId)
       : programmesService.getAll(clientId, exerciceId),
-    enabled: sectionId ? !!sectionId : (!!clientId && !!exerciceId),
+    enabled: sectionId ? (!!sectionId && !!clientId && !!exerciceId) : (!!clientId && !!exerciceId),
   });
 
   const createMutation = useMutation({
@@ -29,8 +29,8 @@ export const useProgrammes = (sectionId?: string) => {
       queryClient.invalidateQueries({ queryKey: ['programmes'] });
       toast.success('Programme créé avec succès');
     },
-    onError: () => {
-      toast.error('Erreur lors de la création du programme');
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : 'Erreur lors de la création du programme');
     },
   });
 
@@ -41,8 +41,8 @@ export const useProgrammes = (sectionId?: string) => {
       queryClient.invalidateQueries({ queryKey: ['programmes'] });
       toast.success('Programme modifié avec succès');
     },
-    onError: () => {
-      toast.error('Erreur lors de la modification du programme');
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : 'Erreur lors de la modification du programme');
     },
   });
 
@@ -52,8 +52,8 @@ export const useProgrammes = (sectionId?: string) => {
       queryClient.invalidateQueries({ queryKey: ['programmes'] });
       toast.success('Programme supprimé avec succès');
     },
-    onError: () => {
-      toast.error('Erreur lors de la suppression du programme');
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : 'Erreur lors de la suppression du programme');
     },
   });
 
