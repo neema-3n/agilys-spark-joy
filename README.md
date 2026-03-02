@@ -29,6 +29,32 @@ Notes:
 - Si `VITE_API_BASE_URL` est absent, le client frontend utilise des chemins relatifs (`/auth/*`) vers le même host.
 - Les variables `AUTH_TEST_USER_EMAIL` et `AUTH_TEST_USER_PASSWORD` se configurent côté backend (voir `backend/README.md`).
 
+## 🐘 PostgreSQL Local via Docker (Story CC-01.02)
+
+La base locale PostgreSQL est fournie via `docker compose` (pas d'installation SGBD native).
+
+Initialisation variables locales:
+
+```bash
+cp .env.example .env
+```
+
+```bash
+docker compose up -d postgres
+docker compose ps postgres
+docker compose down
+```
+
+Si `5432` est deja pris localement:
+
+```bash
+POSTGRES_PORT=55432 docker compose up -d postgres
+```
+
+Runbook complet:
+- `docs/runbooks/postgresql-local-docker.md`
+- verification smoke: `./scripts/verify-postgres-local.sh`
+
 ## 🧪 Comptes de Test (Phase 0 - Mock Authentication)
 
 ### Super Admin
