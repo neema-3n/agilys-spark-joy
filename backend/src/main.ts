@@ -19,10 +19,17 @@ const isAllowedLocalOrigin = (origin: string): boolean => {
   return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
 };
 
+const isAllowedLanOrigin = (origin: string): boolean => {
+  return /^https?:\/\/((10\.\d{1,3}\.\d{1,3}\.\d{1,3})|(192\.168\.\d{1,3}\.\d{1,3})|(172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}))(:\d+)?$/i.test(
+    origin
+  );
+};
+
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
 
   const explicitOrigins = parseCorsOrigins();
+  const allowLanInDev = process.env.NODE_ENV !== 'production';
   app.enableCors({
     origin: (origin, callback) => {
       if (!origin) {
@@ -30,7 +37,11 @@ async function bootstrap(): Promise<void> {
         return;
       }
 
-      if (explicitOrigins.includes(origin) || isAllowedLocalOrigin(origin)) {
+      if (
+        explicitOrigins.includes(origin) ||
+        isAllowedLocalOrigin(origin) ||
+        (allowLanInDev && isAllowedLanOrigin(origin))
+      ) {
         callback(null, true);
         return;
       }

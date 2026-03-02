@@ -13,7 +13,7 @@ import { resolveLoginRedirect } from '@/services/auth/auth-routing';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Email invalide" }),
-  password: z.string().min(6, { message: "Minimum 6 caractères" })
+  password: z.string().min(8, { message: "Minimum 8 caractères" })
 });
 
 const signupSchema = z.object({

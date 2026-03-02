@@ -18,7 +18,16 @@ export interface RequestOptions extends RequestInit {
 
 const resolveBaseUrl = (baseUrl?: string): string => {
   const fromEnv = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) || '';
-  const resolved = baseUrl ?? fromEnv ?? '';
+  const fromApiPort = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_PORT) || '';
+
+  let resolved = baseUrl ?? fromEnv ?? '';
+  if (!resolved && typeof window !== 'undefined' && typeof import.meta !== 'undefined' && import.meta.env?.DEV) {
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    const apiPort = String(fromApiPort || '3001').trim();
+    resolved = `${protocol}//${hostname}:${apiPort}`;
+  }
+
   return resolved.endsWith('/') ? resolved.slice(0, -1) : resolved;
 };
 
