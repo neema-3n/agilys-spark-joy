@@ -26,6 +26,15 @@ DUMP_FILE_USER_PROVIDED=0
 REMOTE_DB_PASSWORD_EFFECTIVE="${REMOTE_PASSWORD}"
 REMOTE_DB_URL_NO_PASSWORD="${REMOTE_DB_URL}"
 
+require_cmd() {
+  local cmd="$1"
+  local hint="$2"
+  if ! command -v "${cmd}" >/dev/null 2>&1; then
+    echo "Missing dependency: ${cmd}. ${hint}" >&2
+    exit 1
+  fi
+}
+
 if [[ -z "${REMOTE_DB_URL}" ]]; then
   if [[ -n "${REMOTE_POOLER_URL}" ]]; then
     REMOTE_DB_URL="${REMOTE_POOLER_URL}"
@@ -88,6 +97,25 @@ if [[ "${DRY_RUN}" == "1" ]]; then
   exit 0
 fi
 
+case "${IMPORT_METHOD}" in
+  pg_dump)
+    require_cmd "pg_dump" "Install PostgreSQL client tools (pg_dump) or use DB_IMPORT_METHOD=supabase."
+    ;;
+  supabase)
+    require_cmd "supabase" "Install Supabase CLI or use DB_IMPORT_METHOD=pg_dump."
+    ;;
+  auto)
+    if ! command -v pg_dump >/dev/null 2>&1 && ! command -v supabase >/dev/null 2>&1; then
+      echo "Missing dependencies: neither pg_dump nor supabase CLI is installed. Install one of them before running db:import:remote." >&2
+      exit 1
+    fi
+    ;;
+  *)
+    echo "Unknown DB_IMPORT_METHOD: ${IMPORT_METHOD} (expected: auto|pg_dump|supabase)" >&2
+    exit 1
+    ;;
+esac
+
 if [[ "${AUTO_RESET}" == "1" ]]; then
   echo "Resetting local DB before remote import..."
   POSTGRES_DB="${LOCAL_DB}" POSTGRES_USER="${LOCAL_DB_USER}" POSTGRES_PASSWORD="${LOCAL_DB_PASSWORD}" pnpm run db:reset
@@ -126,9 +154,11 @@ case "${IMPORT_METHOD}" in
     if command -v pg_dump >/dev/null 2>&1; then
       if ! dump_with_pg_dump; then
         echo "pg_dump failed, trying supabase db dump fallback..."
+        require_cmd "supabase" "Install Supabase CLI or set DB_IMPORT_METHOD=pg_dump after fixing pg_dump."
         dump_with_supabase_cli
       fi
     else
+      require_cmd "supabase" "Install Supabase CLI or set DB_IMPORT_METHOD=pg_dump."
       dump_with_supabase_cli
     fi
     ;;

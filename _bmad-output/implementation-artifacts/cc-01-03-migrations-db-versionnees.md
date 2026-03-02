@@ -1,6 +1,6 @@
 # Story CC-01.03 - Migrations DB versionnees
 
-Status: review
+Status: done
 Epic: CC-01 - Fondations techniques migration
 Story Key: cc-01-03-migrations-db-versionnees
 Created: 2026-03-02
@@ -67,6 +67,7 @@ so that l'etat PostgreSQL est stable et reproductible entre developpeurs.
 - Correctif review 2: import distant securise sans password en argument CLI + protection contre suppression d'un dump utilisateur.
 - Correctif review 2: `db:verify` durci (service Docker configurable + verification `schema_migrations`).
 - Correctif review 2: retry supplementaire sur creation/verification de la base applicative dans `db:migrate` pour absorber les phases transitoires "database system is shutting down".
+- Correctif review 3: `db:import:remote` valide maintenant les dependances (`pg_dump`/`supabase`) avant reset/import pour des erreurs plus actionnables.
 
 ## File List
 
@@ -98,6 +99,7 @@ so that l'etat PostgreSQL est stable et reproductible entre developpeurs.
 - 2026-03-02: Revue senior appliquee - correction de la validation `db:verify`, alignement documentation, et stabilisation ordre de migration.
 - 2026-03-02: Revue senior (round 2) - durcissement securite import DB et validation `db:verify`.
 - 2026-03-02: Revue senior (round 2) - durcissement robustesse `db:migrate` (retry creation/check DB) apres echec transitoire observe.
+- 2026-03-02: Revue senior (round 3) - support `POSTGRES_SERVICE` dans `db:reset`, verification seed deterministe, simplification de `db:verify` et preflight des dependances de `db:import:remote`.
 
 ## Dependencies / Blockers
 
@@ -112,7 +114,7 @@ so that l'etat PostgreSQL est stable et reproductible entre developpeurs.
 
 - Story ID: `CC-01.03`
 - Story Key: `cc-01-03-migrations-db-versionnees`
-- Final Status: `review`
+- Final Status: `done`
 
 ## Senior Developer Review (AI)
 
@@ -130,4 +132,21 @@ Correctifs appliques:
 - `scripts/verify-db-workflow.sh`: verification seed basee sur presence de donnees `public.exercices` (compatible dataset distant ou fallback).
 - `docs/runbooks/postgresql-local-docker.md` et `README.md`: ordre recommande corrige (`db:reset`, puis `db:seed`) + clarifications d'usage de `db:migrate`.
 - `scripts/db-migrate.sh`: ordonnancement explicite en 2 phases (migrations principales triees, puis migrations legacy differees).
+- Validation reexecutee: `pnpm run db:verify` passe sans erreur.
+
+Date: 2026-03-02
+Reviewer: Max
+Outcome: Changes requested -> fixed -> approved
+
+Issues traites:
+- [MEDIUM] `db:reset` ignorait `POSTGRES_SERVICE` (service Docker hardcode).
+- [MEDIUM] verification seed sur estimation `pg_stat_user_tables.n_live_tup` (faux negatifs possibles).
+- [MEDIUM] `db:verify` relancait `db:migrate` juste apres `db:reset` (verification redondante).
+- [LOW] fallback `supabase db dump` sans preflight explicite des dependances en mode `auto`.
+
+Correctifs appliques:
+- `scripts/db-reset.sh`: support complet de `POSTGRES_SERVICE` (start, healthcheck, replay migrate).
+- `scripts/db-seed.sh`: verification seed rendue deterministe via controle SQL direct des tables `public` (hors `schema_migrations`).
+- `scripts/verify-db-workflow.sh`: suppression de l'etape `db:migrate` redondante (reset inclut deja migrate).
+- `scripts/db-import-remote.sh`: preflight des commandes requises (`pg_dump`/`supabase`) avec messages d'erreur actionnables avant reset.
 - Validation reexecutee: `pnpm run db:verify` passe sans erreur.
