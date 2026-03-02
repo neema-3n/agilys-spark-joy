@@ -1,6 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs';
-import { dirname, resolve } from 'path';
+import { Injectable, OnModuleInit } from '@nestjs/common';
+import { resolveAuthStorageMode } from './auth-storage-mode';
+import { PostgresService } from '../common/postgres.service';
 
 interface RefreshTokenRecord {
   jti: string;
@@ -11,80 +11,124 @@ interface RefreshTokenRecord {
   revokedAt: Date | null;
 }
 
-interface SerializedRefreshTokenRecord {
-  jti: string;
-  userId: string;
-  tenantId: string;
-  tokenHash: string;
-  expiresAt: string;
-  revokedAt: string | null;
-}
-
 @Injectable()
-export class RefreshTokenStore {
-  private readonly logger = new Logger(RefreshTokenStore.name);
+export class RefreshTokenStore implements OnModuleInit {
+  private readonly storageMode = resolveAuthStorageMode();
   private readonly tokens = new Map<string, RefreshTokenRecord>();
-  private readonly storagePath = resolve(process.cwd(), '.data/refresh-tokens.json');
+  private initPromise: Promise<void> | null = null;
 
-  constructor() {
-    this.loadFromDisk();
-  }
+  constructor(private readonly postgresService: PostgresService) {}
 
-  save(record: RefreshTokenRecord): void {
-    this.tokens.set(record.jti, record);
-    this.persistToDisk();
-  }
-
-  findByJti(jti: string): RefreshTokenRecord | undefined {
-    return this.tokens.get(jti);
-  }
-
-  revoke(jti: string): void {
-    const token = this.tokens.get(jti);
-    if (token && !token.revokedAt) {
-      token.revokedAt = new Date();
-      this.tokens.set(jti, token);
-      this.persistToDisk();
+  async onModuleInit(): Promise<void> {
+    if (this.storageMode === 'postgres') {
+      await this.ensurePostgresReady();
     }
   }
 
-  private loadFromDisk(): void {
-    if (!existsSync(this.storagePath)) {
+  private async ensurePostgresReady(): Promise<void> {
+    if (!this.initPromise) {
+      this.initPromise = (async () => {
+        await this.postgresService.query(`
+          CREATE TABLE IF NOT EXISTS public.auth_refresh_tokens (
+            jti TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            tenant_id TEXT NOT NULL,
+            token_hash TEXT NOT NULL,
+            expires_at TIMESTAMPTZ NOT NULL,
+            revoked_at TIMESTAMPTZ NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+          )
+        `);
+
+        await this.postgresService.query(`
+          CREATE INDEX IF NOT EXISTS idx_auth_refresh_tokens_user_id
+          ON public.auth_refresh_tokens (user_id)
+        `);
+      })();
+    }
+
+    await this.initPromise;
+  }
+
+  async save(record: RefreshTokenRecord): Promise<void> {
+    if (this.storageMode === 'memory') {
+      this.tokens.set(record.jti, record);
       return;
     }
 
-    try {
-      const content = readFileSync(this.storagePath, 'utf8');
-      const parsed = JSON.parse(content) as SerializedRefreshTokenRecord[];
-
-      for (const entry of parsed) {
-        this.tokens.set(entry.jti, {
-          ...entry,
-          expiresAt: new Date(entry.expiresAt),
-          revokedAt: entry.revokedAt ? new Date(entry.revokedAt) : null
-        });
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to load refresh token store: ${message}`);
-    }
+    await this.ensurePostgresReady();
+    await this.postgresService.query(
+      `
+        INSERT INTO public.auth_refresh_tokens (jti, user_id, tenant_id, token_hash, expires_at, revoked_at)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        ON CONFLICT (jti)
+        DO UPDATE SET
+          user_id = EXCLUDED.user_id,
+          tenant_id = EXCLUDED.tenant_id,
+          token_hash = EXCLUDED.token_hash,
+          expires_at = EXCLUDED.expires_at,
+          revoked_at = EXCLUDED.revoked_at
+      `,
+      [record.jti, record.userId, record.tenantId, record.tokenHash, record.expiresAt, record.revokedAt]
+    );
   }
 
-  private persistToDisk(): void {
-    const directory = dirname(this.storagePath);
-    if (!existsSync(directory)) {
-      mkdirSync(directory, { recursive: true });
+  async findByJti(jti: string): Promise<RefreshTokenRecord | undefined> {
+    if (this.storageMode === 'memory') {
+      return this.tokens.get(jti);
     }
 
-    const serialized: SerializedRefreshTokenRecord[] = Array.from(this.tokens.values()).map((token) => ({
-      ...token,
-      expiresAt: token.expiresAt.toISOString(),
-      revokedAt: token.revokedAt ? token.revokedAt.toISOString() : null
-    }));
+    await this.ensurePostgresReady();
+    const result = await this.postgresService.query<{
+      jti: string;
+      user_id: string;
+      tenant_id: string;
+      token_hash: string;
+      expires_at: Date;
+      revoked_at: Date | null;
+    }>(
+      `
+        SELECT jti, user_id, tenant_id, token_hash, expires_at, revoked_at
+        FROM public.auth_refresh_tokens
+        WHERE jti = $1
+        LIMIT 1
+      `,
+      [jti]
+    );
 
-    const tempPath = `${this.storagePath}.tmp`;
-    writeFileSync(tempPath, JSON.stringify(serialized, null, 2), 'utf8');
-    renameSync(tempPath, this.storagePath);
-    this.logger.debug(`Persisted ${serialized.length} refresh token records`);
+    const row = result.rows[0];
+    if (!row) {
+      return undefined;
+    }
+
+    return {
+      jti: row.jti,
+      userId: row.user_id,
+      tenantId: row.tenant_id,
+      tokenHash: row.token_hash,
+      expiresAt: new Date(row.expires_at),
+      revokedAt: row.revoked_at ? new Date(row.revoked_at) : null
+    };
+  }
+
+  async revoke(jti: string): Promise<void> {
+    if (this.storageMode === 'memory') {
+      const token = this.tokens.get(jti);
+      if (token && !token.revokedAt) {
+        token.revokedAt = new Date();
+        this.tokens.set(jti, token);
+      }
+      return;
+    }
+
+    await this.ensurePostgresReady();
+    await this.postgresService.query(
+      `
+        UPDATE public.auth_refresh_tokens
+        SET revoked_at = now()
+        WHERE jti = $1 AND revoked_at IS NULL
+      `,
+      [jti]
+    );
   }
 }

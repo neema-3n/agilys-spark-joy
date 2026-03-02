@@ -27,7 +27,7 @@ export class AuthService {
   }
 
   async login(email: string, password: string): Promise<AuthResponse> {
-    const user = this.usersService.findByEmail(email);
+    const user = await this.usersService.findByEmail(email);
     if (!user) {
       this.authLogger.logEvent('login_failure');
       throw new UnauthorizedException('Invalid credentials');
@@ -51,7 +51,7 @@ export class AuthService {
 
   async refresh(refreshToken: string): Promise<AuthResponse> {
     const claims = await this.verifyRefreshToken(refreshToken);
-    const tokenRecord = this.refreshTokenStore.findByJti(claims.jti);
+    const tokenRecord = await this.refreshTokenStore.findByJti(claims.jti);
 
     if (!tokenRecord || tokenRecord.revokedAt || tokenRecord.expiresAt < new Date()) {
       throw new ForbiddenException('Refresh token revoked or expired');
@@ -62,7 +62,7 @@ export class AuthService {
       throw new ForbiddenException('Refresh token mismatch');
     }
 
-    this.refreshTokenStore.revoke(claims.jti);
+    await this.refreshTokenStore.revoke(claims.jti);
 
     const tokens = await this.issueTokenPair({
       sub: claims.sub,
@@ -76,7 +76,7 @@ export class AuthService {
 
   async logout(refreshToken: string): Promise<void> {
     const claims = await this.verifyRefreshToken(refreshToken);
-    this.refreshTokenStore.revoke(claims.jti);
+    await this.refreshTokenStore.revoke(claims.jti);
     this.authLogger.logEvent('logout', claims.sub, claims.tenantId);
   }
 
@@ -99,7 +99,7 @@ export class AuthService {
     });
 
     const refreshTokenHash = await hash(refreshToken, 10);
-    this.refreshTokenStore.save({
+    await this.refreshTokenStore.save({
       jti: refreshJti,
       userId: claims.sub,
       tenantId: claims.tenantId,

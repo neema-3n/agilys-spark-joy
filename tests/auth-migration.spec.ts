@@ -137,6 +137,49 @@ test('http client clears session and notifies when refresh fails', async () => {
   expect(storage.read()).toBeNull();
 });
 
+test('http client clears session when retried request is still unauthorized', async () => {
+  const storage = createTokenStorage(new MockStorage());
+  storage.write({ accessToken: 'expired-access', refreshToken: 'refresh-token' });
+
+  let refreshCallCount = 0;
+  let authFailureNotified = false;
+
+  const fetchImpl: typeof fetch = (async (url: RequestInfo | URL) => {
+    const requestUrl = typeof url === 'string' ? url : url.toString();
+
+    if (requestUrl.endsWith('/auth/refresh')) {
+      refreshCallCount += 1;
+      return new Response(JSON.stringify({ accessToken: 'new-access', refreshToken: 'new-refresh' }), {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (requestUrl.endsWith('/secure')) {
+      return new Response('{}', { status: 401, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    return new Response('{}', { status: 404 });
+  }) as typeof fetch;
+
+  const client = createHttpClient({
+    baseUrl: 'http://localhost:3001',
+    fetchImpl,
+    storage
+  });
+
+  client.setAuthFailureHandler(() => {
+    authFailureNotified = true;
+  });
+
+  const response = await client.request('/secure', { method: 'GET' });
+
+  expect(response.status).toBe(401);
+  expect(refreshCallCount).toBe(1);
+  expect(authFailureNotified).toBeTruthy();
+  expect(storage.read()).toBeNull();
+});
+
 test('JWT claims parsing and expiry detection', async () => {
   const validToken = makeJwt({
     sub: 'user-1',

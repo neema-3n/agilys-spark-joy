@@ -5,6 +5,7 @@ import { AuthService } from './auth.service';
 import { RefreshTokenStore } from './refresh-token.store';
 import { UsersService } from '../users/users.service';
 import { applyTestEnv } from '../../test/test-env';
+import { PostgresService } from '../common/postgres.service';
 
 describe('AuthService', () => {
   let authService: AuthService;
@@ -13,7 +14,7 @@ describe('AuthService', () => {
     applyTestEnv();
 
     const moduleRef = await Test.createTestingModule({
-      providers: [AuthService, UsersService, JwtService, RefreshTokenStore, AuthLoggerService]
+      providers: [AuthService, UsersService, JwtService, RefreshTokenStore, AuthLoggerService, PostgresService]
     }).compile();
 
     authService = moduleRef.get(AuthService);
