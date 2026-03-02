@@ -14,6 +14,16 @@ const parseAuthError = async (response: Response): Promise<string> => {
   if (typeof message === 'string' && message.trim().length > 0) {
     return message;
   }
+  if (Array.isArray(message) && message.length > 0) {
+    const firstMessage = message.find((entry) => typeof entry === 'string');
+    if (typeof firstMessage === 'string' && firstMessage.trim().length > 0) {
+      return firstMessage;
+    }
+  }
+
+  if (response.status === 400) {
+    return 'Données de connexion invalides. Vérifiez votre email et votre mot de passe.';
+  }
 
   if (response.status === 401) {
     return 'Identifiants invalides.';
@@ -75,31 +85,35 @@ const notifyAndClear = () => {
 export const authService = {
   // Connexion
   async login(email: string, password: string): Promise<{ user?: User; error?: string }> {
-    const response = await httpClient.request('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-      authenticated: false,
-      retryOnAuthFailure: false
-    });
+    try {
+      const response = await httpClient.request('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+        authenticated: false,
+        retryOnAuthFailure: false
+      });
 
-    if (!response.ok) {
-      return { error: await parseAuthError(response) };
+      if (!response.ok) {
+        return { error: await parseAuthError(response) };
+      }
+
+      const tokenPair = await parseTokenPair(response);
+      if (!tokenPair) {
+        return { error: 'Réponse de connexion invalide.' };
+      }
+
+      tokenStorage.write(tokenPair);
+      const session = buildSessionFromAccessToken(tokenPair.accessToken);
+
+      if (!session) {
+        notifyAndClear();
+        return { error: 'Session invalide reçue depuis le serveur.' };
+      }
+
+      return { user: session.user };
+    } catch {
+      return { error: "Impossible de joindre l'API d'authentification. Vérifiez que le backend est démarré." };
     }
-
-    const tokenPair = await parseTokenPair(response);
-    if (!tokenPair) {
-      return { error: 'Réponse de connexion invalide.' };
-    }
-
-    tokenStorage.write(tokenPair);
-    const session = buildSessionFromAccessToken(tokenPair.accessToken);
-
-    if (!session) {
-      notifyAndClear();
-      return { error: 'Session invalide reçue depuis le serveur.' };
-    }
-
-    return { user: session.user };
   },
 
   // Inscription via API backend
