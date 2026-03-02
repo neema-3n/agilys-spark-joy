@@ -103,5 +103,5 @@ development_status:
   epic-cc-01: in-progress
   cc-01-02-postgresql-local-docker: done
   cc-01-03-migrations-db-versionnees: review
-  cc-01-04-migration-npm-vers-pnpm: ready-for-dev
-  cc-01-05-commande-dev-unique-et-ports: ready-for-dev
+  cc-01-04-migration-npm-vers-pnpm: review
+  cc-01-05-commande-dev-unique-et-ports: review

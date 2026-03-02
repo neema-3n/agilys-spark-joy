@@ -6,14 +6,37 @@ Application de gestion budgétaire pour collectivités locales africaines, déve
 
 ```bash
 # Installation des dépendances
-npm install
+pnpm install
 
 # Lancement en mode développement
-npm run dev
+pnpm dev
 
 # Accès à l'application
 http://localhost:8080
 ```
+
+### Commande dev unique + ports personnalisables (Story CC-01.05)
+
+`pnpm dev` démarre la stack locale complète:
+- PostgreSQL (Docker Compose)
+- API NestJS
+- Frontend Vite
+
+Variables supportées (sans modifier le code):
+
+```bash
+WEB_PORT=8080
+API_PORT=3001
+DB_PORT=5432
+```
+
+Exemple de surcharge:
+
+```bash
+WEB_PORT=8181 API_PORT=3100 DB_PORT=55432 pnpm dev
+```
+
+Runbook détaillé: `docs/runbooks/local-dev-command-and-ports.md`
 
 ## 🔐 Configuration Auth Frontend (Story 2.4)
 
@@ -229,10 +252,13 @@ DELETE /api/budgets/:id
 ## 📦 Scripts PNPM
 
 ```bash
-pnpm run dev         # Demarrage serveur de developpement
+pnpm dev             # Demarrage stack locale (DB + API + Front)
+pnpm run dev:frontend # Frontend seul (Vite)
+pnpm run dev:backend  # API seule (NestJS)
 pnpm run build       # Build production
 pnpm run preview     # Preview du build
 pnpm run lint        # Linter ESLint
+pnpm run test:dev-command # Verification des ports et de la commande dev
 pnpm run db:migrate  # Appliquer les migrations versionnees
 pnpm run db:reset    # Reset DB local + rejeu migrations (destructif)
 pnpm run db:seed     # Peupler donnees de base rejouables
@@ -285,7 +311,7 @@ Changes made via Lovable will be committed automatically to this repo.
 
 If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+The only requirements are having Node.js and pnpm installed - [install Node with nvm](https://github.com/nvm-sh/nvm#installing-and-updating), then enable Corepack to use the project-pinned pnpm version.
 
 Follow these steps:
 
@@ -296,11 +322,15 @@ git clone <YOUR_GIT_URL>
 # Step 2: Navigate to the project directory.
 cd <YOUR_PROJECT_NAME>
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Step 3: Enable Corepack and use the pinned pnpm version.
+corepack enable
+corepack use pnpm@9.12.0
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+# Step 4: Install the necessary dependencies.
+pnpm install
+
+# Step 5: Start the development server with auto-reloading and an instant preview.
+pnpm run dev
 ```
 
 **Edit a file directly in GitHub**

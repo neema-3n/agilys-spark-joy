@@ -7,8 +7,7 @@ Ce test vérifie que la génération de numéros séquentiels pour les factures 
 ## Prérequis
 
 ```bash
-npm install @supabase/supabase-js
-npm install -D tsx
+pnpm install
 ```
 
 ## Configuration
@@ -24,10 +23,10 @@ Avant de lancer le test, vérifiez/adaptez les paramètres dans `concurrent-nume
 
 ```bash
 # Avec tsx (recommandé)
-npx tsx tests/concurrent-numero-generation.test.ts
+pnpm dlx tsx tests/concurrent-numero-generation.test.ts
 
 # Ou avec ts-node
-npx ts-node tests/concurrent-numero-generation.test.ts
+pnpm exec ts-node tests/concurrent-numero-generation.test.ts
 ```
 
 ## Résultats Attendus

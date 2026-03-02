@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+WEB_PORT="${WEB_PORT:-8080}"
+API_PORT="${API_PORT:-3001}"
+DB_PORT="${DB_PORT:-${POSTGRES_PORT:-5432}}"
+POSTGRES_DB="${POSTGRES_DB:-agilys}"
+POSTGRES_USER="${POSTGRES_USER:-agilys_app}"
+POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-change-me-local-only}"
+API_BASE_URL="${VITE_API_BASE_URL:-http://localhost:${API_PORT}}"
+JWT_ACCESS_SECRET="${JWT_ACCESS_SECRET:-dev-access-secret}"
+JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET:-dev-refresh-secret}"
+JWT_ACCESS_TTL_SECONDS="${JWT_ACCESS_TTL_SECONDS:-900}"
+JWT_REFRESH_TTL_SECONDS="${JWT_REFRESH_TTL_SECONDS:-604800}"
+
+if [[ "${WEB_PORT}" == "${API_PORT}" || "${WEB_PORT}" == "${DB_PORT}" || "${API_PORT}" == "${DB_PORT}" ]]; then
+  echo "[dev] WEB_PORT, API_PORT et DB_PORT doivent etre distincts (actuel: WEB=${WEB_PORT}, API=${API_PORT}, DB=${DB_PORT})." >&2
+  exit 1
+fi
+
+if [[ "${DEV_VALIDATE_ONLY:-0}" == "1" ]]; then
+  echo "WEB_PORT=${WEB_PORT}"
+  echo "API_PORT=${API_PORT}"
+  echo "DB_PORT=${DB_PORT}"
+  echo "VITE_API_BASE_URL=${API_BASE_URL}"
+  echo "docker_compose_port_binding=${DB_PORT}:5432"
+  exit 0
+fi
+
+if ! command -v docker >/dev/null 2>&1; then
+  echo "[dev] Docker est requis pour demarrer la base locale." >&2
+  exit 1
+fi
+
+cd "${ROOT_DIR}"
+
+cleanup() {
+  local exit_code=$?
+
+  if [[ -n "${WEB_PID:-}" ]] && kill -0 "${WEB_PID}" >/dev/null 2>&1; then
+    kill "${WEB_PID}" >/dev/null 2>&1 || true
+  fi
+
+  if [[ -n "${API_PID:-}" ]] && kill -0 "${API_PID}" >/dev/null 2>&1; then
+    kill "${API_PID}" >/dev/null 2>&1 || true
+  fi
+
+  wait "${WEB_PID:-}" "${API_PID:-}" 2>/dev/null || true
+  exit "${exit_code}"
+}
+
+trap cleanup INT TERM EXIT
+
+echo "[dev] Demarrage PostgreSQL (DB_PORT=${DB_PORT})..."
+POSTGRES_DB="${POSTGRES_DB}" \
+POSTGRES_USER="${POSTGRES_USER}" \
+POSTGRES_PASSWORD="${POSTGRES_PASSWORD}" \
+POSTGRES_PORT="${DB_PORT}" \
+  docker compose up -d postgres >/dev/null
+
+echo "[dev] Demarrage API NestJS (API_PORT=${API_PORT})..."
+PORT="${API_PORT}" \
+JWT_ACCESS_SECRET="${JWT_ACCESS_SECRET}" \
+JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET}" \
+JWT_ACCESS_TTL_SECONDS="${JWT_ACCESS_TTL_SECONDS}" \
+JWT_REFRESH_TTL_SECONDS="${JWT_REFRESH_TTL_SECONDS}" \
+  pnpm --dir backend run start:dev &
+API_PID=$!
+
+echo "[dev] Demarrage Frontend Vite (WEB_PORT=${WEB_PORT}, API=${API_BASE_URL})..."
+VITE_API_BASE_URL="${API_BASE_URL}" pnpm exec vite --host :: --port "${WEB_PORT}" &
+WEB_PID=$!
+
+echo "[dev] Stack locale active"
+echo "[dev] Frontend: http://localhost:${WEB_PORT}"
+echo "[dev] API:      http://localhost:${API_PORT}"
+echo "[dev] DB:       localhost:${DB_PORT}"
+
+while true; do
+  if ! kill -0 "${API_PID}" >/dev/null 2>&1; then
+    wait "${API_PID}"
+    exit $?
+  fi
+
+  if ! kill -0 "${WEB_PID}" >/dev/null 2>&1; then
+    wait "${WEB_PID}"
+    exit $?
+  fi
+
+  sleep 1
+done
