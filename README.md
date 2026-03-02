@@ -83,10 +83,11 @@ Runbook complet:
 ### Migrations DB versionnees (Story CC-01.03)
 
 ```bash
-pnpm run db:migrate
 pnpm run db:reset
 pnpm run db:seed
 ```
+
+`db:reset` rejoue deja toutes les migrations. Utiliser `pnpm run db:migrate` seul pour appliquer les nouvelles migrations sur une base locale existante sans reset.
 
 Validation bout-en-bout:
 

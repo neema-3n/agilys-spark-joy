@@ -37,7 +37,16 @@ for attempt in $(seq 1 30); do
   fi
 done
 
-docker compose exec -T "${SERVICE}" sh -lc "psql -v ON_ERROR_STOP=1 -U \"${DB_USER}\" -d postgres -tc \"SELECT 1 FROM pg_database WHERE datname='${APP_DB}'\" | grep -q 1 || psql -v ON_ERROR_STOP=1 -U \"${DB_USER}\" -d postgres -c \"CREATE DATABASE \\\"${APP_DB}\\\";\"" >/dev/null
+for attempt in $(seq 1 30); do
+  if docker compose exec -T "${SERVICE}" sh -lc "psql -v ON_ERROR_STOP=1 -U \"${DB_USER}\" -d postgres -tc \"SELECT 1 FROM pg_database WHERE datname='${APP_DB}'\" | grep -q 1 || psql -v ON_ERROR_STOP=1 -U \"${DB_USER}\" -d postgres -c \"CREATE DATABASE \\\"${APP_DB}\\\";\"" >/dev/null 2>&1; then
+    break
+  fi
+  sleep 1
+  if [[ "${attempt}" == "30" ]]; then
+    echo "PostgreSQL is not ready to create/check application database after multiple retries." >&2
+    exit 1
+  fi
+done
 
 echo "Applying local DB compatibility bootstrap..."
 cat scripts/sql/local-supabase-compat.sql | docker compose exec -T "${SERVICE}" sh -lc "psql -v ON_ERROR_STOP=1 -U \"${DB_USER}\" -d \"${APP_DB}\"" >/dev/null
@@ -46,23 +55,25 @@ echo "Ensuring migration tracking table exists..."
 docker compose exec -T "${SERVICE}" sh -lc "psql -v ON_ERROR_STOP=1 -U \"${DB_USER}\" -d \"${APP_DB}\" -c \"CREATE TABLE IF NOT EXISTS public.schema_migrations (version text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now());\"" >/dev/null
 
 echo "Applying versioned SQL migrations from ${MIGRATIONS_DIR}..."
-LEGACY_FIX_1="${MIGRATIONS_DIR}/20250207120000_update_facture_liquidation.sql"
-LEGACY_FIX_2="${MIGRATIONS_DIR}/20250207123000_rename_facture_montant_liquide.sql"
+DEFERRED_MIGRATIONS=(
+  "20250207120000_update_facture_liquidation.sql"
+  "20250207123000_rename_facture_montant_liquide.sql"
+)
+
 MIGRATION_FILES="$(
   find "${MIGRATIONS_DIR}" -maxdepth 1 -type f -name "*.sql" \
-    ! -name "20250207120000_update_facture_liquidation.sql" \
-    ! -name "20250207123000_rename_facture_montant_liquide.sql" \
+    ! -name "${DEFERRED_MIGRATIONS[0]}" \
+    ! -name "${DEFERRED_MIGRATIONS[1]}" \
     | sort
 )"
 
-if [[ -f "${LEGACY_FIX_1}" ]]; then
-  MIGRATION_FILES="${MIGRATION_FILES}
-${LEGACY_FIX_1}"
-fi
-if [[ -f "${LEGACY_FIX_2}" ]]; then
-  MIGRATION_FILES="${MIGRATION_FILES}
-${LEGACY_FIX_2}"
-fi
+for deferred in "${DEFERRED_MIGRATIONS[@]}"; do
+  deferred_path="${MIGRATIONS_DIR}/${deferred}"
+  if [[ -f "${deferred_path}" ]]; then
+    MIGRATION_FILES="${MIGRATION_FILES}
+${deferred_path}"
+  fi
+done
 
 if [[ -z "${MIGRATION_FILES}" ]]; then
   echo "No migration files found."
