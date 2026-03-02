@@ -16,6 +16,14 @@ export interface RequestOptions extends RequestInit {
   retryOnAuthFailure?: boolean;
 }
 
+const createNetworkErrorResponse = (): Response => new Response(
+  JSON.stringify({ message: 'Network error' }),
+  {
+    status: 503,
+    headers: { 'Content-Type': 'application/json' }
+  }
+);
+
 const resolveBaseUrl = (baseUrl?: string): string => {
   const fromEnv = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) || '';
   const fromApiPort = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_PORT) || '';
@@ -92,13 +100,20 @@ export const createHttpClient = (options?: HttpClientOptions) => {
         return null;
       }
 
-      const response = await fetchImpl(makeUrl('/auth/refresh'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ refreshToken })
-      });
+      let response: Response;
+      try {
+        response = await fetchImpl(makeUrl('/auth/refresh'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ refreshToken })
+        });
+      } catch {
+        storage.clear();
+        notifyAuthFailure();
+        return null;
+      }
 
       if (!response.ok) {
         storage.clear();
@@ -139,10 +154,15 @@ export const createHttpClient = (options?: HttpClientOptions) => {
 
     applyBodyHeader(headers, body);
 
-    const response = await fetchImpl(makeUrl(path), {
-      ...fetchOptions,
-      headers
-    });
+    let response: Response;
+    try {
+      response = await fetchImpl(makeUrl(path), {
+        ...fetchOptions,
+        headers
+      });
+    } catch {
+      return createNetworkErrorResponse();
+    }
 
     const shouldRetry =
       authenticated &&
@@ -163,10 +183,15 @@ export const createHttpClient = (options?: HttpClientOptions) => {
     retryHeaders.set('Authorization', `Bearer ${nextAccessToken}`);
     applyBodyHeader(retryHeaders, body);
 
-    const retriedResponse = await fetchImpl(makeUrl(path), {
-      ...fetchOptions,
-      headers: retryHeaders
-    });
+    let retriedResponse: Response;
+    try {
+      retriedResponse = await fetchImpl(makeUrl(path), {
+        ...fetchOptions,
+        headers: retryHeaders
+      });
+    } catch {
+      return createNetworkErrorResponse();
+    }
 
     if (retriedResponse.status === 401) {
       storage.clear();

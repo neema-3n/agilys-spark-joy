@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs';
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, renameSync, rmSync, writeFileSync } from 'fs';
 import { dirname, resolve } from 'path';
 import type {
   ActionEntity,
@@ -35,6 +35,7 @@ export class BudgetReferentielsStore {
     process.cwd(),
     process.env.BUDGET_REFERENTIELS_STORE_PATH ?? '.data/budget-referentiels.json'
   );
+  private readonly lockPath = `${this.storagePath}.lock`;
 
   load(): BudgetReferentielsSnapshot {
     if (!existsSync(this.storagePath)) {
@@ -65,11 +66,46 @@ export class BudgetReferentielsStore {
       mkdirSync(directory, { recursive: true });
     }
 
-    const tempPath = `${this.storagePath}.tmp`;
-    writeFileSync(tempPath, JSON.stringify(snapshot, null, 2), 'utf8');
-    renameSync(tempPath, this.storagePath);
-    this.logger.debug(
-      `Persisted budget referentiels snapshot (${snapshot.exercices.length} exercices, ${snapshot.auditLog.length} audits)`
-    );
+    const lockFd = this.acquireExclusiveLock();
+    try {
+      const tempPath = `${this.storagePath}.tmp`;
+      writeFileSync(tempPath, JSON.stringify(snapshot, null, 2), 'utf8');
+      renameSync(tempPath, this.storagePath);
+      this.logger.debug(
+        `Persisted budget referentiels snapshot (${snapshot.exercices.length} exercices, ${snapshot.auditLog.length} audits)`
+      );
+    } finally {
+      this.releaseExclusiveLock(lockFd);
+    }
+  }
+
+  private acquireExclusiveLock(): number {
+    const startedAt = Date.now();
+    const maxWaitMs = 2000;
+
+    while (Date.now() - startedAt < maxWaitMs) {
+      try {
+        return openSync(this.lockPath, 'wx');
+      } catch (error) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if (code !== 'EEXIST') {
+          throw error;
+        }
+
+        this.blockingSleep(20);
+      }
+    }
+
+    throw new Error('Failed to acquire budget referentiels store lock within timeout');
+  }
+
+  private releaseExclusiveLock(lockFd: number): void {
+    closeSync(lockFd);
+    rmSync(this.lockPath, { force: true });
+  }
+
+  private blockingSleep(milliseconds: number): void {
+    const lock = new Int32Array(new SharedArrayBuffer(4));
+    Atomics.wait(lock, 0, 0, milliseconds);
   }
 }

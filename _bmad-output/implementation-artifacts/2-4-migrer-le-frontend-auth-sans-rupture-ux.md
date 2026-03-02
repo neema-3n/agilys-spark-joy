@@ -1,6 +1,6 @@
 # Story 2.4 - Migrer le frontend auth sans rupture UX
 
-Status: review
+Status: done
 Epic: 2 - Gouvernance d'acces, roles et isolation multi-tenant
 Story Key: 2-4-migrer-le-frontend-auth-sans-rupture-ux
 Created: 2026-03-02
@@ -287,27 +287,44 @@ GPT-5 Codex
 - 2026-03-02: Correctifs post-review HIGH/MEDIUM appliques (redirections auth explicites, suppression supabase auth runtime dans `auth.service`, couverture tests et documentation endpoint harmonisee).
 - 2026-03-02: Revue senior adversariale: 1 HIGH + 3 MEDIUM ouverts, statut repasse a `in-progress`, action items ajoutes.
 - 2026-03-02: Correctifs findings review appliques (coverage AC7 etendue, gestion erreur reseau signup, decode JWT UTF-8, tracabilite Git explicitee), retour statut `review`.
+- 2026-03-02: Correctifs complementaires de re-review appliques (refresh reseau robuste, anti faux-succes login, couverture UX route protegee->login->retour), statut passe a `done`.
+- 2026-03-02: Re-review corrective appliquee (durcissement redirect post-login vers `/app/*`, normalisation des erreurs reseau HTTP client en `503`, parsing `message[]` signup, suppression `clientId` implicite), tests auth front passes.
+- 2026-03-02: Re-review corrective appliquee (logout frontend non bloquant cote UX, assouplissement redirect `/app` avec query/hash, message login reseau 503 actionnable, ajout test UI logout -> login + purge tokens), lint + tests auth front passes.
 
 ## Senior Developer Review (AI)
 
 Date: 2026-03-02
 Reviewer: Max
-Outcome: Changes Applied - Ready for Re-Review
+Outcome: Approved
 
 ### Findings
 
-1. [HIGH] Couverture AC7 incomplète sur les parcours UX/routing critiques.
-   - Preuve: les tests existants sont principalement unitaires/utilitaires (`token-storage`, `http-client`, helpers de routing), sans test composant/router sur redirection post-login `from`, guard `ProtectedRoute`, et redirection effective apres refresh fail.
-   - References: `tests/auth-migration.spec.ts:38`, `tests/auth-migration.spec.ts:208`, `src/pages/auth/Login.tsx:51`, `src/components/ProtectedRoute.tsx:22`.
+1. [RESOLU] Robustesse refresh: erreur reseau capturee et traitee (clear session + notification auth failure, sans rejection non geree).
+   - References: `src/services/api/http-client.ts`, `tests/auth-migration.spec.ts`.
+2. [RESOLU] Faux succes login elimine: `AuthContext.login` retourne echec si la session valide ne peut pas etre etablie.
+   - References: `src/contexts/AuthContext.tsx`.
+3. [RESOLU] Couverture AC7 etendue: ajout test navigateur Playwright validant route protegee anon -> login -> retour route demandee apres login.
+   - References: `tests/auth-migration.spec.ts`.
+4. [RESOLU] Redirection post-login durcie: rejet des destinations hors espace applicatif (`/app/*`) pour eviter boucle/retour login.
+   - References: `src/services/auth/auth-routing.ts`, `tests/auth-migration.spec.ts`.
+5. [RESOLU] Erreurs reseau client HTTP normalisees: `request` et retry retournent une `Response 503` stable au lieu d'une exception brute.
+   - References: `src/services/api/http-client.ts`, `tests/auth-migration.spec.ts`.
+6. [RESOLU] Qualite erreur signup amelioree: support `message[]` backend et suppression du `clientId` implicite hardcode.
+   - References: `src/services/api/auth.service.ts`, `tests/auth-migration.spec.ts`.
 
-2. [MEDIUM] `signup` ne capture pas les erreurs reseau/exception.
-   - Preuve: contrairement a `login`, `signup` n'a pas de `try/catch`; un echec fetch peut remonter une rejection non transformee en message utilisateur.
-   - Reference: `src/services/api/auth.service.ts:120`.
+## Senior Developer Review (AI) - Re-review 2
 
-3. [MEDIUM] Parsing JWT fragile sur payload UTF-8.
-   - Preuve: `decodeBase64` utilise `atob` directement puis `JSON.parse`, sans decode UTF-8; des claims non ASCII (`nom`, `prenom`) peuvent casser l'hydratation session.
-   - References: `src/services/auth/auth-session.ts:21`, `src/services/auth/auth-session.ts:30`.
+Date: 2026-03-02
+Reviewer: Max
+Outcome: Approved
 
-4. [MEDIUM] Ecart de tracabilite story vs realite Git locale.
-   - Preuve: `git status --porcelain`, `git diff --name-only`, `git diff --cached --name-only` renvoient vide pendant la revue, alors que la File List revendique de nombreux fichiers modifies.
-   - Reference: `/_bmad-output/implementation-artifacts/2-4-migrer-le-frontend-auth-sans-rupture-ux.md:249`.
+### Findings
+
+1. [RESOLU] Logout "best effort" aligne UX: nettoyage session + redirection login immediats, appel backend logout declenche en arriere-plan.
+   - References: `src/contexts/AuthContext.tsx`, `src/services/api/auth.service.ts`.
+2. [RESOLU] Normalisation redirect assouplie pour accepter `/app?*` et `/app#*` (en plus de `/app` et `/app/*`).
+   - References: `src/services/auth/auth-routing.ts`.
+3. [RESOLU] Couverture AC7 completee avec scenario UI de deconnexion: login -> dashboard -> deconnexion -> retour login + purge tokens locaux.
+   - References: `tests/auth-migration.spec.ts`.
+4. [RESOLU] Erreur login reseau rendue actionnable sur `503` normalise.
+   - References: `src/services/api/auth.service.ts`.

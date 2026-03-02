@@ -33,6 +33,10 @@ const parseAuthError = async (response: Response): Promise<string> => {
     return 'Session invalide, veuillez vous reconnecter.';
   }
 
+  if (response.status === 503) {
+    return "Impossible de joindre l'API d'authentification. Vérifiez que le backend est démarré.";
+  }
+
   return 'Une erreur de connexion est survenue.';
 };
 
@@ -41,6 +45,12 @@ const parseSignupError = async (response: Response): Promise<string> => {
   const message = payload && typeof payload === 'object' ? Reflect.get(payload, 'message') : null;
   if (typeof message === 'string' && message.trim().length > 0) {
     return message;
+  }
+  if (Array.isArray(message) && message.length > 0) {
+    const firstMessage = message.find((entry) => typeof entry === 'string');
+    if (typeof firstMessage === 'string' && firstMessage.trim().length > 0) {
+      return firstMessage;
+    }
   }
 
   if (response.status === 404) {
@@ -122,12 +132,18 @@ export const authService = {
     password: string,
     nom: string,
     prenom: string,
-    clientId: string = 'client-1'
+    clientId?: string
   ): Promise<{ user?: unknown; error?: string }> {
     try {
       const response = await httpClient.request('/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ email, password, nom, prenom, clientId }),
+        body: JSON.stringify({
+          email,
+          password,
+          nom,
+          prenom,
+          ...(clientId ? { clientId } : {})
+        }),
         authenticated: false,
         retryOnAuthFailure: false
       });
@@ -146,55 +162,64 @@ export const authService = {
   // Déconnexion
   async logout(): Promise<void> {
     const refreshToken = tokenStorage.getRefreshToken();
+    notifyAndClear();
 
     if (refreshToken) {
-      await httpClient.request('/auth/logout', {
+      void httpClient.request('/auth/logout', {
         method: 'POST',
         body: JSON.stringify({ refreshToken }),
         authenticated: false,
         retryOnAuthFailure: false
       }).catch(() => null);
     }
-
-    notifyAndClear();
   },
 
   async hydrateSession(): Promise<AuthSession | null> {
-    const tokens = tokenStorage.read();
-    if (!tokens) {
-      return null;
-    }
+    try {
+      const tokens = tokenStorage.read();
+      if (!tokens) {
+        return null;
+      }
 
-    if (!isTokenExpired(tokens.accessToken)) {
-      return buildSessionFromAccessToken(tokens.accessToken);
-    }
+      if (!isTokenExpired(tokens.accessToken)) {
+        return buildSessionFromAccessToken(tokens.accessToken);
+      }
 
-    const refreshedAccessToken = await httpClient.refresh();
-    if (!refreshedAccessToken) {
+      const refreshedAccessToken = await httpClient.refresh();
+      if (!refreshedAccessToken) {
+        notifyAndClear();
+        return null;
+      }
+
+      return buildSessionFromAccessToken(refreshedAccessToken);
+    } catch {
       notifyAndClear();
       return null;
     }
-
-    return buildSessionFromAccessToken(refreshedAccessToken);
   },
 
   async ensureValidSession(): Promise<AuthSession | null> {
-    const tokens = tokenStorage.read();
-    if (!tokens) {
-      return null;
-    }
+    try {
+      const tokens = tokenStorage.read();
+      if (!tokens) {
+        return null;
+      }
 
-    if (!isTokenExpired(tokens.accessToken)) {
-      return buildSessionFromAccessToken(tokens.accessToken);
-    }
+      if (!isTokenExpired(tokens.accessToken)) {
+        return buildSessionFromAccessToken(tokens.accessToken);
+      }
 
-    const refreshedAccessToken = await httpClient.refresh();
-    if (!refreshedAccessToken) {
+      const refreshedAccessToken = await httpClient.refresh();
+      if (!refreshedAccessToken) {
+        notifyAndClear();
+        return null;
+      }
+
+      return buildSessionFromAccessToken(refreshedAccessToken);
+    } catch {
       notifyAndClear();
       return null;
     }
-
-    return buildSessionFromAccessToken(refreshedAccessToken);
   },
 
   onAuthFailure(handler: ((preservedPath?: string) => void) | null) {

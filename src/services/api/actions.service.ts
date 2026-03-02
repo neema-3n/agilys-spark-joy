@@ -80,9 +80,9 @@ export const actionsService = {
     return mapAction(payload);
   },
 
-  async update(id: string, updates: Partial<Action>): Promise<Action> {
+  async update(id: string, updates: Partial<Action>, exerciceId: string): Promise<Action> {
     const payload = await requestJson<ActionApiModel>(
-      `/budget-referentiels/actions/${id}`,
+      `/budget-referentiels/actions/${id}?exerciceId=${encodeURIComponent(exerciceId)}`,
       {
         method: 'PATCH',
         body: JSON.stringify({
@@ -99,9 +99,9 @@ export const actionsService = {
     return mapAction(payload);
   },
 
-  async delete(id: string): Promise<void> {
+  async delete(id: string, exerciceId: string): Promise<void> {
     await requestJson(
-      `/budget-referentiels/actions/${id}`,
+      `/budget-referentiels/actions/${id}?exerciceId=${encodeURIComponent(exerciceId)}`,
       { method: 'DELETE' },
       'Erreur lors de l\'archivage de l\'action'
     );

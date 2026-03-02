@@ -1,6 +1,6 @@
 # Story 3.1: Configurer referentiels budgetaires de base
 
-Status: review
+Status: done
 
 ## Story
 
@@ -206,6 +206,24 @@ GPT-5 Codex
 - Correctif review applique: ajout d'un garde scope tenant/exercice (`TenantExerciceScopeGuard`) et test e2e d'acces inter-tenant refuse.
 - Correctif review applique: propagation des messages d'erreur backend dans `useProgrammes` et `useActions` + cles React Query scopees par `clientId`/`exerciceId`.
 - Correctif review applique: validation metier `@Min(0)` sur montants enveloppes.
+- Correctif review applique: parsing de route durci dans `TenantExerciceScopeGuard` (plus de contournement si route commence par `/`).
+- Correctif review applique: bornage strict `exerciceId` sur updates/archives `enveloppes|sections|programmes|actions` (backend + services/hooks front).
+- Correctif review applique: persistance snapshot protegee par verrou fichier exclusif pour eviter les ecrasements concurrents.
+- Correctif review applique: validation e2e du contrat `exerciceId` requis sur suppressions scopees.
+
+### Senior Developer Review (AI)
+
+- Review adversariale executee avec fix automatique des issues HIGH/MEDIUM.
+- Findings traites:
+  - P1 guard scope exercice contournable,
+  - P1 writes non bornes a l'exercice cible,
+  - P1 persistance sans verrou concurrent,
+  - P2 tracabilite story/git (documentation synchronisee),
+  - P2 preuve UI insuffisante (fichiers ecran/hooks ajoutes a la file list).
+- Verification post-fix:
+  - `npm --prefix backend test -- budget-referentiels.service.spec.ts budget-referentiels.e2e.spec.ts` OK
+  - `pnpm --dir backend run lint` OK
+  - `pnpm exec eslint` cible sur fichiers front modifies OK
 
 ### File List
 
@@ -233,19 +251,22 @@ GPT-5 Codex
 - `src/services/api/sections.service.ts`
 - `src/services/api/programmes.service.ts`
 - `src/services/api/actions.service.ts`
+- `src/hooks/useSections.ts`
 - `src/hooks/useProgrammes.ts`
 - `src/hooks/useActions.ts`
+- `src/components/parametres/EnveloppesManager.tsx`
 - `tests/auth-migration.spec.ts`
 
 ### Change Log
 
 - 2026-03-02: Implementation complete de la story 3.1 (backend NestJS referentiels + migration services front + tests backend e2e/unit + validation lint/build).
 - 2026-03-02: Correctifs de review appliques (persistance durable referentiels/audit, garde scope tenant/exercice, cles React Query scopees, messages d'erreurs actionnables, validations montants >= 0).
+- 2026-03-02: Correctifs P1/P2 post-review (scope guard robuste, bornage exercice sur writes, verrou de persistance snapshot, synchro documentation + preuve UI, tests/lint cibles passes).
 - Baseline de traçabilite review: `HEAD 9dc6a6f93cab6ec9597fca508060c3100430b9b1` (verification reproducible a partir de cet etat git).
 
 ## Story Completion Status
 
 - Story ID: `3.1`
 - Story Key: `3-1-configurer-referentiels-budgetaires-de-base`
-- Final Status: `review`
-- Validation checklist: DoD validee sur execution reelle des tests/qualite (backend tests 19/19, lint OK, build OK).
+- Final Status: `done`
+- Validation checklist: DoD validee sur execution reelle des tests/qualite (tests backend referentiels OK, lint backend OK, eslint front cible OK).

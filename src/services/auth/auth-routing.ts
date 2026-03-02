@@ -1,6 +1,12 @@
 const DEFAULT_APP_FALLBACK = '/app/dashboard';
 
-const isSafeAppPath = (value: string): boolean => value.startsWith('/') && !value.startsWith('//');
+const isSafeAppPath = (value: string): boolean => {
+  if (!value.startsWith('/') || value.startsWith('//')) {
+    return false;
+  }
+
+  return value === '/app' || value.startsWith('/app/') || value.startsWith('/app?') || value.startsWith('/app#');
+};
 
 export const normalizeRedirectPath = (
   value: string | null | undefined,

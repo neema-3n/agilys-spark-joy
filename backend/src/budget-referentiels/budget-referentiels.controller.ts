@@ -81,15 +81,20 @@ export class BudgetReferentielsController {
   updateEnveloppe(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body() body: EnveloppeUpdateDto
+    @Body() body: EnveloppeUpdateDto,
+    @Query() query: ExerciceScopedQueryDto
   ) {
-    return this.service.updateEnveloppe(user, id, body);
+    return this.service.updateEnveloppe(user, id, body, query.exerciceId);
   }
 
   @Delete('enveloppes/:id')
   @Roles(...WRITE_ROLES)
-  archiveEnveloppe(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
-    return this.service.archiveEnveloppe(user, id);
+  archiveEnveloppe(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Query() query: ExerciceScopedQueryDto
+  ) {
+    return this.service.archiveEnveloppe(user, id, query.exerciceId);
   }
 
   @Get('sections')
@@ -105,14 +110,23 @@ export class BudgetReferentielsController {
 
   @Patch('sections/:id')
   @Roles(...WRITE_ROLES)
-  updateSection(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string, @Body() body: SectionUpdateDto) {
-    return this.service.updateSection(user, id, body);
+  updateSection(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: SectionUpdateDto,
+    @Query() query: ExerciceScopedQueryDto
+  ) {
+    return this.service.updateSection(user, id, body, query.exerciceId);
   }
 
   @Delete('sections/:id')
   @Roles(...WRITE_ROLES)
-  archiveSection(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
-    return this.service.archiveSection(user, id);
+  archiveSection(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Query() query: ExerciceScopedQueryDto
+  ) {
+    return this.service.archiveSection(user, id, query.exerciceId);
   }
 
   @Get('programmes')
@@ -131,15 +145,20 @@ export class BudgetReferentielsController {
   updateProgramme(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body() body: ProgrammeUpdateDto
+    @Body() body: ProgrammeUpdateDto,
+    @Query() query: ExerciceScopedQueryDto
   ) {
-    return this.service.updateProgramme(user, id, body);
+    return this.service.updateProgramme(user, id, body, query.exerciceId);
   }
 
   @Delete('programmes/:id')
   @Roles(...WRITE_ROLES)
-  archiveProgramme(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
-    return this.service.archiveProgramme(user, id);
+  archiveProgramme(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Query() query: ExerciceScopedQueryDto
+  ) {
+    return this.service.archiveProgramme(user, id, query.exerciceId);
   }
 
   @Get('actions')
@@ -155,14 +174,19 @@ export class BudgetReferentielsController {
 
   @Patch('actions/:id')
   @Roles(...WRITE_ROLES)
-  updateAction(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string, @Body() body: ActionUpdateDto) {
-    return this.service.updateAction(user, id, body);
+  updateAction(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: ActionUpdateDto,
+    @Query() query: ExerciceScopedQueryDto
+  ) {
+    return this.service.updateAction(user, id, body, query.exerciceId);
   }
 
   @Delete('actions/:id')
   @Roles(...WRITE_ROLES)
-  archiveAction(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
-    return this.service.archiveAction(user, id);
+  archiveAction(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string, @Query() query: ExerciceScopedQueryDto) {
+    return this.service.archiveAction(user, id, query.exerciceId);
   }
 
   @Get('audit-log')
