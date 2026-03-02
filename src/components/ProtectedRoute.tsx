@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { ReactNode } from 'react';
+import { buildRequestedPath } from '@/services/auth/auth-routing';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -19,7 +20,7 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }
 
   if (!isAuthenticated) {
-    const from = `${location.pathname}${location.search}${location.hash}`;
+    const from = buildRequestedPath(location.pathname, location.search, location.hash);
     return <Navigate to="/auth/login" state={{ from }} replace />;
   }
 

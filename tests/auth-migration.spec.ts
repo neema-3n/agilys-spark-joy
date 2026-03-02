@@ -2,6 +2,10 @@ import { test, expect } from '@playwright/test';
 import { createTokenStorage, StorageLike } from '../src/services/auth/token-storage';
 import { createHttpClient } from '../src/services/api/http-client';
 import { decodeAccessTokenClaims, isTokenExpired } from '../src/services/auth/auth-session';
+import { buildRequestedPath, resolveLoginRedirect } from '../src/services/auth/auth-routing';
+import { authService } from '../src/services/api/auth.service';
+import { httpClient } from '../src/services/api/http-client';
+import { tokenStorage } from '../src/services/auth/token-storage';
 
 class MockStorage implements StorageLike {
   private readonly store = new Map<string, string>();
@@ -156,4 +160,38 @@ test('JWT claims parsing and expiry detection', async () => {
 
   expect(isTokenExpired(validToken)).toBeFalsy();
   expect(isTokenExpired(expiredToken)).toBeTruthy();
+});
+
+test('resolve post-login redirect from state, query then fallback', async () => {
+  expect(resolveLoginRedirect({ stateFrom: '/app/depenses?tab=all' })).toBe('/app/depenses?tab=all');
+  expect(resolveLoginRedirect({ search: '?from=%2Fapp%2Fengagements%3Fq%3Dopen' })).toBe('/app/engagements?q=open');
+  expect(resolveLoginRedirect({ search: '?from=https://malicious.example', fallback: '/app/dashboard' })).toBe('/app/dashboard');
+});
+
+test('build protected-route from path preserves search and hash', async () => {
+  expect(buildRequestedPath('/app/factures', '?status=unpaid', '#section-2')).toBe('/app/factures?status=unpaid#section-2');
+});
+
+test('logout calls /auth/logout and clears token storage', async () => {
+  tokenStorage.write({ accessToken: 'access-token', refreshToken: 'refresh-token' });
+
+  const originalRequest = httpClient.request;
+  let logoutCalled = false;
+
+  httpClient.request = (async (path: string) => {
+    if (path === '/auth/logout') {
+      logoutCalled = true;
+      return new Response(null, { status: 204 });
+    }
+    return new Response('{}', { status: 404 });
+  }) as typeof httpClient.request;
+
+  try {
+    await authService.logout();
+  } finally {
+    httpClient.request = originalRequest;
+  }
+
+  expect(logoutCalled).toBeTruthy();
+  expect(tokenStorage.read()).toBeNull();
 });

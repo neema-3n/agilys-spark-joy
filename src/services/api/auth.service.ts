@@ -2,7 +2,6 @@ import { User } from '@/types';
 import { decodeAccessTokenClaims, isTokenExpired, mapClaimsToUser } from '@/services/auth/auth-session';
 import { tokenStorage } from '@/services/auth/token-storage';
 import { httpClient, TokenPairResponse } from '@/services/api/http-client';
-import { supabase } from '@/integrations/supabase/client';
 
 export interface AuthSession {
   user: User;
@@ -25,6 +24,20 @@ const parseAuthError = async (response: Response): Promise<string> => {
   }
 
   return 'Une erreur de connexion est survenue.';
+};
+
+const parseSignupError = async (response: Response): Promise<string> => {
+  const payload = await response.json().catch(() => null);
+  const message = payload && typeof payload === 'object' ? Reflect.get(payload, 'message') : null;
+  if (typeof message === 'string' && message.trim().length > 0) {
+    return message;
+  }
+
+  if (response.status === 404) {
+    return "L'inscription n'est pas disponible actuellement.";
+  }
+
+  return "Une erreur d'inscription est survenue.";
 };
 
 const buildSessionFromAccessToken = (accessToken: string): AuthSession | null => {
@@ -89,7 +102,7 @@ export const authService = {
     return { user: session.user };
   },
 
-  // Inscription conservee sur flux legacy pendant la migration auth frontend
+  // Inscription via API backend
   async signup(
     email: string,
     password: string,
@@ -97,24 +110,19 @@ export const authService = {
     prenom: string,
     clientId: string = 'client-1'
   ): Promise<{ user?: unknown; error?: string }> {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          nom,
-          prenom,
-          client_id: clientId
-        },
-        emailRedirectTo: `${window.location.origin}/`
-      }
+    const response = await httpClient.request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, nom, prenom, clientId }),
+      authenticated: false,
+      retryOnAuthFailure: false
     });
 
-    if (error) {
-      return { error: error.message };
+    if (!response.ok) {
+      return { error: await parseSignupError(response) };
     }
 
-    return { user: data.user };
+    const payload = await response.json().catch(() => null);
+    return { user: payload };
   },
 
   // Déconnexion

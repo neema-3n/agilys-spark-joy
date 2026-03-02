@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Lock, Mail, User } from 'lucide-react';
 import { z } from 'zod';
+import { resolveLoginRedirect } from '@/services/auth/auth-routing';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Email invalide" }),
@@ -42,7 +43,10 @@ const Login = () => {
   const location = useLocation();
   const { toast } = useToast();
 
-  const from = (location.state as { from?: string } | null)?.from || '/app/dashboard';
+  const from = resolveLoginRedirect({
+    stateFrom: (location.state as { from?: string } | null)?.from,
+    search: location.search
+  });
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -73,7 +77,6 @@ const Login = () => {
         title: 'Connexion réussie',
         description: 'Bienvenue sur AGILYS',
       });
-      navigate(from, { replace: true });
     } else {
       toast({
         title: 'Erreur de connexion',

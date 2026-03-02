@@ -1,14 +1,23 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, ReactNode } from 'react';
 import { AuthContextType, User, AppRole } from '@/types';
 import { authService } from '@/services/api/auth.service';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { buildRequestedPath, normalizeRedirectPath } from '@/services/auth/auth-routing';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const navigateRef = useRef(navigate);
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<{ accessTokenExpiresAt: number | null } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const mountedRef = useRef(true);
+
+  useEffect(() => {
+    navigateRef.current = navigate;
+  }, [navigate]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -25,14 +34,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(false);
     };
 
-    authService.onAuthFailure(() => {
+    authService.onAuthFailure((preservedPath) => {
       if (!mountedRef.current) {
         return;
       }
 
+      const fallbackFrom = typeof window !== 'undefined'
+        ? buildRequestedPath(window.location.pathname, window.location.search, window.location.hash)
+        : '/app/dashboard';
+      const from = normalizeRedirectPath(preservedPath, fallbackFrom);
       setUser(null);
       setSession(null);
       setIsLoading(false);
+
+      const currentPathname = typeof window !== 'undefined' ? window.location.pathname : '';
+      if (currentPathname !== '/auth/login') {
+        navigateRef.current('/auth/login', { replace: true, state: { from } });
+      }
     });
 
     void applySession();
@@ -66,6 +84,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = async () => {
+    const from = buildRequestedPath(location.pathname, location.search, location.hash);
+
     await authService.logout();
 
     if (!mountedRef.current) {
@@ -74,6 +94,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     setUser(null);
     setSession(null);
+
+    if (location.pathname !== '/auth/login') {
+      navigate('/auth/login', { replace: true, state: { from } });
+    }
   };
 
   const isAuthenticated = Boolean(user && session);
