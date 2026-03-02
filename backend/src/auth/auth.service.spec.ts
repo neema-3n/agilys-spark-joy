@@ -4,11 +4,14 @@ import { AuthLoggerService } from './auth-logger.service';
 import { AuthService } from './auth.service';
 import { RefreshTokenStore } from './refresh-token.store';
 import { UsersService } from '../users/users.service';
+import { applyTestEnv } from '../../test/test-env';
 
 describe('AuthService', () => {
   let authService: AuthService;
 
   beforeEach(async () => {
+    applyTestEnv();
+
     const moduleRef = await Test.createTestingModule({
       providers: [AuthService, UsersService, JwtService, RefreshTokenStore, AuthLoggerService]
     }).compile();

@@ -9,17 +9,22 @@ import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class AuthService {
-  private readonly accessTokenSecret = process.env.JWT_ACCESS_SECRET ?? 'access-secret-dev';
-  private readonly refreshTokenSecret = process.env.JWT_REFRESH_SECRET ?? 'refresh-secret-dev';
-  private readonly accessTokenTtlSeconds = Number(process.env.JWT_ACCESS_TTL_SECONDS ?? 900);
-  private readonly refreshTokenTtlSeconds = Number(process.env.JWT_REFRESH_TTL_SECONDS ?? 604800);
+  private readonly accessTokenSecret: string;
+  private readonly refreshTokenSecret: string;
+  private readonly accessTokenTtlSeconds: number;
+  private readonly refreshTokenTtlSeconds: number;
 
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly refreshTokenStore: RefreshTokenStore,
     private readonly authLogger: AuthLoggerService
-  ) {}
+  ) {
+    this.accessTokenSecret = this.requireEnv('JWT_ACCESS_SECRET');
+    this.refreshTokenSecret = this.requireEnv('JWT_REFRESH_SECRET');
+    this.accessTokenTtlSeconds = this.parsePositiveIntEnv('JWT_ACCESS_TTL_SECONDS', 900);
+    this.refreshTokenTtlSeconds = this.parsePositiveIntEnv('JWT_REFRESH_TTL_SECONDS', 604800);
+  }
 
   async login(email: string, password: string): Promise<AuthResponse> {
     const user = this.usersService.findByEmail(email);
@@ -123,5 +128,28 @@ export class AuthService {
     } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
+  }
+
+  private requireEnv(name: string): string {
+    const value = process.env[name];
+    if (!value || value.trim().length === 0) {
+      throw new Error(`Missing required environment variable: ${name}`);
+    }
+
+    return value;
+  }
+
+  private parsePositiveIntEnv(name: string, fallback: number): number {
+    const raw = process.env[name];
+    if (!raw) {
+      return fallback;
+    }
+
+    const parsed = Number(raw);
+    if (!Number.isInteger(parsed) || parsed <= 0) {
+      throw new Error(`Invalid positive integer for ${name}: ${raw}`);
+    }
+
+    return parsed;
   }
 }
