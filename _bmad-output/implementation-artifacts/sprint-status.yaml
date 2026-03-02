@@ -44,8 +44,8 @@ development_status:
   2-5-persister-refresh-tokens-en-postgresql: ready-for-dev
   epic-2-retrospective: optional
 
-  epic-3: backlog
-  3-1-configurer-referentiels-budgetaires-de-base: backlog
+  epic-3: in-progress
+  3-1-configurer-referentiels-budgetaires-de-base: ready-for-dev
   3-2-gerer-allocations-et-reallocations-de-credits: backlog
   3-3-versionner-les-decisions-budgetaires: backlog
   3-4-produire-previsions-et-ecarts-prevision-execution: backlog
