@@ -31,6 +31,12 @@ so that l'etat PostgreSQL est stable et reproductible entre developpeurs.
 - [x] Verifier la rejouabilite complete sur base vierge (AC: 1, 2, 3)
 - [x] Documenter prerequis et ordre d'execution (AC: 3)
 
+### Review Follow-ups (AI)
+
+- [ ] [AI-Review][MEDIUM] Ajouter un test shell automatisé qui vérifie que `db:import:remote` ne supprime jamais un `DB_IMPORT_DUMP_FILE` fourni explicitement. [scripts/db-import-remote.sh:66]
+- [ ] [AI-Review][MEDIUM] Ajouter un test shell de non-régression pour le mode service custom (`POSTGRES_SERVICE`) sur `db:verify` et `db:reset`. [scripts/verify-db-workflow.sh:15]
+- [ ] [AI-Review][LOW] Durcir le filtrage du dump importé (exclusions supplémentaires `SET`/`ALTER ROLE` incompatibles selon version PostgreSQL) pour réduire le risque d'import fragile inter-versions. [scripts/db-import-remote.sh:137]
+
 ## Dev Agent Record
 
 ### Debug Log
@@ -55,6 +61,12 @@ so that l'etat PostgreSQL est stable et reproductible entre developpeurs.
 - `db:import:remote` sauvegarde desormais un dataset local persisté (`output/db-seeds/remote-public-data.sql`).
 - `db:seed` recharge en priorite ce dataset local pour restaurer rapidement les vraies donnees.
 - `db:snapshot:local` permet de rafraichir ce dataset a partir de l'etat local courant.
+- Correctif review: `db:verify` valide desormais le seed de facon compatible dataset distant/fallback local.
+- Correctif review: ordre operationnel documente aligne sur le flux reel (`db:reset` inclut `db:migrate`).
+- Correctif review: ordonnancement `db:migrate` explicite en 2 phases (migrations principales triees puis migrations legacy differees).
+- Correctif review 2: import distant securise sans password en argument CLI + protection contre suppression d'un dump utilisateur.
+- Correctif review 2: `db:verify` durci (service Docker configurable + verification `schema_migrations`).
+- Correctif review 2: retry supplementaire sur creation/verification de la base applicative dans `db:migrate` pour absorber les phases transitoires "database system is shutting down".
 
 ## File List
 
@@ -83,6 +95,9 @@ so that l'etat PostgreSQL est stable et reproductible entre developpeurs.
 - 2026-03-02: Corrections idempotence sur 3 migrations legacy + reactivation dans `db:migrate` avec validation `db:verify` OK.
 - 2026-03-02: Ajout d'un import réel Supabase -> local (`db:import:remote`) valide en execution complete.
 - 2026-03-02: Persist du dataset importe en local + seed prioritaire sur ce dataset + commande `db:snapshot:local`.
+- 2026-03-02: Revue senior appliquee - correction de la validation `db:verify`, alignement documentation, et stabilisation ordre de migration.
+- 2026-03-02: Revue senior (round 2) - durcissement securite import DB et validation `db:verify`.
+- 2026-03-02: Revue senior (round 2) - durcissement robustesse `db:migrate` (retry creation/check DB) apres echec transitoire observe.
 
 ## Dependencies / Blockers
 
@@ -98,3 +113,21 @@ so that l'etat PostgreSQL est stable et reproductible entre developpeurs.
 - Story ID: `CC-01.03`
 - Story Key: `cc-01-03-migrations-db-versionnees`
 - Final Status: `review`
+
+## Senior Developer Review (AI)
+
+Date: 2026-03-02
+Reviewer: Max
+Outcome: Changes requested -> fixed -> approved
+
+Issues traites:
+- [HIGH] `db:verify` echouait sur un controle hardcode `client-demo/EX-2026` incompatible avec le seed prioritaire dataset distant.
+- [HIGH] Story en `review` avec verification E2E annoncee comme OK alors que l'execution reelle echouait.
+- [MEDIUM] Documentation d'ordre de commandes incoherente avec le comportement de `db:reset`.
+- [MEDIUM] Ordonnancement de migrations non explicite sur le traitement des migrations legacy dependantes de schema.
+
+Correctifs appliques:
+- `scripts/verify-db-workflow.sh`: verification seed basee sur presence de donnees `public.exercices` (compatible dataset distant ou fallback).
+- `docs/runbooks/postgresql-local-docker.md` et `README.md`: ordre recommande corrige (`db:reset`, puis `db:seed`) + clarifications d'usage de `db:migrate`.
+- `scripts/db-migrate.sh`: ordonnancement explicite en 2 phases (migrations principales triees, puis migrations legacy differees).
+- Validation reexecutee: `pnpm run db:verify` passe sans erreur.

@@ -22,6 +22,9 @@ KEEP_DUMP_FILE="${DB_IMPORT_KEEP_DUMP:-0}"
 DUMP_FILE_PATH="${DB_IMPORT_DUMP_FILE:-}"
 IMPORT_METHOD="${DB_IMPORT_METHOD:-auto}"
 SEED_DATASET_PATH="${DB_SEED_DATASET_PATH:-output/db-seeds/remote-public-data.sql}"
+DUMP_FILE_USER_PROVIDED=0
+REMOTE_DB_PASSWORD_EFFECTIVE="${REMOTE_PASSWORD}"
+REMOTE_DB_URL_NO_PASSWORD="${REMOTE_DB_URL}"
 
 if [[ -z "${REMOTE_DB_URL}" ]]; then
   if [[ -n "${REMOTE_POOLER_URL}" ]]; then
@@ -40,31 +43,33 @@ if [[ "${REMOTE_DB_URL}" =~ ^postgres(ql)?://([^:/@?]+)(:[^@?]*)?@(.+)$ ]]; then
   remote_user="${BASH_REMATCH[2]}"
   remote_pass="${BASH_REMATCH[3]}"
   remote_tail="${BASH_REMATCH[4]}"
+  REMOTE_DB_URL_NO_PASSWORD="postgresql://${remote_user}@${remote_tail}"
 
-  if [[ -z "${remote_pass}" ]]; then
-    if [[ -z "${REMOTE_PASSWORD}" ]]; then
+  if [[ -n "${remote_pass}" ]]; then
+    REMOTE_DB_PASSWORD_EFFECTIVE="${remote_pass#:}"
+  elif [[ -z "${REMOTE_PASSWORD}" ]]; then
       echo "Missing SUPABASE_DB_PASSWORD for remote URL without password." >&2
       exit 1
-    fi
-    REMOTE_DB_URL="postgresql://${remote_user}:${REMOTE_PASSWORD}@${remote_tail}"
   fi
 fi
 
-if [[ "${REMOTE_DB_URL}" != *"sslmode="* ]]; then
-  if [[ "${REMOTE_DB_URL}" == *"?"* ]]; then
-    REMOTE_DB_URL="${REMOTE_DB_URL}&sslmode=require"
+if [[ "${REMOTE_DB_URL_NO_PASSWORD}" != *"sslmode="* ]]; then
+  if [[ "${REMOTE_DB_URL_NO_PASSWORD}" == *"?"* ]]; then
+    REMOTE_DB_URL_NO_PASSWORD="${REMOTE_DB_URL_NO_PASSWORD}&sslmode=require"
   else
-    REMOTE_DB_URL="${REMOTE_DB_URL}?sslmode=require"
+    REMOTE_DB_URL_NO_PASSWORD="${REMOTE_DB_URL_NO_PASSWORD}?sslmode=require"
   fi
 fi
 
 if [[ -z "${DUMP_FILE_PATH}" ]]; then
   DUMP_FILE_PATH="$(mktemp -t supabase-data-dump.XXXXXX.sql)"
+else
+  DUMP_FILE_USER_PROVIDED=1
 fi
 FILTERED_DUMP_PATH="$(mktemp -t supabase-data-dump.filtered.XXXXXX.sql)"
 
 cleanup() {
-  if [[ "${KEEP_DUMP_FILE}" != "1" && -f "${DUMP_FILE_PATH}" ]]; then
+  if [[ "${KEEP_DUMP_FILE}" != "1" && "${DUMP_FILE_USER_PROVIDED}" != "1" && -f "${DUMP_FILE_PATH}" ]]; then
     rm -f "${DUMP_FILE_PATH}"
   fi
   if [[ "${KEEP_DUMP_FILE}" != "1" && -f "${FILTERED_DUMP_PATH}" ]]; then
@@ -75,7 +80,7 @@ trap cleanup EXIT
 
 echo "Remote import configuration:"
 echo "- local target: ${LOCAL_DB} (user: ${LOCAL_DB_USER})"
-echo "- source URL host: $(echo "${REMOTE_DB_URL}" | sed -E 's#^postgres(ql)?://([^@]+)@([^/?]+).*#\3#')"
+echo "- source URL host: $(echo "${REMOTE_DB_URL_NO_PASSWORD}" | sed -E 's#^postgres(ql)?://([^@]+)@([^/?]+).*#\3#')"
 echo "- reset before import: ${AUTO_RESET}"
 
 if [[ "${DRY_RUN}" == "1" ]]; then
@@ -90,22 +95,22 @@ fi
 
 echo "Dumping remote Supabase data (schema public, data-only)..."
 dump_with_pg_dump() {
-  pg_dump \
+  PGPASSWORD="${REMOTE_DB_PASSWORD_EFFECTIVE}" pg_dump \
     --data-only \
     --schema=public \
     --exclude-table=public.schema_migrations \
     --no-owner \
     --no-privileges \
     --file "${DUMP_FILE_PATH}" \
-    "${REMOTE_DB_URL}"
+    "${REMOTE_DB_URL_NO_PASSWORD}"
 }
 
 dump_with_supabase_cli() {
-  supabase db dump \
+  PGPASSWORD="${REMOTE_DB_PASSWORD_EFFECTIVE}" supabase db dump \
     --data-only \
     --schema public \
     --exclude public.schema_migrations \
-    --db-url "${REMOTE_DB_URL}" \
+    --db-url "${REMOTE_DB_URL_NO_PASSWORD}" \
     --file "${DUMP_FILE_PATH}" \
     --use-copy
 }

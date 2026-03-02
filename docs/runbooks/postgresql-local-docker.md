@@ -80,14 +80,13 @@ Prerequis:
 Ordre recommande:
 
 ```bash
-pnpm run db:migrate
 pnpm run db:reset
 pnpm run db:seed
 ```
 
 Details:
-- `db:migrate`: applique toutes les migrations SQL versionnees (`supabase/migrations/*.sql`) avec suivi `public.schema_migrations`.
-- `db:reset`: reset destructif (volume Docker), redemarrage PostgreSQL, puis rejeu complet des migrations.
+- `db:migrate`: applique toutes les migrations SQL versionnees (`supabase/migrations/*.sql`) avec suivi `public.schema_migrations` (utile sur une base deja initialisee, sans reset).
+- `db:reset`: reset destructif (volume Docker), redemarrage PostgreSQL, puis rejeu complet des migrations (donc `db:migrate` est deja inclus).
 - `db:seed`: injecte des donnees de base rejouables (exercice/enveloppe de demo).
 
 Verification complete:
