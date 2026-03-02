@@ -32,7 +32,7 @@ export const useSections = () => {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, updates }: { id: string; updates: Partial<Section> }) =>
-      sectionsService.update(id, updates),
+      sectionsService.update(id, updates, exerciceId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sections', clientId, exerciceId] });
       toast.success('Section modifiée avec succès');
@@ -43,7 +43,7 @@ export const useSections = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => sectionsService.delete(id),
+    mutationFn: (id: string) => sectionsService.delete(id, exerciceId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sections', clientId, exerciceId] });
       toast.success('Section supprimée avec succès');

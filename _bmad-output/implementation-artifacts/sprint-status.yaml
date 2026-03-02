@@ -40,12 +40,12 @@ development_status:
   2-1-mettre-en-place-lauth-nestjs-jwt-refresh: done
   2-2-appliquer-rbac-et-separation-des-responsabilites: backlog
   2-3-isoler-les-donnees-et-politiques-par-tenant: backlog
-  2-4-migrer-le-frontend-auth-sans-rupture-ux: review
+  2-4-migrer-le-frontend-auth-sans-rupture-ux: done
   2-5-persister-refresh-tokens-en-postgresql: ready-for-dev
   epic-2-retrospective: optional
 
   epic-3: in-progress
-  3-1-configurer-referentiels-budgetaires-de-base: review
+  3-1-configurer-referentiels-budgetaires-de-base: done
   3-2-gerer-allocations-et-reallocations-de-credits: backlog
   3-3-versionner-les-decisions-budgetaires: backlog
   3-4-produire-previsions-et-ecarts-prevision-execution: backlog

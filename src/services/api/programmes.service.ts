@@ -80,9 +80,9 @@ export const programmesService = {
     return mapProgramme(payload);
   },
 
-  async update(id: string, updates: Partial<Programme>): Promise<Programme> {
+  async update(id: string, updates: Partial<Programme>, exerciceId: string): Promise<Programme> {
     const payload = await requestJson<ProgrammeApiModel>(
-      `/budget-referentiels/programmes/${id}`,
+      `/budget-referentiels/programmes/${id}?exerciceId=${encodeURIComponent(exerciceId)}`,
       {
         method: 'PATCH',
         body: JSON.stringify({
@@ -99,9 +99,9 @@ export const programmesService = {
     return mapProgramme(payload);
   },
 
-  async delete(id: string): Promise<void> {
+  async delete(id: string, exerciceId: string): Promise<void> {
     await requestJson(
-      `/budget-referentiels/programmes/${id}`,
+      `/budget-referentiels/programmes/${id}?exerciceId=${encodeURIComponent(exerciceId)}`,
       { method: 'DELETE' },
       'Erreur lors de l\'archivage du programme'
     );

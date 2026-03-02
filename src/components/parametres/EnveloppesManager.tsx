@@ -75,7 +75,7 @@ const EnveloppesManager = () => {
         });
         toast.success('Enveloppe créée avec succès');
       } else if (selectedEnveloppe) {
-        await enveloppesService.update(selectedEnveloppe.id, values);
+        await enveloppesService.update(selectedEnveloppe.id, values, currentExercice.id);
         toast.success('Enveloppe mise à jour avec succès');
       }
       await loadEnveloppes();
@@ -95,7 +95,7 @@ const EnveloppesManager = () => {
     if (!enveloppeToDelete) return;
 
     try {
-      await enveloppesService.delete(enveloppeToDelete.id);
+      await enveloppesService.delete(enveloppeToDelete.id, currentExercice.id);
       toast.success('Enveloppe supprimée avec succès');
       await loadEnveloppes();
     } catch (error: any) {
@@ -109,7 +109,7 @@ const EnveloppesManager = () => {
 
   const handleCloturer = async (enveloppe: Enveloppe) => {
     try {
-      await enveloppesService.cloturer(enveloppe.id);
+      await enveloppesService.cloturer(enveloppe.id, currentExercice.id);
       toast.success('Enveloppe clôturée avec succès');
       await loadEnveloppes();
     } catch (error: any) {

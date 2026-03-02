@@ -68,9 +68,9 @@ export const sectionsService = {
     return mapSection(payload);
   },
 
-  async update(id: string, updates: Partial<Section>): Promise<Section> {
+  async update(id: string, updates: Partial<Section>, exerciceId: string): Promise<Section> {
     const payload = await requestJson<SectionApiModel>(
-      `/budget-referentiels/sections/${id}`,
+      `/budget-referentiels/sections/${id}?exerciceId=${encodeURIComponent(exerciceId)}`,
       {
         method: 'PATCH',
         body: JSON.stringify({
@@ -86,9 +86,9 @@ export const sectionsService = {
     return mapSection(payload);
   },
 
-  async delete(id: string): Promise<void> {
+  async delete(id: string, exerciceId: string): Promise<void> {
     await requestJson(
-      `/budget-referentiels/sections/${id}`,
+      `/budget-referentiels/sections/${id}?exerciceId=${encodeURIComponent(exerciceId)}`,
       { method: 'DELETE' },
       'Erreur lors de l\'archivage de la section'
     );

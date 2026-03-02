@@ -83,9 +83,9 @@ export const enveloppesService = {
     return mapFromApi(payload);
   },
 
-  async update(id: string, input: UpdateEnveloppeInput): Promise<Enveloppe> {
+  async update(id: string, input: UpdateEnveloppeInput, exerciceId: string): Promise<Enveloppe> {
     const payload = await requestJson<EnveloppeApiModel>(
-      `/budget-referentiels/enveloppes/${id}`,
+      `/budget-referentiels/enveloppes/${id}?exerciceId=${encodeURIComponent(exerciceId)}`,
       {
         method: 'PATCH',
         body: JSON.stringify(input)
@@ -96,15 +96,15 @@ export const enveloppesService = {
     return mapFromApi(payload);
   },
 
-  async delete(id: string): Promise<void> {
+  async delete(id: string, exerciceId: string): Promise<void> {
     await requestJson(
-      `/budget-referentiels/enveloppes/${id}`,
+      `/budget-referentiels/enveloppes/${id}?exerciceId=${encodeURIComponent(exerciceId)}`,
       { method: 'DELETE' },
       'Erreur lors de l\'archivage de l\'enveloppe'
     );
   },
 
-  async cloturer(id: string): Promise<Enveloppe> {
-    return this.update(id, { statut: 'cloture' });
+  async cloturer(id: string, exerciceId: string): Promise<Enveloppe> {
+    return this.update(id, { statut: 'cloture' }, exerciceId);
   }
 };

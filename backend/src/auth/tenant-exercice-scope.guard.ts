@@ -23,17 +23,14 @@ export class TenantExerciceScopeGuard implements CanActivate {
 
     const method = (request.method ?? 'GET').toUpperCase();
     const routePath = request.route?.path ?? '';
-    const routeSegment = routePath.split('/')[0] ?? '';
+    const routeSegment = routePath.replace(/^\/+/, '').split('/')[0] ?? '';
     const needsExerciceScope = EXERCICE_SCOPED_ROUTES.includes(routeSegment);
 
     if (!needsExerciceScope) {
       return true;
     }
 
-    const exerciceId =
-      method === 'POST'
-        ? request.body?.exerciceId
-        : request.query?.exerciceId ?? request.body?.exerciceId;
+    const exerciceId = method === 'POST' ? request.body?.exerciceId : request.query?.exerciceId ?? request.body?.exerciceId;
 
     if (typeof exerciceId !== 'string' || exerciceId.trim().length === 0) {
       throw new BadRequestException('exerciceId est requis pour ce referentiel');

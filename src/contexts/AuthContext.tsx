@@ -24,14 +24,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const applySession = async () => {
       setIsLoading(true);
-      const nextSession = await authService.hydrateSession();
-      if (!mountedRef.current) {
-        return;
-      }
+      try {
+        const nextSession = await authService.hydrateSession();
+        if (!mountedRef.current) {
+          return;
+        }
 
-      setUser(nextSession?.user ?? null);
-      setSession(nextSession ? { accessTokenExpiresAt: nextSession.accessTokenExpiresAt } : null);
-      setIsLoading(false);
+        setUser(nextSession?.user ?? null);
+        setSession(nextSession ? { accessTokenExpiresAt: nextSession.accessTokenExpiresAt } : null);
+      } catch {
+        if (!mountedRef.current) {
+          return;
+        }
+        setUser(null);
+        setSession(null);
+      } finally {
+        if (mountedRef.current) {
+          setIsLoading(false);
+        }
+      }
     };
 
     authService.onAuthFailure((preservedPath) => {
@@ -68,8 +79,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const validSession = await authService.ensureValidSession();
-    setUser(validSession?.user ?? result.user);
-    setSession(validSession ? { accessTokenExpiresAt: validSession.accessTokenExpiresAt } : null);
+    if (!validSession) {
+      setUser(null);
+      setSession(null);
+      return { success: false, error: 'Session invalide. Veuillez vous reconnecter.' };
+    }
+
+    setUser(validSession.user);
+    setSession({ accessTokenExpiresAt: validSession.accessTokenExpiresAt });
 
     return { success: true };
   };
@@ -85,19 +102,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     const from = buildRequestedPath(location.pathname, location.search, location.hash);
-
-    await authService.logout();
-
-    if (!mountedRef.current) {
-      return;
-    }
-
     setUser(null);
     setSession(null);
 
     if (location.pathname !== '/auth/login') {
       navigate('/auth/login', { replace: true, state: { from } });
     }
+
+    void authService.logout();
   };
 
   const isAuthenticated = Boolean(user && session);

@@ -124,7 +124,8 @@ describe('BudgetReferentielsController (e2e)', () => {
 
     const archiveActionResponse = await request(app.getHttpServer())
       .delete(`/budget-referentiels/actions/${createActionResponse.body.id}`)
-      .set('Authorization', `Bearer ${accessToken}`);
+      .set('Authorization', `Bearer ${accessToken}`)
+      .query({ exerciceId });
 
     expect(archiveActionResponse.status).toBe(200);
 
@@ -209,6 +210,40 @@ describe('BudgetReferentielsController (e2e)', () => {
       });
 
     expect(response.status).toBe(403);
+  });
+
+  it('requires exerciceId query param for exercice-scoped updates and deletes', async () => {
+    const createExerciceResponse = await request(app.getHttpServer())
+      .post('/budget-referentiels/exercices')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        libelle: 'Exercice guard check',
+        code: 'EX-GUARD',
+        dateDebut: '2034-01-01',
+        dateFin: '2034-12-31',
+        statut: 'ouvert'
+      });
+
+    expect(createExerciceResponse.status).toBe(201);
+
+    const createSectionResponse = await request(app.getHttpServer())
+      .post('/budget-referentiels/sections')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        exerciceId: createExerciceResponse.body.id,
+        code: 'SEC-GUARD',
+        libelle: 'Section guard',
+        ordre: 1,
+        statut: 'actif'
+      });
+
+    expect(createSectionResponse.status).toBe(201);
+
+    const response = await request(app.getHttpServer())
+      .delete(`/budget-referentiels/sections/${createSectionResponse.body.id}`)
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(response.status).toBe(400);
   });
 
   it('rejects cross-tenant access to exercice-scoped resources', async () => {

@@ -157,8 +157,9 @@ export class BudgetReferentielsService {
     return entity;
   }
 
-  updateEnveloppe(user: AuthenticatedUser, id: string, payload: EnveloppeUpdateDto): EnveloppeEntity {
+  updateEnveloppe(user: AuthenticatedUser, id: string, payload: EnveloppeUpdateDto, exerciceId: string): EnveloppeEntity {
     const current = this.getByTenantOrThrow(this.enveloppes, id, user.tenantId, 'Enveloppe introuvable');
+    this.assertEntityWithinExercice(current.exerciceId, exerciceId);
 
     if (payload.code && payload.code !== current.code) {
       this.assertUniqueCode('enveloppe', payload.code, user.tenantId, id, current.exerciceId);
@@ -178,8 +179,9 @@ export class BudgetReferentielsService {
     return updated;
   }
 
-  archiveEnveloppe(user: AuthenticatedUser, id: string): EnveloppeEntity {
+  archiveEnveloppe(user: AuthenticatedUser, id: string, exerciceId: string): EnveloppeEntity {
     const current = this.getByTenantOrThrow(this.enveloppes, id, user.tenantId, 'Enveloppe introuvable');
+    this.assertEntityWithinExercice(current.exerciceId, exerciceId);
     const archived = {
       ...current,
       statut: 'cloture' as const,
@@ -227,8 +229,9 @@ export class BudgetReferentielsService {
     return entity;
   }
 
-  updateSection(user: AuthenticatedUser, id: string, payload: SectionUpdateDto): SectionEntity {
+  updateSection(user: AuthenticatedUser, id: string, payload: SectionUpdateDto, exerciceId: string): SectionEntity {
     const current = this.getByTenantOrThrow(this.sections, id, user.tenantId, 'Section introuvable');
+    this.assertEntityWithinExercice(current.exerciceId, exerciceId);
 
     if (payload.code && payload.code !== current.code) {
       this.assertUniqueCode('section', payload.code, user.tenantId, id, current.exerciceId);
@@ -248,8 +251,9 @@ export class BudgetReferentielsService {
     return updated;
   }
 
-  archiveSection(user: AuthenticatedUser, id: string): SectionEntity {
+  archiveSection(user: AuthenticatedUser, id: string, exerciceId: string): SectionEntity {
     const current = this.getByTenantOrThrow(this.sections, id, user.tenantId, 'Section introuvable');
+    this.assertEntityWithinExercice(current.exerciceId, exerciceId);
 
     const hasActiveProgrammes = this.filterByTenant(this.programmes, user.tenantId).some(
       (programme) => programme.sectionId === id && !programme.archivedAt
@@ -308,8 +312,9 @@ export class BudgetReferentielsService {
     return entity;
   }
 
-  updateProgramme(user: AuthenticatedUser, id: string, payload: ProgrammeUpdateDto): ProgrammeEntity {
+  updateProgramme(user: AuthenticatedUser, id: string, payload: ProgrammeUpdateDto, exerciceId: string): ProgrammeEntity {
     const current = this.getByTenantOrThrow(this.programmes, id, user.tenantId, 'Programme introuvable');
+    this.assertEntityWithinExercice(current.exerciceId, exerciceId);
 
     if (payload.sectionId) {
       this.ensureSectionAccessible(user.tenantId, payload.sectionId, current.exerciceId);
@@ -333,8 +338,9 @@ export class BudgetReferentielsService {
     return updated;
   }
 
-  archiveProgramme(user: AuthenticatedUser, id: string): ProgrammeEntity {
+  archiveProgramme(user: AuthenticatedUser, id: string, exerciceId: string): ProgrammeEntity {
     const current = this.getByTenantOrThrow(this.programmes, id, user.tenantId, 'Programme introuvable');
+    this.assertEntityWithinExercice(current.exerciceId, exerciceId);
 
     const hasActiveActions = this.filterByTenant(this.actions, user.tenantId).some(
       (action) => action.programmeId === id && !action.archivedAt
@@ -393,8 +399,9 @@ export class BudgetReferentielsService {
     return entity;
   }
 
-  updateAction(user: AuthenticatedUser, id: string, payload: ActionUpdateDto): ActionEntity {
+  updateAction(user: AuthenticatedUser, id: string, payload: ActionUpdateDto, exerciceId: string): ActionEntity {
     const current = this.getByTenantOrThrow(this.actions, id, user.tenantId, 'Action introuvable');
+    this.assertEntityWithinExercice(current.exerciceId, exerciceId);
 
     if (payload.programmeId) {
       this.ensureProgrammeAccessible(user.tenantId, payload.programmeId, current.exerciceId);
@@ -418,8 +425,9 @@ export class BudgetReferentielsService {
     return updated;
   }
 
-  archiveAction(user: AuthenticatedUser, id: string): ActionEntity {
+  archiveAction(user: AuthenticatedUser, id: string, exerciceId: string): ActionEntity {
     const current = this.getByTenantOrThrow(this.actions, id, user.tenantId, 'Action introuvable');
+    this.assertEntityWithinExercice(current.exerciceId, exerciceId);
 
     const archived = {
       ...current,
@@ -561,6 +569,12 @@ export class BudgetReferentielsService {
     }
 
     return programme;
+  }
+
+  private assertEntityWithinExercice(entityExerciceId: string, expectedExerciceId: string): void {
+    if (entityExerciceId !== expectedExerciceId) {
+      throw new ForbiddenException('Access hors exercice refuse');
+    }
   }
 
   private appendAudit(
