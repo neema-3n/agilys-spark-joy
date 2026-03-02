@@ -55,6 +55,32 @@ Runbook complet:
 - `docs/runbooks/postgresql-local-docker.md`
 - verification smoke: `./scripts/verify-postgres-local.sh`
 
+### Migrations DB versionnees (Story CC-01.03)
+
+```bash
+pnpm run db:migrate
+pnpm run db:reset
+pnpm run db:seed
+```
+
+Validation bout-en-bout:
+
+```bash
+pnpm run db:verify
+```
+
+Import donnees Supabase vers local (schema `public`, data-only):
+
+```bash
+pnpm run db:import:remote
+```
+
+Mettre a jour le dataset seed depuis l'etat local courant:
+
+```bash
+pnpm run db:snapshot:local
+```
+
 ## 🧪 Comptes de Test (Phase 0 - Mock Authentication)
 
 ### Super Admin
@@ -200,13 +226,19 @@ DELETE /api/budgets/:id
 - **Zod** - Validation
 - **next-themes** - Dark mode
 
-## 📦 Scripts NPM
+## 📦 Scripts PNPM
 
 ```bash
-npm run dev        # Démarrage serveur de développement
-npm run build      # Build production
-npm run preview    # Preview du build
-npm run lint       # Linter ESLint
+pnpm run dev         # Demarrage serveur de developpement
+pnpm run build       # Build production
+pnpm run preview     # Preview du build
+pnpm run lint        # Linter ESLint
+pnpm run db:migrate  # Appliquer les migrations versionnees
+pnpm run db:reset    # Reset DB local + rejeu migrations (destructif)
+pnpm run db:seed     # Peupler donnees de base rejouables
+pnpm run db:verify   # Verification complete migrate/reset/seed
+pnpm run db:import:remote # Import donnees Supabase (public) vers local
+pnpm run db:snapshot:local # Sauver l'etat local comme dataset de seed
 ```
 
 ## 🎨 Design System

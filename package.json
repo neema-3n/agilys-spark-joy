@@ -8,7 +8,13 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "db:migrate": "bash ./scripts/db-migrate.sh",
+    "db:reset": "bash ./scripts/db-reset.sh",
+    "db:seed": "bash ./scripts/db-seed.sh",
+    "db:verify": "bash ./scripts/verify-db-workflow.sh",
+    "db:import:remote": "bash ./scripts/db-import-remote.sh",
+    "db:snapshot:local": "bash ./scripts/db-snapshot-local.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
