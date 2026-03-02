@@ -40,7 +40,7 @@ development_status:
   2-1-mettre-en-place-lauth-nestjs-jwt-refresh: done
   2-2-appliquer-rbac-et-separation-des-responsabilites: backlog
   2-3-isoler-les-donnees-et-politiques-par-tenant: backlog
-  2-4-migrer-le-frontend-auth-sans-rupture-ux: ready-for-dev
+  2-4-migrer-le-frontend-auth-sans-rupture-ux: review
   2-5-persister-refresh-tokens-en-postgresql: ready-for-dev
   epic-2-retrospective: optional
 

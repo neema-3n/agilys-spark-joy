@@ -42,7 +42,7 @@ const Login = () => {
   const location = useLocation();
   const { toast } = useToast();
 
-  const from = location.state?.from || '/app/dashboard';
+  const from = (location.state as { from?: string } | null)?.from || '/app/dashboard';
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -73,7 +73,7 @@ const Login = () => {
         title: 'Connexion réussie',
         description: 'Bienvenue sur AGILYS',
       });
-      navigate(from);
+      navigate(from, { replace: true });
     } else {
       toast({
         title: 'Erreur de connexion',
@@ -200,10 +200,8 @@ const Login = () => {
               <div className="mt-6 p-4 bg-muted rounded-lg">
                 <p className="text-sm font-medium mb-2">Comptes de test :</p>
                 <div className="space-y-1 text-xs text-muted-foreground">
-                  <p>• <strong>Super Admin :</strong> super@agilys.com / MotDePasse123!</p>
-                  <p>• <strong>Admin :</strong> admin@portonovo.bj / MotDePasse123!</p>
-                  <p>• <strong>Directeur :</strong> directeur@portonovo.bj / MotDePasse123!</p>
-                  <p>• <strong>Comptable :</strong> comptable@portonovo.bj / MotDePasse123!</p>
+                  <p>• <strong>Par defaut backend :</strong> user@agilys.local / ChangeMe123!</p>
+                  <p>• Modifiable via variables backend <code>AUTH_TEST_USER_EMAIL</code> et <code>AUTH_TEST_USER_PASSWORD</code>.</p>
                 </div>
               </div>
             </TabsContent>
