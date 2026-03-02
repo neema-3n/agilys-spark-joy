@@ -82,10 +82,12 @@ export class EnveloppeCreateDto {
 
   @Type(() => Number)
   @IsNumber()
+  @Min(0)
   montantAlloue!: number;
 
   @Type(() => Number)
   @IsNumber()
+  @Min(0)
   montantConsomme!: number;
 
   @IsIn(['actif', 'cloture'])
@@ -114,11 +116,13 @@ export class EnveloppeUpdateDto {
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
+  @Min(0)
   montantAlloue?: number;
 
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
+  @Min(0)
   montantConsomme?: number;
 
   @IsOptional()

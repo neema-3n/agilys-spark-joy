@@ -14,6 +14,7 @@ import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import { TenantExerciceScopeGuard } from '../auth/tenant-exercice-scope.guard';
 import { BudgetReferentielsService } from './budget-referentiels.service';
 import {
   ActionCreateDto,
@@ -33,7 +34,7 @@ import {
 const WRITE_ROLES = ['super_admin', 'admin_client', 'directeur_financier'];
 
 @Controller('budget-referentiels')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, TenantExerciceScopeGuard)
 export class BudgetReferentielsController {
   constructor(private readonly service: BudgetReferentielsService) {}
 

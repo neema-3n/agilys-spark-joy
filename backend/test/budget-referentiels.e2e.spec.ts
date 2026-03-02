@@ -9,6 +9,7 @@ describe('BudgetReferentielsController (e2e)', () => {
   let app: INestApplication;
   let accessToken: string;
   let readOnlyToken: string;
+  let otherTenantToken: string;
 
   beforeAll(async () => {
     applyTestEnv();
@@ -40,6 +41,18 @@ describe('BudgetReferentielsController (e2e)', () => {
         sub: 'user-read-only',
         tenantId: 'tenant-1',
         roles: ['operateur_saisie']
+      },
+      {
+        secret: process.env.JWT_ACCESS_SECRET,
+        expiresIn: 600
+      }
+    );
+
+    otherTenantToken = await jwtService.signAsync(
+      {
+        sub: 'user-other-tenant',
+        tenantId: 'tenant-2',
+        roles: ['admin_client']
       },
       {
         secret: process.env.JWT_ACCESS_SECRET,
@@ -194,6 +207,28 @@ describe('BudgetReferentielsController (e2e)', () => {
         dateFin: '2032-12-31',
         statut: 'ouvert'
       });
+
+    expect(response.status).toBe(403);
+  });
+
+  it('rejects cross-tenant access to exercice-scoped resources', async () => {
+    const createExerciceResponse = await request(app.getHttpServer())
+      .post('/budget-referentiels/exercices')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        libelle: 'Exercice tenant 1',
+        code: 'TENANT-1-ONLY',
+        dateDebut: '2033-01-01',
+        dateFin: '2033-12-31',
+        statut: 'ouvert'
+      });
+
+    expect(createExerciceResponse.status).toBe(201);
+
+    const response = await request(app.getHttpServer())
+      .get('/budget-referentiels/actions')
+      .set('Authorization', `Bearer ${otherTenantToken}`)
+      .query({ exerciceId: createExerciceResponse.body.id });
 
     expect(response.status).toBe(403);
   });

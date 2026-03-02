@@ -14,12 +14,12 @@ export const useActions = (programmeId?: string) => {
 
   const { data: actions = [], isLoading, error, refetch } = useQuery({
     queryKey: programmeId 
-      ? ['actions', 'programme', programmeId]
+      ? ['actions', 'programme', programmeId, clientId, exerciceId]
       : ['actions', clientId, exerciceId],
     queryFn: () => programmeId 
       ? actionsService.getByProgrammeId(programmeId, exerciceId)
       : actionsService.getAll(clientId, exerciceId),
-    enabled: programmeId ? !!programmeId : (!!clientId && !!exerciceId),
+    enabled: programmeId ? (!!programmeId && !!clientId && !!exerciceId) : (!!clientId && !!exerciceId),
   });
 
   const createMutation = useMutation({
@@ -29,8 +29,8 @@ export const useActions = (programmeId?: string) => {
       queryClient.invalidateQueries({ queryKey: ['actions'] });
       toast.success('Action créée avec succès');
     },
-    onError: () => {
-      toast.error('Erreur lors de la création de l\'action');
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : 'Erreur lors de la création de l\'action');
     },
   });
 
@@ -41,8 +41,8 @@ export const useActions = (programmeId?: string) => {
       queryClient.invalidateQueries({ queryKey: ['actions'] });
       toast.success('Action modifiée avec succès');
     },
-    onError: () => {
-      toast.error('Erreur lors de la modification de l\'action');
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : 'Erreur lors de la modification de l\'action');
     },
   });
 
@@ -52,8 +52,8 @@ export const useActions = (programmeId?: string) => {
       queryClient.invalidateQueries({ queryKey: ['actions'] });
       toast.success('Action supprimée avec succès');
     },
-    onError: () => {
-      toast.error('Erreur lors de la suppression de l\'action');
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : 'Erreur lors de la suppression de l\'action');
     },
   });
 

@@ -1,6 +1,7 @@
 import { ConflictException, ForbiddenException } from '@nestjs/common';
 import { BudgetReferentielsService } from './budget-referentiels.service';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
+import { applyTestEnv } from '../../test/test-env';
 
 const adminUser: AuthenticatedUser = {
   sub: 'user-1',
@@ -18,6 +19,7 @@ describe('BudgetReferentielsService', () => {
   let service: BudgetReferentielsService;
 
   beforeEach(() => {
+    applyTestEnv();
     service = new BudgetReferentielsService();
   });
 
