@@ -99,6 +99,13 @@ So that la migration backend reste transparente.
   - [x] Documenter les variables d'environnement frontend (base URL API, mode migration).
   - [x] Mettre a jour la checklist de decommission Supabase auth pour ce lot.
 
+### Review Follow-ups (AI)
+
+- [x] [AI-Review][HIGH] Couvrir les parcours UX critiques au niveau composant/router (pas seulement utilitaires): login success -> redirection `from`, route protegee anon -> `/auth/login` avec `state.from`, refresh fail -> redirection login. [tests/auth-migration.spec.ts]
+- [x] [AI-Review][MEDIUM] Gerer les erreurs reseau sur `signup` avec `try/catch` pour retourner une erreur utilisateur actionnable au lieu d'une rejection non geree. [src/services/api/auth.service.ts]
+- [x] [AI-Review][MEDIUM] Durcir `decodeAccessTokenClaims` pour payload JWT UTF-8 (noms avec accents) afin d'eviter un echec de parsing session. [src/services/auth/auth-session.ts]
+- [x] [AI-Review][MEDIUM] Aligner la File List story avec la realite Git de la revue (working tree propre: aucune preuve locale des fichiers listes). [git log --oneline]
+
 ## Dev Notes
 
 ### Contexte architecture et guardrails
@@ -263,8 +270,44 @@ GPT-5 Codex
 - README.md
 - docs/supabase-auth-decommission-checklist.md
 
+### Git Evidence (tracabilite implementation)
+
+- HEAD local pendant cette revue: `b2a3d27` (`Fix login for local auth`).
+- Commits portant les changements de la story 2.4 et revues associees:
+  - `f39a38c` (advance migration auth frontend),
+  - `42bf24b` (review auth migration diff),
+  - `0e47d5e` (verification docs/tests migration auth),
+  - `b2a3d27` (correctif login local auth).
+- Conclusion: l'absence de diff locale au moment de la revue precedente venait d'un lot deja committe, pas d'une absence d'implementation.
+
 ## Change Log
 
 - 2026-03-02: Creation de la story 2.4 en format context-filled, avec contraintes d'implementation, intelligence stories precedentes et references techniques officielles.
 - 2026-03-02: Implementation complete de la migration auth frontend vers API NestJS (login/refresh/logout), tests front ajoutes, documentation et checklist de decommission mises a jour.
 - 2026-03-02: Correctifs post-review HIGH/MEDIUM appliques (redirections auth explicites, suppression supabase auth runtime dans `auth.service`, couverture tests et documentation endpoint harmonisee).
+- 2026-03-02: Revue senior adversariale: 1 HIGH + 3 MEDIUM ouverts, statut repasse a `in-progress`, action items ajoutes.
+- 2026-03-02: Correctifs findings review appliques (coverage AC7 etendue, gestion erreur reseau signup, decode JWT UTF-8, tracabilite Git explicitee), retour statut `review`.
+
+## Senior Developer Review (AI)
+
+Date: 2026-03-02
+Reviewer: Max
+Outcome: Changes Applied - Ready for Re-Review
+
+### Findings
+
+1. [HIGH] Couverture AC7 incomplète sur les parcours UX/routing critiques.
+   - Preuve: les tests existants sont principalement unitaires/utilitaires (`token-storage`, `http-client`, helpers de routing), sans test composant/router sur redirection post-login `from`, guard `ProtectedRoute`, et redirection effective apres refresh fail.
+   - References: `tests/auth-migration.spec.ts:38`, `tests/auth-migration.spec.ts:208`, `src/pages/auth/Login.tsx:51`, `src/components/ProtectedRoute.tsx:22`.
+
+2. [MEDIUM] `signup` ne capture pas les erreurs reseau/exception.
+   - Preuve: contrairement a `login`, `signup` n'a pas de `try/catch`; un echec fetch peut remonter une rejection non transformee en message utilisateur.
+   - Reference: `src/services/api/auth.service.ts:120`.
+
+3. [MEDIUM] Parsing JWT fragile sur payload UTF-8.
+   - Preuve: `decodeBase64` utilise `atob` directement puis `JSON.parse`, sans decode UTF-8; des claims non ASCII (`nom`, `prenom`) peuvent casser l'hydratation session.
+   - References: `src/services/auth/auth-session.ts:21`, `src/services/auth/auth-session.ts:30`.
+
+4. [MEDIUM] Ecart de tracabilite story vs realite Git locale.
+   - Preuve: `git status --porcelain`, `git diff --name-only`, `git diff --cached --name-only` renvoient vide pendant la revue, alors que la File List revendique de nombreux fichiers modifies.
+   - Reference: `/_bmad-output/implementation-artifacts/2-4-migrer-le-frontend-auth-sans-rupture-ux.md:249`.

@@ -124,19 +124,23 @@ export const authService = {
     prenom: string,
     clientId: string = 'client-1'
   ): Promise<{ user?: unknown; error?: string }> {
-    const response = await httpClient.request('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ email, password, nom, prenom, clientId }),
-      authenticated: false,
-      retryOnAuthFailure: false
-    });
+    try {
+      const response = await httpClient.request('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ email, password, nom, prenom, clientId }),
+        authenticated: false,
+        retryOnAuthFailure: false
+      });
 
-    if (!response.ok) {
-      return { error: await parseSignupError(response) };
+      if (!response.ok) {
+        return { error: await parseSignupError(response) };
+      }
+
+      const payload = await response.json().catch(() => null);
+      return { user: payload };
+    } catch {
+      return { error: "Impossible de joindre l'API d'inscription. Vérifiez que le backend est démarré." };
     }
-
-    const payload = await response.json().catch(() => null);
-    return { user: payload };
   },
 
   // Déconnexion
