@@ -1,6 +1,6 @@
 # Story 2.4 - Migrer le frontend auth sans rupture UX
 
-Status: ready-for-dev
+Status: review
 Epic: 2 - Gouvernance d'acces, roles et isolation multi-tenant
 Story Key: 2-4-migrer-le-frontend-auth-sans-rupture-ux
 Created: 2026-03-02
@@ -69,35 +69,35 @@ So that la migration backend reste transparente.
 
 ## Tasks / Subtasks
 
-- [ ] Mettre en place un client auth API unifie (AC: 1, 2, 3, 4, 8)
-  - [ ] Creer un service frontend dedie aux appels NestJS auth (`login`, `refresh`, `logout`) avec types explicites request/response.
-  - [ ] Definir un stockage token frontend (access/refresh) encapsule (module unique) et API clear/read/write.
-  - [ ] Supprimer l'appel direct `supabase.auth.signInWithPassword` du flux login principal.
+- [x] Mettre en place un client auth API unifie (AC: 1, 2, 3, 4, 8)
+  - [x] Creer un service frontend dedie aux appels NestJS auth (`login`, `refresh`, `logout`) avec types explicites request/response.
+  - [x] Definir un stockage token frontend (access/refresh) encapsule (module unique) et API clear/read/write.
+  - [x] Supprimer l'appel direct `supabase.auth.signInWithPassword` du flux login principal.
 
-- [ ] Centraliser la gestion de session dans `AuthContext` (AC: 1, 3, 5, 8)
-  - [ ] Remplacer la source de verite session Supabase par la session locale API (etat memoire + persistence minimale).
-  - [ ] Conserver les signatures publiques du contexte (`login`, `logout`, `isAuthenticated`) pour limiter les regressions.
-  - [ ] Standardiser le mapping utilisateur (`sub`, `tenantId`, `roles`) vers le type `User` front.
+- [x] Centraliser la gestion de session dans `AuthContext` (AC: 1, 3, 5, 8)
+  - [x] Remplacer la source de verite session Supabase par la session locale API (etat memoire + persistence minimale).
+  - [x] Conserver les signatures publiques du contexte (`login`, `logout`, `isAuthenticated`) pour limiter les regressions.
+  - [x] Standardiser le mapping utilisateur (`sub`, `tenantId`, `roles`) vers le type `User` front.
 
-- [ ] Implementer la strategie de refresh sans boucle (AC: 2, 3)
-  - [ ] Mettre en place un mecanisme single-flight pour eviter des refresh concurrents.
-  - [ ] Rejouer une requete echouee au plus une fois apres refresh reussi.
-  - [ ] Sur echec refresh: nettoyer session et rediriger vers login avec `from`.
+- [x] Implementer la strategie de refresh sans boucle (AC: 2, 3)
+  - [x] Mettre en place un mecanisme single-flight pour eviter des refresh concurrents.
+  - [x] Rejouer une requete echouee au plus une fois apres refresh reussi.
+  - [x] Sur echec refresh: nettoyer session et rediriger vers login avec `from`.
 
-- [ ] Preserver les redirections UX existantes (AC: 5, 6, 7)
-  - [ ] Verifier `ProtectedRoute` pour conserver `state.from` sur toute route `/app/*` non authentifiee.
-  - [ ] Garantir la redirection d'un utilisateur deja authentifie hors `/auth/login` sans flash.
-  - [ ] Conserver fallback `/app/dashboard` en l'absence de `from`.
+- [x] Preserver les redirections UX existantes (AC: 5, 6, 7)
+  - [x] Verifier `ProtectedRoute` pour conserver `state.from` sur toute route `/app/*` non authentifiee.
+  - [x] Garantir la redirection d'un utilisateur deja authentifie hors `/auth/login` sans flash.
+  - [x] Conserver fallback `/app/dashboard` en l'absence de `from`.
 
-- [ ] Ajuster la page Login sans rupture fonctionnelle (AC: 1, 5, 7)
-  - [ ] Conserver validation Zod et messages utilisateur existants.
-  - [ ] Garder la meme experience de loading/feedback toast pendant login/logout.
-  - [ ] Verifier compatibilite des comptes de test avec le backend cible (ou masquer temporairement les hints non valides).
+- [x] Ajuster la page Login sans rupture fonctionnelle (AC: 1, 5, 7)
+  - [x] Conserver validation Zod et messages utilisateur existants.
+  - [x] Garder la meme experience de loading/feedback toast pendant login/logout.
+  - [x] Verifier compatibilite des comptes de test avec le backend cible (ou masquer temporairement les hints non valides).
 
-- [ ] Verifier et documenter (AC: 7, 8)
-  - [ ] Ajouter tests unitaires/integration front sur les parcours auth critiques.
-  - [ ] Documenter les variables d'environnement frontend (base URL API, mode migration).
-  - [ ] Mettre a jour la checklist de decommission Supabase auth pour ce lot.
+- [x] Verifier et documenter (AC: 7, 8)
+  - [x] Ajouter tests unitaires/integration front sur les parcours auth critiques.
+  - [x] Documenter les variables d'environnement frontend (base URL API, mode migration).
+  - [x] Mettre a jour la checklist de decommission Supabase auth pour ce lot.
 
 ## Dev Notes
 
@@ -223,19 +223,45 @@ GPT-5 Codex
 
 - Analyse exhaustive: sprint-status, epics, PRD, project-context, stories 2.1 et 2.5, code front auth actuel, contrats backend auth.
 - Selection story explicite utilisateur: `2-4-migrer-le-frontend-auth-sans-rupture-ux`.
+- Migration implementee: token storage centralise, client HTTP auth avec refresh single-flight, AuthContext sans Supabase auth.
+- Validations executees: `npm run lint`, `npx tsc -b --pretty false`, `npx playwright test tests/auth-migration.spec.ts --reporter=line`.
+
+### Implementation Plan
+
+- Introduire une couche auth front centralisee (`token-storage`, decode JWT, `http-client`) pour piloter login/refresh/logout via NestJS.
+- Migrer `auth.service.ts` pour utiliser exclusivement les endpoints NestJS sur les flux de session.
+- Remplacer `AuthContext` pour hydrater la session locale, gerer l'expiration/refresh et exposer la meme API publique.
+- Preserver les redirections UX via `ProtectedRoute` et Login (`from` + fallback dashboard, sans flash).
+- Ajouter des tests front ciblant token storage, retry apres refresh et nettoyage session en echec refresh.
+- Documenter la variable frontend API base URL et la checklist de decommission Supabase auth.
 
 ### Completion Notes List
 
-- Story context cree avec guardrails implementation pour migration auth frontend progressive.
-- AC enrichis pour couvrir UX, refresh, logout, redirections et non-regression.
-- Dependances amont/aval explicitees (2.1 backend deja en place, 2.5 persistence en ready-for-dev).
-- Statut story positionne a `ready-for-dev`.
+- Flux login frontend migre de Supabase vers `POST /auth/login`, avec stockage local access/refresh.
+- Strategie refresh centralisee implementee: single-flight, retry unique apres 401, nettoyage session + notification echec.
+- `AuthContext` migre en source de verite session locale API, en conservant API publique (`login`, `logout`, `isAuthenticated`, `hasRole`).
+- Redirections UX preservees (`state.from` complet dans `ProtectedRoute`, fallback `/app/dashboard`, `navigate(..., { replace: true })`).
+- Hints comptes de test login alignes backend NestJS (`AUTH_TEST_USER_EMAIL` / `AUTH_TEST_USER_PASSWORD`).
+- Tests auth ajoutes et passes (4 scenarii): storage, refresh success retry, refresh fail cleanup, parsing claims/expiration.
+- Documentation mise a jour: variable `VITE_API_BASE_URL` et checklist de decommission Supabase auth (lot 2.4).
 
 ### File List
 
 - _bmad-output/implementation-artifacts/2-4-migrer-le-frontend-auth-sans-rupture-ux.md
 - _bmad-output/implementation-artifacts/sprint-status.yaml
+- src/services/auth/token-storage.ts
+- src/services/auth/auth-session.ts
+- src/services/api/http-client.ts
+- src/services/api/auth.service.ts
+- src/contexts/AuthContext.tsx
+- src/components/ProtectedRoute.tsx
+- src/pages/auth/Login.tsx
+- src/types/index.ts
+- tests/auth-migration.spec.ts
+- README.md
+- docs/supabase-auth-decommission-checklist.md
 
 ## Change Log
 
 - 2026-03-02: Creation de la story 2.4 en format context-filled, avec contraintes d'implementation, intelligence stories precedentes et references techniques officielles.
+- 2026-03-02: Implementation complete de la migration auth frontend vers API NestJS (login/refresh/logout), tests front ajoutes, documentation et checklist de decommission mises a jour.

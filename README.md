@@ -15,6 +15,20 @@ npm run dev
 http://localhost:8080
 ```
 
+## 🔐 Configuration Auth Frontend (Story 2.4)
+
+Le frontend d'authentification utilise maintenant l'API NestJS (`/auth/login`, `/auth/refresh`, `/auth/logout`) avec stockage local des tokens.
+
+Variables frontend (fichier `.env`) :
+
+```bash
+VITE_API_BASE_URL="http://localhost:3001"
+```
+
+Notes:
+- Si `VITE_API_BASE_URL` est absent, le client frontend utilise des chemins relatifs (`/auth/*`) vers le même host.
+- Les variables `AUTH_TEST_USER_EMAIL` et `AUTH_TEST_USER_PASSWORD` se configurent côté backend (voir `backend/README.md`).
+
 ## 🧪 Comptes de Test (Phase 0 - Mock Authentication)
 
 ### Super Admin
