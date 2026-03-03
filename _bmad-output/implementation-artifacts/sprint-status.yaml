@@ -21,7 +21,7 @@ development_status:
   epic-3: in-progress
   3-1-configurer-referentiels-budgetaires-de-base: done
   3-2-gerer-allocations-et-reallocations-de-credits: done
-  3-3-versionner-les-decisions-budgetaires: review
+  3-3-versionner-les-decisions-budgetaires: done
   3-4-produire-previsions-et-ecarts-prevision-execution: backlog
   epic-3-retrospective: optional
   epic-4: backlog

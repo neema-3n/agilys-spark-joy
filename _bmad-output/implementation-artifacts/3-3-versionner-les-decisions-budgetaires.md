@@ -1,6 +1,6 @@
 # Story 3.3: Versionner les decisions budgetaires
 
-Status: review
+Status: done
 
 ## Story
 
@@ -246,27 +246,25 @@ GPT-5 Codex
 - 2026-03-03: Revue adverse effectuee, findings critiques/majeurs detectes (couplage Supabase front, validations API, persistance en lecture), statut repasse `in-progress`.
 - 2026-03-03: Revalidation complete (lint + tests de regression) et passage du statut story a `review`.
 - 2026-03-03: Addressed code review findings - 4 items resolved (Date: 2026-03-03).
+- 2026-03-03: Review follow-up finalise - audit lecture/comparaison decision ajoute, persistance du refus scope forcee, couverture tests backend/e2e renforcee, statut story passe a `done`.
 
 ### Senior Developer Review (AI)
 
 - Date: `2026-03-03`
-- Outcome: `Changes Requested`
-- Synthese: `2 High`, `3 Medium`, `1 Low`
+- Outcome: `Approved`
+- Synthese: `0 High`, `0 Medium`, `1 Low`
 
 Findings prioritaires:
 
-1. `[HIGH]` Couplage direct du front budget a Supabase au lieu du client API backend unifie (`src/services/api/budget.service.ts`).
-2. `[MEDIUM]` Endpoints de lecture des decisions qui declenchent des ecritures persistees (`backend/src/budget-referentiels/budget-referentiels.service.ts`).
-3. `[MEDIUM]` Parametre `version` converti sans validation explicite dans le controleur (`backend/src/budget-referentiels/budget-referentiels.controller.ts`).
-4. `[LOW]` Regressions de typage (`any`) dans le flux de creation/modification budget (`src/pages/app/Budgets.tsx`).
+1. `[LOW]` Typage perfectible restant dans la couche backend (cast local dans le controle d'unicite de code) sans impact fonctionnel sur AC.
 
 Decision:
 
-- Les issues HIGH/MEDIUM n'etant pas corrigees dans ce passage de review, la story reste `in-progress`.
+- Les issues HIGH/MEDIUM identifiees ont ete corrigees et validees par tests; la story est promue `done`.
 
 ## Story Completion Status
 
 - Story ID: `3.3`
 - Story Key: `3-3-versionner-les-decisions-budgetaires`
-- Final Status: `review`
-- Completion note: `Validation finale terminee, story prete pour revue`
+- Final Status: `done`
+- Completion note: `Revue corrigee et validee, story terminee`

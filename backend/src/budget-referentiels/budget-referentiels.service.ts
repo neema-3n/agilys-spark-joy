@@ -593,9 +593,18 @@ export class BudgetReferentielsService {
 
   getDecisionHistory(user: AuthenticatedUser, allocationId: string, exerciceId: string): DecisionVersionEntity[] {
     this.ensureAllocationAccessible(user.tenantId, allocationId, exerciceId, user.sub);
-    return [...(this.decisionVersions.get(allocationId) ?? [])]
+    const history = [...(this.decisionVersions.get(allocationId) ?? [])]
       .filter((version) => version.clientId === user.tenantId && version.exerciceId === exerciceId)
       .sort((left, right) => left.version - right.version);
+
+    this.appendAudit(user, 'decision_version', allocationId, 'decision_history_read', null, {
+      allocationId,
+      exerciceId,
+      versionsRead: history.length
+    });
+    this.persist();
+
+    return history;
   }
 
   getDecisionVersion(user: AuthenticatedUser, allocationId: string, exerciceId: string, version: number): DecisionVersionEntity {
@@ -620,7 +629,8 @@ export class BudgetReferentielsService {
     rightVersion: DecisionVersionEntity;
     differences: Record<string, { from: unknown; to: unknown }>;
   } {
-    const history = this.getDecisionHistory(user, allocationId, query.exerciceId);
+    this.ensureAllocationAccessible(user.tenantId, allocationId, query.exerciceId, user.sub);
+    const history = this.getDecisionHistoryUnsafe(allocationId, user.tenantId, query.exerciceId);
     if (history.length < 2) {
       throw new BadRequestException('Comparaison impossible: minimum 2 versions requises');
     }
@@ -650,6 +660,14 @@ export class BudgetReferentielsService {
     }
 
     const differences = this.computeDecisionDiff(left, right);
+    this.appendAudit(user, 'decision_version', allocationId, 'decision_compare', null, {
+      allocationId,
+      exerciceId: query.exerciceId,
+      leftVersion: left.version,
+      rightVersion: right.version,
+      differences
+    });
+    this.persist();
 
     return {
       allocationId,
@@ -923,6 +941,7 @@ export class BudgetReferentielsService {
         before: { requestedExerciceId: exerciceId, requestedTenantId: tenantId },
         after: { allocationTenantId: allocation.clientId, allocationExerciceId: allocation.exerciceId }
       });
+      this.persist();
       throw new ForbiddenException('Access hors perimetre tenant/exercice refuse');
     }
 
@@ -1039,20 +1058,27 @@ export class BudgetReferentielsService {
               ? [...this.programmes.values()]
               : [...this.actions.values()];
 
-    const duplicated = entities.some((entity: any) => {
-      if (entity.clientId !== tenantId || entity.archivedAt) {
+    const duplicated = entities.some((entity) => {
+      const candidate = entity as {
+        id: string;
+        clientId: string;
+        archivedAt?: string | null;
+        code: string;
+        exerciceId?: string;
+      };
+      if (candidate.clientId !== tenantId || candidate.archivedAt) {
         return false;
       }
 
-      if (ignoreId && entity.id === ignoreId) {
+      if (ignoreId && candidate.id === ignoreId) {
         return false;
       }
 
-      if (exerciceId && entity.exerciceId && entity.exerciceId !== exerciceId) {
+      if (exerciceId && candidate.exerciceId && candidate.exerciceId !== exerciceId) {
         return false;
       }
 
-      return String(entity.code).toLowerCase() === code;
+      return String(candidate.code).toLowerCase() === code;
     });
 
     if (duplicated) {

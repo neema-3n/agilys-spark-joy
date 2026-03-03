@@ -394,6 +394,17 @@ describe('BudgetReferentielsController (e2e)', () => {
     expect(compareResponse.body.differences.statutDecision).toBeDefined();
     expect(compareResponse.body.differences.motif).toBeDefined();
 
+    const decisionAuditResponse = await request(app.getHttpServer())
+      .get('/budget-referentiels/audit-log')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .query({ entityType: 'decision_version', entityId: decisionId });
+    expect(decisionAuditResponse.status).toBe(200);
+    const decisionAuditActions = new Set(
+      (decisionAuditResponse.body as Array<{ action: string }>).map((entry) => entry.action)
+    );
+    expect(decisionAuditActions.has('decision_history_read')).toBeTruthy();
+    expect(decisionAuditActions.has('decision_compare')).toBeTruthy();
+
     const invalidVersionResponse = await request(app.getHttpServer())
       .get(`/budget-referentiels/allocations/${decisionId}/decisions/0`)
       .set('Authorization', `Bearer ${accessToken}`)
