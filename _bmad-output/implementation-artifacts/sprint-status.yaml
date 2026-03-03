@@ -21,7 +21,7 @@ development_status:
   epic-3: in-progress
   3-1-configurer-referentiels-budgetaires-de-base: done
   3-2-gerer-allocations-et-reallocations-de-credits: done
-  3-3-versionner-les-decisions-budgetaires: in-progress
+  3-3-versionner-les-decisions-budgetaires: review
   3-4-produire-previsions-et-ecarts-prevision-execution: backlog
   epic-3-retrospective: optional
   epic-4: backlog
@@ -67,7 +67,7 @@ development_status:
   10-4-mesurer-les-temps-de-traitement-par-etape: backlog
   epic-10-retrospective: optional
   epic-m1: backlog
-  m1-1-etablir-linventaire-de-parite-fonctionnelle: review
+  m1-1-etablir-linventaire-de-parite-fonctionnelle: in-progress
   m1-2-verifier-la-parite-des-contrats-api: backlog
   m1-3-executer-la-non-regression-e2e-de-migration: backlog
   epic-m1-retrospective: optional

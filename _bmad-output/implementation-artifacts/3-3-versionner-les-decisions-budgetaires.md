@@ -1,6 +1,6 @@
 # Story 3.3: Versionner les decisions budgetaires
 
-Status: in-progress
+Status: review
 
 ## Story
 
@@ -208,6 +208,7 @@ GPT-5 Codex
 - Vue front "Historique" ajoutee dans l'onglet modifications budgetaires avec comparaison de versions et differences metier lisibles.
 - Tests backend unitaires/e2e ajoutes pour AC de non-destruction, isolation tenant/exercice, et comparaison; test frontend ajoute pour le diff de versions.
 - Verification effectuee: aucun nouvel appel direct `@supabase/supabase-js` introduit.
+- 2026-03-03: Validation finale workflow dev-story effectuee en mode YOLO (lint + suite de tests frontend/backend passes), story confirmee prete pour review.
 
 ### File List
 
@@ -235,6 +236,7 @@ GPT-5 Codex
 - 2026-03-02: Implementation complete de la story 3.3 (versionnement de decisions budgetaires, endpoints backend, vue front de comparaison, tests backend/front, audit et isolation scope).
 - 2026-03-02: Synchronisation de la File List avec les changements git reels (`git diff --name-only`) pour alignement review/audit.
 - 2026-03-03: Revue adverse effectuee, findings critiques/majeurs detectes (couplage Supabase front, validations API, persistance en lecture), statut repasse `in-progress`.
+- 2026-03-03: Revalidation complete (lint + tests de regression) et passage du statut story a `review`.
 
 ### Senior Developer Review (AI)
 
@@ -257,5 +259,5 @@ Decision:
 
 - Story ID: `3.3`
 - Story Key: `3-3-versionner-les-decisions-budgetaires`
-- Final Status: `in-progress`
-- Completion note: `Code review adverse complete: corrections requises avant retour en review`
+- Final Status: `review`
+- Completion note: `Validation finale terminee, story prete pour revue`
