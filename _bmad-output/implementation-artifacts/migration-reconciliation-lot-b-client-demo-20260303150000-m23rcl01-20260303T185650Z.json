@@ -1,0 +1,56 @@
+{
+  "batchId": "lot-b-client-demo-20260303150000-m23rcl01",
+  "runAt": "2026-03-03T18:56:50.740Z",
+  "criticalEntities": [
+    "allocations",
+    "decisionVersions",
+    "exercices"
+  ],
+  "thresholds": {
+    "maxCriticalCardinalityDiff": 0,
+    "maxAmountDelta": 0,
+    "maxCriticalAnomalies": 0,
+    "maxHighAnomalies": 0
+  },
+  "cardinality": [
+    {
+      "entity": "allocations",
+      "sourceCount": 2,
+      "targetCount": 2,
+      "delta": 0,
+      "severity": "medium"
+    },
+    {
+      "entity": "decisionVersions",
+      "sourceCount": 2,
+      "targetCount": 2,
+      "delta": 0,
+      "severity": "medium"
+    },
+    {
+      "entity": "exercices",
+      "sourceCount": 1,
+      "targetCount": 1,
+      "delta": 0,
+      "severity": "medium"
+    }
+  ],
+  "anomalies": [],
+  "anomalyBySeverity": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0
+  },
+  "decision": "GO",
+  "causes": [
+    "Aucun ecart bloquant detecte"
+  ],
+  "resolutions": [
+    "Signer le rapport metier/technique et autoriser la progression du lot"
+  ],
+  "signature": {
+    "business": "A signer",
+    "technical": "A signer"
+  },
+  "reproducibilityHash": "b6243555a6e789db85e941a2a92fac7a8a2ef8551c66f5accf9e53a93e2c18c3"
+}

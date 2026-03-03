@@ -10,6 +10,12 @@ Source de verite: `epics.md` + `sprint-status.yaml` + routes `src/App.tsx` + con
 - `partiel`: flux disponible mais incomplet, en `review` ou coverage incomplet
 - `non migre`: flux critique backlog ou route UI sans backend cible confirme
 
+## Synchronisation stories migration (M*)
+
+| Story | Statut sprint-status | Derniere sync matrice | Commentaire |
+|---|---|---|---|
+| M2.3 - Reconciler avant/apres sur donnees critiques | `review` | 2026-03-03 | Synchronise avec `/_bmad-output/implementation-artifacts/sprint-status.yaml` |
+
 ## Matrice de parite (flux critiques)
 
 | ID | Flux critique | Route/Page | API NestJS cible | Data cible | Couverture story | Statut | Priorite | Owner | Date cible | Dependances techniques/externes |

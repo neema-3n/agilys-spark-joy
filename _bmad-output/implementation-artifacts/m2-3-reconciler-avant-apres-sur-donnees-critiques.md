@@ -1,6 +1,6 @@
 # Story M2.3: Reconciler avant/apres sur donnees critiques
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -30,12 +30,12 @@ so that la bascule soit validee en confiance.
 
 ## Tasks / Subtasks
 
-- [ ] Definir la liste des entites critiques et metriques de controle (AC: 1, 2)
-- [ ] Implementer scripts de reconciliation cardinalite source/cible par lot (AC: 1)
-- [ ] Implementer controles de coherence metier (montants/statuts/FK) sur echantillons critiques (AC: 2)
-- [ ] Definir seuils d'acceptation et regles de blocage (AC: 2, 3)
-- [ ] Generer rapport standard de reconciliation avec decision Go/No-Go (AC: 3)
-- [ ] Archiver les rapports dans `/_bmad-output/implementation-artifacts/` (AC: 3)
+- [x] Definir la liste des entites critiques et metriques de controle (AC: 1, 2)
+- [x] Implementer scripts de reconciliation cardinalite source/cible par lot (AC: 1)
+- [x] Implementer controles de coherence metier (montants/statuts/FK) sur echantillons critiques (AC: 2)
+- [x] Definir seuils d'acceptation et regles de blocage (AC: 2, 3)
+- [x] Generer rapport standard de reconciliation avec decision Go/No-Go (AC: 3)
+- [x] Archiver les rapports dans `/_bmad-output/implementation-artifacts/` (AC: 3)
 
 ## Dev Notes
 
@@ -86,11 +86,28 @@ GPT-5 Codex
 
 - Story M2.3 preparee au format implementation avec AC et taches executables.
 - Criteres Go/No-Go data relies explicitement au pipeline de migration.
+- Reconciliation Lot B implementee via un moteur TypeScript dedie (cardinalite + coherence metier montants/statuts/FK) avec anomalies severisees.
+- Seuils de blocage formalises et appliques automatiquement (`maxCriticalCardinalityDiff`, `maxAmountDelta`, `maxCriticalAnomalies`, `maxHighAnomalies`) pour produire une decision Go/No-Go deterministe.
+- Rapport standard genere en triple format (Markdown + JSON + CSV) avec causes, resolutions, sections de signature metier/technique et hash de rejouabilite.
+- CLI operationnelle ajoutee pour produire/archiver les rapports de reconciliation dans `/_bmad-output/implementation-artifacts/`.
+- Validation effectuee: `pnpm --dir backend run lint`, `pnpm --dir backend run test -- src/migration/lot-b/reconciliation.spec.ts src/migration/lot-b/runner.spec.ts`, `pnpm --dir backend run test`.
 
 ### File List
 
 - `_bmad-output/implementation-artifacts/m2-3-reconciler-avant-apres-sur-donnees-critiques.md`
+- `backend/package.json`
+- `backend/src/migration/lot-b/reconciliation.ts`
+- `backend/src/migration/lot-b/reconciliation.cli.ts`
+- `backend/src/migration/lot-b/reconciliation.spec.ts`
+- `backend/src/migration/lot-b/reconciliation.cli.spec.ts`
+- `backend/src/migration/lot-b/reconciliation-input.example.json`
+- `_bmad-output/implementation-artifacts/migration-reconciliation-lot-b-client-demo-20260303150000-m23rcl01-20260303T185650Z.json`
+- `_bmad-output/implementation-artifacts/migration-reconciliation-lot-b-client-demo-20260303150000-m23rcl01-20260303T185650Z.csv`
+- `_bmad-output/implementation-artifacts/migration-reconciliation-lot-b-client-demo-20260303150000-m23rcl01-20260303T185650Z.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
 
 ### Change Log
 
 - 2026-03-02: Creation de la story d'implementation M2.3 (ready-for-dev).
+- 2026-03-03: Implementation complete de la reconciliation avant/apres Lot B (cardinalite + coherence metier + seuils Go/No-Go + exports JSON/CSV/Markdown + CLI + tests).
+- 2026-03-03: Correctifs de revue appliques (validation stricte input CLI, detection montant manquant asymetrique, detection doublons d'echantillons, synchronisation matrice de parite M2.3).
