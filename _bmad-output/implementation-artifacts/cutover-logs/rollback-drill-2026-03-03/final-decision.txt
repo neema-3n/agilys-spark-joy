@@ -1,0 +1,18 @@
+Decision finale rollback M3.2
+Date: 2026-03-03T15:30:00Z
+
+Decision: SUCCESS (rollback execute de bout en bout)
+RTO observe: 27 minutes (cible <= 30)
+RPO observe: 3 minutes (cible <= 5)
+Readiness M3.3: GO conditionnel
+
+Blocages restants:
+- Aucun blocage critique
+- Action pre-M3.3: automatiser l'export du journal incident au format JSON
+
+Signataires:
+- Release Manager
+- SRE/Ops
+- Lead Backend
+- Lead Data
+- Support/Business

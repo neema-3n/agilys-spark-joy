@@ -1,0 +1,10 @@
+Validation metier post-rollback (staging)
+Date: 2026-03-03
+
+- Parcours "connexion -> dashboard principal": PASS
+- Parcours "consultation statut budget": PASS
+- Parcours "lecture reconciliation lot B": PASS
+- Blocage critique observe: NONE
+
+Validation owner: Support/Business
+Conclusion: PASS
