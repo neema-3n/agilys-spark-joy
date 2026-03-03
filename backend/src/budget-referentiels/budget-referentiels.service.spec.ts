@@ -306,6 +306,11 @@ describe('BudgetReferentielsService', () => {
     expect(comparison.rightVersion.version).toBe(3);
     expect(comparison.differences.statutDecision).toBeDefined();
     expect(comparison.differences.motif).toBeDefined();
+
+    const decisionAuditEntries = service.getAuditLog(adminUser, 'decision_version', allocation.id);
+    const auditActions = new Set(decisionAuditEntries.map((entry) => entry.action));
+    expect(auditActions.has('decision_history_read')).toBeTruthy();
+    expect(auditActions.has('decision_compare')).toBeTruthy();
   });
 
   it('rejects decision history access outside tenant or exercice scope', () => {
@@ -325,6 +330,9 @@ describe('BudgetReferentielsService', () => {
     });
 
     expect(() => service.getDecisionHistory(otherTenantUser, allocation.id, exercice.id)).toThrow(ForbiddenException);
+
+    const deniedAuditEntries = service.getAuditLog(otherTenantUser, 'decision_version', allocation.id);
+    expect(deniedAuditEntries.some((entry) => entry.action === 'decision_scope_denied')).toBeTruthy();
   });
 
   it('rejects allocation when axe does not exist in exercice scope', () => {
