@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import request = require('supertest');
 import { AppModule } from '../src/app.module';
+import { AuthorizationAuditService } from '../src/auth/authorization-audit.service';
 import { applyTestEnv } from './test-env';
 
 describe('BudgetReferentielsController (e2e)', () => {
@@ -10,6 +11,9 @@ describe('BudgetReferentielsController (e2e)', () => {
   let accessToken: string;
   let readOnlyToken: string;
   let otherTenantToken: string;
+  let incompatibleDutiesToken: string;
+  let authorizationAuditService: AuthorizationAuditService;
+  let logDecisionSpy: jest.SpyInstance;
 
   beforeAll(async () => {
     applyTestEnv();
@@ -27,6 +31,8 @@ describe('BudgetReferentielsController (e2e)', () => {
       })
     );
     await app.init();
+    authorizationAuditService = moduleFixture.get(AuthorizationAuditService);
+    logDecisionSpy = jest.spyOn(authorizationAuditService, 'logDecision');
 
     const loginResponse = await request(app.getHttpServer()).post('/auth/login').send({
       email: 'user@agilys.local',
@@ -38,7 +44,7 @@ describe('BudgetReferentielsController (e2e)', () => {
     const jwtService = moduleFixture.get(JwtService);
     readOnlyToken = await jwtService.signAsync(
       {
-        sub: 'user-read-only',
+        sub: 'user-ops',
         tenantId: 'tenant-1',
         roles: ['operateur_saisie']
       },
@@ -59,9 +65,22 @@ describe('BudgetReferentielsController (e2e)', () => {
         expiresIn: 600
       }
     );
+
+    incompatibleDutiesToken = await jwtService.signAsync(
+      {
+        sub: 'user-sod',
+        tenantId: 'tenant-1',
+        roles: ['ordonnateur', 'comptable']
+      },
+      {
+        secret: process.env.JWT_ACCESS_SECRET,
+        expiresIn: 600
+      }
+    );
   });
 
   afterAll(async () => {
+    logDecisionSpy.mockRestore();
     await app.close();
   });
 
@@ -210,6 +229,57 @@ describe('BudgetReferentielsController (e2e)', () => {
       });
 
     expect(response.status).toBe(403);
+  });
+
+  it('blocks separation of duties conflicts with explicit message', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/budget-referentiels/exercices')
+      .set('Authorization', `Bearer ${incompatibleDutiesToken}`)
+      .send({
+        libelle: 'Exercice SOD denied',
+        code: 'SOD-DENIED',
+        dateDebut: '2035-01-01',
+        dateFin: '2035-12-31',
+        statut: 'ouvert'
+      });
+
+    expect(response.status).toBe(403);
+    expect(response.body.message).toContain('Separation des responsabilites');
+    expect(logDecisionSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-sod',
+        tenantId: 'tenant-1',
+        decision: 'deny'
+      })
+    );
+  });
+
+  it('emits minimal authorization audit payload without sensitive fields', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/budget-referentiels/exercices')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        libelle: 'Exercice audit allow',
+        code: 'AUDIT-ALLOW',
+        dateDebut: '2039-01-01',
+        dateFin: '2039-12-31',
+        statut: 'ouvert'
+      });
+
+    expect(response.status).toBe(201);
+    expect(logDecisionSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-1',
+        tenantId: 'tenant-1',
+        decision: 'allow'
+      })
+    );
+    const lastCall = logDecisionSpy.mock.calls[logDecisionSpy.mock.calls.length - 1]?.[0] as Record<string, unknown>;
+    expect(lastCall).toBeDefined();
+    expect(lastCall).toHaveProperty('action');
+    expect(lastCall).not.toHaveProperty('password');
+    expect(lastCall).not.toHaveProperty('passwordHash');
+    expect(lastCall).not.toHaveProperty('refreshToken');
   });
 
   it('requires exerciceId query param for exercice-scoped updates and deletes', async () => {

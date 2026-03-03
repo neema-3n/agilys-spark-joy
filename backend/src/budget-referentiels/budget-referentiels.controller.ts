@@ -9,11 +9,11 @@ import {
   Query,
   UseGuards
 } from '@nestjs/common';
+import { AuthorizationPolicyGuard } from '../auth/authorization-policy.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { Roles } from '../auth/roles.decorator';
-import { RolesGuard } from '../auth/roles.guard';
+import { RequirePermissions } from '../auth/permissions.decorator';
 import { TenantExerciceScopeGuard } from '../auth/tenant-exercice-scope.guard';
 import { BudgetReferentielsService } from './budget-referentiels.service';
 import {
@@ -31,26 +31,25 @@ import {
   SectionUpdateDto
 } from './dto/referentiels.dto';
 
-const WRITE_ROLES = ['super_admin', 'admin_client', 'directeur_financier'];
-
 @Controller('budget-referentiels')
-@UseGuards(JwtAuthGuard, RolesGuard, TenantExerciceScopeGuard)
+@UseGuards(JwtAuthGuard, AuthorizationPolicyGuard, TenantExerciceScopeGuard)
 export class BudgetReferentielsController {
   constructor(private readonly service: BudgetReferentielsService) {}
 
   @Get('exercices')
+  @RequirePermissions('referentiels:read')
   getExercices(@CurrentUser() user: AuthenticatedUser) {
     return this.service.getExercices(user);
   }
 
   @Post('exercices')
-  @Roles(...WRITE_ROLES)
+  @RequirePermissions('referentiels:write')
   createExercice(@CurrentUser() user: AuthenticatedUser, @Body() body: ExerciceCreateDto) {
     return this.service.createExercice(user, body);
   }
 
   @Patch('exercices/:id')
-  @Roles(...WRITE_ROLES)
+  @RequirePermissions('referentiels:write')
   updateExercice(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
@@ -60,24 +59,25 @@ export class BudgetReferentielsController {
   }
 
   @Delete('exercices/:id')
-  @Roles(...WRITE_ROLES)
+  @RequirePermissions('referentiels:write')
   archiveExercice(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     return this.service.archiveExercice(user, id);
   }
 
   @Get('enveloppes')
+  @RequirePermissions('referentiels:read')
   getEnveloppes(@CurrentUser() user: AuthenticatedUser, @Query() query: ExerciceScopedQueryDto) {
     return this.service.getEnveloppes(user, query.exerciceId);
   }
 
   @Post('enveloppes')
-  @Roles(...WRITE_ROLES)
+  @RequirePermissions('referentiels:write')
   createEnveloppe(@CurrentUser() user: AuthenticatedUser, @Body() body: EnveloppeCreateDto) {
     return this.service.createEnveloppe(user, body);
   }
 
   @Patch('enveloppes/:id')
-  @Roles(...WRITE_ROLES)
+  @RequirePermissions('referentiels:write')
   updateEnveloppe(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
@@ -88,7 +88,7 @@ export class BudgetReferentielsController {
   }
 
   @Delete('enveloppes/:id')
-  @Roles(...WRITE_ROLES)
+  @RequirePermissions('referentiels:write')
   archiveEnveloppe(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
@@ -98,18 +98,19 @@ export class BudgetReferentielsController {
   }
 
   @Get('sections')
+  @RequirePermissions('referentiels:read')
   getSections(@CurrentUser() user: AuthenticatedUser, @Query() query: ExerciceScopedQueryDto) {
     return this.service.getSections(user, query.exerciceId);
   }
 
   @Post('sections')
-  @Roles(...WRITE_ROLES)
+  @RequirePermissions('referentiels:write')
   createSection(@CurrentUser() user: AuthenticatedUser, @Body() body: SectionCreateDto) {
     return this.service.createSection(user, body);
   }
 
   @Patch('sections/:id')
-  @Roles(...WRITE_ROLES)
+  @RequirePermissions('referentiels:write')
   updateSection(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
@@ -120,7 +121,7 @@ export class BudgetReferentielsController {
   }
 
   @Delete('sections/:id')
-  @Roles(...WRITE_ROLES)
+  @RequirePermissions('referentiels:write')
   archiveSection(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
@@ -130,18 +131,19 @@ export class BudgetReferentielsController {
   }
 
   @Get('programmes')
+  @RequirePermissions('referentiels:read')
   getProgrammes(@CurrentUser() user: AuthenticatedUser, @Query() query: ExerciceScopedQueryDto) {
     return this.service.getProgrammes(user, query.exerciceId);
   }
 
   @Post('programmes')
-  @Roles(...WRITE_ROLES)
+  @RequirePermissions('referentiels:write')
   createProgramme(@CurrentUser() user: AuthenticatedUser, @Body() body: ProgrammeCreateDto) {
     return this.service.createProgramme(user, body);
   }
 
   @Patch('programmes/:id')
-  @Roles(...WRITE_ROLES)
+  @RequirePermissions('referentiels:write')
   updateProgramme(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
@@ -152,7 +154,7 @@ export class BudgetReferentielsController {
   }
 
   @Delete('programmes/:id')
-  @Roles(...WRITE_ROLES)
+  @RequirePermissions('referentiels:write')
   archiveProgramme(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
@@ -162,18 +164,19 @@ export class BudgetReferentielsController {
   }
 
   @Get('actions')
+  @RequirePermissions('referentiels:read')
   getActions(@CurrentUser() user: AuthenticatedUser, @Query() query: ExerciceScopedQueryDto) {
     return this.service.getActions(user, query.exerciceId);
   }
 
   @Post('actions')
-  @Roles(...WRITE_ROLES)
+  @RequirePermissions('referentiels:write')
   createAction(@CurrentUser() user: AuthenticatedUser, @Body() body: ActionCreateDto) {
     return this.service.createAction(user, body);
   }
 
   @Patch('actions/:id')
-  @Roles(...WRITE_ROLES)
+  @RequirePermissions('referentiels:write')
   updateAction(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
@@ -184,13 +187,13 @@ export class BudgetReferentielsController {
   }
 
   @Delete('actions/:id')
-  @Roles(...WRITE_ROLES)
+  @RequirePermissions('referentiels:write')
   archiveAction(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string, @Query() query: ExerciceScopedQueryDto) {
     return this.service.archiveAction(user, id, query.exerciceId);
   }
 
   @Get('audit-log')
-  @Roles(...WRITE_ROLES)
+  @RequirePermissions('referentiels:audit:read')
   getAuditLog(@CurrentUser() user: AuthenticatedUser, @Query() query: AuditQueryDto) {
     return this.service.getAuditLog(user, query.entityType, query.entityId);
   }

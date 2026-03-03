@@ -1,10 +1,12 @@
-import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { compare, hash } from 'bcryptjs';
 import { randomUUID } from 'crypto';
+import type { AuthenticatedUser } from './authenticated-user.interface';
 import { AuthLoggerService } from './auth-logger.service';
 import type { AccessTokenClaims, AuthResponse, RefreshTokenClaims } from './auth.types';
 import { RefreshTokenStore } from './refresh-token.store';
+import { hasIncompatibleRoleCombination } from './authorization.types';
 import { UsersService } from '../users/users.service';
 
 @Injectable()
@@ -76,6 +78,49 @@ export class AuthService {
     const claims = await this.verifyRefreshToken(refreshToken);
     await this.refreshTokenStore.revoke(claims.jti);
     this.authLogger.logEvent('logout', claims.sub, claims.tenantId);
+  }
+
+  async assignRole(actor: AuthenticatedUser, userId: string, role: string): Promise<{ userId: string; roles: string[] }> {
+    const targetUser = await this.usersService.findById(userId);
+    if (!targetUser) {
+      throw new NotFoundException('Utilisateur introuvable');
+    }
+
+    this.assertTenantRoleManagement(actor, targetUser.tenantId);
+
+    const targetRolesAfterAssign = targetUser.roles.includes(role) ? targetUser.roles : [...targetUser.roles, role];
+    if (hasIncompatibleRoleCombination(targetRolesAfterAssign)) {
+      throw new ForbiddenException('Separation des responsabilites: roles ordonnateur et comptable incompatibles');
+    }
+
+    const updatedUser = await this.usersService.assignRole(userId, role);
+    if (!updatedUser) {
+      throw new NotFoundException('Utilisateur introuvable');
+    }
+
+    return {
+      userId: updatedUser.id,
+      roles: updatedUser.roles
+    };
+  }
+
+  async revokeRole(actor: AuthenticatedUser, userId: string, role: string): Promise<{ userId: string; roles: string[] }> {
+    const targetUser = await this.usersService.findById(userId);
+    if (!targetUser) {
+      throw new NotFoundException('Utilisateur introuvable');
+    }
+
+    this.assertTenantRoleManagement(actor, targetUser.tenantId);
+
+    const updatedUser = await this.usersService.revokeRole(userId, role);
+    if (!updatedUser) {
+      throw new NotFoundException('Utilisateur introuvable');
+    }
+
+    return {
+      userId: updatedUser.id,
+      roles: updatedUser.roles
+    };
   }
 
   private async issueTokenPair(claims: AccessTokenClaims, rotateFromJti?: string): Promise<AuthResponse> {
@@ -158,5 +203,12 @@ export class AuthService {
     }
 
     return parsed;
+  }
+
+  private assertTenantRoleManagement(actor: AuthenticatedUser, targetTenantId: string): void {
+    const isSuperAdmin = actor.roles.includes('super_admin');
+    if (!isSuperAdmin && actor.tenantId !== targetTenantId) {
+      throw new ForbiddenException('Gestion des roles inter-tenant interdite');
+    }
   }
 }

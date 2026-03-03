@@ -1,6 +1,6 @@
 # Story 2.2 - Appliquer RBAC et separation des responsabilites
 
-Status: ready-for-dev
+Status: done
 Epic: 2 - Gouvernance d'acces, roles et isolation multi-tenant
 Story Key: 2-2-appliquer-rbac-et-separation-des-responsabilites
 Created: 2026-03-02
@@ -52,30 +52,30 @@ So that chaque acteur n'accede qu'aux actions autorisees.
 
 ## Tasks / Subtasks
 
-- [ ] Definir le modele d'autorisation RBAC/ABAC (AC: 1, 2)
-  - [ ] Lister les roles metiers et permissions associees
-  - [ ] Modeliser les politiques de separation ordonnateur/comptable
-  - [ ] Aligner les statuts d'erreur API pour refus d'autorisation
+- [x] Definir le modele d'autorisation RBAC/ABAC (AC: 1, 2)
+  - [x] Lister les roles metiers et permissions associees
+  - [x] Modeliser les politiques de separation ordonnateur/comptable
+  - [x] Aligner les statuts d'erreur API pour refus d'autorisation
 
-- [ ] Implementer les guards d'autorisation NestJS (AC: 1, 2)
-  - [ ] Ajouter/etendre guards decorateurs role/policy sur endpoints sensibles
-  - [ ] Integrer evaluation ABAC avec contexte minimal (user, role, tenant, action)
-  - [ ] Bloquer explicitement les combinaisons de responsabilites incompatibles
+- [x] Implementer les guards d'autorisation NestJS (AC: 1, 2)
+  - [x] Ajouter/etendre guards decorateurs role/policy sur endpoints sensibles
+  - [x] Integrer evaluation ABAC avec contexte minimal (user, role, tenant, action)
+  - [x] Bloquer explicitement les combinaisons de responsabilites incompatibles
 
-- [ ] Implementer gestion des roles utilisateur (AC: 3)
-  - [ ] Creer ou completer les endpoints d'attribution/revocation de roles
-  - [ ] Persister les changements de roles de facon idempotente
-  - [ ] Verifier la prise d'effet immediate sur les autorisations suivantes
+- [x] Implementer gestion des roles utilisateur (AC: 3)
+  - [x] Creer ou completer les endpoints d'attribution/revocation de roles
+  - [x] Persister les changements de roles de facon idempotente
+  - [x] Verifier la prise d'effet immediate sur les autorisations suivantes
 
-- [ ] Ajouter audit et tracabilite des decisions (AC: 4)
-  - [ ] Emettre logs structures pour autorisations/refus critiques
-  - [ ] Inclure userId/tenantId/action/decision/horodatage
-  - [ ] Exclure toute donnee sensible des logs
+- [x] Ajouter audit et tracabilite des decisions (AC: 4)
+  - [x] Emettre logs structures pour autorisations/refus critiques
+  - [x] Inclure userId/tenantId/action/decision/horodatage
+  - [x] Exclure toute donnee sensible des logs
 
-- [ ] Couvrir par tests backend (AC: 1, 2, 3, 4)
-  - [ ] Tests unitaires des politiques RBAC/ABAC et separation des responsabilites
-  - [ ] Tests d'integration des endpoints proteges (autorise vs refuse)
-  - [ ] Tests d'integration attribution/revocation de roles et prise d'effet
+- [x] Couvrir par tests backend (AC: 1, 2, 3, 4)
+  - [x] Tests unitaires des politiques RBAC/ABAC et separation des responsabilites
+  - [x] Tests d'integration des endpoints proteges (autorise vs refuse)
+  - [x] Tests d'integration attribution/revocation de roles et prise d'effet
 
 ## Dev Notes
 
@@ -102,3 +102,83 @@ So that chaque acteur n'accede qu'aux actions autorisees.
 - Source story: `/Volumes/mySD1.5/projects/agilys-spark-joy/_bmad-output/planning-artifacts/epics.md` (Epic 2, Story 2.2)
 - Story precedente: `/Volumes/mySD1.5/projects/agilys-spark-joy/_bmad-output/implementation-artifacts/2-1-mettre-en-place-lauth-nestjs-jwt-refresh.md`
 - Sprint tracker: `/Volumes/mySD1.5/projects/agilys-spark-joy/_bmad-output/implementation-artifacts/sprint-status.yaml`
+
+## Dev Agent Record
+
+### Agent Model Used
+
+GPT-5 Codex
+
+### Debug Log References
+
+- Chargement workflow BMAD `dev-story` + contexte projet + story cible 2.2.
+- Story 2.2 detectee en `ready-for-dev` puis basculee en `in-progress`.
+- Validation locale complete executee: `pnpm run lint`, `pnpm run test` (racine) et `pnpm --dir backend run lint/test`.
+
+### Implementation Plan
+
+- Introduire un modele centralise roles/permissions et une politique SoD ordonnateur/comptable.
+- Ajouter un guard de policy (RBAC/ABAC) avec audit de chaque decision d'autorisation.
+- Proteger les endpoints sensibles avec permissions explicites.
+- Ajouter endpoints d'attribution/revocation de roles et persistance idempotente.
+- Assurer prise d'effet immediate via rechargement des roles persistes dans `JwtAuthGuard`.
+- Ajouter tests unitaires et d'integration/e2e couvrant AC 1-4.
+
+### Completion Notes List
+
+- Modele d'autorisation centralise ajoute (`authorization.types.ts`) avec roles metiers, permissions et regles SoD.
+- Guard `AuthorizationPolicyGuard` implemente avec evaluation ABAC minimale (utilisateur/roles/tenant/action) et refus explicites.
+- Audit minimal des decisions d'autorisation implemente (`AuthorizationAuditService`) avec `userId`, `tenantId`, `action`, `decision`, `timestamp`.
+- Endpoints role management ajoutes:
+  - `PATCH /auth/users/:userId/roles/assign`
+  - `PATCH /auth/users/:userId/roles/revoke`
+- Persistance idempotente des roles implemente dans `UsersService` (memory + postgres).
+- Prise d'effet immediate des changements de role garantie en rechargeant les roles courants a chaque requete auth (guard JWT).
+- Endpoints budget sensibles migres vers permissions explicites (`RequirePermissions`) avec guard de policy.
+- Couverture tests ajoutee:
+  - unit policy RBAC/ABAC + SoD,
+  - e2e endpoints proteges autorise/refuse,
+  - e2e assign/revoke avec effet immediat.
+- Validation globale verte:
+  - `pnpm run lint`
+  - `pnpm run test`
+- Correctifs review appliques:
+  - `admin_client` autorise a gerer les roles (`roles:manage`) pour respecter le persona AC3.
+  - Blocage explicite des operations inter-tenant sur assign/revoke role (sauf `super_admin`).
+  - Blocage explicite de l'attribution de roles incompatibles SoD (`ordonnateur` + `comptable`).
+  - Tests additionnels sur gestion de roles admin_client, garde-fou inter-tenant, blocage SoD a l'attribution.
+  - Validation de la trace d'audit minimale via e2e + test unitaire `AuthorizationAuditService` (timestamp + absence de donnees sensibles).
+
+### Senior Developer Review (AI)
+
+- Review executee avec 4 findings (2 High, 2 Medium).
+- Decision utilisateur: correction automatique des issues High/Medium.
+- Resultat: findings corrigees et verifiees par `pnpm --dir backend run lint` et `pnpm --dir backend run test`.
+
+### File List
+
+- _bmad-output/implementation-artifacts/2-2-appliquer-rbac-et-separation-des-responsabilites.md
+- _bmad-output/implementation-artifacts/sprint-status.yaml
+- backend/src/auth/auth.controller.ts
+- backend/src/auth/auth.module.ts
+- backend/src/auth/auth.service.ts
+- backend/src/auth/jwt-auth.guard.ts
+- backend/src/auth/authorization-audit.service.ts
+- backend/src/auth/authorization-audit.service.spec.ts
+- backend/src/auth/authorization-policy.guard.ts
+- backend/src/auth/authorization-policy.service.ts
+- backend/src/auth/authorization-policy.service.spec.ts
+- backend/src/auth/authorization.types.ts
+- backend/src/auth/permissions.decorator.ts
+- backend/src/auth/dto/assign-role.dto.ts
+- backend/src/auth/dto/revoke-role.dto.ts
+- backend/src/budget-referentiels/budget-referentiels.controller.ts
+- backend/src/budget-referentiels/budget-referentiels.module.ts
+- backend/src/users/users.service.ts
+- backend/test/auth.e2e.spec.ts
+- backend/test/budget-referentiels.e2e.spec.ts
+
+## Change Log
+
+- 2026-03-02: Story 2.2 implementee (RBAC/ABAC + SoD + role assignment/revocation idempotent + audit decisions + tests unit/e2e), statut passe a `review`.
+- 2026-03-02: Revue senior corrigee (admin_client role management, protection inter-tenant assign/revoke, blocage SoD a l'attribution, couverture audit renforcee), statut passe a `done`.

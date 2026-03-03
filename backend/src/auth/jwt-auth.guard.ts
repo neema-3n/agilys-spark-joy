@@ -7,10 +7,14 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import type { AuthenticatedUser } from './authenticated-user.interface';
 import type { AccessTokenClaims } from './auth.types';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly usersService: UsersService
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<{ headers?: Record<string, string>; user?: AuthenticatedUser }>();
@@ -37,10 +41,15 @@ export class JwtAuthGuard implements CanActivate {
         throw new UnauthorizedException('Invalid access token claims');
       }
 
+      const currentUser = await this.usersService.findById(claims.sub);
+      if (!currentUser || currentUser.tenantId !== claims.tenantId) {
+        throw new UnauthorizedException('Unknown or inactive user');
+      }
+
       request.user = {
-        sub: claims.sub,
-        tenantId: claims.tenantId,
-        roles: claims.roles
+        sub: currentUser.id,
+        tenantId: currentUser.tenantId,
+        roles: currentUser.roles
       };
 
       return true;

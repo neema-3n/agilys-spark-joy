@@ -149,4 +149,151 @@ describe('AuthController (e2e)', () => {
 
     expect(response.status).toBe(400);
   });
+
+  it('PATCH /auth/users/:userId/roles assign/revoke is idempotent and effective immediately', async () => {
+    const superAdminSession = await request(app.getHttpServer()).post('/auth/login').send({
+      email: 'superadmin@agilys.local',
+      password: 'ChangeMe123!'
+    });
+    expect(superAdminSession.status).toBe(201);
+
+    const operatorSession = await request(app.getHttpServer()).post('/auth/login').send({
+      email: 'ops@agilys.local',
+      password: 'ChangeMe123!'
+    });
+    expect(operatorSession.status).toBe(201);
+
+    const superToken = superAdminSession.body.accessToken as string;
+    const operatorToken = operatorSession.body.accessToken as string;
+
+    const deniedBeforeAssign = await request(app.getHttpServer())
+      .post('/budget-referentiels/exercices')
+      .set('Authorization', `Bearer ${operatorToken}`)
+      .send({
+        libelle: 'Exercice role test before assign',
+        code: 'ROLE-TEST-BEFORE',
+        dateDebut: '2036-01-01',
+        dateFin: '2036-12-31',
+        statut: 'ouvert'
+      });
+    expect(deniedBeforeAssign.status).toBe(403);
+
+    const assignRoleResponse = await request(app.getHttpServer())
+      .patch('/auth/users/user-ops/roles/assign')
+      .set('Authorization', `Bearer ${superToken}`)
+      .send({ role: 'directeur_financier' });
+    expect(assignRoleResponse.status).toBe(200);
+    expect(assignRoleResponse.body.roles).toContain('directeur_financier');
+
+    const assignAgainResponse = await request(app.getHttpServer())
+      .patch('/auth/users/user-ops/roles/assign')
+      .set('Authorization', `Bearer ${superToken}`)
+      .send({ role: 'directeur_financier' });
+    expect(assignAgainResponse.status).toBe(200);
+    expect(
+      (assignAgainResponse.body.roles as string[]).filter((role) => role === 'directeur_financier')
+    ).toHaveLength(1);
+
+    const allowedAfterAssign = await request(app.getHttpServer())
+      .post('/budget-referentiels/exercices')
+      .set('Authorization', `Bearer ${operatorToken}`)
+      .send({
+        libelle: 'Exercice role test after assign',
+        code: 'ROLE-TEST-AFTER-ASSIGN',
+        dateDebut: '2037-01-01',
+        dateFin: '2037-12-31',
+        statut: 'ouvert'
+      });
+    expect(allowedAfterAssign.status).toBe(201);
+
+    const revokeRoleResponse = await request(app.getHttpServer())
+      .patch('/auth/users/user-ops/roles/revoke')
+      .set('Authorization', `Bearer ${superToken}`)
+      .send({ role: 'directeur_financier' });
+    expect(revokeRoleResponse.status).toBe(200);
+    expect(revokeRoleResponse.body.roles).not.toContain('directeur_financier');
+
+    const deniedAfterRevoke = await request(app.getHttpServer())
+      .post('/budget-referentiels/exercices')
+      .set('Authorization', `Bearer ${operatorToken}`)
+      .send({
+        libelle: 'Exercice role test after revoke',
+        code: 'ROLE-TEST-AFTER-REVOKE',
+        dateDebut: '2038-01-01',
+        dateFin: '2038-12-31',
+        statut: 'ouvert'
+      });
+    expect(deniedAfterRevoke.status).toBe(403);
+  });
+
+  it('PATCH /auth/users/:userId/roles allows admin_client to manage roles in same tenant', async () => {
+    const adminSession = await request(app.getHttpServer()).post('/auth/login').send({
+      email: 'user@agilys.local',
+      password: 'ChangeMe123!'
+    });
+    expect(adminSession.status).toBe(201);
+
+    const adminToken = adminSession.body.accessToken as string;
+
+    const assignResponse = await request(app.getHttpServer())
+      .patch('/auth/users/user-ops/roles/assign')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ role: 'auditeur' });
+    expect(assignResponse.status).toBe(200);
+    expect(assignResponse.body.roles).toContain('auditeur');
+
+    const revokeResponse = await request(app.getHttpServer())
+      .patch('/auth/users/user-ops/roles/revoke')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ role: 'auditeur' });
+    expect(revokeResponse.status).toBe(200);
+    expect(revokeResponse.body.roles).not.toContain('auditeur');
+  });
+
+  it('PATCH /auth/users/:userId/roles rejects cross-tenant role management for admin_client', async () => {
+    const adminSession = await request(app.getHttpServer()).post('/auth/login').send({
+      email: 'user@agilys.local',
+      password: 'ChangeMe123!'
+    });
+    expect(adminSession.status).toBe(201);
+
+    const adminToken = adminSession.body.accessToken as string;
+
+    const assignResponse = await request(app.getHttpServer())
+      .patch('/auth/users/user-other-tenant/roles/assign')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ role: 'auditeur' });
+
+    expect(assignResponse.status).toBe(403);
+    expect(assignResponse.body.message).toContain('inter-tenant');
+  });
+
+  it('PATCH /auth/users/:userId/roles blocks incompatible SoD role assignment', async () => {
+    const adminSession = await request(app.getHttpServer()).post('/auth/login').send({
+      email: 'user@agilys.local',
+      password: 'ChangeMe123!'
+    });
+    expect(adminSession.status).toBe(201);
+
+    const adminToken = adminSession.body.accessToken as string;
+
+    const assignOrdonnateur = await request(app.getHttpServer())
+      .patch('/auth/users/user-ops/roles/assign')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ role: 'ordonnateur' });
+    expect(assignOrdonnateur.status).toBe(200);
+
+    const assignComptable = await request(app.getHttpServer())
+      .patch('/auth/users/user-ops/roles/assign')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ role: 'comptable' });
+    expect(assignComptable.status).toBe(403);
+    expect(assignComptable.body.message).toContain('Separation des responsabilites');
+
+    const cleanupOrdonnateur = await request(app.getHttpServer())
+      .patch('/auth/users/user-ops/roles/revoke')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ role: 'ordonnateur' });
+    expect(cleanupOrdonnateur.status).toBe(200);
+  });
 });

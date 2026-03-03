@@ -1,15 +1,13 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
+import { AuthModule } from '../auth/auth.module';
 import { BudgetReferentielsController } from './budget-referentiels.controller';
 import { BudgetReferentielsService } from './budget-referentiels.service';
 import { BudgetReferentielsStore } from './budget-referentiels.store';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { RolesGuard } from '../auth/roles.guard';
 import { TenantExerciceScopeGuard } from '../auth/tenant-exercice-scope.guard';
 
 @Module({
-  imports: [JwtModule.register({})],
+  imports: [AuthModule],
   controllers: [BudgetReferentielsController],
-  providers: [BudgetReferentielsService, BudgetReferentielsStore, JwtAuthGuard, RolesGuard, TenantExerciceScopeGuard]
+  providers: [BudgetReferentielsService, BudgetReferentielsStore, TenantExerciceScopeGuard]
 })
 export class BudgetReferentielsModule {}
