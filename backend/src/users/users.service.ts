@@ -19,14 +19,41 @@ export class UsersService implements OnModuleInit {
   private initPromise: Promise<void> | null = null;
 
   constructor(private readonly postgresService: PostgresService) {
-    const email = process.env.AUTH_TEST_USER_EMAIL ?? 'user@agilys.local';
-    const password = process.env.AUTH_TEST_USER_PASSWORD ?? 'ChangeMe123!';
+    const defaultPassword = process.env.AUTH_TEST_USER_PASSWORD ?? 'ChangeMe123!';
     this.users = [
       {
         id: 'user-1',
-        email,
-        passwordHash: hashSync(password, 10),
+        email: process.env.AUTH_TEST_USER_EMAIL ?? 'user@agilys.local',
+        passwordHash: hashSync(defaultPassword, 10),
         tenantId: 'tenant-1',
+        roles: ['admin_client']
+      },
+      {
+        id: 'user-ops',
+        email: 'ops@agilys.local',
+        passwordHash: hashSync(defaultPassword, 10),
+        tenantId: 'tenant-1',
+        roles: ['operateur_saisie']
+      },
+      {
+        id: 'user-super',
+        email: 'superadmin@agilys.local',
+        passwordHash: hashSync(defaultPassword, 10),
+        tenantId: 'tenant-1',
+        roles: ['super_admin']
+      },
+      {
+        id: 'user-sod',
+        email: 'sod@agilys.local',
+        passwordHash: hashSync(defaultPassword, 10),
+        tenantId: 'tenant-1',
+        roles: ['ordonnateur', 'comptable']
+      },
+      {
+        id: 'user-other-tenant',
+        email: 'tenant2-admin@agilys.local',
+        passwordHash: hashSync(defaultPassword, 10),
+        tenantId: 'tenant-2',
         roles: ['admin_client']
       }
     ];
@@ -41,21 +68,22 @@ export class UsersService implements OnModuleInit {
   private async ensurePostgresReady(): Promise<void> {
     if (!this.initPromise) {
       this.initPromise = (async () => {
-        const seededUser = this.users[0];
-        await this.runPostgresQuery(
-          `
-            INSERT INTO public.auth_users (id, email, password_hash, tenant_id, roles, is_active)
-            VALUES ($1, $2, $3, $4, $5, true)
-            ON CONFLICT (email)
-            DO UPDATE SET
-              password_hash = EXCLUDED.password_hash,
-              tenant_id = EXCLUDED.tenant_id,
-              roles = EXCLUDED.roles,
-              is_active = true,
-              updated_at = now()
-          `,
-          [seededUser.id, seededUser.email, seededUser.passwordHash, seededUser.tenantId, seededUser.roles]
-        );
+        for (const seededUser of this.users) {
+          await this.runPostgresQuery(
+            `
+              INSERT INTO public.auth_users (id, email, password_hash, tenant_id, roles, is_active)
+              VALUES ($1, $2, $3, $4, $5, true)
+              ON CONFLICT (email)
+              DO UPDATE SET
+                password_hash = EXCLUDED.password_hash,
+                tenant_id = EXCLUDED.tenant_id,
+                roles = EXCLUDED.roles,
+                is_active = true,
+                updated_at = now()
+            `,
+            [seededUser.id, seededUser.email, seededUser.passwordHash, seededUser.tenantId, seededUser.roles]
+          );
+        }
       })();
     }
 
@@ -132,6 +160,106 @@ export class UsersService implements OnModuleInit {
       tenantId: row.tenant_id,
       roles: row.roles
     };
+  }
+
+  async assignRole(userId: string, role: string): Promise<UserRecord | undefined> {
+    if (this.storageMode === 'memory') {
+      const user = this.users.find((candidate) => candidate.id === userId);
+      if (!user) {
+        return undefined;
+      }
+
+      if (!user.roles.includes(role)) {
+        user.roles = this.sanitizeRoles([...user.roles, role]);
+      }
+
+      return { ...user };
+    }
+
+    await this.ensurePostgresReady();
+    const result = await this.runPostgresQuery<{
+      id: string;
+      email: string;
+      password_hash: string;
+      tenant_id: string;
+      roles: string[] | null;
+    }>(
+      `
+        UPDATE public.auth_users
+        SET
+          roles = CASE
+            WHEN $2 = ANY(roles) THEN roles
+            ELSE array_append(roles, $2)
+          END,
+          updated_at = now()
+        WHERE id = $1 AND is_active = true
+        RETURNING id, email, password_hash, tenant_id, roles
+      `,
+      [userId, role]
+    );
+
+    return this.rowToUserRecord(result.rows[0]);
+  }
+
+  async revokeRole(userId: string, role: string): Promise<UserRecord | undefined> {
+    if (this.storageMode === 'memory') {
+      const user = this.users.find((candidate) => candidate.id === userId);
+      if (!user) {
+        return undefined;
+      }
+
+      user.roles = user.roles.filter((candidateRole) => candidateRole !== role);
+      return { ...user };
+    }
+
+    await this.ensurePostgresReady();
+    const result = await this.runPostgresQuery<{
+      id: string;
+      email: string;
+      password_hash: string;
+      tenant_id: string;
+      roles: string[] | null;
+    }>(
+      `
+        UPDATE public.auth_users
+        SET
+          roles = array_remove(roles, $2),
+          updated_at = now()
+        WHERE id = $1 AND is_active = true
+        RETURNING id, email, password_hash, tenant_id, roles
+      `,
+      [userId, role]
+    );
+
+    return this.rowToUserRecord(result.rows[0]);
+  }
+
+  private rowToUserRecord(
+    row:
+      | {
+          id: string;
+          email: string;
+          password_hash: string;
+          tenant_id: string;
+          roles: string[] | null;
+        }
+      | undefined
+  ): UserRecord | undefined {
+    if (!row) {
+      return undefined;
+    }
+
+    return {
+      id: row.id,
+      email: row.email,
+      passwordHash: row.password_hash,
+      tenantId: row.tenant_id,
+      roles: this.sanitizeRoles(row.roles ?? [])
+    };
+  }
+
+  private sanitizeRoles(roles: readonly string[]): string[] {
+    return [...new Set(roles.map((role) => role.trim()).filter((role) => role.length > 0))];
   }
 
   private async runPostgresQuery<T extends object>(
