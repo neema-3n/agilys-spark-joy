@@ -1,0 +1,21 @@
+{
+  "generatedAt": "2026-03-03T16:29:37.963Z",
+  "comparedEndpoints": 9,
+  "coverageByDomain": {
+    "AUTH": 3,
+    "TENANT": 2,
+    "BUD": 4
+  },
+  "nonCoveredEndpoints": [
+    "BUD-04-PREVISIONS"
+  ],
+  "diffs": [
+    {
+      "endpointId": "BUD-04-PREVISIONS",
+      "method": "N/A",
+      "path": "N/A",
+      "severity": "majeur",
+      "message": "Endpoint critique non couvert par la campagne de parite de contrats"
+    }
+  ]
+}

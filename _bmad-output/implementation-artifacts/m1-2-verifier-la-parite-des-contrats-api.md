@@ -1,6 +1,6 @@
 # Story M1.2: Verifier la parite des contrats API
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -30,12 +30,12 @@ so that les integrations ne cassent pas lors de la migration.
 
 ## Tasks / Subtasks
 
-- [ ] Construire l'inventaire des endpoints critiques a partir de la matrice de parite (`AUTH-*`, `TENANT-*`, `BUD-*`) (AC: 1, 2)
-- [ ] Definir un spec de contrat canonique par endpoint (request, response, status, erreurs metier) (AC: 1)
-- [ ] Implementer un harness de comparaison de contrats (ancien vs nouveau) reutilisable (AC: 1)
-- [ ] Ajouter une classification des ecarts (`bloquant`, `majeur`, `mineur`) et un format de rapport stable (AC: 1, 3)
-- [ ] Integrer l'execution dans le pipeline de verification migration avec code retour non-zero en cas de `bloquant` (AC: 3)
-- [ ] Documenter la liste des endpoints hors couverture et ouvrir les actions de rattrapage (AC: 2)
+- [x] Construire l'inventaire des endpoints critiques a partir de la matrice de parite (`AUTH-*`, `TENANT-*`, `BUD-*`) (AC: 1, 2)
+- [x] Definir un spec de contrat canonique par endpoint (request, response, status, erreurs metier) (AC: 1)
+- [x] Implementer un harness de comparaison de contrats (ancien vs nouveau) reutilisable (AC: 1)
+- [x] Ajouter une classification des ecarts (`bloquant`, `majeur`, `mineur`) et un format de rapport stable (AC: 1, 3)
+- [x] Integrer l'execution dans le pipeline de verification migration avec code retour non-zero en cas de `bloquant` (AC: 3)
+- [x] Documenter la liste des endpoints hors couverture et ouvrir les actions de rattrapage (AC: 2)
 
 ## Dev Notes
 
@@ -163,20 +163,41 @@ GPT-5 Codex
 
 ### Debug Log References
 
-- Sprint workflow loaded: `/_bmad/bmm/workflows/4-implementation/create-story/*`
-- Story source parsed: `epics.md` (Epic M1 / Story M1.2)
+- Workflow loaded: `/_bmad/bmm/workflows/4-implementation/dev-story/*`
+- `pnpm --dir backend run test:contracts`
+- `pnpm --dir backend run lint`
+- `pnpm --dir backend run test`
+
+### Implementation Plan
+
+- Formaliser les contrats critiques legacy/cible sous forme de registre type-safe par endpoint.
+- Comparer automatiquement les contrats par route/methode et classifier les ecarts (`bloquant`, `majeur`, `mineur`).
+- Generer deux artefacts de preuve (`.md` et `.json`) dans `/_bmad-output/implementation-artifacts`.
+- Integrer l'execution dans la pipeline backend via script `test:contracts`.
 
 ### Completion Notes List
 
-- Story regeneree avec contexte complet pour implementation `dev-story`.
-- Garde-fous architecture, tests et structure de fichiers explicitement fournis.
-- Story statut cible confirme `ready-for-dev`.
-- Ultimate context engine analysis completed - comprehensive developer guide created.
+- Harness de parite de contrats implemente (`backend/src/contracts/*`) avec comparaison legacy vs cible sur endpoints critiques AUTH/TENANT/BUD.
+- Classification des ecarts activee (`bloquant`, `majeur`, `mineur`) et gate de blocage applique via test Jest (`0 bloquant` requis).
+- Artefacts generes automatiquement:
+  - `/_bmad-output/implementation-artifacts/migration-contract-parity-report.md`
+  - `/_bmad-output/implementation-artifacts/migration-contract-parity-diff.json`
+- Endpoint non couvert documente explicitement: `BUD-04-PREVISIONS` (ecart majeur non bloquant).
+- Validation executee: lint backend + suite complete backend tests verte.
 
 ### File List
 
 - `_bmad-output/implementation-artifacts/m1-2-verifier-la-parite-des-contrats-api.md`
+- `backend/src/contracts/api-contract.types.ts`
+- `backend/src/contracts/legacy-critical-contracts.ts`
+- `backend/src/contracts/current-critical-contracts.ts`
+- `backend/src/contracts/contract-parity.ts`
+- `backend/src/contracts/contract-parity.spec.ts`
+- `backend/package.json`
+- `_bmad-output/implementation-artifacts/migration-contract-parity-report.md`
+- `_bmad-output/implementation-artifacts/migration-contract-parity-diff.json`
 
 ### Change Log
 
 - 2026-03-03: Regeneration complete de M1.2 avec contexte implementation exhaustif, intelligence story precedente et contraintes architecture/tests.
+- 2026-03-03: Implementation M1.2 terminee - moteur de comparaison de contrats ajoute, rapport d'ecarts automatise, script pipeline `test:contracts` ajoute, story passee en `review`.
