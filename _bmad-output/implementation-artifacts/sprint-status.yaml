@@ -74,10 +74,10 @@ development_status:
   epic-m2: backlog
   m2-1-definir-mapping-et-strategie-de-migration-data: done
   m2-2-implementer-le-backfill-idempotent-par-lots: done
-  m2-3-reconciler-avant-apres-sur-donnees-critiques: review
+  m2-3-reconciler-avant-apres-sur-donnees-critiques: done
   epic-m2-retrospective: optional
-  epic-m3: backlog
-  m3-1-produire-le-runbook-de-cutover-production: backlog
+  epic-m3: in-progress
+  m3-1-produire-le-runbook-de-cutover-production: done
   m3-2-tester-le-plan-de-rollback-operationnel: backlog
   m3-3-decommissionner-supabase-de-facon-controlee: backlog
   m3-4-organiser-lhypercare-post-bascule: backlog

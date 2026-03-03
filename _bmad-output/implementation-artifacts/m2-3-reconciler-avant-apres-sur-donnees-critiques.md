@@ -1,6 +1,6 @@
 # Story M2.3: Reconciler avant/apres sur donnees critiques
 
-Status: review
+Status: done
 
 ## Story
 
@@ -91,6 +91,8 @@ GPT-5 Codex
 - Rapport standard genere en triple format (Markdown + JSON + CSV) avec causes, resolutions, sections de signature metier/technique et hash de rejouabilite.
 - CLI operationnelle ajoutee pour produire/archiver les rapports de reconciliation dans `/_bmad-output/implementation-artifacts/`.
 - Validation effectuee: `pnpm --dir backend run lint`, `pnpm --dir backend run test -- src/migration/lot-b/reconciliation.spec.ts src/migration/lot-b/runner.spec.ts`, `pnpm --dir backend run test`.
+- Correctifs de revue appliques sur 5 findings: controle de somme des montants, validation stricte du payload CLI, durcissement des seuils, severite INFO pour cardinalite sans ecart, extension de la couverture tests.
+- Validation post-correctifs: `pnpm --dir backend run lint`, `pnpm --dir backend run test -- src/migration/lot-b/reconciliation.spec.ts src/migration/lot-b/reconciliation.cli.spec.ts`.
 
 ### File List
 
@@ -111,3 +113,20 @@ GPT-5 Codex
 - 2026-03-02: Creation de la story d'implementation M2.3 (ready-for-dev).
 - 2026-03-03: Implementation complete de la reconciliation avant/apres Lot B (cardinalite + coherence metier + seuils Go/No-Go + exports JSON/CSV/Markdown + CLI + tests).
 - 2026-03-03: Correctifs de revue appliques (validation stricte input CLI, detection montant manquant asymetrique, detection doublons d'echantillons, synchronisation matrice de parite M2.3).
+- 2026-03-03: Correctifs complementaires de revue appliques (controle de somme des montants, validation stricte des types payload, garde-fous seuils, severite INFO sans ecart, couverture tests elargie).
+
+## Senior Developer Review (AI)
+
+Date: 2026-03-03  
+Reviewer: Max (AI)
+
+- Finding [P1] controle de somme des montants: **RESOLU** (`backend/src/migration/lot-b/reconciliation.ts`)
+- Finding [P1] validation schema input insuffisante: **RESOLU** (`backend/src/migration/lot-b/reconciliation.cli.ts`)
+- Finding [P1] seuils non bornes/non numeriques: **RESOLU** (`backend/src/migration/lot-b/reconciliation.ts`)
+- Finding [P2] severite medium sur cardinalite sans ecart: **RESOLU** (`backend/src/migration/lot-b/reconciliation.ts`)
+- Finding [P2] couverture tests insuffisante: **RESOLU** (`backend/src/migration/lot-b/reconciliation.spec.ts`, `backend/src/migration/lot-b/reconciliation.cli.spec.ts`)
+
+Decision review: **Approve**  
+Preuves:
+- `pnpm --dir backend run lint` ✅
+- `pnpm --dir backend run test -- src/migration/lot-b/reconciliation.spec.ts src/migration/lot-b/reconciliation.cli.spec.ts` ✅

@@ -14,7 +14,8 @@ Source de verite: `epics.md` + `sprint-status.yaml` + routes `src/App.tsx` + con
 
 | Story | Statut sprint-status | Derniere sync matrice | Commentaire |
 |---|---|---|---|
-| M2.3 - Reconciler avant/apres sur donnees critiques | `review` | 2026-03-03 | Synchronise avec `/_bmad-output/implementation-artifacts/sprint-status.yaml` |
+| M2.3 - Reconciler avant/apres sur donnees critiques | `done` | 2026-03-03 | Synchronise avec `/_bmad-output/implementation-artifacts/sprint-status.yaml` |
+| M3.1 - Produire le runbook de cutover production | `done` | 2026-03-03 | Runbook cutover, rapport tabletop, procedure rollback M3.2 et corrections review synchronises avec `/_bmad-output/implementation-artifacts/sprint-status.yaml` |
 
 ## Matrice de parite (flux critiques)
 

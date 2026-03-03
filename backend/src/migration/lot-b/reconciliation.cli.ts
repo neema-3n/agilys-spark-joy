@@ -1,6 +1,13 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { anomaliesToCsv, reconcileBeforeAfter, renderReconciliationMarkdown, type ReconciliationInput } from './reconciliation';
+import {
+  anomaliesToCsv,
+  reconcileBeforeAfter,
+  renderReconciliationMarkdown,
+  type ReconciliationInput,
+  type ReconciliationSample,
+  type ReconciliationThresholds
+} from './reconciliation';
 
 interface CliArgs {
   batchId: string;
@@ -10,6 +17,128 @@ interface CliArgs {
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const assertNonEmptyString = (value: unknown, fieldName: string): string => {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new Error(`Invalid reconciliation input: ${fieldName} must be a non-empty string`);
+  }
+
+  return value;
+};
+
+const assertFiniteNonNegativeNumber = (value: unknown, fieldName: string): number => {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    throw new Error(`Invalid reconciliation input: ${fieldName} must be a finite non-negative number`);
+  }
+
+  return value;
+};
+
+const parseCriticalEntities = (value: unknown): string[] => {
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new Error('Invalid reconciliation input: criticalEntities must be a non-empty array');
+  }
+
+  return value.map((entity, index) => assertNonEmptyString(entity, `criticalEntities[${index}]`));
+};
+
+const parseCardinalityMap = (value: unknown, fieldName: string): Record<string, number> => {
+  if (!isRecord(value)) {
+    throw new Error(`Invalid reconciliation input: ${fieldName} must be an object`);
+  }
+
+  const parsed: Record<string, number> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    parsed[key] = assertFiniteNonNegativeNumber(entry, `${fieldName}.${key}`);
+  }
+
+  return parsed;
+};
+
+const parseForeignKeys = (value: unknown, fieldName: string): Record<string, string | null | undefined> | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (!isRecord(value)) {
+    throw new Error(`Invalid reconciliation input: ${fieldName} must be an object when provided`);
+  }
+
+  const parsed: Record<string, string | null | undefined> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (entry !== null && entry !== undefined && typeof entry !== 'string') {
+      throw new Error(`Invalid reconciliation input: ${fieldName}.${key} must be string | null | undefined`);
+    }
+
+    parsed[key] = entry as string | null | undefined;
+  }
+
+  return parsed;
+};
+
+const parseSample = (value: unknown, fieldName: string): ReconciliationSample => {
+  if (!isRecord(value)) {
+    throw new Error(`Invalid reconciliation input: ${fieldName} must contain objects`);
+  }
+
+  const entity = assertNonEmptyString(value.entity, `${fieldName}.entity`);
+  const businessKey = assertNonEmptyString(value.businessKey, `${fieldName}.businessKey`);
+  const status = value.status;
+  if (status !== undefined && status !== null && typeof status !== 'string') {
+    throw new Error(`Invalid reconciliation input: ${fieldName}.status must be a string | null when provided`);
+  }
+
+  const amount = value.amount;
+  if (amount !== undefined && amount !== null && (typeof amount !== 'number' || !Number.isFinite(amount))) {
+    throw new Error(`Invalid reconciliation input: ${fieldName}.amount must be a finite number | null when provided`);
+  }
+
+  return {
+    entity,
+    businessKey,
+    amount: (amount ?? null) as number | null,
+    status: (status ?? null) as string | null,
+    foreignKeys: parseForeignKeys(value.foreignKeys, `${fieldName}.foreignKeys`)
+  };
+};
+
+const parseSamples = (value: unknown, fieldName: string): ReconciliationSample[] => {
+  if (!Array.isArray(value)) {
+    throw new Error(`Invalid reconciliation input: ${fieldName} must be an array`);
+  }
+
+  return value.map((sample, index) => parseSample(sample, `${fieldName}[${index}]`));
+};
+
+const parseThresholds = (value: unknown): Partial<ReconciliationThresholds> => {
+  if (value === undefined) {
+    return {};
+  }
+
+  if (!isRecord(value)) {
+    throw new Error('Invalid reconciliation input: thresholds must be an object when provided');
+  }
+
+  const parsed: Partial<ReconciliationThresholds> = {};
+  const allowedKeys = new Set([
+    'maxCriticalCardinalityDiff',
+    'maxAmountDelta',
+    'maxCriticalAnomalies',
+    'maxHighAnomalies'
+  ]);
+  for (const [key, entry] of Object.entries(value)) {
+    if (!allowedKeys.has(key)) {
+      throw new Error(`Invalid reconciliation input: thresholds.${key} is not supported`);
+    }
+
+    parsed[key as keyof ReconciliationThresholds] = assertFiniteNonNegativeNumber(
+      entry,
+      `thresholds.${key}`
+    );
+  }
+
+  return parsed;
+};
 
 const parseArgs = (): CliArgs => {
   const args = process.argv.slice(2);
@@ -53,49 +182,20 @@ const parseArgs = (): CliArgs => {
 };
 
 export const parseInputPayload = (payload: unknown, batchId: string): ReconciliationInput => {
+  assertNonEmptyString(batchId, 'batchId');
+
   if (!isRecord(payload)) {
     throw new Error('Invalid reconciliation input: payload must be a JSON object');
   }
 
-  const criticalEntities = payload.criticalEntities;
-  const cardinalitySource = payload.cardinalitySource;
-  const cardinalityTarget = payload.cardinalityTarget;
-  const samplesSource = payload.samplesSource;
-  const samplesTarget = payload.samplesTarget;
-  const thresholds = payload.thresholds;
-
-  if (!Array.isArray(criticalEntities)) {
-    throw new Error('Invalid reconciliation input: criticalEntities must be an array');
-  }
-
-  if (!isRecord(cardinalitySource)) {
-    throw new Error('Invalid reconciliation input: cardinalitySource must be an object');
-  }
-
-  if (!isRecord(cardinalityTarget)) {
-    throw new Error('Invalid reconciliation input: cardinalityTarget must be an object');
-  }
-
-  if (!Array.isArray(samplesSource)) {
-    throw new Error('Invalid reconciliation input: samplesSource must be an array');
-  }
-
-  if (!Array.isArray(samplesTarget)) {
-    throw new Error('Invalid reconciliation input: samplesTarget must be an array');
-  }
-
-  if (thresholds !== undefined && !isRecord(thresholds)) {
-    throw new Error('Invalid reconciliation input: thresholds must be an object when provided');
-  }
-
   return {
     batchId,
-    criticalEntities: criticalEntities as string[],
-    cardinalitySource: cardinalitySource as Record<string, number>,
-    cardinalityTarget: cardinalityTarget as Record<string, number>,
-    samplesSource: samplesSource as ReconciliationInput['samplesSource'],
-    samplesTarget: samplesTarget as ReconciliationInput['samplesTarget'],
-    thresholds: (thresholds ?? {}) as Partial<ReconciliationInput['thresholds']>
+    criticalEntities: parseCriticalEntities(payload.criticalEntities),
+    cardinalitySource: parseCardinalityMap(payload.cardinalitySource, 'cardinalitySource'),
+    cardinalityTarget: parseCardinalityMap(payload.cardinalityTarget, 'cardinalityTarget'),
+    samplesSource: parseSamples(payload.samplesSource, 'samplesSource'),
+    samplesTarget: parseSamples(payload.samplesTarget, 'samplesTarget'),
+    thresholds: parseThresholds(payload.thresholds)
   };
 };
 

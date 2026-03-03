@@ -1,6 +1,7 @@
 import { createHash } from 'crypto';
 
 export type Severity = 'critical' | 'high' | 'medium';
+export type CardinalitySeverity = Severity | 'info';
 export type Decision = 'GO' | 'NO_GO';
 
 export interface ReconciliationThresholds {
@@ -14,6 +15,7 @@ export interface ReconciliationAnomaly {
   code:
     | 'CARDINALITY_MISMATCH'
     | 'AMOUNT_MISMATCH'
+    | 'AMOUNT_SUM_MISMATCH'
     | 'DUPLICATE_SAMPLE'
     | 'STATUS_MISMATCH'
     | 'FK_MISMATCH'
@@ -32,7 +34,7 @@ export interface CardinalityReconciliation {
   sourceCount: number;
   targetCount: number;
   delta: number;
-  severity: Severity;
+  severity: CardinalitySeverity;
 }
 
 export interface ReconciliationSample {
@@ -181,6 +183,42 @@ const normalizedFk = (value: string | null | undefined): string | null => {
   return value.trim();
 };
 
+const assertFiniteNonNegativeInteger = (value: unknown, fieldName: string): number => {
+  if (typeof value !== 'number' || !Number.isFinite(value) || !Number.isInteger(value) || value < 0) {
+    throw new Error(`Invalid reconciliation input: ${fieldName} must be a finite non-negative integer`);
+  }
+
+  return value;
+};
+
+const assertFiniteNonNegativeNumber = (value: unknown, fieldName: string): number => {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    throw new Error(`Invalid reconciliation input: ${fieldName} must be a finite non-negative number`);
+  }
+
+  return value;
+};
+
+const normalizeThresholds = (inputThresholds?: Partial<ReconciliationThresholds>): ReconciliationThresholds => {
+  const merged: ReconciliationThresholds = {
+    ...DEFAULT_THRESHOLDS,
+    ...inputThresholds
+  };
+
+  return {
+    maxCriticalCardinalityDiff: assertFiniteNonNegativeInteger(
+      merged.maxCriticalCardinalityDiff,
+      'thresholds.maxCriticalCardinalityDiff'
+    ),
+    maxAmountDelta: assertFiniteNonNegativeNumber(merged.maxAmountDelta, 'thresholds.maxAmountDelta'),
+    maxCriticalAnomalies: assertFiniteNonNegativeInteger(
+      merged.maxCriticalAnomalies,
+      'thresholds.maxCriticalAnomalies'
+    ),
+    maxHighAnomalies: assertFiniteNonNegativeInteger(merged.maxHighAnomalies, 'thresholds.maxHighAnomalies')
+  };
+};
+
 const reconcileCardinality = (
   entities: string[],
   source: Record<string, number>,
@@ -195,14 +233,16 @@ const reconcileCardinality = (
     const targetCount = target[entity] ?? 0;
     const delta = targetCount - sourceCount;
 
-    const severity: Severity = Math.abs(delta) > thresholds.maxCriticalCardinalityDiff ? 'critical' : 'medium';
+    const anomalySeverity: Severity = Math.abs(delta) > thresholds.maxCriticalCardinalityDiff ? 'critical' : 'medium';
+    const severity: CardinalitySeverity =
+      delta === 0 ? 'info' : Math.abs(delta) > thresholds.maxCriticalCardinalityDiff ? 'critical' : 'medium';
 
     result.push({ entity, sourceCount, targetCount, delta, severity });
 
     if (delta !== 0) {
       addAnomaly(anomalies, {
         code: 'CARDINALITY_MISMATCH',
-        severity,
+        severity: anomalySeverity,
         entity,
         message: `Cardinalite differente: source=${sourceCount}, cible=${targetCount}, ecart=${delta}`,
         sourceValue: sourceCount,
@@ -214,7 +254,50 @@ const reconcileCardinality = (
   return result;
 };
 
+const amountTotalByEntity = (samples: Iterable<ReconciliationSample>): Record<string, number> => {
+  const totals: Record<string, number> = {};
+
+  for (const sample of samples) {
+    const normalized = normalizedNumber(sample.amount);
+    if (normalized === null) {
+      continue;
+    }
+
+    totals[sample.entity] = Number(((totals[sample.entity] ?? 0) + normalized).toFixed(2));
+  }
+
+  return totals;
+};
+
+const reconcileAmountSums = (
+  entities: string[],
+  sourceByKey: Map<string, ReconciliationSample>,
+  targetByKey: Map<string, ReconciliationSample>,
+  thresholds: ReconciliationThresholds,
+  anomalies: ReconciliationAnomaly[]
+): void => {
+  const sourceTotals = amountTotalByEntity(sourceByKey.values());
+  const targetTotals = amountTotalByEntity(targetByKey.values());
+
+  for (const entity of entities) {
+    const sourceTotal = sourceTotals[entity] ?? 0;
+    const targetTotal = targetTotals[entity] ?? 0;
+    const delta = Number((targetTotal - sourceTotal).toFixed(2));
+    if (Math.abs(delta) > thresholds.maxAmountDelta) {
+      addAnomaly(anomalies, {
+        code: 'AMOUNT_SUM_MISMATCH',
+        severity: 'critical',
+        entity,
+        message: `Somme montants incoherente: source=${sourceTotal}, cible=${targetTotal}, ecart=${delta}`,
+        sourceValue: sourceTotal,
+        targetValue: targetTotal
+      });
+    }
+  }
+};
+
 const reconcileSamples = (
+  criticalEntities: string[],
   sourceSamples: ReconciliationSample[],
   targetSamples: ReconciliationSample[],
   thresholds: ReconciliationThresholds,
@@ -341,6 +424,8 @@ const reconcileSamples = (
       });
     }
   }
+
+  reconcileAmountSums(criticalEntities, sourceByKey, targetByKey, thresholds, anomalies);
 };
 
 const countBySeverity = (anomalies: ReconciliationAnomaly[]): Record<Severity, number> => ({
@@ -393,6 +478,12 @@ const assertValidInput = (input: ReconciliationInput): void => {
     throw new Error('Invalid reconciliation input: criticalEntities must contain at least one entity');
   }
 
+  for (const [index, entity] of input.criticalEntities.entries()) {
+    if (typeof entity !== 'string' || entity.trim().length === 0) {
+      throw new Error(`Invalid reconciliation input: criticalEntities[${index}] must be a non-empty string`);
+    }
+  }
+
   if (!Array.isArray(input.samplesSource) || !Array.isArray(input.samplesTarget)) {
     throw new Error('Invalid reconciliation input: samplesSource and samplesTarget must be arrays');
   }
@@ -408,15 +499,17 @@ const assertValidInput = (input: ReconciliationInput): void => {
       `Invalid reconciliation input: missing cardinality counts for ${missingCardinality.join(', ')}`
     );
   }
+
+  for (const entity of input.criticalEntities) {
+    assertFiniteNonNegativeInteger(input.cardinalitySource[entity], `cardinalitySource.${entity}`);
+    assertFiniteNonNegativeInteger(input.cardinalityTarget[entity], `cardinalityTarget.${entity}`);
+  }
 };
 
 export const reconcileBeforeAfter = (input: ReconciliationInput): ReconciliationResult => {
   assertValidInput(input);
 
-  const thresholds: ReconciliationThresholds = {
-    ...DEFAULT_THRESHOLDS,
-    ...input.thresholds
-  };
+  const thresholds = normalizeThresholds(input.thresholds);
 
   const anomalies: ReconciliationAnomaly[] = [];
   const cardinality = reconcileCardinality(
@@ -427,7 +520,7 @@ export const reconcileBeforeAfter = (input: ReconciliationInput): Reconciliation
     anomalies
   );
 
-  reconcileSamples(input.samplesSource, input.samplesTarget, thresholds, anomalies);
+  reconcileSamples(input.criticalEntities, input.samplesSource, input.samplesTarget, thresholds, anomalies);
 
   const orderedAnomalies = sortAnomalies(anomalies);
   const anomalyBySeverity = countBySeverity(orderedAnomalies);
