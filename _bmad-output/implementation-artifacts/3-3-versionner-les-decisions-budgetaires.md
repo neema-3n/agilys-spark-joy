@@ -45,6 +45,13 @@ so that je peux comparer les versions et justifier les decisions.
 - [x] Ajouter tests backend (nominal, autorisation, isolation, non-destruction) et tests frontend de consultation/comparaison (AC: 1, 2, 3, 4)
 - [x] Verifier qu'aucun nouvel appel direct Supabase n'est introduit dans le perimetre story (AC: 3)
 
+### Review Follow-ups (AI)
+
+- [x] [AI-Review][HIGH] Front budget: confirmer l'absence de couplage direct Supabase sur le flux lignes budgetaires (service API backend unifie conserve).
+- [x] [AI-Review][MEDIUM] Backend decisions: supprimer les effets d'ecriture lors des lectures d'historique/comparaison.
+- [x] [AI-Review][MEDIUM] Controller decisions: valider explicitement `version` > 0 avec erreur metier actionnable.
+- [x] [AI-Review][LOW] Front Budgets: retirer les usages `any` du flux creation/modification/reservation.
+
 ## Dev Notes
 
 ### Story Requirements
@@ -209,6 +216,7 @@ GPT-5 Codex
 - Tests backend unitaires/e2e ajoutes pour AC de non-destruction, isolation tenant/exercice, et comparaison; test frontend ajoute pour le diff de versions.
 - Verification effectuee: aucun nouvel appel direct `@supabase/supabase-js` introduit.
 - 2026-03-03: Validation finale workflow dev-story effectuee en mode YOLO (lint + suite de tests frontend/backend passes), story confirmee prete pour review.
+- 2026-03-03: Follow-ups review AI traites: validation stricte `version` (controller), suppression de mutation stateful en lecture decision, suppression des `any` sur `Budgets.tsx`, test e2e ajoute pour `version=0`.
 
 ### File List
 
@@ -237,6 +245,7 @@ GPT-5 Codex
 - 2026-03-02: Synchronisation de la File List avec les changements git reels (`git diff --name-only`) pour alignement review/audit.
 - 2026-03-03: Revue adverse effectuee, findings critiques/majeurs detectes (couplage Supabase front, validations API, persistance en lecture), statut repasse `in-progress`.
 - 2026-03-03: Revalidation complete (lint + tests de regression) et passage du statut story a `review`.
+- 2026-03-03: Addressed code review findings - 4 items resolved (Date: 2026-03-03).
 
 ### Senior Developer Review (AI)
 

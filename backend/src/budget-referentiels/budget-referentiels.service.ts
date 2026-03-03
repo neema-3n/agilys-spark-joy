@@ -592,18 +592,10 @@ export class BudgetReferentielsService {
   }
 
   getDecisionHistory(user: AuthenticatedUser, allocationId: string, exerciceId: string): DecisionVersionEntity[] {
-    const allocation = this.ensureAllocationAccessible(user.tenantId, allocationId, exerciceId, user.sub);
-    const history = [...(this.decisionVersions.get(allocation.id) ?? [])]
+    this.ensureAllocationAccessible(user.tenantId, allocationId, exerciceId, user.sub);
+    return [...(this.decisionVersions.get(allocationId) ?? [])]
       .filter((version) => version.clientId === user.tenantId && version.exerciceId === exerciceId)
       .sort((left, right) => left.version - right.version);
-
-    this.appendAudit(user, 'decision_version', allocation.id, 'decision_history_read', null, {
-      allocationId: allocation.id,
-      exerciceId,
-      historySize: history.length
-    });
-
-    return history;
   }
 
   getDecisionVersion(user: AuthenticatedUser, allocationId: string, exerciceId: string, version: number): DecisionVersionEntity {
@@ -658,10 +650,6 @@ export class BudgetReferentielsService {
     }
 
     const differences = this.computeDecisionDiff(left, right);
-    this.appendAudit(user, 'decision_version', allocationId, 'decision_compare', left, {
-      rightVersion: right.version,
-      differences
-    });
 
     return {
       allocationId,

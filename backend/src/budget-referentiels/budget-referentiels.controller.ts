@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -288,6 +289,9 @@ export class BudgetReferentielsController {
     @Param('version', ParseIntPipe) version: number,
     @Query() query: ExerciceScopedQueryDto
   ) {
+    if (version < 1) {
+      throw new BadRequestException('Le parametre version doit etre un entier strictement positif');
+    }
     return this.service.getDecisionVersion(user, id, query.exerciceId, version);
   }
 

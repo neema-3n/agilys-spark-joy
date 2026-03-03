@@ -394,6 +394,13 @@ describe('BudgetReferentielsController (e2e)', () => {
     expect(compareResponse.body.differences.statutDecision).toBeDefined();
     expect(compareResponse.body.differences.motif).toBeDefined();
 
+    const invalidVersionResponse = await request(app.getHttpServer())
+      .get(`/budget-referentiels/allocations/${decisionId}/decisions/0`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .query({ exerciceId });
+    expect(invalidVersionResponse.status).toBe(400);
+    expect(String(invalidVersionResponse.body.message)).toContain('strictement positif');
+
     const crossTenantHistoryResponse = await request(app.getHttpServer())
       .get(`/budget-referentiels/allocations/${decisionId}/decisions`)
       .set('Authorization', `Bearer ${otherTenantToken}`)
