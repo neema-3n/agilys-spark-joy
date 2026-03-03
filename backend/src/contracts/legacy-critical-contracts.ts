@@ -57,7 +57,7 @@ export const legacyCriticalContracts: EndpointContract[] = [
     domain: 'TENANT',
     method: 'GET',
     path: '/tenant-policies/retention',
-    statuses: [200, 403],
+    statuses: [200, 401, 403],
     response: {
       required: {
         tenantId: 'string',
@@ -72,7 +72,7 @@ export const legacyCriticalContracts: EndpointContract[] = [
     domain: 'TENANT',
     method: 'PATCH',
     path: '/tenant-policies/retention',
-    statuses: [200, 400, 403, 404],
+    statuses: [200, 400, 401, 403, 404],
     request: {
       required: {
         retentionDays: 'number',
@@ -96,7 +96,7 @@ export const legacyCriticalContracts: EndpointContract[] = [
     domain: 'BUD',
     method: 'POST',
     path: '/budget-referentiels/exercices',
-    statuses: [201, 400, 403],
+    statuses: [201, 400, 401, 403],
     request: {
       required: {
         libelle: 'string',
@@ -114,7 +114,7 @@ export const legacyCriticalContracts: EndpointContract[] = [
     domain: 'BUD',
     method: 'POST',
     path: '/budget-referentiels/allocations',
-    statuses: [201, 400, 403, 404],
+    statuses: [201, 400, 401, 403, 404],
     request: {
       required: {
         exerciceId: 'string',
@@ -129,7 +129,7 @@ export const legacyCriticalContracts: EndpointContract[] = [
     domain: 'BUD',
     method: 'POST',
     path: '/budget-referentiels/reallocations',
-    statuses: [201, 400, 403, 404],
+    statuses: [201, 400, 401, 403, 404],
     request: {
       required: {
         exerciceId: 'string',
@@ -145,6 +145,6 @@ export const legacyCriticalContracts: EndpointContract[] = [
     domain: 'BUD',
     method: 'GET',
     path: '/budget-referentiels/allocations/:id/decisions/compare',
-    statuses: [200, 400, 403]
+    statuses: [200, 400, 401, 403]
   }
 ];

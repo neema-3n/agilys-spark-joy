@@ -1,8 +1,13 @@
+import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
+import request = require('supertest');
+import { AppModule } from '../app.module';
 import { compareContracts } from './contract-parity';
 import { currentCriticalContracts, migrationCriticalEndpointCatalog } from './current-critical-contracts';
 import { legacyCriticalContracts } from './legacy-critical-contracts';
+import { applyTestEnv } from '../../test/test-env';
 
 const buildMarkdownReport = (result: ReturnType<typeof compareContracts>): string => {
   const blocking = result.diffs.filter((diff) => diff.severity === 'bloquant');
@@ -50,6 +55,31 @@ const buildMarkdownReport = (result: ReturnType<typeof compareContracts>): strin
 };
 
 describe('Migration API contract parity', () => {
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    applyTestEnv();
+    process.env.CONTRACT_PARITY_GENERATED_AT = '1970-01-01T00:00:00.000Z';
+
+    const moduleFixture = await Test.createTestingModule({
+      imports: [AppModule]
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true
+      })
+    );
+    await app.init();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
   it('compare legacy and current contracts, emit report, and fail on blocking diffs', () => {
     const result = compareContracts(legacyCriticalContracts, currentCriticalContracts, migrationCriticalEndpointCatalog);
 
@@ -71,5 +101,40 @@ describe('Migration API contract parity', () => {
     expect(existsSync(markdownPath)).toBe(true);
     expect(existsSync(diffPath)).toBe(true);
   });
-});
 
+  it('validates that declared current contracts match runtime security/status semantics', async () => {
+    for (const contract of currentCriticalContracts) {
+      const path = contract.path.replace(':id', '00000000-0000-4000-8000-000000000000');
+      const req = request(app.getHttpServer());
+      let response;
+
+      switch (contract.method) {
+        case 'GET':
+          response = await req.get(path);
+          break;
+        case 'POST':
+          response = await req.post(path).send({});
+          break;
+        case 'PATCH':
+          response = await req.patch(path).send({});
+          break;
+        case 'DELETE':
+          response = await req.delete(path);
+          break;
+        default:
+          throw new Error(`Unsupported method ${contract.method}`);
+      }
+
+      const currentEndpointIsProtected = contract.domain !== 'AUTH';
+      if (currentEndpointIsProtected) {
+        // Guards run before DTO validation: protected endpoints must reject missing token.
+        expect([401, 403]).toContain(response.status);
+        expect(contract.statuses).toEqual(expect.arrayContaining([response.status]));
+        continue;
+      }
+
+      // Public auth endpoints must keep declared HTTP contract for invalid payloads.
+      expect(contract.statuses).toEqual(expect.arrayContaining([response.status]));
+    }
+  });
+});

@@ -6,6 +6,13 @@ import type {
   EndpointContract
 } from './api-contract.types';
 
+const FIXED_GENERATED_AT = '1970-01-01T00:00:00.000Z';
+const severityRank: Record<ContractDiff['severity'], number> = {
+  bloquant: 0,
+  majeur: 1,
+  mineur: 2
+};
+
 const keyFor = (contract: EndpointContract): string => `${contract.method} ${contract.path}`;
 
 const compareFieldMap = (
@@ -79,12 +86,40 @@ const compareShape = (
   }
 };
 
+const compareBusinessErrorCodes = (
+  endpointId: string,
+  method: string,
+  path: string,
+  baselineCodes: string[] | undefined,
+  candidateCodes: string[] | undefined,
+  diffs: ContractDiff[]
+) => {
+  if (!baselineCodes || baselineCodes.length === 0) {
+    return;
+  }
+
+  const candidateSet = new Set(candidateCodes ?? []);
+  for (const code of baselineCodes) {
+    if (!candidateSet.has(code)) {
+      diffs.push({
+        endpointId,
+        method,
+        path,
+        severity: 'bloquant',
+        message: `business_error: code metier attendu manquant (${code})`
+      });
+    }
+  }
+};
+
 export const compareContracts = (
   legacyContracts: EndpointContract[],
   currentContracts: EndpointContract[],
   criticalEndpointCatalog: string[]
 ): ContractParityResult => {
   const diffs: ContractDiff[] = [];
+  const legacyById = new Map<string, EndpointContract>();
+  const currentById = new Map<string, EndpointContract>();
   const currentByRoute = new Map<string, EndpointContract>();
   const coverageByDomain: Record<'AUTH' | 'TENANT' | 'BUD', number> = {
     AUTH: 0,
@@ -92,12 +127,21 @@ export const compareContracts = (
     BUD: 0
   };
 
+  for (const contract of legacyContracts) {
+    legacyById.set(contract.id, contract);
+  }
+
   for (const contract of currentContracts) {
+    currentById.set(contract.id, contract);
     currentByRoute.set(keyFor(contract), contract);
   }
 
   for (const legacy of legacyContracts) {
-    const current = currentByRoute.get(keyFor(legacy));
+    let current = currentById.get(legacy.id);
+    if (!current) {
+      current = currentByRoute.get(keyFor(legacy));
+    }
+
     if (!current) {
       diffs.push({
         endpointId: legacy.id,
@@ -107,6 +151,16 @@ export const compareContracts = (
         message: 'Endpoint absent sur backend cible'
       });
       continue;
+    }
+
+    if (legacy.method !== current.method || legacy.path !== current.path) {
+      diffs.push({
+        endpointId: legacy.id,
+        method: legacy.method,
+        path: legacy.path,
+        severity: 'bloquant',
+        message: `Signature endpoint modifiee (attendu ${legacy.method} ${legacy.path}, obtenu ${current.method} ${current.path})`
+      });
     }
 
     coverageByDomain[legacy.domain] += 1;
@@ -125,10 +179,19 @@ export const compareContracts = (
 
     compareShape(legacy.id, legacy.method, legacy.path, legacy.request, current.request, 'request', diffs);
     compareShape(legacy.id, legacy.method, legacy.path, legacy.response, current.response, 'response', diffs);
+    compareBusinessErrorCodes(
+      legacy.id,
+      legacy.method,
+      legacy.path,
+      legacy.businessErrorCodes,
+      current.businessErrorCodes,
+      diffs
+    );
   }
 
-  const coveredEndpointIds = new Set([...legacyContracts, ...currentContracts].map((endpoint) => endpoint.id));
-  const nonCoveredEndpoints = criticalEndpointCatalog.filter((endpointId) => !coveredEndpointIds.has(endpointId));
+  const nonCoveredEndpoints = criticalEndpointCatalog.filter(
+    (endpointId) => !legacyById.has(endpointId) || !currentById.has(endpointId)
+  );
 
   for (const endpointId of nonCoveredEndpoints) {
     diffs.push({
@@ -140,12 +203,31 @@ export const compareContracts = (
     });
   }
 
+  diffs.sort((a, b) => {
+    const severityCompare = severityRank[a.severity] - severityRank[b.severity];
+    if (severityCompare !== 0) {
+      return severityCompare;
+    }
+    const endpointCompare = a.endpointId.localeCompare(b.endpointId);
+    if (endpointCompare !== 0) {
+      return endpointCompare;
+    }
+    const methodCompare = a.method.localeCompare(b.method);
+    if (methodCompare !== 0) {
+      return methodCompare;
+    }
+    const pathCompare = a.path.localeCompare(b.path);
+    if (pathCompare !== 0) {
+      return pathCompare;
+    }
+    return a.message.localeCompare(b.message);
+  });
+
   return {
-    generatedAt: new Date().toISOString(),
+    generatedAt: process.env.CONTRACT_PARITY_GENERATED_AT ?? FIXED_GENERATED_AT,
     comparedEndpoints: legacyContracts.length,
     coverageByDomain,
     nonCoveredEndpoints,
     diffs
   };
 };
-
