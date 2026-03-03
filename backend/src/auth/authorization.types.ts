@@ -14,7 +14,9 @@ export const PERMISSIONS = [
   'referentiels:read',
   'referentiels:write',
   'referentiels:audit:read',
-  'roles:manage'
+  'roles:manage',
+  'tenant_policies:read',
+  'tenant_policies:write'
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -26,9 +28,23 @@ export interface AuthorizationDecision {
 }
 
 export const ROLE_PERMISSIONS: Readonly<Record<BusinessRole, readonly Permission[]>> = {
-  super_admin: ['referentiels:read', 'referentiels:write', 'referentiels:audit:read', 'roles:manage'],
-  admin_client: ['referentiels:read', 'referentiels:write', 'referentiels:audit:read', 'roles:manage'],
-  directeur_financier: ['referentiels:read', 'referentiels:write', 'referentiels:audit:read'],
+  super_admin: [
+    'referentiels:read',
+    'referentiels:write',
+    'referentiels:audit:read',
+    'roles:manage',
+    'tenant_policies:read',
+    'tenant_policies:write'
+  ],
+  admin_client: [
+    'referentiels:read',
+    'referentiels:write',
+    'referentiels:audit:read',
+    'roles:manage',
+    'tenant_policies:read',
+    'tenant_policies:write'
+  ],
+  directeur_financier: ['referentiels:read', 'referentiels:write', 'referentiels:audit:read', 'tenant_policies:read'],
   ordonnateur: ['referentiels:read', 'referentiels:write'],
   comptable: ['referentiels:read', 'referentiels:write'],
   operateur_saisie: ['referentiels:read'],

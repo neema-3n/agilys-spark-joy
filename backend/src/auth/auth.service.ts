@@ -208,7 +208,7 @@ export class AuthService {
   private assertTenantRoleManagement(actor: AuthenticatedUser, targetTenantId: string): void {
     const isSuperAdmin = actor.roles.includes('super_admin');
     if (!isSuperAdmin && actor.tenantId !== targetTenantId) {
-      throw new ForbiddenException('Gestion des roles inter-tenant interdite');
+      throw new ForbiddenException('Access hors tenant refuse');
     }
   }
 }

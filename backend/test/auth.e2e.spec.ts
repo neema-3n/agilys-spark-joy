@@ -265,7 +265,7 @@ describe('AuthController (e2e)', () => {
       .send({ role: 'auditeur' });
 
     expect(assignResponse.status).toBe(403);
-    expect(assignResponse.body.message).toContain('inter-tenant');
+    expect(assignResponse.body.message).toContain('Access hors tenant refuse');
   });
 
   it('PATCH /auth/users/:userId/roles blocks incompatible SoD role assignment', async () => {
