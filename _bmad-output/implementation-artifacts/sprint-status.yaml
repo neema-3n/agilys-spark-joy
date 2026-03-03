@@ -74,7 +74,7 @@ development_status:
   epic-m2: backlog
   m2-1-definir-mapping-et-strategie-de-migration-data: done
   m2-2-implementer-le-backfill-idempotent-par-lots: done
-  m2-3-reconciler-avant-apres-sur-donnees-critiques: backlog
+  m2-3-reconciler-avant-apres-sur-donnees-critiques: review
   epic-m2-retrospective: optional
   epic-m3: backlog
   m3-1-produire-le-runbook-de-cutover-production: backlog

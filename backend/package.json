@@ -13,7 +13,8 @@
     "test:contracts:live": "jest --runInBand src/contracts/live-contract-parity.spec.ts",
     "test:watch": "jest --watch",
     "lint": "tsc --noEmit",
-    "migrate:lot-b": "ts-node src/migration/lot-b/cli.ts"
+    "migrate:lot-b": "ts-node src/migration/lot-b/cli.ts",
+    "reconcile:lot-b": "ts-node src/migration/lot-b/reconciliation.cli.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.22",
