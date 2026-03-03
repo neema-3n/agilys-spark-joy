@@ -8,6 +8,7 @@ import type {
   DecisionVersionEntity,
   EnveloppeEntity,
   ExerciceEntity,
+  LigneBudgetaireEntity,
   ProgrammeEntity,
   SectionEntity
 } from './budget-referentiels.types';
@@ -19,6 +20,7 @@ interface BudgetReferentielsSnapshot {
   programmes: ProgrammeEntity[];
   actions: ActionEntity[];
   allocations: AllocationEntity[];
+  lignesBudgetaires: LigneBudgetaireEntity[];
   decisionVersions: DecisionVersionEntity[];
   auditLog: AuditEntry[];
 }
@@ -30,6 +32,7 @@ const EMPTY_SNAPSHOT: BudgetReferentielsSnapshot = {
   programmes: [],
   actions: [],
   allocations: [],
+  lignesBudgetaires: [],
   decisionVersions: [],
   auditLog: []
 };
@@ -59,6 +62,7 @@ export class BudgetReferentielsStore {
         programmes: parsed.programmes ?? [],
         actions: parsed.actions ?? [],
         allocations: parsed.allocations ?? [],
+        lignesBudgetaires: parsed.lignesBudgetaires ?? [],
         decisionVersions: parsed.decisionVersions ?? [],
         auditLog: parsed.auditLog ?? []
       };

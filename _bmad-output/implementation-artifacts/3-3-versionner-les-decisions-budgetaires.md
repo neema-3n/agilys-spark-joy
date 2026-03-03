@@ -1,6 +1,6 @@
 # Story 3.3: Versionner les decisions budgetaires
 
-Status: review
+Status: in-progress
 
 ## Story
 
@@ -234,10 +234,28 @@ GPT-5 Codex
 
 - 2026-03-02: Implementation complete de la story 3.3 (versionnement de decisions budgetaires, endpoints backend, vue front de comparaison, tests backend/front, audit et isolation scope).
 - 2026-03-02: Synchronisation de la File List avec les changements git reels (`git diff --name-only`) pour alignement review/audit.
+- 2026-03-03: Revue adverse effectuee, findings critiques/majeurs detectes (couplage Supabase front, validations API, persistance en lecture), statut repasse `in-progress`.
+
+### Senior Developer Review (AI)
+
+- Date: `2026-03-03`
+- Outcome: `Changes Requested`
+- Synthese: `2 High`, `3 Medium`, `1 Low`
+
+Findings prioritaires:
+
+1. `[HIGH]` Couplage direct du front budget a Supabase au lieu du client API backend unifie (`src/services/api/budget.service.ts`).
+2. `[MEDIUM]` Endpoints de lecture des decisions qui declenchent des ecritures persistees (`backend/src/budget-referentiels/budget-referentiels.service.ts`).
+3. `[MEDIUM]` Parametre `version` converti sans validation explicite dans le controleur (`backend/src/budget-referentiels/budget-referentiels.controller.ts`).
+4. `[LOW]` Regressions de typage (`any`) dans le flux de creation/modification budget (`src/pages/app/Budgets.tsx`).
+
+Decision:
+
+- Les issues HIGH/MEDIUM n'etant pas corrigees dans ce passage de review, la story reste `in-progress`.
 
 ## Story Completion Status
 
 - Story ID: `3.3`
 - Story Key: `3-3-versionner-les-decisions-budgetaires`
-- Final Status: `review`
-- Completion note: `Story implementee et validee (tests/lint OK), prete pour code review`
+- Final Status: `in-progress`
+- Completion note: `Code review adverse complete: corrections requises avant retour en review`

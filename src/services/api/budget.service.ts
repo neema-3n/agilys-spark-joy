@@ -1,121 +1,116 @@
-import { 
-  LigneBudgetaire
-} from '@/types/budget.types';
-import { supabase } from '@/integrations/supabase/client';
+import { requestJson } from '@/services/api/api-utils';
+import { LigneBudgetaire } from '@/types/budget.types';
 
-// Helpers pour convertir entre camelCase et snake_case
-const toSnakeCase = (obj: any) => {
-  const result: any = {};
-  for (const key in obj) {
-    const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-    result[snakeKey] = obj[key];
-  }
-  return result;
+type LigneBudgetaireApiModel = {
+  id: string;
+  exerciceId: string;
+  actionId: string;
+  compteId: string;
+  enveloppeId: string | null;
+  libelle: string;
+  montantInitial: number;
+  montantModifie: number;
+  montantEngage: number;
+  montantLiquide: number;
+  montantPaye: number;
+  disponible: number;
+  statut: 'actif' | 'cloture';
+  createdAt: string;
 };
 
-const toCamelCase = (obj: any): any => {
-  if (!obj) return obj;
-  const result: any = {};
-  for (const key in obj) {
-    const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-    result[camelKey] = obj[key];
-  }
-  return result;
+const mapApiLigne = (entry: LigneBudgetaireApiModel): LigneBudgetaire => ({
+  id: entry.id,
+  exerciceId: entry.exerciceId,
+  actionId: entry.actionId,
+  compteId: entry.compteId,
+  enveloppeId: entry.enveloppeId ?? undefined,
+  libelle: entry.libelle,
+  montantInitial: entry.montantInitial,
+  montantModifie: entry.montantModifie,
+  montantEngage: entry.montantEngage,
+  montantLiquide: entry.montantLiquide,
+  montantPaye: entry.montantPaye,
+  disponible: entry.disponible,
+  dateCreation: entry.createdAt,
+  statut: entry.statut
+});
+
+const toUpdatePayload = (updates: Partial<LigneBudgetaire>) => {
+  const payload: Record<string, unknown> = {};
+
+  if (updates.actionId !== undefined) payload.actionId = updates.actionId;
+  if (updates.compteId !== undefined) payload.compteId = updates.compteId;
+  if (updates.enveloppeId !== undefined) payload.enveloppeId = updates.enveloppeId;
+  if (updates.libelle !== undefined) payload.libelle = updates.libelle;
+  if (updates.montantInitial !== undefined) payload.montantInitial = updates.montantInitial;
+  if (updates.montantModifie !== undefined) payload.montantModifie = updates.montantModifie;
+  if (updates.montantEngage !== undefined) payload.montantEngage = updates.montantEngage;
+  if (updates.montantLiquide !== undefined) payload.montantLiquide = updates.montantLiquide;
+  if (updates.montantPaye !== undefined) payload.montantPaye = updates.montantPaye;
+  if (updates.disponible !== undefined) payload.disponible = updates.disponible;
+  if (updates.statut !== undefined) payload.statut = updates.statut;
+
+  return payload;
 };
 
 export const budgetService = {
-  // Récupérer les lignes budgétaires par exercice
-  getLignesBudgetaires: async (exerciceId: string, clientId: string): Promise<LigneBudgetaire[]> => {
-    const { data, error } = await supabase
-      .from('lignes_budgetaires')
-      .select('*')
-      .eq('exercice_id', exerciceId)
-      .eq('client_id', clientId)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    
-    return (data || []).map(row => ({
-      ...toCamelCase(row),
-      montantLiquide: row.montant_liquide || 0
-    }));
+  getLignesBudgetaires: async (exerciceId: string, _clientId: string): Promise<LigneBudgetaire[]> => {
+    const payload = await requestJson<LigneBudgetaireApiModel[]>(
+      `/budget-referentiels/lignes-budgetaires?exerciceId=${encodeURIComponent(exerciceId)}`,
+      { method: 'GET' },
+      'Erreur lors de la récupération des lignes budgétaires'
+    );
+    return payload.map(mapApiLigne);
   },
 
-  // Créer une ligne budgétaire
   createLigneBudgetaire: async (
     ligne: Omit<LigneBudgetaire, 'id' | 'dateCreation'>,
-    clientId: string,
-    userId: string
+    _clientId: string,
+    _userId: string
   ): Promise<LigneBudgetaire> => {
-    const ligneData = {
-      client_id: clientId,
-      exercice_id: ligne.exerciceId,
-      action_id: ligne.actionId,
-      compte_id: ligne.compteId,
-      enveloppe_id: ligne.enveloppeId || null,
-      libelle: ligne.libelle,
-      montant_initial: ligne.montantInitial,
-      montant_modifie: ligne.montantInitial,
-      montant_engage: 0,
-      montant_paye: 0,
-      disponible: ligne.montantInitial,
-      statut: 'actif',
-      created_by: userId
-    };
+    const payload = await requestJson<LigneBudgetaireApiModel>(
+      '/budget-referentiels/lignes-budgetaires',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          exerciceId: ligne.exerciceId,
+          actionId: ligne.actionId,
+          compteId: ligne.compteId,
+          enveloppeId: ligne.enveloppeId ?? null,
+          libelle: ligne.libelle,
+          montantInitial: ligne.montantInitial,
+          statut: ligne.statut
+        })
+      },
+      'Erreur lors de la création de la ligne budgétaire'
+    );
 
-    const { data, error } = await supabase
-      .from('lignes_budgetaires')
-      .insert(ligneData)
-      .select()
-      .single();
-
-    if (error) throw error;
-    
-    return toCamelCase(data);
+    return mapApiLigne(payload);
   },
 
-  // Mettre à jour une ligne budgétaire
   updateLigneBudgetaire: async (
     id: string,
     updates: Partial<LigneBudgetaire>,
-    clientId: string,
+    _clientId: string,
     exerciceId: string
   ): Promise<LigneBudgetaire> => {
-    const updateData = toSnakeCase(updates);
-    
-    const { data, error } = await supabase
-      .from('lignes_budgetaires')
-      .update(updateData)
-      .eq('id', id)
-      .eq('client_id', clientId)
-      .eq('exercice_id', exerciceId)
-      .select()
-      .single();
+    const payload = await requestJson<LigneBudgetaireApiModel>(
+      `/budget-referentiels/lignes-budgetaires/${encodeURIComponent(id)}?exerciceId=${encodeURIComponent(exerciceId)}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(toUpdatePayload(updates))
+      },
+      'Erreur lors de la modification de la ligne budgétaire'
+    );
 
-    if (error) throw error;
-    if (!data) throw new Error('Ligne budgétaire non trouvée');
-    
-    return toCamelCase(data);
+    return mapApiLigne(payload);
   },
 
-  // Supprimer une ligne budgétaire
-  deleteLigneBudgetaire: async (id: string, clientId: string, exerciceId: string): Promise<void> => {
-    const { error } = await supabase
-      .from('lignes_budgetaires')
-      .delete()
-      .eq('id', id)
-      .eq('client_id', clientId)
-      .eq('exercice_id', exerciceId);
-
-    if (error) {
-      // Détecter l'erreur de contrainte de clé étrangère (code PostgreSQL 23503)
-      if (error.code === '23503' && error.message.includes('reservations_credits')) {
-        throw new Error(
-          'Cette ligne budgétaire ne peut pas être supprimée car elle est utilisée par une ou plusieurs réservations de crédits. ' +
-          'Veuillez d\'abord supprimer ou libérer les réservations associées.'
-        );
-      }
-      throw error;
-    }
+  deleteLigneBudgetaire: async (id: string, _clientId: string, exerciceId: string): Promise<void> => {
+    await requestJson<LigneBudgetaireApiModel>(
+      `/budget-referentiels/lignes-budgetaires/${encodeURIComponent(id)}?exerciceId=${encodeURIComponent(exerciceId)}`,
+      { method: 'DELETE' },
+      'Impossible de supprimer la ligne budgétaire'
+    );
   }
 };

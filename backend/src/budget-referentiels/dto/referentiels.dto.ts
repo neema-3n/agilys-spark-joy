@@ -348,8 +348,16 @@ export class ReallocationCreateDto {
 
 export class AuditQueryDto {
   @IsOptional()
-  @IsIn(['exercice', 'enveloppe', 'section', 'programme', 'action', 'allocation', 'decision_version'])
-  entityType?: 'exercice' | 'enveloppe' | 'section' | 'programme' | 'action' | 'allocation' | 'decision_version';
+  @IsIn(['exercice', 'enveloppe', 'section', 'programme', 'action', 'allocation', 'ligne_budgetaire', 'decision_version'])
+  entityType?:
+    | 'exercice'
+    | 'enveloppe'
+    | 'section'
+    | 'programme'
+    | 'action'
+    | 'allocation'
+    | 'ligne_budgetaire'
+    | 'decision_version';
 
   @IsOptional()
   @IsString()
@@ -365,6 +373,103 @@ export class BudgetDecisionActionDto {
   @IsNotEmpty()
   @MaxLength(280)
   motif!: string;
+}
+
+export class LigneBudgetaireCreateDto {
+  @IsString()
+  @IsNotEmpty()
+  @IsUUID('4')
+  exerciceId!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsUUID('4')
+  actionId!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  compteId!: string;
+
+  @IsOptional()
+  @IsString()
+  enveloppeId?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(LABEL_MAX)
+  libelle!: string;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  montantInitial!: number;
+
+  @IsOptional()
+  @IsIn(['actif', 'cloture'])
+  statut?: 'actif' | 'cloture';
+}
+
+export class LigneBudgetaireUpdateDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @IsUUID('4')
+  actionId?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  compteId?: string;
+
+  @IsOptional()
+  @IsString()
+  enveloppeId?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(LABEL_MAX)
+  libelle?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  montantInitial?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  montantModifie?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  montantEngage?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  montantLiquide?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  montantPaye?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  disponible?: number;
+
+  @IsOptional()
+  @IsIn(['actif', 'cloture'])
+  statut?: 'actif' | 'cloture';
 }
 
 export class BudgetDecisionCompareQueryDto extends ExerciceScopedQueryDto {
