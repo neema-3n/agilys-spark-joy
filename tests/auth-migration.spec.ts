@@ -7,6 +7,7 @@ import { buildRequestedPath, resolveLoginRedirect } from '../src/services/auth/a
 import { authService } from '../src/services/api/auth.service';
 import { httpClient } from '../src/services/api/http-client';
 import { tokenStorage } from '../src/services/auth/token-storage';
+import { applyModificationsToLignes, computeDecisionVersionDiff } from '../src/services/api/budget-modifications.service';
 
 class MockStorage implements StorageLike {
   private readonly store = new Map<string, string>();
@@ -587,4 +588,247 @@ test('hydrate session returns null when refresh throws and clears storage', asyn
   } finally {
     httpClient.refresh = originalRefresh;
   }
+});
+
+test('applyModificationsToLignes projects allocation and reallocation on budget lines', async () => {
+  const lignes = [
+    {
+      id: 'ligne-a',
+      exerciceId: 'ex-1',
+      actionId: 'act-1',
+      compteId: 'cpt-1',
+      libelle: 'Ligne A',
+      montantInitial: 1000,
+      montantModifie: 1000,
+      montantEngage: 0,
+      montantLiquide: 0,
+      montantPaye: 0,
+      disponible: 1000,
+      dateCreation: '2026-03-02T00:00:00.000Z',
+      statut: 'actif' as const
+    },
+    {
+      id: 'ligne-b',
+      exerciceId: 'ex-1',
+      actionId: 'act-2',
+      compteId: 'cpt-2',
+      libelle: 'Ligne B',
+      montantInitial: 500,
+      montantModifie: 500,
+      montantEngage: 0,
+      montantLiquide: 0,
+      montantPaye: 0,
+      disponible: 500,
+      dateCreation: '2026-03-02T00:00:00.000Z',
+      statut: 'actif' as const
+    }
+  ];
+
+  const result = applyModificationsToLignes(lignes, [
+    {
+      id: 'm1',
+      exerciceId: 'ex-1',
+      numero: 'ALC-2026-0001',
+      type: 'augmentation',
+      ligneDestinationId: 'ligne-a',
+      montant: 200,
+      motif: 'Dotation',
+      statut: 'validee',
+      dateCreation: '2026-03-02T00:00:00.000Z'
+    },
+    {
+      id: 'm2',
+      exerciceId: 'ex-1',
+      numero: 'ALC-2026-0002',
+      type: 'virement',
+      ligneSourceId: 'ligne-a',
+      ligneDestinationId: 'ligne-b',
+      montant: 100,
+      motif: 'Arbitrage',
+      statut: 'validee',
+      dateCreation: '2026-03-02T00:00:01.000Z'
+    }
+  ]);
+
+  const ligneA = result.find((ligne) => ligne.id === 'ligne-a');
+  const ligneB = result.find((ligne) => ligne.id === 'ligne-b');
+
+  expect(ligneA?.montantModifie).toBe(1100);
+  expect(ligneA?.disponible).toBe(1100);
+  expect(ligneB?.montantModifie).toBe(600);
+  expect(ligneB?.disponible).toBe(600);
+});
+
+test('applyModificationsToLignes ignores non validated modifications', async () => {
+  const lignes = [
+    {
+      id: 'ligne-a',
+      exerciceId: 'ex-1',
+      actionId: 'act-1',
+      compteId: 'cpt-1',
+      libelle: 'Ligne A',
+      montantInitial: 1000,
+      montantModifie: 1000,
+      montantEngage: 0,
+      montantLiquide: 0,
+      montantPaye: 0,
+      disponible: 1000,
+      dateCreation: '2026-03-02T00:00:00.000Z',
+      statut: 'actif' as const
+    }
+  ];
+
+  const result = applyModificationsToLignes(lignes, [
+    {
+      id: 'm1',
+      exerciceId: 'ex-1',
+      numero: 'ALC-2026-0001',
+      type: 'augmentation',
+      ligneDestinationId: 'ligne-a',
+      montant: 200,
+      motif: 'Draft',
+      statut: 'brouillon',
+      dateCreation: '2026-03-02T00:00:00.000Z'
+    }
+  ]);
+
+  expect(result[0]?.montantModifie).toBe(1000);
+  expect(result[0]?.disponible).toBe(1000);
+});
+
+test('applyModificationsToLignes supports axe ids mapped through actionId', async () => {
+  const lignes = [
+    {
+      id: 'ligne-a',
+      exerciceId: 'ex-1',
+      actionId: 'action-a',
+      compteId: 'cpt-1',
+      libelle: 'Ligne A',
+      montantInitial: 1000,
+      montantModifie: 1000,
+      montantEngage: 0,
+      montantLiquide: 0,
+      montantPaye: 0,
+      disponible: 1000,
+      dateCreation: '2026-03-02T00:00:00.000Z',
+      statut: 'actif' as const
+    },
+    {
+      id: 'ligne-b',
+      exerciceId: 'ex-1',
+      actionId: 'action-b',
+      compteId: 'cpt-2',
+      libelle: 'Ligne B',
+      montantInitial: 500,
+      montantModifie: 500,
+      montantEngage: 0,
+      montantLiquide: 0,
+      montantPaye: 0,
+      disponible: 500,
+      dateCreation: '2026-03-02T00:00:00.000Z',
+      statut: 'actif' as const
+    }
+  ];
+
+  const result = applyModificationsToLignes(lignes, [
+    {
+      id: 'm1',
+      exerciceId: 'ex-1',
+      numero: 'ALC-2026-0001',
+      type: 'augmentation',
+      ligneDestinationId: 'action-a',
+      montant: 200,
+      motif: 'Dotation',
+      statut: 'validee',
+      dateCreation: '2026-03-02T00:00:00.000Z'
+    },
+    {
+      id: 'm2',
+      exerciceId: 'ex-1',
+      numero: 'ALC-2026-0002',
+      type: 'virement',
+      ligneSourceId: 'action-a',
+      ligneDestinationId: 'action-b',
+      montant: 100,
+      motif: 'Arbitrage',
+      statut: 'validee',
+      dateCreation: '2026-03-02T00:00:01.000Z'
+    }
+  ]);
+
+  const ligneA = result.find((ligne) => ligne.id === 'ligne-a');
+  const ligneB = result.find((ligne) => ligne.id === 'ligne-b');
+
+  expect(ligneA?.montantModifie).toBe(1100);
+  expect(ligneA?.disponible).toBe(1100);
+  expect(ligneB?.montantModifie).toBe(600);
+  expect(ligneB?.disponible).toBe(600);
+});
+
+test('computeDecisionVersionDiff exposes business-relevant decision changes', async () => {
+  const left = {
+    id: 'v1',
+    decisionId: 'd1',
+    allocationId: 'a1',
+    exerciceId: 'ex-1',
+    version: 1,
+    statutDecision: 'validated' as const,
+    motif: 'Validation initiale',
+    auteur: 'user-1',
+    horodatage: '2026-03-02T10:00:00.000Z',
+    snapshotAvant: {
+      operationType: 'allocation' as const,
+      sourceAxeId: null,
+      destinationAxeId: 'axe-a',
+      montant: 1000,
+      statutDecision: 'validated' as const,
+      motif: 'Validation initiale',
+      auteur: 'user-1',
+      horodatage: '2026-03-02T10:00:00.000Z',
+      soldes: {
+        sourceAvant: null,
+        sourceApres: null,
+        destinationAvant: 0,
+        destinationApres: 0
+      }
+    },
+    snapshotApres: {
+      operationType: 'allocation' as const,
+      sourceAxeId: null,
+      destinationAxeId: 'axe-a',
+      montant: 1000,
+      statutDecision: 'validated' as const,
+      motif: 'Validation initiale',
+      auteur: 'user-1',
+      horodatage: '2026-03-02T10:00:00.000Z',
+      soldes: {
+        sourceAvant: null,
+        sourceApres: null,
+        destinationAvant: 0,
+        destinationApres: 1000
+      }
+    }
+  };
+  const right = {
+    ...left,
+    id: 'v2',
+    version: 2,
+    statutDecision: 'rejected' as const,
+    motif: 'Rejet pour controle',
+    auteur: 'user-2',
+    horodatage: '2026-03-03T09:00:00.000Z',
+    snapshotApres: {
+      ...left.snapshotApres,
+      statutDecision: 'rejected' as const,
+      motif: 'Rejet pour controle',
+      auteur: 'user-2',
+      horodatage: '2026-03-03T09:00:00.000Z'
+    }
+  };
+
+  const diff = computeDecisionVersionDiff(left, right);
+
+  expect(diff.statutDecision).toEqual({ from: 'validated', to: 'rejected' });
+  expect(diff.motif).toEqual({ from: 'Validation initiale', to: 'Rejet pour controle' });
+  expect(diff.auteur).toEqual({ from: 'user-1', to: 'user-2' });
 });

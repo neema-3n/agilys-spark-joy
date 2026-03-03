@@ -59,7 +59,7 @@ export interface LigneBudgetaire {
   statut: 'actif' | 'cloture';
 }
 
-export type TypeModification = 'augmentation' | 'diminution' | 'virement';
+export type TypeModification = 'augmentation' | 'virement';
 export type StatutModification = 'brouillon' | 'en_attente' | 'validee' | 'rejetee';
 
 export interface ModificationBudgetaire {
@@ -75,4 +75,45 @@ export interface ModificationBudgetaire {
   dateCreation: string;
   dateValidation?: string;
   validePar?: string;
+}
+
+export type BudgetDecisionStatus = 'validated' | 'rejected';
+
+export interface BudgetDecisionSnapshot {
+  operationType: 'allocation' | 'reallocation';
+  sourceAxeId: string | null;
+  destinationAxeId: string;
+  montant: number;
+  statutDecision: BudgetDecisionStatus;
+  motif: string;
+  auteur: string;
+  horodatage: string;
+  soldes: {
+    sourceAvant: number | null;
+    sourceApres: number | null;
+    destinationAvant: number;
+    destinationApres: number;
+  };
+}
+
+export interface BudgetDecisionVersion {
+  id: string;
+  decisionId: string;
+  allocationId: string;
+  exerciceId: string;
+  version: number;
+  statutDecision: BudgetDecisionStatus;
+  motif: string;
+  auteur: string;
+  horodatage: string;
+  snapshotAvant: BudgetDecisionSnapshot;
+  snapshotApres: BudgetDecisionSnapshot;
+}
+
+export interface BudgetDecisionComparison {
+  allocationId: string;
+  exerciceId: string;
+  leftVersion: BudgetDecisionVersion;
+  rightVersion: BudgetDecisionVersion;
+  differences: Record<string, { from: unknown; to: unknown }>;
 }

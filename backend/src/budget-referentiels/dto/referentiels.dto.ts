@@ -7,6 +7,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
   Min
 } from 'class-validator';
@@ -298,12 +299,84 @@ export class ExerciceScopedQueryDto {
   exerciceId!: string;
 }
 
+export class AllocationCreateDto {
+  @IsString()
+  @IsNotEmpty()
+  exerciceId!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsUUID('4', { message: 'Axe destination invalide: identifiant axe attendu au format UUID' })
+  destinationAxeId!: string;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0.01)
+  montant!: number;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(280)
+  motif!: string;
+}
+
+export class ReallocationCreateDto {
+  @IsString()
+  @IsNotEmpty()
+  exerciceId!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsUUID('4', { message: 'Axe source invalide: identifiant axe attendu au format UUID' })
+  sourceAxeId!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsUUID('4', { message: 'Axe destination invalide: identifiant axe attendu au format UUID' })
+  destinationAxeId!: string;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0.01)
+  montant!: number;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(280)
+  motif!: string;
+}
+
 export class AuditQueryDto {
   @IsOptional()
-  @IsIn(['exercice', 'enveloppe', 'section', 'programme', 'action'])
-  entityType?: 'exercice' | 'enveloppe' | 'section' | 'programme' | 'action';
+  @IsIn(['exercice', 'enveloppe', 'section', 'programme', 'action', 'allocation', 'decision_version'])
+  entityType?: 'exercice' | 'enveloppe' | 'section' | 'programme' | 'action' | 'allocation' | 'decision_version';
 
   @IsOptional()
   @IsString()
   entityId?: string;
+}
+
+export class BudgetDecisionActionDto {
+  @IsString()
+  @IsNotEmpty()
+  exerciceId!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(280)
+  motif!: string;
+}
+
+export class BudgetDecisionCompareQueryDto extends ExerciceScopedQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  leftVersion?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  rightVersion?: number;
 }

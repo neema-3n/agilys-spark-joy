@@ -19,7 +19,10 @@ import { BudgetReferentielsService } from './budget-referentiels.service';
 import {
   ActionCreateDto,
   ActionUpdateDto,
+  AllocationCreateDto,
   AuditQueryDto,
+  BudgetDecisionActionDto,
+  BudgetDecisionCompareQueryDto,
   EnveloppeCreateDto,
   EnveloppeUpdateDto,
   ExerciceCreateDto,
@@ -27,6 +30,7 @@ import {
   ExerciceUpdateDto,
   ProgrammeCreateDto,
   ProgrammeUpdateDto,
+  ReallocationCreateDto,
   SectionCreateDto,
   SectionUpdateDto
 } from './dto/referentiels.dto';
@@ -190,6 +194,71 @@ export class BudgetReferentielsController {
   @RequirePermissions('referentiels:write')
   archiveAction(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string, @Query() query: ExerciceScopedQueryDto) {
     return this.service.archiveAction(user, id, query.exerciceId);
+  }
+
+  @Get('allocations')
+  @RequirePermissions('referentiels:read')
+  getAllocations(@CurrentUser() user: AuthenticatedUser, @Query() query: ExerciceScopedQueryDto) {
+    return this.service.getAllocations(user, query.exerciceId);
+  }
+
+  @Post('allocations')
+  @RequirePermissions('referentiels:write')
+  createAllocation(@CurrentUser() user: AuthenticatedUser, @Body() body: AllocationCreateDto) {
+    return this.service.createAllocation(user, body);
+  }
+
+  @Post('allocations/:id/decision/validate')
+  @RequirePermissions('referentiels:write')
+  validateDecision(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: BudgetDecisionActionDto
+  ) {
+    return this.service.createDecisionValidation(user, id, body);
+  }
+
+  @Post('allocations/:id/decision/reject')
+  @RequirePermissions('referentiels:write')
+  rejectDecision(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: BudgetDecisionActionDto
+  ) {
+    return this.service.createDecisionRejection(user, id, body);
+  }
+
+  @Get('allocations/:id/decisions/compare')
+  @RequirePermissions('referentiels:read')
+  compareDecisions(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Query() query: BudgetDecisionCompareQueryDto
+  ) {
+    return this.service.compareDecisionVersions(user, id, query);
+  }
+
+  @Get('allocations/:id/decisions')
+  @RequirePermissions('referentiels:read')
+  getDecisionHistory(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string, @Query() query: ExerciceScopedQueryDto) {
+    return this.service.getDecisionHistory(user, id, query.exerciceId);
+  }
+
+  @Get('allocations/:id/decisions/:version')
+  @RequirePermissions('referentiels:read')
+  getDecisionVersion(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Param('version') version: string,
+    @Query() query: ExerciceScopedQueryDto
+  ) {
+    return this.service.getDecisionVersion(user, id, query.exerciceId, Number(version));
+  }
+
+  @Post('reallocations')
+  @RequirePermissions('referentiels:write')
+  createReallocation(@CurrentUser() user: AuthenticatedUser, @Body() body: ReallocationCreateDto) {
+    return this.service.createReallocation(user, body);
   }
 
   @Get('audit-log')
