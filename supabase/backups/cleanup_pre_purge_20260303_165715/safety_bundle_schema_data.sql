@@ -1,0 +1,1425 @@
+--
+-- PostgreSQL database dump
+--
+
+\restrict 6hgjQyjbeChBhEEdzsKGSPtiEJmL5mffGbQeJnE9GVkHtxT9ebfzjmxyIovNHua
+
+-- Dumped from database version 17.6
+-- Dumped by pg_dump version 18.0
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: comptes; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.comptes (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    client_id text NOT NULL,
+    numero text NOT NULL,
+    libelle text NOT NULL,
+    type text NOT NULL,
+    categorie text NOT NULL,
+    parent_id uuid,
+    niveau integer DEFAULT 1 NOT NULL,
+    statut text DEFAULT 'actif'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    created_by uuid,
+    CONSTRAINT comptes_categorie_check CHECK ((categorie = ANY (ARRAY['immobilisation'::text, 'stock'::text, 'creance'::text, 'tresorerie'::text, 'dette'::text, 'capital'::text, 'exploitation'::text, 'financier'::text, 'exceptionnel'::text, 'autre'::text]))),
+    CONSTRAINT comptes_statut_check CHECK ((statut = ANY (ARRAY['actif'::text, 'inactif'::text]))),
+    CONSTRAINT comptes_type_check CHECK ((type = ANY (ARRAY['actif'::text, 'passif'::text, 'charge'::text, 'produit'::text, 'resultat'::text])))
+);
+
+
+ALTER TABLE public.comptes OWNER TO postgres;
+
+--
+-- Name: parametres_referentiels; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.parametres_referentiels (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    client_id text NOT NULL,
+    categorie text NOT NULL,
+    code text NOT NULL,
+    libelle text NOT NULL,
+    description text,
+    ordre integer DEFAULT 0,
+    actif boolean DEFAULT true,
+    modifiable boolean DEFAULT true,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    created_by uuid
+);
+
+
+ALTER TABLE public.parametres_referentiels OWNER TO postgres;
+
+--
+-- Name: profiles; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.profiles (
+    id uuid NOT NULL,
+    email text NOT NULL,
+    nom text NOT NULL,
+    prenom text NOT NULL,
+    client_id text NOT NULL,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+ALTER TABLE public.profiles OWNER TO postgres;
+
+--
+-- Name: user_roles; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.user_roles (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    role public.app_role NOT NULL,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+ALTER TABLE public.user_roles OWNER TO postgres;
+
+--
+-- Data for Name: comptes; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.comptes (id, client_id, numero, libelle, type, categorie, parent_id, niveau, statut, created_at, updated_at, created_by) FROM stdin;
+6abab6fe-47c4-4736-aa94-0c4e113286dd	client-1	52	BANQUES	actif	tresorerie	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+a4c1f0a1-b017-444a-8073-09358a37565a	client-1	53	ETABLISSEMENTS FINANCIERS ET ASSIMILES	actif	tresorerie	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+a8c7f8b8-2fbe-49d6-94af-e8f705d9b363	client-1	55	INSTRUMENTS DE MONNAIE ELECTRONIQUE	actif	tresorerie	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+1dde0da6-2e2e-4656-9476-ff6b9a87cf3c	client-1	56	BANQUES, CRÉDITS DE TRÉSORERIE ET D'ESCOMPTE	actif	tresorerie	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+93cb598e-e594-4f5f-8ecf-96934c5f1fc0	client-1	57	CAISSE	actif	tresorerie	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+fe246352-7146-44b3-962c-a053825dcf43	client-1	58	VIREMENTS INTERNES	actif	tresorerie	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+00b8a8d8-5175-4a49-9f5f-26c67cff0d93	client-1	59	DEPRECIATION ET PROVISION POUR RISQUE A COURS TERME	actif	tresorerie	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+2c9de741-a7ba-4a86-b6d1-e917012a1e93	client-1	60	ACHATS ET VARIATIONS DE STOCKS	charge	exploitation	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+22412452-97ab-4514-80f2-59f10f288812	client-1	61	TRANSPORTS	charge	exploitation	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+2e9f73da-8b5a-461e-81f2-d0c2abef8c97	client-1	62	SERVICES EXTÉRIEURS	charge	exploitation	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+7b4e5952-33c4-4b85-96c4-ae310d1a7371	client-1	63	AUTRE SERVICES EXTERIEURS	charge	exploitation	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+cc941ba1-7cef-4a02-a839-7d49ed7dbcba	client-1	64	IMPÔTS ET TAXES	charge	exploitation	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+9d103c28-0cb7-40e4-8a45-a02a3d48306c	client-1	65	AUTRES CHARGES	charge	exploitation	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+50f4a2ba-1ca2-4693-9876-c8c7938e9a73	client-1	66	CHARGES DE PERSONNEL	charge	financier	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+28bb3c1e-b63e-4822-994e-12e472218757	client-1	67	FRAIS FINANCIERS	charge	financier	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+e5abaa41-4ff6-48e0-9dfb-b04ce2694d04	client-1	68	DOTATIONS AUX AMORTISSEMENTS	charge	exploitation	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+87a168a4-4806-4e4d-926c-09a747ba114c	client-1	69	DOTATIONS AUX PROVISIONS ET AUX DÉPRÉCIATIONS	charge	exploitation	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+1d143d31-5817-4ce1-b955-c750882ecc88	client-1	70	REVENUS	produit	exploitation	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+11cfdfb7-b74c-4371-abe5-9136c684b544	client-1	71	SUBVENTION D'EXPLOITATION	produit	exploitation	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+e1356988-ef5b-4150-9f15-85a6f547f4d8	client-1	72	PRODUCTION IMMOBILISEE	produit	exploitation	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+56f2967a-ae40-4e10-830a-535f421446ef	client-1	73	VARIATIONS DES STOCKS DE BIENS PRODUITS	produit	exploitation	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+39beb3ce-9598-4e25-a5af-d31127b0a1df	client-1	75	AUTRES PRODUITS	produit	exploitation	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+6bd5e69a-65a8-48da-a65a-23ffdf55139d	client-1	77	REVENUS FINANCIERS ET PRODUITS ASSIMILES	produit	financier	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+5ccae2ef-a724-45af-8263-e1580dd4136e	client-1	78	TRANSFERTS DE CHARGES	produit	exploitation	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+0f66ffa5-1fd9-4b56-9a38-dd31bf8f98a7	client-1	79	EPRISES DE PROVISIONS, DE DEPRECIATIONS ET AUTRES	produit	exploitation	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+ad68b6ca-cd82-44aa-8de3-69394e720054	client-1	81	VALEURS COMPTABLES DES CESSIONS D’IMMOBILISATIONS	resultat	autre	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+08957437-6cf9-4d96-9f77-b6a457f602a4	client-1	82	PRODUITS DES CESSIONS D’IMMOBILISATIONS	resultat	autre	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+d3c6c323-1f4a-4a9f-b56a-5dbab9688caa	client-1	83	CHARGES HORS ACTIVITÉS ORDINAIRES	resultat	autre	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+93728b41-a0ff-4fe5-852f-bf4525286018	client-1	84	REVENUS HORS ACTIVITÉS ORDINAIRES	resultat	autre	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+c4b0b50c-55f0-4b38-a41f-97fd3f7839d7	client-1	85	DOTATIONS HORS ACTIVITÉS ORDINAIRES	resultat	autre	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+4776c7b3-a3de-4ba3-9dcc-5c5751f4d056	client-1	86	REPRISES D'AMORTISSEMENTS, PROVISIONS ET DEPRECIATIONS HAO.	resultat	autre	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+b1d8690f-22c9-4949-9f21-b250d22cfb09	client-1	87	VARIATION DE STOCK DE DON EN NATURE HAO	resultat	autre	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+132e4f2c-6252-4b97-80b3-cf26459eade2	client-1	88	SUBVENTIONS D’ÉQUILIBRE	resultat	autre	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+2c6b5748-f3b5-4d2b-b02b-1058f53ed8b1	client-1	90	CONTRIBUTIONS VOLONTAIRES EN NATURE	actif	autre	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+e74e0c5b-2b94-4b05-8f82-7a09a7d26b00	client-1	91	ONTRIBUTIONS VOLONTAIRES EN NATURE	actif	autre	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+73247633-faba-42ef-a865-5f071d2e0094	client-1	92	OMPTES REFLECHIS	actif	autre	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+2fe9865c-29cd-4c80-ad37-5c96d58d5640	client-1	93	COMPTES DE RECLASSEMENTS	actif	autre	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+62e0153a-aa9e-4af2-9611-5c8306da4ab3	client-1	94	OMPTES DE COÛTS	actif	autre	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+edb41633-5b48-4ae3-866f-7eb8f2bd9b9e	client-1	95	OMPTES DE STOCKS	actif	autre	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+370585ee-6cdd-414d-8e0a-10816f20bb7a	client-1	96	COMPTES D'ECARTS SUR COUTS PREETABLIS	actif	autre	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+3e3af57b-dc4c-4a48-902b-7dba100a2b8d	client-1	97	COMPTES DE DIFFERENCES DE TRAITEMENT COMPTABLE	actif	autre	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+57c9f45d-76a2-49d1-96dd-866d2a9ce55e	client-1	98	COMPTES DE RESULTATS	actif	autre	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+1f9f2df4-472b-4a1b-b663-74a774a8095f	client-1	99	COMPTES DE LIAISONS INTERNES	actif	autre	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+a2c67c49-9784-402f-bd90-67c278a726bc	client-1	7782	Gains sur opérations financières	produit	financier	0b10bbd3-1cdd-4a23-b5bb-0ab0bd89d03b	3	actif	2025-11-23 01:47:59.753492+00	2025-11-23 01:47:59.753492+00	\N
+44970b0a-060f-420f-b1a2-8bc2a28486d4	client-1	7791	Reprises de provisions sur risques financiers	produit	financier	911668fc-c200-42b3-b266-00217a8cffa3	3	actif	2025-11-23 01:47:59.753492+00	2025-11-23 01:47:59.753492+00	\N
+a3e13cd3-4117-45c8-a2bd-f3b57cd5a73b	client-1	7795	Reprises de charges pour dépréciations sur titres de placement	produit	financier	911668fc-c200-42b3-b266-00217a8cffa3	3	actif	2025-11-23 01:47:59.753492+00	2025-11-23 01:47:59.753492+00	\N
+8d628f8c-bed9-4ae3-8d2d-f111c0fad0ff	client-1	7798	Autre reprises de charges pour dépréciations et provisions pour risques à court terme	produit	financier	911668fc-c200-42b3-b266-00217a8cffa3	3	actif	2025-11-23 01:47:59.753492+00	2025-11-23 01:47:59.753492+00	\N
+c3cd4560-1569-4950-bf6e-e366e683e9a4	client-1	7913	Reprises de dépréciations des immobilisations incorporelles	produit	exploitation	960ad9fe-eba3-4900-9b34-0523d0917ced	3	actif	2025-11-23 01:47:59.753492+00	2025-11-23 01:47:59.753492+00	\N
+27542147-7aae-4cf0-8d7c-a67e45ea4495	client-1	7914	Reprises de dépréciations des immobilisations corporelles	produit	exploitation	960ad9fe-eba3-4900-9b34-0523d0917ced	3	actif	2025-11-23 01:47:59.753492+00	2025-11-23 01:47:59.753492+00	\N
+950daaa9-2cea-4234-8685-ecd141d6ad52	client-1	7923	Reprises de fonds affectés provenant de dons et legs d'immobilisations	produit	exploitation	b469f9d2-717c-4b70-b6f8-c7b554e514c5	3	actif	2025-11-23 01:47:59.753492+00	2025-11-23 01:47:59.753492+00	\N
+4cbadcff-35ab-4ca3-9465-2aa3c77e3314	client-1	7925	Reprises de fonds affectés à un projet spécifique	produit	exploitation	b469f9d2-717c-4b70-b6f8-c7b554e514c5	3	actif	2025-11-23 01:47:59.753492+00	2025-11-23 01:47:59.753492+00	\N
+f4619c4e-e3b6-4a06-9bf4-22a5644ab17c	client-1	7928	Autres reprises de fonds affectés	produit	exploitation	b469f9d2-717c-4b70-b6f8-c7b554e514c5	3	actif	2025-11-23 01:47:59.753492+00	2025-11-23 01:47:59.753492+00	\N
+cf42e2be-d294-410b-ab28-512198526ba4	client-1	10	Dotation	passif	capital	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+55dd412d-b5a5-4efc-849f-31656642c0fc	client-1	11	RÉSERVES	passif	capital	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+74868247-3bc6-45b6-bc0e-28ddec44be81	client-1	12	REPORT A NOUVEAU	passif	capital	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+9175e148-dbe9-4585-9d9e-7d32d00891e7	client-1	13	RÉSULTAT NET DE L’EXERCICE <»	passif	capital	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+a60b6018-7f62-407f-ac30-6f34264e1968	client-1	14	SUBVENTIONS D’INVESTISSEMENT	passif	capital	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+ee93a4f1-03e5-4540-8573-c387e82a3e06	client-1	15	PROVISIONS RÉGLEMENTÉES ET FONDS ASSIMILÉS	passif	capital	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+631afcb7-6c86-4e97-898a-e5b6b760ceeb	client-1	16	FONDS AFFECTÉS	passif	capital	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+a978d890-8b15-4f05-95f6-cce398b5fc68	client-1	17	FONDS REPORTES	passif	capital	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+6b22dbd1-abb4-4d45-85ac-3b01d15a2bd1	client-1	18	EMPRUNTS ET DETTES ASSIMILÉES	passif	capital	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+271dd859-af08-48a5-947b-482b185887fe	client-1	19	PROVISIONS POUR RISQUES ET CHARGES	passif	capital	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+b3fd1310-3b9a-4ddd-beec-d34c37e03ebf	client-1	20	ACTIFS IMMOBILISES	actif	immobilisation	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+a8afed40-24f3-4f2a-b625-c9886fc12fd5	client-1	21	IMMOBILISATIONS INCORPORELLES	actif	immobilisation	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+92eb4223-38e9-4ce5-80aa-7c5d809a2497	client-1	22	TERRAINS	actif	immobilisation	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+589186ca-4902-4d09-9372-94efe5b5fb81	client-1	23	BÂTIMENTS, INSTALLATIONS TECHNIQUES ET AGENCEMENTS	actif	immobilisation	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+76951fb1-ac90-476a-9f99-3e89aa1825bf	client-1	24	MATERIEL ET MOBILIER	actif	immobilisation	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+a53d2fbc-a71f-4adb-9fa2-2c86df46bf10	client-1	25	AVANCE ET ACOMPTE	actif	immobilisation	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+629ce2ca-b3c8-455b-9a9a-701b8b67cdc2	client-1	26	TITRES DE PARTICIPATION	actif	immobilisation	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+d5e8890a-55ba-4649-a422-e4f7543d6c9a	client-1	27	AUTRES IMMOBLISATIONS FINANCIÈRES	actif	immobilisation	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+b5dd0b14-6fc0-4980-bec6-86e10065b898	client-1	28	AMORTISSEMENTS	actif	immobilisation	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+36cbd80f-a30f-410f-8540-b0d4b275d8dd	client-1	29	DEPRECIATIONS DES IMMOBILISATIONS	actif	immobilisation	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+4d720f80-746b-4d96-8b0f-2933e2d601f4	client-1	31	BIENS LIES A L’ACTIVITÉ	actif	stock	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+7345b050-a48f-4710-9c4a-453e7f412d03	client-1	32	MARCHANDISE	actif	stock	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+02de385a-1ace-400d-9196-bd43c05875ce	client-1	33	AUTRES APPROVISIONNEMENTS	actif	stock	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+0ab5c49c-addc-4233-9788-c8bef1a50359	client-1	34	DONS EN NATURE	actif	stock	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+e0702a58-2325-41e3-b885-651dc1ba1bb7	client-1	35	PRODUITS ET SERVICES EN COURS	actif	stock	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+f0d8c902-2446-4686-a20f-33083f144854	client-1	36	PRODUITS FINIS	actif	stock	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+b1c5d9f4-353d-4bba-a45b-1796daace051	client-1	37	STOCK EN COURS DE ROUTE , EN CONSIGNATION OU EN DEPOT	actif	stock	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+62aa3d10-1f1d-4ee6-8f17-baca66976bf1	client-1	38	DON EN NATURE H A O	actif	stock	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+38cf6f6e-c841-40e0-b3d8-645fff90b6b8	client-1	39	DÉPRÉCIATIONS DES STOCKS ET DES PRODUCTIONS EN COURS	actif	stock	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+163e8a69-ccd6-4a2a-b6de-833646fbe729	client-1	40	FOURNISSEURS ET COMPTES RATTACHÉS	passif	dette	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+ba32f82d-d61f-4f3a-b9ce-01b73a60e534	client-1	41	ADHERENTS, CLIENTS-USAGERS ET COMPTES RATTACHÉS	passif	dette	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+325d6d3f-627a-4a7d-9571-56697e1fd74d	client-1	42	PERSONNEL	passif	dette	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+e414b6d7-c843-4274-a8ba-72a7b60f48eb	client-1	43	ORGANISMES SOCIAUX	passif	dette	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+320ec012-9e00-4199-9e09-e44d0fe3badf	client-1	44	ÉTAT ET COLLECTIVITÉS PUBLIQUES	passif	dette	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+69b0a2c6-cb70-4126-aaf9-12e55c800937	client-1	45	FONDATEURS, APPORTEURS ET COMPTES COURANTS	passif	dette	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+487da529-afe9-4a3c-aa3f-721583113ae2	client-1	46	BAILLEURS, FONDS D’ADMINISTRATION	actif	creance	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+6d4466be-9cb9-4d62-be33-db5d7ad28c58	client-1	47	DÉBITEURS ET CRÉDITEURS DIVERS	actif	creance	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+8bf81f0f-006c-43f7-b073-4c25c79dea26	client-1	48	CRÉANCES ET DETTES DONS HORS ACTIVITÉS ORDINAIRES (H.A.O.)	actif	creance	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+526ad616-2113-4e41-a409-746a2f4846f8	client-1	50	TITRES DE PLACEMENT	actif	tresorerie	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+5521a29a-ee36-4c5a-8b42-7bfe8747025f	client-1	51	VALEURS À ENCAISSER	actif	tresorerie	\N	1	actif	2025-11-23 01:47:59.14476+00	2025-11-23 01:47:59.14476+00	\N
+64797ed0-b8a6-40f9-a244-a63a2b332898	client-1	101	Dotation non consomptible sans droit de reprise	passif	capital	cf42e2be-d294-410b-ab28-512198526ba4	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+5bbf7917-6c86-455e-98c7-a75e20a08456	client-1	102	Dotation non consomptible avec droit de reprise	passif	capital	cf42e2be-d294-410b-ab28-512198526ba4	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+fe644b8d-7afe-43b8-b062-de6562f0bf04	client-1	103	Droit d'entrée	passif	capital	cf42e2be-d294-410b-ab28-512198526ba4	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+ab4f26c3-1a6a-4122-9c6c-7fe3658e361b	client-1	104	Dotation consomptible	passif	capital	cf42e2be-d294-410b-ab28-512198526ba4	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+e4de57e6-7a85-4ee6-a991-0c2057a1230f	client-1	106	Écarts de réévaluation	passif	capital	cf42e2be-d294-410b-ab28-512198526ba4	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+b034119a-ebc1-4bd3-b44d-38e5edad0d8b	client-1	112	Réserves statutaires ou contractuelles	passif	capital	55dd412d-b5a5-4efc-849f-31656642c0fc	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+b9c54e1b-719e-4887-9da4-25eb2ff3d06c	client-1	118	Autres réserves	passif	capital	55dd412d-b5a5-4efc-849f-31656642c0fc	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+e42f1691-e4ab-44dd-a14e-c48e47289134	client-1	121	Report à nouveau des excédents	passif	capital	74868247-3bc6-45b6-bc0e-28ddec44be81	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+19d41f8f-72ba-40cd-9442-17a9a4e60425	client-1	128	Résultat net en instance d’affectation	passif	capital	74868247-3bc6-45b6-bc0e-28ddec44be81	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+4a4fe204-3c62-4ec8-8a00-d5a86ad55f2e	client-1	129	Report à nouveau des déficits	passif	capital	74868247-3bc6-45b6-bc0e-28ddec44be81	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+4a0a5451-3405-44e2-8e5d-43fd8f77cee3	client-1	131	I Excédent de l’exercice	passif	capital	9175e148-dbe9-4585-9d9e-7d32d00891e7	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+0048382e-9a1c-4bd3-83f8-c99f36d4cc91	client-1	139	Déficit de l’exercice	passif	capital	9175e148-dbe9-4585-9d9e-7d32d00891e7	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+fc5c7d94-f189-4688-9a77-c93316d60550	client-1	141	Subventions d'équipement	passif	capital	a60b6018-7f62-407f-ac30-6f34264e1968	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+7f88bf49-54c5-4f2c-9ff2-ee5a14227203	client-1	148	Autres subventions d’investisscment	passif	capital	a60b6018-7f62-407f-ac30-6f34264e1968	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+2e640a88-82f0-4924-8698-827fcc3143d8	client-1	154	Provisions spéciales de réévaluation	passif	capital	ee93a4f1-03e5-4540-8573-c387e82a3e06	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+ed900cf1-bb8d-4feb-928e-5bb41d26377e	client-1	158	Autres provisions réglementées et fonds assimilés	passif	capital	ee93a4f1-03e5-4540-8573-c387e82a3e06	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+e80ce67f-7075-4fbe-a4a8-ecac95ec4c3c	client-1	161	Fonds projet de développement — avances de fonds à justifier	passif	capital	631afcb7-6c86-4e97-898a-e5b6b760ceeb	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+3e5e60c0-c973-4b53-9709-e65aaf8ea5b8	client-1	162	Fonds affectés aux investissements du projet de développement - bailleurs de fonds	passif	capital	631afcb7-6c86-4e97-898a-e5b6b760ceeb	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+f735d69d-e393-4f0b-914e-4537895c72f2	client-1	163	Fonds affectés aux investissements du projet de développement - l'Etat	passif	capital	631afcb7-6c86-4e97-898a-e5b6b760ceeb	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+f42552d1-be6d-4455-90eb-941dde07626c	client-1	164	Fonds affectés aux investissements des autres organismes de financement assimilés	passif	capital	631afcb7-6c86-4e97-898a-e5b6b760ceeb	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+3f0a2fa5-86ef-4558-b1c6-78a103c7d772	client-1	165	Fonds affectés à un projet spécifique	passif	capital	631afcb7-6c86-4e97-898a-e5b6b760ceeb	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+5169cc6c-7f9b-445a-bc9c-5ee0ee382e82	client-1	167	Fonds provenant de dons et legs d'immobilisations	passif	capital	631afcb7-6c86-4e97-898a-e5b6b760ceeb	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+6296082e-8424-4349-aba0-aa18763915a4	client-1	168	Autres fonds affectés	passif	capital	631afcb7-6c86-4e97-898a-e5b6b760ceeb	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+57d37b96-332b-4427-a206-d82764db67eb	client-1	169	Fonds affectés à recevoir	passif	capital	631afcb7-6c86-4e97-898a-e5b6b760ceeb	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+793d80b8-863d-423c-9c7e-787705289112	client-1	181	Emprunts obligataires	passif	capital	6b22dbd1-abb4-4d45-85ac-3b01d15a2bd1	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+043b9508-e3a6-44f1-a329-71720a5c119e	client-1	182	Avances reçues de l'État	passif	capital	6b22dbd1-abb4-4d45-85ac-3b01d15a2bd1	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+1e913609-f40a-44e9-ad7d-0ade54c99938	client-1	183	Emprunts et dettes auprès des établissements de crédit	passif	capital	6b22dbd1-abb4-4d45-85ac-3b01d15a2bd1	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+6d1ed833-829b-426c-8ebc-d287ba57c4e1	client-1	185	Dépôts et cautionnements reçus	passif	capital	6b22dbd1-abb4-4d45-85ac-3b01d15a2bd1	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+32cdf24f-29b5-4ab7-bda4-9168576764c3	client-1	186	Intérêts courus	passif	capital	6b22dbd1-abb4-4d45-85ac-3b01d15a2bd1	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+ea092d80-4e9e-46c0-9f6f-dd9a8a7343b0	client-1	187	Dettes de location-acquisition	passif	capital	6b22dbd1-abb4-4d45-85ac-3b01d15a2bd1	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+75d73e98-7bbd-443d-ad38-a5000ab76adb	client-1	188	Autres emprunts et dettes	passif	capital	6b22dbd1-abb4-4d45-85ac-3b01d15a2bd1	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+3ebb844e-1331-487e-b473-c8d7d9b4653a	client-1	191	Provisions pour litiges	passif	capital	271dd859-af08-48a5-947b-482b185887fe	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+9bb0980a-01b2-4fc5-82bd-4c529558a6b2	client-1	192	Provisions pour charges sur donations et legs	passif	capital	271dd859-af08-48a5-947b-482b185887fe	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+ad581749-1a83-4e65-a256-58663beb5798	client-1	194	Provisions pour pertes de change	passif	capital	271dd859-af08-48a5-947b-482b185887fe	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+0740410e-0144-44ce-8eac-6de5ea8904c8	client-1	196	Provisions pour pensions et obligations similaires	passif	capital	271dd859-af08-48a5-947b-482b185887fe	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+538f2029-9d75-4be3-8b68-be968049be36	client-1	198	Autres provisions pour risques et charges	passif	capital	271dd859-af08-48a5-947b-482b185887fe	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+7e478812-3bc2-454c-919a-e1c1523bdd95	client-1	201	Immobilisations incorporelles	actif	immobilisation	b3fd1310-3b9a-4ddd-beec-d34c37e03ebf	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+db5f6526-4e52-4544-87a1-9d46bbae7c2f	client-1	202	Terrains	actif	immobilisation	b3fd1310-3b9a-4ddd-beec-d34c37e03ebf	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+6e732ee1-428f-476d-807d-9840fedae79c	client-1	203	Batiments	actif	immobilisation	b3fd1310-3b9a-4ddd-beec-d34c37e03ebf	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+b6757c2e-2d1b-4e59-98ab-2af75b0e7158	client-1	204	Matériels	actif	immobilisation	b3fd1310-3b9a-4ddd-beec-d34c37e03ebf	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+0d22b917-6bfb-4b67-8271-21398385443e	client-1	205	Titres de participations	actif	immobilisation	b3fd1310-3b9a-4ddd-beec-d34c37e03ebf	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+4a57de0f-efec-4774-a773-0ebe243d538d	client-1	212	Brevets, licences, concessions et droits similaires	actif	immobilisation	a8afed40-24f3-4f2a-b625-c9886fc12fd5	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+89058e27-50c2-47c3-9d6c-5008c71f1768	client-1	213	Logiciels et sites internet	actif	immobilisation	a8afed40-24f3-4f2a-b625-c9886fc12fd5	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+f2c7540b-7102-47a2-91ac-49131c514007	client-1	214	Marques	actif	immobilisation	a8afed40-24f3-4f2a-b625-c9886fc12fd5	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+1d6b2432-5d24-4dac-8fb4-7b5bbf73cfbe	client-1	218	Autres droits et valeurs incorporels	actif	immobilisation	a8afed40-24f3-4f2a-b625-c9886fc12fd5	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+8d9fa12b-e7d4-485e-b289-9f26b8910fc5	client-1	219	Immobilisations incorporelles en cours	actif	immobilisation	a8afed40-24f3-4f2a-b625-c9886fc12fd5	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+c829bc63-3a79-459f-91d1-2c3698ff9a56	client-1	221	Terrains agricoles et forestiers	actif	immobilisation	92eb4223-38e9-4ce5-80aa-7c5d809a2497	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+09d2d89d-d5fa-4cd3-8128-cb0b080d01f0	client-1	222	Terrains nus	actif	immobilisation	92eb4223-38e9-4ce5-80aa-7c5d809a2497	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+cac68df2-4e59-4091-b8e9-e49ec88cc4cb	client-1	223	Terrains bâtis	actif	immobilisation	92eb4223-38e9-4ce5-80aa-7c5d809a2497	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+9d4f462d-a518-45f2-8be2-310045c315bc	client-1	224	Travaux de mise en valeur des terrains	actif	immobilisation	92eb4223-38e9-4ce5-80aa-7c5d809a2497	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+27f24bd4-58a3-4229-a9c4-713f5eddf8ac	client-1	226	Terrains aménagés	actif	immobilisation	92eb4223-38e9-4ce5-80aa-7c5d809a2497	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+f43fea9e-a4e1-48c6-9976-435a78db1e3e	client-1	228	Autres terrains	actif	immobilisation	92eb4223-38e9-4ce5-80aa-7c5d809a2497	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+807a1555-2e95-420c-a199-f90c194c0a68	client-1	229	Aménagements de terrains en cours	actif	immobilisation	92eb4223-38e9-4ce5-80aa-7c5d809a2497	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+913067fa-4c86-4cf9-ba74-d4baceb57def	client-1	231	Bâtiments industriels, agricoles, administratifs, commerciaux, religieux et autres sur sol propre	actif	immobilisation	589186ca-4902-4d09-9372-94efe5b5fb81	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+97357d0d-ea09-4679-9c4d-7c88ada67886	client-1	232	Bâtiments industriels, agricoles, administratifs, commerciaux, religieux et autres sur sol d'autrui	actif	immobilisation	589186ca-4902-4d09-9372-94efe5b5fb81	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+ff67a1c7-fdd3-46b2-84e8-248f438529f9	client-1	233	Ouvrages d'infrastructure	actif	immobilisation	589186ca-4902-4d09-9372-94efe5b5fb81	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+6a1d3af6-627d-4f62-87cd-6e26df016f9d	client-1	234	Aménagements, agencements et installations techniques	actif	immobilisation	589186ca-4902-4d09-9372-94efe5b5fb81	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+2422f00d-581f-48ca-91cd-7801a22403d6	client-1	235	Aménagements de bureaux et assimilés	actif	immobilisation	589186ca-4902-4d09-9372-94efe5b5fb81	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+2b191283-b367-4c61-b9c1-f901b0f54252	client-1	238	Autres installations et agencements	actif	immobilisation	589186ca-4902-4d09-9372-94efe5b5fb81	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+474efd08-311b-42b5-9780-8b7ff86b8e27	client-1	239	Bâtiments, aménagements, agencements et installations en cours	actif	immobilisation	589186ca-4902-4d09-9372-94efe5b5fb81	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+af19d765-6446-40a9-a55c-c1e31cfa4f88	client-1	241	Matériel et outillage industriel et commercial	actif	immobilisation	76951fb1-ac90-476a-9f99-3e89aa1825bf	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+aa2fdca5-0ecd-47d1-ba10-8a6729f9f0dc	client-1	242	Matériel et outillage agricole	actif	immobilisation	76951fb1-ac90-476a-9f99-3e89aa1825bf	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+14152dcf-af56-48ac-80e6-7aa492fe4098	client-1	243	Matériel d'emballage récupérable et identifiable	actif	immobilisation	76951fb1-ac90-476a-9f99-3e89aa1825bf	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+dd810c51-c313-422f-b8e5-80d4ac19d834	client-1	244	Matériel et mobilier	actif	immobilisation	76951fb1-ac90-476a-9f99-3e89aa1825bf	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+b55594a1-7e86-41cf-afd6-5f66f51605ca	client-1	245	Matériel de transport	actif	immobilisation	76951fb1-ac90-476a-9f99-3e89aa1825bf	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+d2597569-3077-4375-b7a5-1779860a3781	client-1	246	Actifs biologiques	actif	immobilisation	76951fb1-ac90-476a-9f99-3e89aa1825bf	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+dc2611fb-7a99-4b4b-afe3-73b96699e05b	client-1	247	Agencements, aménagements du matériel et des actifs biologiques	actif	immobilisation	76951fb1-ac90-476a-9f99-3e89aa1825bf	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+86d534aa-3011-4964-9812-5500a4e30cb1	client-1	248	Autres matériels et mobiliers	actif	immobilisation	76951fb1-ac90-476a-9f99-3e89aa1825bf	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+8d53bd45-98ff-4cf4-a001-068fb24849e3	client-1	249	Matériels et actifs biologiques en cours	actif	immobilisation	76951fb1-ac90-476a-9f99-3e89aa1825bf	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+787885f3-e2fe-4e0d-9f9e-d75be00a33d6	client-1	251	Avances et acomptes versés sur immobilisations incorporelles	actif	immobilisation	a53d2fbc-a71f-4adb-9fa2-2c86df46bf10	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+43bcd2bf-7b7a-4d8b-bd70-bc672be834fb	client-1	252	Avances et acomptes versés sur immobilisations corporelles	actif	immobilisation	a53d2fbc-a71f-4adb-9fa2-2c86df46bf10	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+73f9d144-173e-41bf-b78b-8d612a1c7a22	client-1	261	Titres de participation	actif	immobilisation	629ce2ca-b3c8-455b-9a9a-701b8b67cdc2	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+38969603-ac88-4406-a421-835e1d7e7fc4	client-1	265	Participations dans des organismes professionnels	actif	immobilisation	629ce2ca-b3c8-455b-9a9a-701b8b67cdc2	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+206df2d7-2cbb-4cd1-9c18-a7e99407a8a3	client-1	266	Parts dans des groupements d'intérêt économique (G.LE.)	actif	immobilisation	629ce2ca-b3c8-455b-9a9a-701b8b67cdc2	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+6450a46d-bcc5-4f67-958e-3f66b8cadbec	client-1	268	Autres titres de participation	actif	immobilisation	629ce2ca-b3c8-455b-9a9a-701b8b67cdc2	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+a5ea74b8-afe4-4075-bcfd-1e7964a7f6e2	client-1	271	Prêts et créances	actif	immobilisation	d5e8890a-55ba-4649-a422-e4f7543d6c9a	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+76514502-0d65-4146-8a4a-7c80a89ef90b	client-1	272	Prêts au personnel	actif	immobilisation	d5e8890a-55ba-4649-a422-e4f7543d6c9a	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+896b8e39-c904-4be3-bfbf-cfe0e0ed9f21	client-1	273	Créances sur l'Etat	actif	immobilisation	d5e8890a-55ba-4649-a422-e4f7543d6c9a	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+9566e8fa-1f5e-483e-9ba3-8b14ea70e80b	client-1	274	Titres immobilisés	actif	immobilisation	d5e8890a-55ba-4649-a422-e4f7543d6c9a	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+018a510a-faf2-4261-85a0-b2060cf74cdf	client-1	275	Dépôts et cautionnements versés	actif	immobilisation	d5e8890a-55ba-4649-a422-e4f7543d6c9a	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+64d25d29-6201-4a18-9259-a141a625b08c	client-1	276	intérêts courus	actif	immobilisation	d5e8890a-55ba-4649-a422-e4f7543d6c9a	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+759ffc54-ebb5-4533-83a3-f165ba172861	client-1	278	Immobilisations financières diverses	actif	immobilisation	d5e8890a-55ba-4649-a422-e4f7543d6c9a	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+b61a282a-df4a-49ff-81c1-3f28606d8e0c	client-1	280	Amortissements d’usufruit temporaire	actif	immobilisation	b5dd0b14-6fc0-4980-bec6-86e10065b898	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+9b981dfb-859a-401f-954b-7aecf9e3c036	client-1	281	Amortissements des immobilisations incorporelles	actif	immobilisation	b5dd0b14-6fc0-4980-bec6-86e10065b898	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+729f70d0-2330-4310-b807-defda2e6abce	client-1	282	Amortissements des terrains	actif	immobilisation	b5dd0b14-6fc0-4980-bec6-86e10065b898	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+b4e0d6f2-2403-435a-87c5-470646a2aef8	client-1	283	Amortissements des bâtiments, installations techniques et agencements	actif	immobilisation	b5dd0b14-6fc0-4980-bec6-86e10065b898	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+404263ab-1644-4d83-812a-fafde448a896	client-1	284	Amortissements du matériel	actif	immobilisation	b5dd0b14-6fc0-4980-bec6-86e10065b898	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+20580c48-55bc-48b7-beb8-9a6fa1787097	client-1	290	Dépréciations des immobilisations destinées à la vente provenant de dons et legs	actif	immobilisation	36cbd80f-a30f-410f-8540-b0d4b275d8dd	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+a26a628a-73b4-4073-ae8e-75b07c964b24	client-1	291	Dépréciations des immobilisations incorporelles	actif	immobilisation	36cbd80f-a30f-410f-8540-b0d4b275d8dd	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+ecac78da-2d5f-4e70-9e5d-aa7a06c4eb14	client-1	311	Biens liés à l'activité A	actif	stock	4d720f80-746b-4d96-8b0f-2933e2d601f4	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+33ef586d-2e82-4488-82f0-797432ce186d	client-1	312	Biens liés à l'activité B	actif	stock	4d720f80-746b-4d96-8b0f-2933e2d601f4	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+7d4a75d0-5a30-4eaf-a02a-5e448a26a92a	client-1	321	Marchandises A	actif	stock	7345b050-a48f-4710-9c4a-453e7f412d03	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+b401289f-8d28-4071-a512-1b0b52b5260a	client-1	322	Marchandises B	actif	stock	7345b050-a48f-4710-9c4a-453e7f412d03	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+78f6a01b-f811-47ff-8736-e77d7d795135	client-1	323	Matières A	actif	stock	7345b050-a48f-4710-9c4a-453e7f412d03	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+de1f8612-b77e-4097-a2e6-3188dcf3f6b7	client-1	324	Matières B	actif	stock	7345b050-a48f-4710-9c4a-453e7f412d03	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+987b65c6-5105-41b3-8cf3-6b0bdf2f6ea8	client-1	325	Fournitures liées (A, B)	actif	stock	7345b050-a48f-4710-9c4a-453e7f412d03	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+1bf69af8-b02f-4ea4-87fa-be0a56508d5f	client-1	331	Matières consommables	actif	stock	02de385a-1ace-400d-9196-bd43c05875ce	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+6c1e3b6d-c36a-4bb4-8b9d-ef7bb87829fa	client-1	333	Fournitures de magasin	actif	stock	02de385a-1ace-400d-9196-bd43c05875ce	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+b5866228-1274-4acd-8efb-58e7b9307c2d	client-1	334	Fournitures de bureau	actif	stock	02de385a-1ace-400d-9196-bd43c05875ce	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+e09da26c-c7ac-45c6-88da-49f85868ad0d	client-1	335	Emballages	actif	stock	02de385a-1ace-400d-9196-bd43c05875ce	2	actif	2025-11-23 01:47:59.251661+00	2025-11-23 01:47:59.251661+00	\N
+45ac084f-17fd-484b-84f5-74091352e32c	client-1	338	Autres matières	actif	stock	02de385a-1ace-400d-9196-bd43c05875ce	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+22278c4d-64b8-40bc-a656-c38202934ed7	client-1	341	Dons en nature non affectés	actif	stock	0ab5c49c-addc-4233-9788-c8bef1a50359	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+b36d92e2-2ef1-4af5-a63c-7d975a781902	client-1	345	Dons en nature affectés	actif	stock	0ab5c49c-addc-4233-9788-c8bef1a50359	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+ca059ec1-61b0-400c-81f1-bdb3d2b63079	client-1	361	Produits finis A	actif	stock	f0d8c902-2446-4686-a20f-33083f144854	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+59bfec20-3a45-44d2-876f-2e81672a2890	client-1	362	Produits finis B	actif	stock	f0d8c902-2446-4686-a20f-33083f144854	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+ce24bef2-972d-42f7-a4a1-65be9faa4967	client-1	363	Actifs biologiques	actif	stock	f0d8c902-2446-4686-a20f-33083f144854	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+532815f8-33c9-4f35-aaa4-4c9cc695cf68	client-1	367	Produits intermédiaires et résiduels	actif	stock	f0d8c902-2446-4686-a20f-33083f144854	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+7fa732ca-4d1e-409f-b3c3-7f1dabbb44a1	client-1	371	Biens liés à l'activité en cours de route	actif	stock	b1c5d9f4-353d-4bba-a45b-1796daace051	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+9cb80622-874e-49d0-a8c1-8e9512c6be14	client-1	372	Marchandises, matières premières et fournitures liés en cours de route	actif	stock	b1c5d9f4-353d-4bba-a45b-1796daace051	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+54f84247-00ac-4ab5-b384-1d141b2294ee	client-1	373	Autres approvisionnements en cours de route	actif	stock	b1c5d9f4-353d-4bba-a45b-1796daace051	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+5cb5ea74-48d7-49af-b9e0-501bf4e97bd6	client-1	377	Stocks en consignation ou en dépôt	actif	stock	b1c5d9f4-353d-4bba-a45b-1796daace051	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+93a99db6-8e9c-4ed0-90d2-bb3249c82ac1	client-1	378	Stock provenant d'immobilisations mises hors services ou au rebut	actif	stock	b1c5d9f4-353d-4bba-a45b-1796daace051	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+f322a2a5-7971-4fbc-92b5-6f7456aa7632	client-1	381	non affecté	actif	stock	62aa3d10-1f1d-4ee6-8f17-baca66976bf1	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+fe31f73a-cf97-4367-838d-5f2ce0a1f628	client-1	385	affectés	actif	stock	62aa3d10-1f1d-4ee6-8f17-baca66976bf1	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+74f8a17e-a56f-4ecc-a268-8fc6845d9ef2	client-1	391	Dépréciations des stocks de biens liés à Tactivité	actif	stock	38cf6f6e-c841-40e0-b3d8-645fff90b6b8	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+6f74087c-edec-4f3a-a9c3-439dd39eddea	client-1	392	Dépréciations des stocks de marchandises, et matières premières et fournitures	actif	stock	38cf6f6e-c841-40e0-b3d8-645fff90b6b8	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+cc2d903e-4872-4237-8337-3f3d8c6821c5	client-1	397	Dépréciations des stocks en cours de route, en consignation ou en dépôt	actif	stock	38cf6f6e-c841-40e0-b3d8-645fff90b6b8	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+0f9b50f2-35af-472e-baec-0359e27464c3	client-1	401	Fournisseurs, dettes en compte	passif	dette	163e8a69-ccd6-4a2a-b6de-833646fbe729	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+e8f43182-9ca1-4f9d-943d-ab71ddeb25b3	client-1	402	Fournisseurs, effets à payer	passif	dette	163e8a69-ccd6-4a2a-b6de-833646fbe729	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+12ed7c70-1c8b-4126-a83e-69434df9ad4b	client-1	408	Fournisseurs, factures non parvenues	passif	dette	163e8a69-ccd6-4a2a-b6de-833646fbe729	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+b26c7d65-53d8-496f-bd14-18c5b7cb414d	client-1	409	Fournisseurs débiteurs	passif	dette	163e8a69-ccd6-4a2a-b6de-833646fbe729	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+fe7c315c-2a66-42c8-87d4-4f995ff84bb4	client-1	411	Adhérents	passif	dette	ba32f82d-d61f-4f3a-b9ce-01b73a60e534	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+c8996f69-5df4-4ae4-963d-93fee1850fe4	client-1	412	Clients-usagers	passif	dette	ba32f82d-d61f-4f3a-b9ce-01b73a60e534	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+bbaa78c3-47ef-4901-84ce-9d6bc16945fa	client-1	413	Adhérents, Clients-usagers, chèques, effets et autres valeurs impayés	passif	dette	ba32f82d-d61f-4f3a-b9ce-01b73a60e534	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+a01068e9-b1ea-4685-af40-c5100b200b85	client-1	416	Créances, adhérents, clients-usagers litigieuses ou douteuses	passif	dette	ba32f82d-d61f-4f3a-b9ce-01b73a60e534	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+affc0aac-0e87-4397-a07a-cb21a6333b47	client-1	418	Adhérents, clients-usagers produits à recevoir	passif	dette	ba32f82d-d61f-4f3a-b9ce-01b73a60e534	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+9af4422e-fcb3-4308-a050-f99539bbd750	client-1	419	Adhérents, Clients-usagers créditeurs	passif	dette	ba32f82d-d61f-4f3a-b9ce-01b73a60e534	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+4bcb3232-ff60-4adb-ae61-1095cdfb9a9d	client-1	421	Personnel, avances et acomptes	passif	dette	325d6d3f-627a-4a7d-9571-56697e1fd74d	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+8948bafb-e2b5-49f0-b726-0926204aaed7	client-1	422	Personnel, rémunérations dues	passif	dette	325d6d3f-627a-4a7d-9571-56697e1fd74d	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+fb03edc5-ab2f-4744-874d-fdfeb575eb80	client-1	423	Personnel, oppositions, saisies arrêts	passif	dette	325d6d3f-627a-4a7d-9571-56697e1fd74d	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+0204031c-8136-4fee-904b-0901b146f50e	client-1	424	Personnel, œuvres sociales internes	passif	dette	325d6d3f-627a-4a7d-9571-56697e1fd74d	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+7cbc6c43-88e0-4f63-838a-0a3abe9fe319	client-1	425	Représentants du personnel	passif	dette	325d6d3f-627a-4a7d-9571-56697e1fd74d	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+0eda2330-4ffc-4058-a2ea-2bfdcdc7dd20	client-1	427	Personnel - dépôts	passif	dette	325d6d3f-627a-4a7d-9571-56697e1fd74d	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+5cab7ff2-0e5a-479e-b513-41b47d119fa8	client-1	428	Personnel, charges à payer et produits à recevoir	passif	dette	325d6d3f-627a-4a7d-9571-56697e1fd74d	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+678b79b5-bc39-4488-80e8-9e6f431ac43a	client-1	431	Sécurité sociale	passif	dette	e414b6d7-c843-4274-a8ba-72a7b60f48eb	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+0cd63ae3-4649-46c1-9da8-0dd899e26330	client-1	432	Caisses de retraite	passif	dette	e414b6d7-c843-4274-a8ba-72a7b60f48eb	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+6c777e7c-b9e7-4cf9-ba8d-24fa5badc28f	client-1	433	Autres organismes sociaux	passif	dette	e414b6d7-c843-4274-a8ba-72a7b60f48eb	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+6b7f9e8d-2bdd-4b3e-83ff-64c83a137c8f	client-1	438	Organismes sociaux, charges à payer et produits à recevoir	passif	dette	e414b6d7-c843-4274-a8ba-72a7b60f48eb	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+b9590d9c-6acc-4cd5-aa45-eeb94ddc6325	client-1	442	Etat, autres impôts et taxes	passif	dette	320ec012-9e00-4199-9e09-e44d0fe3badf	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+a1d10b3a-8c66-4e08-a0c0-b2c15b888d94	client-1	443	État, T.V.A. Facturée	passif	dette	320ec012-9e00-4199-9e09-e44d0fe3badf	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+ca013306-2df4-4a24-8e9c-6e0671a570af	client-1	444	État, T.V.A. due ou crédit de T.V.A.	passif	dette	320ec012-9e00-4199-9e09-e44d0fe3badf	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+8be44039-42c9-4d11-9166-6c831b0f59d3	client-1	445	État, T.V.A. Récupérable	passif	dette	320ec012-9e00-4199-9e09-e44d0fe3badf	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+ce66cb56-82cd-414f-9c9b-5a59842ef651	client-1	446	État, autres taxes sur le chiffre d'affaires	passif	dette	320ec012-9e00-4199-9e09-e44d0fe3badf	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+32e28ed2-51f4-4fca-90a6-2f8e8cb8d6c2	client-1	447	Etat, impôts retenus à la source	passif	dette	320ec012-9e00-4199-9e09-e44d0fe3badf	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+c4a74cdc-19b2-4fee-9217-42d5bd4721d3	client-1	448	État, charges à payer et produits à recevoir	passif	dette	320ec012-9e00-4199-9e09-e44d0fe3badf	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+b249d2f8-94f2-4334-a820-394cc8f37347	client-1	449	État, créances et dettes diverses	passif	dette	320ec012-9e00-4199-9e09-e44d0fe3badf	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+2da1ebfd-eaa5-4939-9b2f-e7f40d8aeadc	client-1	451	Associations et assimilées	passif	dette	69b0a2c6-cb70-4126-aaf9-12e55c800937	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+5850c71e-9ced-4c13-a831-e8d655c3171a	client-1	452	Fondations et assimilées	passif	dette	69b0a2c6-cb70-4126-aaf9-12e55c800937	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+d0a43762-e1fa-4818-aac3-b00f852029ae	client-1	453	Ordres professionnels	passif	dette	69b0a2c6-cb70-4126-aaf9-12e55c800937	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+9579e035-5533-4698-abc5-0e4e6feaa652	client-1	454	Organisations politiques	passif	dette	69b0a2c6-cb70-4126-aaf9-12e55c800937	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+bf5643b0-2521-4495-bdca-7c3d76e848d7	client-1	455	Organisations syndicales	passif	dette	69b0a2c6-cb70-4126-aaf9-12e55c800937	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+8860a089-ef8f-4d93-b860-661066d05971	client-1	456	Organisations religieuses, apporteurs	passif	dette	69b0a2c6-cb70-4126-aaf9-12e55c800937	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+787b60e7-b35b-4e61-aee6-9499c20e492f	client-1	457	Mécènes, bénévoles et assimilés	passif	dette	69b0a2c6-cb70-4126-aaf9-12e55c800937	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+6b98f497-b9e7-40ae-8770-94403517ef4e	client-1	458	Autres fondateurs et apporteurs	passif	dette	69b0a2c6-cb70-4126-aaf9-12e55c800937	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+fd43d86e-0b24-49db-bad4-07321252c47a	client-1	462	Bailleurs - projet de développement. Fonds d’administration	actif	creance	487da529-afe9-4a3c-aa3f-721583113ae2	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+45045905-8a64-4101-b36d-74fa6f030117	client-1	463	Etat - projet de développement, Fonds d'administration	actif	creance	487da529-afe9-4a3c-aa3f-721583113ae2	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+0138a39f-e692-43d6-b23f-449b6dbff577	client-1	464	Autres tiers ou organismes de financement assimilés - projet de développement. Fonds	actif	creance	487da529-afe9-4a3c-aa3f-721583113ae2	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+81750469-7e99-4236-bbac-e816356cc38e	client-1	469	Fonds d'administration à recevoir	actif	creance	487da529-afe9-4a3c-aa3f-721583113ae2	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+35241f1b-a315-4942-8415-94a6c876cdee	client-1	471	Débiteurs et créditeurs divers	actif	creance	6d4466be-9cb9-4d62-be33-db5d7ad28c58	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+83f78647-8364-4647-9537-2fdaef25030a	client-1	472	Créances et dettes sur titres de placement	actif	creance	6d4466be-9cb9-4d62-be33-db5d7ad28c58	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+6b504fa3-df73-4a56-8738-d08e4b88ad65	client-1	473	Organismes nationaux et internationaux — subventions à recevoir	actif	creance	6d4466be-9cb9-4d62-be33-db5d7ad28c58	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+c25d1c13-1af5-42e0-aa4b-eb25045d8537	client-1	474	Compte de répartition périodique des charges et des produits	actif	creance	6d4466be-9cb9-4d62-be33-db5d7ad28c58	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+b7af604d-32b8-4007-b73b-11f095eff4e3	client-1	475	Générosités financières à recevoir	actif	creance	6d4466be-9cb9-4d62-be33-db5d7ad28c58	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+feed3029-d970-4f39-bc84-e0a49be81f1e	client-1	476	Charges constatées d’avance	actif	creance	6d4466be-9cb9-4d62-be33-db5d7ad28c58	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+abbac9de-38aa-429f-8875-870401cac524	client-1	477	Produits constatés d'avance	actif	creance	6d4466be-9cb9-4d62-be33-db5d7ad28c58	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+8c7acd35-dc92-4e0c-96ed-508f8d2d3f2b	client-1	478	Ecarts de conversion - actif	actif	creance	6d4466be-9cb9-4d62-be33-db5d7ad28c58	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+ce3b2993-2bdd-45eb-b1dd-9fd5d968f9d5	client-1	481	Fournisseurs d'investissements	actif	creance	8bf81f0f-006c-43f7-b073-4c25c79dea26	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+f704143c-1c5b-4dc6-915c-4ed79462b1f1	client-1	484	Autres dettes hors activités ordinaires (H.A.O.)	actif	creance	8bf81f0f-006c-43f7-b073-4c25c79dea26	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+23d71990-8c93-4533-bdc6-8b9e0c30faa6	client-1	485	Créances sur cessions d'immobilisations	actif	creance	8bf81f0f-006c-43f7-b073-4c25c79dea26	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+a6bbfcf1-95e7-46fb-8876-4a20f471dcaf	client-1	486	Dettes et créances des legs et dons d'immobilisations	actif	creance	8bf81f0f-006c-43f7-b073-4c25c79dea26	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+9691b9ba-c60a-400e-8118-1141954e7f19	client-1	488	Autres créances hors activités ordinaires (H.A.O.)	actif	creance	8bf81f0f-006c-43f7-b073-4c25c79dea26	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+5cfa8ab7-16be-473f-8009-318a6569f652	client-1	501	Titres du trésor et bons de caisse à court terme	actif	tresorerie	526ad616-2113-4e41-a409-746a2f4846f8	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+23ce9917-7a06-4801-b817-c4e688ff4a9d	client-1	502	Actions	actif	tresorerie	526ad616-2113-4e41-a409-746a2f4846f8	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+ff74a73e-dc8a-4ee5-ac77-f43c4e4ed0f8	client-1	503	Obligations	actif	tresorerie	526ad616-2113-4e41-a409-746a2f4846f8	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+801bb12c-95ed-410b-bdf8-faf1eb632abb	client-1	504	Bons de souscription	actif	tresorerie	526ad616-2113-4e41-a409-746a2f4846f8	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+83b06ba9-714d-4a1c-a34b-8e8a47a32b9c	client-1	505	Titres négociables hors Région	actif	tresorerie	526ad616-2113-4e41-a409-746a2f4846f8	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+e4d174de-06c5-4ea8-8b09-7abb77804868	client-1	506	Intérêts courus	actif	tresorerie	526ad616-2113-4e41-a409-746a2f4846f8	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+aa81299f-81cf-49a5-8c0b-8848c8d9c658	client-1	508	Autres titres de placement et créances assimilées	actif	tresorerie	526ad616-2113-4e41-a409-746a2f4846f8	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+9f73bef5-d10d-475a-ae54-feb3b4d0e65b	client-1	513	Chèques à encaisser	actif	tresorerie	5521a29a-ee36-4c5a-8b42-7bfe8747025f	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+d5c48d59-7cfb-4aad-bce2-7da4a3a43aa5	client-1	514	Chèques à rencaissement	actif	tresorerie	5521a29a-ee36-4c5a-8b42-7bfe8747025f	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+cbda6e48-8a12-4d8f-9698-643a27da9fb1	client-1	515	Cartes de crédit à encaisser	actif	tresorerie	5521a29a-ee36-4c5a-8b42-7bfe8747025f	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+13e67900-dae6-4d4a-9e94-fd7c57188118	client-1	518	Autres valeurs à rencaissement	actif	tresorerie	5521a29a-ee36-4c5a-8b42-7bfe8747025f	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+f35f742b-38d8-4eee-8f17-aeb7fcb810fc	client-1	521	Banques locales	actif	tresorerie	6abab6fe-47c4-4736-aa94-0c4e113286dd	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+409d3881-417a-4dce-b4d3-a41aa38087fa	client-1	522	Banques autres Etats Région	actif	tresorerie	6abab6fe-47c4-4736-aa94-0c4e113286dd	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+e0ab3dd2-0260-4754-b1c8-1e417e509960	client-1	523	Banques autres Etats zone monétaire	actif	tresorerie	6abab6fe-47c4-4736-aa94-0c4e113286dd	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+d67c1997-30ac-4e23-b732-7c43df8b9ba3	client-1	524	Banques hors zone monétaire	actif	tresorerie	6abab6fe-47c4-4736-aa94-0c4e113286dd	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+6aa14a30-786b-4d4b-880e-5761b8bcafeb	client-1	525	Banques dépôt à terme et opérations assimilées	actif	tresorerie	6abab6fe-47c4-4736-aa94-0c4e113286dd	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+7ba65c5e-ef3f-470f-a8c3-afec84b73cdc	client-1	526	Banques, intérêts courus	actif	tresorerie	6abab6fe-47c4-4736-aa94-0c4e113286dd	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+96727baf-c2ab-4306-b168-f6a70c3f8dd0	client-1	531	Banques postales	actif	tresorerie	a4c1f0a1-b017-444a-8073-09358a37565a	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+17357975-35d9-412a-add9-88920aaf9c99	client-1	532	Trésor	actif	tresorerie	a4c1f0a1-b017-444a-8073-09358a37565a	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+1d085f42-27ce-4974-9a75-c58f0ac94787	client-1	533	Sociétés de gestion et d'intermédiation (S.G.I.)	actif	tresorerie	a4c1f0a1-b017-444a-8073-09358a37565a	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+bb98bd5f-6f8c-44fb-b102-41d872a2f9f3	client-1	536	Etablissements financiers, intérêts courus	actif	tresorerie	a4c1f0a1-b017-444a-8073-09358a37565a	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+5c103379-88ab-48a8-8d9a-412f0f90ef98	client-1	538	Autres organismes financiers	actif	tresorerie	a4c1f0a1-b017-444a-8073-09358a37565a	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+12367f5f-70b3-46a6-ac2c-28330eff763b	client-1	551	Monnaie électronique - carte carburant	actif	tresorerie	a8c7f8b8-2fbe-49d6-94af-e8f705d9b363	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+0055871f-b599-4084-874d-ed9944a21b57	client-1	552	Monnaie électronique - téléphone portable	actif	tresorerie	a8c7f8b8-2fbe-49d6-94af-e8f705d9b363	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+5346f01c-5e83-46d9-bdfc-07abecab20b5	client-1	553	Monnaie électronique - carte péage	actif	tresorerie	a8c7f8b8-2fbe-49d6-94af-e8f705d9b363	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+de493810-7ce4-4bcc-8585-7e9513be5361	client-1	554	Porte-monnaie électronique	actif	tresorerie	a8c7f8b8-2fbe-49d6-94af-e8f705d9b363	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+394ee0a0-7234-4f1e-83a7-20f1ad9513d2	client-1	558	Autres instruments de monnaie électronique	actif	tresorerie	a8c7f8b8-2fbe-49d6-94af-e8f705d9b363	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+f92d8e2f-e198-400c-8d12-209f8c016a1e	client-1	561	Crédits de trésorerie	actif	tresorerie	1dde0da6-2e2e-4656-9476-ff6b9a87cf3c	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+17d147c9-f49f-4535-811f-15d5f1be283b	client-1	565	Escompte de crédits ordinaires	actif	tresorerie	1dde0da6-2e2e-4656-9476-ff6b9a87cf3c	2	actif	2025-11-23 01:47:59.304815+00	2025-11-23 01:47:59.304815+00	\N
+71649c25-6cda-405c-a70d-81cfe6fdb20b	client-1	566	Banques, crédits de trésorerie, intérêts courus	actif	tresorerie	1dde0da6-2e2e-4656-9476-ff6b9a87cf3c	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+6be22205-ea5b-484c-9806-d4a4fc330f4e	client-1	571	Caisse en monnaie nationale	actif	tresorerie	93cb598e-e594-4f5f-8ecf-96934c5f1fc0	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+727ef5dc-41d6-4029-b859-53eb5738e5e6	client-1	572	Caisse en devises	actif	tresorerie	93cb598e-e594-4f5f-8ecf-96934c5f1fc0	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+c5508e4c-e05a-4d33-95a2-2070ed1575e0	client-1	585	Virements de fonds	actif	tresorerie	fe246352-7146-44b3-962c-a053825dcf43	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+fcc0c923-54d4-48e5-9a6e-986569711bcb	client-1	588	Autres virements internes	actif	tresorerie	fe246352-7146-44b3-962c-a053825dcf43	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+20b92e85-1e13-48db-a826-f95e057775ba	client-1	590	Dépréciations des titres de placement	actif	tresorerie	00b8a8d8-5175-4a49-9f5f-26c67cff0d93	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+0c9a0184-a0d6-43e9-80ab-71c190c44511	client-1	591	Dépréciations des titres et valeurs à encaisser	actif	tresorerie	00b8a8d8-5175-4a49-9f5f-26c67cff0d93	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+b389ffa3-a21b-4d17-b3e1-71b90e44337d	client-1	592	Dépréciations des comptes banques	actif	tresorerie	00b8a8d8-5175-4a49-9f5f-26c67cff0d93	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+2a2e0a67-5215-4cdc-9a94-5915dfed2cde	client-1	593	Dépréciations des comptes établissements financiers et assimilés	actif	tresorerie	00b8a8d8-5175-4a49-9f5f-26c67cff0d93	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+b2b61f0a-f485-4a6a-9496-9e4ba950e65d	client-1	595	Dépréciations des comptes d'instruments de monnaie électronique	actif	tresorerie	00b8a8d8-5175-4a49-9f5f-26c67cff0d93	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+ca844f9e-54b7-44c4-85cf-d57c2492dd5a	client-1	599	Provisions pour risque et charges à court terme à caractère financier	actif	tresorerie	00b8a8d8-5175-4a49-9f5f-26c67cff0d93	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+4f6cf89e-8443-4df6-8c57-ec6bab7af3e4	client-1	601	Achats de biens et services liés à Tactivité	charge	exploitation	2c9de741-a7ba-4a86-b6d1-e917012a1e93	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+6af1094a-9389-4cf7-97f6-c2b320590d46	client-1	602	Achats de marchandises, de matières premières et fournitures liées	charge	exploitation	2c9de741-a7ba-4a86-b6d1-e917012a1e93	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+e9eac726-88fd-4b39-8be1-7606fdd6071a	client-1	603	Variations des stocks de biens achetés et reçus en dons en nature à distribuer	charge	exploitation	2c9de741-a7ba-4a86-b6d1-e917012a1e93	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+3f33c3d6-385a-471c-abfb-63e1840f7977	client-1	604	Achats stockés de matières et fournitures consommables	charge	exploitation	2c9de741-a7ba-4a86-b6d1-e917012a1e93	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+a38c6063-79e2-4af9-a60b-adbf35cd2882	client-1	605	Autres achats	charge	exploitation	2c9de741-a7ba-4a86-b6d1-e917012a1e93	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+bd3edebf-7158-4a0a-a3e0-aec0f2615bb6	client-1	606	Achats autres activités	charge	exploitation	2c9de741-a7ba-4a86-b6d1-e917012a1e93	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+bb6784fe-f8c4-44f1-8146-929c17f1fde4	client-1	608	Achats d'emballages	charge	exploitation	2c9de741-a7ba-4a86-b6d1-e917012a1e93	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+5c2808e8-2539-4da2-bdb1-4373614281bf	client-1	612	Transports sur ventes	charge	exploitation	22412452-97ab-4514-80f2-59f10f288812	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+c8d4b5b2-a7a4-4ac5-9628-2b1762580ca4	client-1	613	Transports pour le compte de tiers	charge	exploitation	22412452-97ab-4514-80f2-59f10f288812	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+ea6e6e89-8418-4aa2-ae53-3523ec508da3	client-1	614	Transports du personnel	charge	exploitation	22412452-97ab-4514-80f2-59f10f288812	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+6dd786dc-1d1e-4568-bac0-41535454ba49	client-1	616	Transports de plis	charge	exploitation	22412452-97ab-4514-80f2-59f10f288812	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+09e9abea-3330-4217-8431-d5063415c178	client-1	618	Autres frais de transport	charge	exploitation	22412452-97ab-4514-80f2-59f10f288812	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+ffb12ba4-0548-484a-b125-63cc2d14be7e	client-1	619	Rabais, Remises et Ristournes Obtenus (non ventilés)	charge	exploitation	22412452-97ab-4514-80f2-59f10f288812	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+cc7c5096-c696-48aa-8747-62693805fb91	client-1	621	Sous-traitance générale	charge	exploitation	2e9f73da-8b5a-461e-81f2-d0c2abef8c97	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+17eb7e52-7b64-4a8a-b575-b0fd33ef0d2a	client-1	622	Locations, charges locatives	charge	exploitation	2e9f73da-8b5a-461e-81f2-d0c2abef8c97	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+44b934a9-0983-4c50-a810-67a28ccb0f7d	client-1	623	Redevances de location-acquisition	charge	exploitation	2e9f73da-8b5a-461e-81f2-d0c2abef8c97	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+16aee7da-87f1-4d1c-913e-1bf295c4bee6	client-1	624	Entretien, réparation, remise en état et maintenance	charge	exploitation	2e9f73da-8b5a-461e-81f2-d0c2abef8c97	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+f10918fb-c06d-4ae5-8ab7-fbec4b75981b	client-1	625	Primes d'assurance	charge	exploitation	2e9f73da-8b5a-461e-81f2-d0c2abef8c97	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+8b57b64f-bbfe-406d-a1a9-01a5aed9b4a2	client-1	637	Rémunérations de personnel extérieur à l'entité	charge	exploitation	7b4e5952-33c4-4b85-96c4-ae310d1a7371	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+e8b12a96-241e-421e-9e5c-5e67ab95e1ca	client-1	638	Autres charges externes	charge	exploitation	7b4e5952-33c4-4b85-96c4-ae310d1a7371	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+e28cd96e-dddf-4544-85e7-74fd7f67a358	client-1	645	Impôts et taxes indirects	charge	exploitation	cc941ba1-7cef-4a02-a839-7d49ed7dbcba	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+0d139239-e37b-45f9-b2e8-5d4d15d9efe7	client-1	646	Droits d’enregistrement	charge	exploitation	cc941ba1-7cef-4a02-a839-7d49ed7dbcba	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+2743721c-7f38-4e5b-833f-fbfb8b12ea35	client-1	647	Pénalités, amendes fiscales	charge	exploitation	cc941ba1-7cef-4a02-a839-7d49ed7dbcba	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+49a0f411-b37f-418f-b270-70df5d4cd86d	client-1	648	Autres impôts et taxes	charge	exploitation	cc941ba1-7cef-4a02-a839-7d49ed7dbcba	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+5b5fd940-af05-4496-9118-264c2c614d07	client-1	649	Dégrèvements et annulations des impôts et taxes	charge	exploitation	cc941ba1-7cef-4a02-a839-7d49ed7dbcba	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+442d247a-d8b6-4652-9485-b6c5949f4762	client-1	651	Pertes sur créances adhérents clients, et autres débiteurs	charge	exploitation	9d103c28-0cb7-40e4-8a45-a02a3d48306c	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+d36d593f-0282-480a-b9cd-5a569a2f2407	client-1	652	Subventions accordées par l’entité	charge	exploitation	9d103c28-0cb7-40e4-8a45-a02a3d48306c	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+e69d4de7-b641-45dd-99ed-8c9422797e52	client-1	654	Dons en nature courants à distribuer	charge	exploitation	9d103c28-0cb7-40e4-8a45-a02a3d48306c	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+3ce1f399-831a-41c0-9ed2-2f3f226ae4ba	client-1	657	Pénalités et amendes pénales	charge	exploitation	9d103c28-0cb7-40e4-8a45-a02a3d48306c	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+959e0c24-617b-4edf-8871-2d25f25b57de	client-1	658	Charges diverses	charge	exploitation	9d103c28-0cb7-40e4-8a45-a02a3d48306c	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+c488e589-ccf3-4172-9ae9-3e5020fc47cf	client-1	659	Charges pour dépréciations et provisions pour risques à court terme d’exploitation	charge	exploitation	9d103c28-0cb7-40e4-8a45-a02a3d48306c	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+c4cfb5f4-a1dd-43c1-8d70-124a06cc48d6	client-1	661	Rémunérations directes versées au personnel national	charge	financier	50f4a2ba-1ca2-4693-9876-c8c7938e9a73	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+575ce81c-489d-47b0-be64-ede9dd35c738	client-1	662	Rémunérations directes versées au personnel non national	charge	financier	50f4a2ba-1ca2-4693-9876-c8c7938e9a73	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+5998c249-2c30-48fd-83fa-77b698c7afb2	client-1	676	Pertes de change financières	charge	financier	28bb3c1e-b63e-4822-994e-12e472218757	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+42de24e5-1e8a-473c-976a-e237a8aa570e	client-1	677	Pertes sur titres de placement	charge	financier	28bb3c1e-b63e-4822-994e-12e472218757	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+edde2b0a-cdd7-40dd-ae7f-2c6809036c08	client-1	678	Pertes et charges sur risques financiers	charge	financier	28bb3c1e-b63e-4822-994e-12e472218757	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+a605d36b-7c0f-4514-95be-041921ccb79e	client-1	679	Charges pour dépréciations et prov isions pour risques à court terme financières	charge	financier	28bb3c1e-b63e-4822-994e-12e472218757	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+f44b4b55-645e-486c-bd98-1544c76ff2cb	client-1	680	Dotations aux amortissements d'usufruit temporaire	charge	exploitation	e5abaa41-4ff6-48e0-9dfb-b04ce2694d04	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+363fbe37-8cef-4725-a5fe-1a7b2e3b3107	client-1	681	Dotations aux amortissements d'exploitation	charge	exploitation	e5abaa41-4ff6-48e0-9dfb-b04ce2694d04	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+199e12c6-c18f-417c-9d9c-c8723f1065af	client-1	691	Dotations aux provisions et aux dépréciations d'exploitation	charge	exploitation	87a168a4-4806-4e4d-926c-09a747ba114c	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+bee60b91-7db7-43b5-9063-c79a225af98c	client-1	695	Dotations aux dépréciations d'immobilisations destinées à la vente provenant des	charge	exploitation	87a168a4-4806-4e4d-926c-09a747ba114c	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+9366b37c-0f2f-4d67-b51c-bd66e515b958	client-1	697	Dotations aux provisions et aux dépréciations financières	charge	exploitation	87a168a4-4806-4e4d-926c-09a747ba114c	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+cbd196dd-2f40-44d8-81bb-2e9a009fa508	client-1	701	Cotisations des adhérents	produit	exploitation	1d143d31-5817-4ce1-b955-c750882ecc88	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+e7710a84-4032-49d1-b6d0-5fb06da70bf5	client-1	702	Quote-part de Tonds d'administration transférés	produit	exploitation	1d143d31-5817-4ce1-b955-c750882ecc88	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+f002b6cf-9379-4dfa-a982-450824892495	client-1	703	Quote-part de dotation consomptible transférée	produit	exploitation	1d143d31-5817-4ce1-b955-c750882ecc88	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+07b38608-2cd0-4e49-94f7-12000658c4f7	client-1	704	Revenus liés à la générosité	produit	exploitation	1d143d31-5817-4ce1-b955-c750882ecc88	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+b2fc0115-c91f-41f6-9edc-1f54272d978b	client-1	705	Ventes marchandises, services et produits finis	produit	exploitation	1d143d31-5817-4ce1-b955-c750882ecc88	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+5d147383-285a-40df-b35a-b6a067a15db9	client-1	706	Revenus des manifestations	produit	exploitation	1d143d31-5817-4ce1-b955-c750882ecc88	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+c851a1ae-258c-4e99-86f1-17230ab73b7b	client-1	707	Produits accessoires	produit	exploitation	1d143d31-5817-4ce1-b955-c750882ecc88	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+76851780-016f-4f2a-8549-b7832aa2c98d	client-1	708	Autres revenus	produit	exploitation	1d143d31-5817-4ce1-b955-c750882ecc88	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+7d603226-c3a0-4bae-bf8b-6626ae7d3484	client-1	711	Subventions d'exploitation versées par l'Etat et les Collectivités publiques	produit	exploitation	11cfdfb7-b74c-4371-abe5-9136c684b544	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+0b2fbb11-31f7-4298-885f-b7842c267a25	client-1	713	Subventions d'exploitation versées par les organismes nationaux et internationaux	produit	exploitation	11cfdfb7-b74c-4371-abe5-9136c684b544	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+dc3be1c0-a7de-4d22-a26b-cdc57c5a37a5	client-1	718	Autres subventions d'exploitation	produit	exploitation	11cfdfb7-b74c-4371-abe5-9136c684b544	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+53af8c0b-e39b-4054-86a1-bbee9edf31ad	client-1	721	Production immobilisée, immobilisations incorporelles	produit	exploitation	e1356988-ef5b-4150-9f15-85a6f547f4d8	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+e652edc5-8333-4ebb-b217-3343b1ecad79	client-1	722	Production immobilisée, immobilisations corporelles	produit	exploitation	e1356988-ef5b-4150-9f15-85a6f547f4d8	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+cc7418b3-d2da-402f-ba3f-b8fa5c81a135	client-1	724	Production auto-consommée	produit	exploitation	e1356988-ef5b-4150-9f15-85a6f547f4d8	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+a6bd6930-501d-4c7e-a37a-1554b20c3aab	client-1	726	Production immobilisée, imn 3 olisations financières01	produit	exploitation	e1356988-ef5b-4150-9f15-85a6f547f4d8	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+c2b131d4-22ff-4775-bbec-b99abfc71889	client-1	735	Variations des stocks de produits finis et services en cours	produit	exploitation	56f2967a-ae40-4e10-830a-535f421446ef	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+293ceaaf-ec92-454f-a02c-2e4d7eb9f4ef	client-1	736	Variations des stocks de produits finis, produits intermédiaires et résiduels.	produit	exploitation	56f2967a-ae40-4e10-830a-535f421446ef	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+985b8798-82a5-4c29-890c-f30d082a27a1	client-1	751	Profits sur créances Adhérents, clients-usagers, et autres débiteurs	produit	exploitation	39beb3ce-9598-4e25-a5af-d31127b0a1df	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+dc1b21a4-6c5e-453a-9a5c-7893a8a01a8c	client-1	752	Contribution du fondateur	produit	exploitation	39beb3ce-9598-4e25-a5af-d31127b0a1df	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+932146ef-d6f1-4578-a3d7-0dfc4dfa11fa	client-1	754	Dons en nature courants	produit	exploitation	39beb3ce-9598-4e25-a5af-d31127b0a1df	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+b0218b4d-cb26-4d0b-9e45-879686670107	client-1	758	Produits divers	produit	exploitation	39beb3ce-9598-4e25-a5af-d31127b0a1df	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+77078759-150e-4afa-9e09-2d1ad42dcee3	client-1	759	Reprises de charges pour dépréciations et provisions pour risques à court terme d'exploitation	produit	exploitation	39beb3ce-9598-4e25-a5af-d31127b0a1df	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+40748122-cc1a-49eb-963b-6c489fef133b	client-1	771	Intérêts de prêts et créances diverses	produit	financier	6bd5e69a-65a8-48da-a65a-23ffdf55139d	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+7bcc6ab5-520c-441d-8775-97523ffb226f	client-1	772	Revenus de participations et autres titres immobilisés	produit	financier	6bd5e69a-65a8-48da-a65a-23ffdf55139d	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+2e6173c1-fe48-4fdf-85f8-6864307f8ec0	client-1	773	Escomptes obtenus	produit	financier	6bd5e69a-65a8-48da-a65a-23ffdf55139d	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+d9fdf1b4-5b5e-4b89-8ad9-c56c3b9da39d	client-1	774	Revenus de placement	produit	financier	6bd5e69a-65a8-48da-a65a-23ffdf55139d	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+7b5b8c46-f4b3-4682-bb41-8ec9c619c180	client-1	776	Gains de change financiers	produit	financier	6bd5e69a-65a8-48da-a65a-23ffdf55139d	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+46a10a11-9f6e-4b91-b818-6c442d94e2fa	client-1	777	Gains sur cessions de titres de placement	produit	financier	6bd5e69a-65a8-48da-a65a-23ffdf55139d	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+0b10bbd3-1cdd-4a23-b5bb-0ab0bd89d03b	client-1	778	Gains sur risques financiers	produit	financier	6bd5e69a-65a8-48da-a65a-23ffdf55139d	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+911668fc-c200-42b3-b266-00217a8cffa3	client-1	779	Reprises de charges pour dépréciations et provisions pour risques à court terme	produit	financier	6bd5e69a-65a8-48da-a65a-23ffdf55139d	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+fa1cdb35-9950-43bd-b8b0-c75dfe41bf1f	client-1	781	Transferts de charges d'exploitation	produit	exploitation	5ccae2ef-a724-45af-8263-e1580dd4136e	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+aae1f4ac-ff47-4fe2-b34b-9455c93b0f1c	client-1	787	Transferts de charges financières	produit	exploitation	5ccae2ef-a724-45af-8263-e1580dd4136e	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+960ad9fe-eba3-4900-9b34-0523d0917ced	client-1	791	Reprises de provisions et dépréciations d'exploitation	produit	exploitation	0f66ffa5-1fd9-4b56-9a38-dd31bf8f98a7	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+b469f9d2-717c-4b70-b6f8-c7b554e514c5	client-1	792	Reprises de fonds affectés et provenant des dons et legs d'immobilisations	produit	exploitation	0f66ffa5-1fd9-4b56-9a38-dd31bf8f98a7	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+7a2f7cb2-dd65-4464-b89a-6cbe3b2256e8	client-1	811	Valeurs comptables des cessions d’immobilisations incorporelles	resultat	autre	ad68b6ca-cd82-44aa-8de3-69394e720054	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+f7b32567-9c16-48f4-bfbd-57c8f8c35014	client-1	812	Valeurs comptables des cessions d'inimohilisations corporelles	resultat	autre	ad68b6ca-cd82-44aa-8de3-69394e720054	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+4cdd9266-15c6-4cb4-8e63-5a234d671262	client-1	816	Valeurs comptables des cessionsières	resultat	autre	ad68b6ca-cd82-44aa-8de3-69394e720054	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+8824cd72-b1a8-49bb-b87f-797c9caaece4	client-1	818	Valeurs comptables des cessions d’immobilisations reçues destinées à la vente	resultat	autre	ad68b6ca-cd82-44aa-8de3-69394e720054	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+6f0850e2-825a-47f6-b5a0-864add44d42e	client-1	821	Produits des cessions d’immobilisations incorporelles	resultat	autre	08957437-6cf9-4d96-9f77-b6a457f602a4	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+71511fb9-bf79-4d44-b10f-cf07d15fc78f	client-1	822	Produits des cessions d’immobilisations corporelles	resultat	autre	08957437-6cf9-4d96-9f77-b6a457f602a4	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+a80e5afd-e08c-4bc3-a572-686adf8d6bbd	client-1	826	Produits des cessions d’immobilisations financières	resultat	autre	08957437-6cf9-4d96-9f77-b6a457f602a4	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+47240928-8edf-4403-96c0-23aa785f5b94	client-1	828	Produits des cessions d’immobilisations reçues destinées à la vente provenant de dons et legs	resultat	autre	08957437-6cf9-4d96-9f77-b6a457f602a4	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+6582b72a-71bc-4037-bb1d-0f7b8b08e68a	client-1	831	Charges H.A.O. constatées	resultat	autre	d3c6c323-1f4a-4a9f-b56a-5dbab9688caa	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+80471eeb-cb5f-47bc-90c7-41b19dc1e75f	client-1	832	Dons en nature H.A.O. àf '  •	resultat	autre	d3c6c323-1f4a-4a9f-b56a-5dbab9688caa	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+b4b38540-e562-424a-b32e-ee5a502be7c3	client-1	834	Pertes sur créances H.A.O.	resultat	autre	d3c6c323-1f4a-4a9f-b56a-5dbab9688caa	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+a445001f-ece5-4eba-a362-e4591c22fcd9	client-1	836	Abandons de créances consentis	resultat	autre	d3c6c323-1f4a-4a9f-b56a-5dbab9688caa	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+afdfffa1-2fc6-4c55-b55b-c256d8f38d12	client-1	838	Transferts de charges H.A.O.	resultat	autre	d3c6c323-1f4a-4a9f-b56a-5dbab9688caa	2	actif	2025-11-23 01:47:59.352987+00	2025-11-23 01:47:59.352987+00	\N
+4cc25bee-62fe-465e-a780-e30955cfbcc3	client-1	839	charges pour dépréciations et provisions pour risques à court terme H A O	resultat	autre	d3c6c323-1f4a-4a9f-b56a-5dbab9688caa	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+b3e4fc5f-bdd3-4894-aea8-13a17871ab81	client-1	841	Produits H.A.O. constatés	resultat	autre	93728b41-a0ff-4fe5-852f-bf4525286018	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+51de3f9a-7b61-476f-9f43-a238ab424c80	client-1	842	Contributions volontaires en nature	resultat	autre	93728b41-a0ff-4fe5-852f-bf4525286018	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+dbf148a8-4a95-4a8b-b830-95570c114310	client-1	843	Contributions volontaires en numéraire	resultat	autre	93728b41-a0ff-4fe5-852f-bf4525286018	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+a7099eb2-b330-4fba-87b7-8f3e3b5d3ba1	client-1	846	Abandons de créances obtenus	resultat	autre	93728b41-a0ff-4fe5-852f-bf4525286018	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+1186dd39-5a6d-442f-9f46-2b89242a82bb	client-1	848	Transferts de produits H.A.O	resultat	autre	93728b41-a0ff-4fe5-852f-bf4525286018	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+6ef9a8b1-d1b4-44f9-96ad-78cf75b0143b	client-1	849	Reprises de charges pour dépréciations et provisions pour risques à court terme	resultat	autre	93728b41-a0ff-4fe5-852f-bf4525286018	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+7dbcc49e-7076-43b3-8127-fe82ee0535af	client-1	851	Dotations aux provisions réglementées	resultat	autre	c4b0b50c-55f0-4b38-a41f-97fd3f7839d7	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+11fceac6-2354-4a7f-bf12-2e4bdad5977f	client-1	852	Dotations aux amortissements H.A.O.	resultat	autre	c4b0b50c-55f0-4b38-a41f-97fd3f7839d7	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+d3e20ca2-8b48-47e8-bcec-17401133f3e6	client-1	853	Dotations aux dépréciations H.A.O.	resultat	autre	c4b0b50c-55f0-4b38-a41f-97fd3f7839d7	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+688c8e12-aba8-45fd-bac5-6f189163ec40	client-1	854	Dotations aux provisions pour risques et charges H.A.O.	resultat	autre	c4b0b50c-55f0-4b38-a41f-97fd3f7839d7	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+7f927240-c48f-4383-babb-9dc987547632	client-1	858	Autres dotations H.A.O	resultat	autre	c4b0b50c-55f0-4b38-a41f-97fd3f7839d7	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+b0190822-09c1-4191-8ef7-fa72611243dd	client-1	861	Reprises de provisions réglementées	resultat	autre	4776c7b3-a3de-4ba3-9dcc-5c5751f4d056	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+95f71565-e646-4dce-9713-90ae2b0fdbdb	client-1	862	Reprises d’amortissements H.A.O.	resultat	autre	4776c7b3-a3de-4ba3-9dcc-5c5751f4d056	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+e66c5116-928e-4cca-869c-42f37c1223dd	client-1	863	Reprises de dépréciations H.A.O.	resultat	autre	4776c7b3-a3de-4ba3-9dcc-5c5751f4d056	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+d931ba42-ea95-4f00-9f50-7296f9eeef9d	client-1	864	Renrises de provisions nour risoues et charges H.A.O.	resultat	autre	4776c7b3-a3de-4ba3-9dcc-5c5751f4d056	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+6fcaec09-83f9-4475-9aa5-0b9bba8dadc1	client-1	868	Autres Reprise H.A.O	resultat	autre	4776c7b3-a3de-4ba3-9dcc-5c5751f4d056	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+7e71a79f-c87a-4c43-ba65-fb1892f89f62	client-1	881	Subventions d'équilibre, Etat	resultat	autre	132e4f2c-6252-4b97-80b3-cf26459eade2	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+5d28e354-87a3-4c0b-8c66-a8438c0dd85b	client-1	884	Subventions d’équilibre, Collectivités publiques	resultat	autre	132e4f2c-6252-4b97-80b3-cf26459eade2	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+134977dd-8ba6-49b9-bcc2-364273e56028	client-1	888	Autres subventions d'équilibre	resultat	autre	132e4f2c-6252-4b97-80b3-cf26459eade2	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+4794ea2d-74bc-4b68-bb71-5a91f121194a	client-1	900	Secours en nature	actif	autre	2c6b5748-f3b5-4d2b-b02b-1058f53ed8b1	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+9d773d21-9437-4d42-9d28-9033f2a3f6ac	client-1	901	Mises à disposition gratuite de biens	actif	autre	2c6b5748-f3b5-4d2b-b02b-1058f53ed8b1	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+2e7a575d-66b7-4c01-9659-8f87c50de0ea	client-1	902	Prestations en nature	actif	autre	2c6b5748-f3b5-4d2b-b02b-1058f53ed8b1	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+62c69671-fdde-4368-b31a-2757350b68c2	client-1	904	Personnel Benevol	actif	autre	2c6b5748-f3b5-4d2b-b02b-1058f53ed8b1	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+c1cedeaf-5f5f-461b-aed0-e666b281b0d3	client-1	910	Dons en nature	actif	autre	e74e0c5b-2b94-4b05-8f82-7a09a7d26b00	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+839ef3dd-8715-4ff5-984a-af07efb54486	client-1	911	Prestations en nature	actif	autre	e74e0c5b-2b94-4b05-8f82-7a09a7d26b00	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+79c99ef1-6680-45af-8a43-249093f6d44a	client-1	914	Bénévolat	actif	autre	e74e0c5b-2b94-4b05-8f82-7a09a7d26b00	2	actif	2025-11-23 01:47:59.398546+00	2025-11-23 01:47:59.398546+00	\N
+c194fffc-66f2-426e-89b7-d74f2ec934d5	client-1	1011	en numéraire	passif	capital	64797ed0-b8a6-40f9-a244-a63a2b332898	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+c779a27b-fd23-48f0-8a0d-b1adf2a371e7	client-1	1015	en nature	passif	capital	64797ed0-b8a6-40f9-a244-a63a2b332898	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+f7e757ee-7b14-43f9-8bd3-92fb1bfce8cd	client-1	1021	en numéraire	passif	capital	5bbf7917-6c86-455e-98c7-a75e20a08456	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+b4395e8a-abf5-4307-8fd0-979729c1b43c	client-1	1025	en nature	passif	capital	5bbf7917-6c86-455e-98c7-a75e20a08456	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+8a178a5c-9494-455b-a68a-e0c95e762520	client-1	1041	Dotation consomptible	passif	capital	ab4f26c3-1a6a-4122-9c6c-7fe3658e361b	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+813b2f1d-fd71-404c-9a00-1edcbdfa4e72	client-1	1049	Dotation consomptible inscrite au compte de résultat	passif	capital	ab4f26c3-1a6a-4122-9c6c-7fe3658e361b	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+f0713a99-17aa-407e-8c26-c5491a840526	client-1	1061	Ecarts de réévaluation sur des biens sans droit de reprise	passif	capital	e4de57e6-7a85-4ee6-a991-0c2057a1230f	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+20ae1f0e-8248-4982-93f3-6a4a46524c67	client-1	1062	Écarts de réévaluation sur des biens avec droit de reprise	passif	capital	e4de57e6-7a85-4ee6-a991-0c2057a1230f	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+8d71e60d-c7ac-4b54-9ba1-63bc93b35bf3	client-1	1411	État	passif	capital	fc5c7d94-f189-4688-9a77-c93316d60550	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+da21559f-a254-40cf-89d4-60647099d182	client-1	1412	.Régions	passif	capital	fc5c7d94-f189-4688-9a77-c93316d60550	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+7ae6c803-8f57-471a-b494-5e7e0fdbae8c	client-1	1413	Départements	passif	capital	fc5c7d94-f189-4688-9a77-c93316d60550	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+8a05533c-9b68-416c-b76e-925669cda470	client-1	1414	Communes et collectivités publiques décentralisées	passif	capital	fc5c7d94-f189-4688-9a77-c93316d60550	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+956e46f1-770a-4fc9-bcf3-591e0eb5665a	client-1	1415	Entités publiques ou mixtes	passif	capital	fc5c7d94-f189-4688-9a77-c93316d60550	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+b22bca62-f25a-4e8b-8319-e8aa14cfd2f1	client-1	1416	Entités et organismes privés	passif	capital	fc5c7d94-f189-4688-9a77-c93316d60550	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+d607a9b1-9bff-435f-a5f2-8c27454a32b5	client-1	1417	Organismes internationaux	passif	capital	fc5c7d94-f189-4688-9a77-c93316d60550	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+8cbf31f0-4a4e-43e8-a9e7-d98e4c993b0e	client-1	1418	Autre	passif	capital	fc5c7d94-f189-4688-9a77-c93316d60550	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+dd8916c1-e9ba-46f3-be0f-ed673966e8c4	client-1	1671	affectés	passif	capital	5169cc6c-7f9b-445a-bc9c-5ee0ee382e82	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+906934c7-af38-4ed3-9c61-efe9000c899c	client-1	1672	non affectés	passif	capital	5169cc6c-7f9b-445a-bc9c-5ee0ee382e82	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+c1cba492-a0fa-4c8d-8b3b-b863a5713a55	client-1	1679	Engagements auprès donateur	passif	capital	5169cc6c-7f9b-445a-bc9c-5ee0ee382e82	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+382a2e66-887f-4c93-9b0b-5f759f9522f3	client-1	1851	Dépôts	passif	capital	6d1ed833-829b-426c-8ebc-d287ba57c4e1	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+4bb9aea0-b55c-4447-b5cd-5ecc354da133	client-1	1852	Cautionnements	passif	capital	6d1ed833-829b-426c-8ebc-d287ba57c4e1	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+382d356e-3ccc-4916-96ba-e76d3e2d6ccf	client-1	1861	sur emprunts obligataires	passif	capital	32cdf24f-29b5-4ab7-bda4-9168576764c3	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+6dc87847-a87f-4d2b-b58b-d7b50d29405e	client-1	1862	sur emprunts et dettes auprès des établissements de crédit	passif	capital	32cdf24f-29b5-4ab7-bda4-9168576764c3	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+1c8042d8-447b-4936-8034-8d20d0e56e04	client-1	1863	sur avances reçues de l’Etat	passif	capital	32cdf24f-29b5-4ab7-bda4-9168576764c3	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+f7bf43f9-c10e-4420-8c21-4010edf62a55	client-1	1865	sur dépôts et cautionnements reçus	passif	capital	32cdf24f-29b5-4ab7-bda4-9168576764c3	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+58f59405-2579-46b9-b368-09606b2742a3	client-1	1868	sur autres emprunts et dettes	passif	capital	32cdf24f-29b5-4ab7-bda4-9168576764c3	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+664404e3-170f-4b3f-a587-0976f2769fb9	client-1	1871	Dettes de location-acquisition/ crédit-bail immobilier	passif	capital	ea092d80-4e9e-46c0-9f6f-dd9a8a7343b0	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+6cd30334-3d79-40c8-9960-e04bcc5ae428	client-1	1872	Dettes de location-acquisition/ crédit-bail mobilier	passif	capital	ea092d80-4e9e-46c0-9f6f-dd9a8a7343b0	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+59531112-2a5f-4935-8b02-318d8a9374d2	client-1	1873	Dettes de location-acquisition /location-vente	passif	capital	ea092d80-4e9e-46c0-9f6f-dd9a8a7343b0	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+42ba6883-ead9-40d8-afd4-586b3a942c8a	client-1	1876	Intérêts courus	passif	capital	ea092d80-4e9e-46c0-9f6f-dd9a8a7343b0	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+51cf06aa-b7aa-438a-bd5a-fde9eb1eb8a5	client-1	1981	Provisions pour amendes et pénalités	passif	capital	538f2029-9d75-4be3-8b68-be968049be36	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+25e550ae-8716-462a-a68d-fc7f4a21692a	client-1	1984	Provisions pour démantèlement et remise en état	passif	capital	538f2029-9d75-4be3-8b68-be968049be36	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+55e3389f-8b9d-4e4f-8a67-012cdaf824c2	client-1	1988	Provisions pour divers risques et charges	passif	capital	538f2029-9d75-4be3-8b68-be968049be36	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+888316c7-be73-4281-b77c-74f0187d87de	client-1	2011	Usufruit temporaire	actif	immobilisation	7e478812-3bc2-454c-919a-e1c1523bdd95	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+eed1ac0f-360d-48dc-b03c-b89fced7f843	client-1	2012	Brevets, licences, concessions et droits similaires	actif	immobilisation	7e478812-3bc2-454c-919a-e1c1523bdd95	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+3d7e0378-fac3-4589-9567-9dad0220c3a8	client-1	2013	Logiciels et sites internet	actif	immobilisation	7e478812-3bc2-454c-919a-e1c1523bdd95	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+1ab0346a-de5a-4eb7-9d46-efa659246ff6	client-1	2014	Marques	actif	immobilisation	7e478812-3bc2-454c-919a-e1c1523bdd95	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+9e560345-29fd-4918-9c83-a3b913097cc6	client-1	2017	Autres	actif	immobilisation	7e478812-3bc2-454c-919a-e1c1523bdd95	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+cd26a090-052d-4ab7-a630-474dbaeea502	client-1	2121	Brevets	actif	immobilisation	4a57de0f-efec-4774-a773-0ebe243d538d	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+0f0d611f-4315-47e6-90a3-b52d14b7027f	client-1	2122	Licences	actif	immobilisation	4a57de0f-efec-4774-a773-0ebe243d538d	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+70e69e5f-42d2-4f88-8d8a-0e8d8c556ec9	client-1	2123	Concessions de service public	actif	immobilisation	4a57de0f-efec-4774-a773-0ebe243d538d	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+10816b0a-bd7d-4547-b767-d7a040629a0c	client-1	2128	Autres concessions et droits similaires	actif	immobilisation	4a57de0f-efec-4774-a773-0ebe243d538d	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+f9f8c787-24dc-4cdb-b188-1dee0bea4a93	client-1	2131	Logiciels	actif	immobilisation	89058e27-50c2-47c3-9d6c-5008c71f1768	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+93979843-6aad-43d6-9de9-65823f0c3d45	client-1	2132	Sites internet	actif	immobilisation	89058e27-50c2-47c3-9d6c-5008c71f1768	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+f8ab54b1-b5df-498b-a7da-1263e8f22fcc	client-1	2181	Indemnités de transfert aux joueurs	actif	immobilisation	1d6b2432-5d24-4dac-8fb4-7b5bbf73cfbe	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+ccc0a401-c389-42ae-87a2-5c5ac2a9bc9f	client-1	2193	Logiciels et sites internet	actif	immobilisation	8d9fa12b-e7d4-485e-b289-9f26b8910fc5	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+0e48d314-ca00-481e-9d14-8c00031800be	client-1	2198	Autres droits et valeurs incorporels	actif	immobilisation	8d9fa12b-e7d4-485e-b289-9f26b8910fc5	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+c523a742-c94d-49c5-83c3-afd68136cee1	client-1	2211	Terrains d'exploitation agricole	actif	immobilisation	c829bc63-3a79-459f-91d1-2c3698ff9a56	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+911e6a39-77c9-4d23-aec6-b4247ea00160	client-1	2212	Terrains d'exploitation forestière	actif	immobilisation	c829bc63-3a79-459f-91d1-2c3698ff9a56	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+84101319-0436-4f99-abca-c609a3799f51	client-1	2218	Autres terrains	actif	immobilisation	c829bc63-3a79-459f-91d1-2c3698ff9a56	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+8ca4898c-a4f7-43f8-a57f-dfea07b6e260	client-1	2221	Terrains à bâtir	actif	immobilisation	09d2d89d-d5fa-4cd3-8128-cb0b080d01f0	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+e8cee983-deae-44fb-8c93-7c3ae3aa510c	client-1	2228	Autres terrains nus	actif	immobilisation	09d2d89d-d5fa-4cd3-8128-cb0b080d01f0	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+fe6e7b97-056e-4525-9841-f2786ea81d5f	client-1	2231	pour bâtiments industriels et agricoles	actif	immobilisation	cac68df2-4e59-4091-b8e9-e49ec88cc4cb	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+6832711d-a718-497f-b5d8-2011f3c31907	client-1	2232	pour bâtiments administratifs et commerciaux	actif	immobilisation	cac68df2-4e59-4091-b8e9-e49ec88cc4cb	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+56e4dfcc-1e12-4d0e-8fb4-1bd471a49a23	client-1	2234	pour bâtiments affectés aux autres opérations professionnelles	actif	immobilisation	cac68df2-4e59-4091-b8e9-e49ec88cc4cb	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+424fed1b-e149-4f15-a075-bbcb4a112a07	client-1	2235	pour bâtiments affectés aux autres opérations non professionnelles	actif	immobilisation	cac68df2-4e59-4091-b8e9-e49ec88cc4cb	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+6feb00ec-7ca7-42d4-83ee-52d48534f71d	client-1	2238	Autres terrains bâtis	actif	immobilisation	cac68df2-4e59-4091-b8e9-e49ec88cc4cb	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+a9d34007-bef5-4b4b-9886-8ce4a9aad7ec	client-1	2241	Plantation d'arbres et d’arbustes	actif	immobilisation	9d4f462d-a518-45f2-8be2-310045c315bc	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+c21b61a2-b774-4516-bab9-d90f6f01ab70	client-1	2245	Améliorations du fonds	actif	immobilisation	9d4f462d-a518-45f2-8be2-310045c315bc	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+31c25c3c-a8c8-421c-94ba-64ec826768aa	client-1	2248	Autres travaux	actif	immobilisation	9d4f462d-a518-45f2-8be2-310045c315bc	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+8613a305-b121-408b-96e1-b82e5f738afe	client-1	2261	Parkings	actif	immobilisation	27f24bd4-58a3-4229-a9c4-713f5eddf8ac	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+785f6339-9c9b-44c1-bfb0-44a1a9c836cb	client-1	2281	Terrains - immeubles de placement	actif	immobilisation	f43fea9e-a4e1-48c6-9976-435a78db1e3e	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+a2daf34d-08a7-46e0-b4e6-8c02bce4f4e4	client-1	2285	Terrains des logements affectés au personnel	actif	immobilisation	f43fea9e-a4e1-48c6-9976-435a78db1e3e	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+f000bf2c-4016-4587-8bb7-ad9c8cc3469f	client-1	2286	Terrains de location - acquisition	actif	immobilisation	f43fea9e-a4e1-48c6-9976-435a78db1e3e	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+4a00846d-8cf3-44ed-9f6b-0e63e78d3ad3	client-1	2288	Divers terrains	actif	immobilisation	f43fea9e-a4e1-48c6-9976-435a78db1e3e	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+7d30611b-dfc8-444e-87a1-79b92a9d47a4	client-1	2291	Terrains agricoles et forestiers	actif	immobilisation	807a1555-2e95-420c-a199-f90c194c0a68	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+b4f511b6-92ed-4dab-bc56-634f7b921949	client-1	2292	Terrains nus	actif	immobilisation	807a1555-2e95-420c-a199-f90c194c0a68	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+e2c80c09-cb67-45b8-8348-7be6e97da298	client-1	2298	Autres terrains	actif	immobilisation	807a1555-2e95-420c-a199-f90c194c0a68	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+85d69102-be40-491e-8cf0-dc16ffcb399d	client-1	2311	Bâtiments industriels	actif	immobilisation	913067fa-4c86-4cf9-ba74-d4baceb57def	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+a0f3b4b9-3e19-4b18-a098-9e8fbcc8d837	client-1	2312	Bâtiments agricoles	actif	immobilisation	913067fa-4c86-4cf9-ba74-d4baceb57def	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+0ecaca80-7c1b-4b21-9396-a555ca21aefe	client-1	2313	Bâtiments administratifs et commerciaux	actif	immobilisation	913067fa-4c86-4cf9-ba74-d4baceb57def	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+dcf01163-a908-4534-9fb2-cddef73bcf24	client-1	2314	Bâtiments affectés au logement du personnel	actif	immobilisation	913067fa-4c86-4cf9-ba74-d4baceb57def	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+73e8b28c-91bd-441d-848f-d7c47de31659	client-1	2315	Bâtiments - immeubles de placement	actif	immobilisation	913067fa-4c86-4cf9-ba74-d4baceb57def	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+ab4db744-58ff-4938-9888-0c7654da2fa3	client-1	2316	Bâtiments de location - acquisition	actif	immobilisation	913067fa-4c86-4cf9-ba74-d4baceb57def	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+0077f204-94ea-428e-bfe4-a0da4b30766b	client-1	2317	Edifices religieux et assimilés	actif	immobilisation	913067fa-4c86-4cf9-ba74-d4baceb57def	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+d242f6a7-b910-43fd-b420-99ea14d96309	client-1	2318	Autres bâtiments sur sol propre	actif	immobilisation	913067fa-4c86-4cf9-ba74-d4baceb57def	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+48ce6343-1591-4285-a97b-7a7d9655b7cd	client-1	2321	Bâtiments industriels	actif	immobilisation	97357d0d-ea09-4679-9c4d-7c88ada67886	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+0e039fdd-44ab-4c67-8234-2828e645a9a2	client-1	2322	Bâtiments agricoles	actif	immobilisation	97357d0d-ea09-4679-9c4d-7c88ada67886	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+f95a5180-780a-4ac1-ba4a-8464344e7d41	client-1	2323	Bâtiments administratifs et commerciaux	actif	immobilisation	97357d0d-ea09-4679-9c4d-7c88ada67886	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+8180f407-b36d-4be0-95b6-15423751ea73	client-1	2324	Bâtiments affectés au logement du personnel	actif	immobilisation	97357d0d-ea09-4679-9c4d-7c88ada67886	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+add35591-807a-4e9b-bc83-09f6c9abdb65	client-1	2325	Bâtiments - immeubles de placement	actif	immobilisation	97357d0d-ea09-4679-9c4d-7c88ada67886	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+6178a8dd-c888-4a4a-8414-8c65a88b63bc	client-1	2326	Bâtiments de location - acquisition	actif	immobilisation	97357d0d-ea09-4679-9c4d-7c88ada67886	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+cad5a97f-e459-4232-aee0-d1fffd45ffad	client-1	2327	Eldifices religieux et assimilés	actif	immobilisation	97357d0d-ea09-4679-9c4d-7c88ada67886	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+655b0bb6-11d0-449b-abbc-db5a3ac02cd9	client-1	2328	Autres bâtiments sur sol d’autrui	actif	immobilisation	97357d0d-ea09-4679-9c4d-7c88ada67886	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+35c4e365-345b-4dfb-a096-f2cc3064eabc	client-1	2331	Voies de terre	actif	immobilisation	ff67a1c7-fdd3-46b2-84e8-248f438529f9	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+569ab7cc-f469-4ccf-abef-7c555aaad8d8	client-1	2332	Voies de fer	actif	immobilisation	ff67a1c7-fdd3-46b2-84e8-248f438529f9	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+623933fd-a059-4a16-93e6-2c92712d7e54	client-1	2333	Voies d'eau	actif	immobilisation	ff67a1c7-fdd3-46b2-84e8-248f438529f9	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+a679b612-1ead-430e-bb82-0fe298426e6b	client-1	2334	Barrages, digues	actif	immobilisation	ff67a1c7-fdd3-46b2-84e8-248f438529f9	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+85028915-0edc-480b-9c24-59852ccb87cb	client-1	2335	Pistes d'aérodrome	actif	immobilisation	ff67a1c7-fdd3-46b2-84e8-248f438529f9	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+e7021a17-37b7-4c3e-9d0d-eea77e2c2fda	client-1	2337	Stades et autres infrastructures sportives	actif	immobilisation	ff67a1c7-fdd3-46b2-84e8-248f438529f9	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+b7ec0e25-fe55-4efa-bfad-c788a50e045b	client-1	2338	Autres ouvrages d'infrastructures	actif	immobilisation	ff67a1c7-fdd3-46b2-84e8-248f438529f9	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+3a94a62a-151c-40f4-971f-aee4334398e9	client-1	2341	Installations complexes spécialisées sur sol propre	actif	immobilisation	6a1d3af6-627d-4f62-87cd-6e26df016f9d	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+ee908adc-010c-46bd-a953-05b9932040c7	client-1	2342	Installations complexes spécialisées sur sol d’autrui	actif	immobilisation	6a1d3af6-627d-4f62-87cd-6e26df016f9d	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+c83b43d2-ff48-485b-9b19-61dd85db468a	client-1	2343	Installations à caractère spécifique sur sol propre	actif	immobilisation	6a1d3af6-627d-4f62-87cd-6e26df016f9d	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+cc215b11-68b1-4839-81d5-bd915eb3820b	client-1	2344	Installations à caractère spécifique sur sol d’autrui	actif	immobilisation	6a1d3af6-627d-4f62-87cd-6e26df016f9d	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+ffe8c8fa-e5b1-4160-98a2-8c399f6cb9f9	client-1	2345	Aménagements et agencements des bâtiments	actif	immobilisation	6a1d3af6-627d-4f62-87cd-6e26df016f9d	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+d0da0d3b-e50e-4038-ac5f-0e593008d0ad	client-1	2351	Installations générales	actif	immobilisation	2422f00d-581f-48ca-91cd-7801a22403d6	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+7a955b80-d8ef-4e36-81a0-689a7611efa8	client-1	2358	Autres aménagements de bureaux	actif	immobilisation	2422f00d-581f-48ca-91cd-7801a22403d6	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+ef8f0b95-99e1-46e3-83e8-43815b517628	client-1	2381	Autres installations et agencements des édifices religieux et assimilés	actif	immobilisation	2b191283-b367-4c61-b9c1-f901b0f54252	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+6a6cba40-6c8a-4a3a-80f7-83c143f66f6e	client-1	2382	Autres installations et agencements des stades et autres infrastructures sportives	actif	immobilisation	2b191283-b367-4c61-b9c1-f901b0f54252	3	actif	2025-11-23 01:47:59.479891+00	2025-11-23 01:47:59.479891+00	\N
+c0f09769-2264-487b-9f13-8b8be6f9f822	client-1	2391	Bâtiments sur sol propre en cours	actif	immobilisation	474efd08-311b-42b5-9780-8b7ff86b8e27	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+ed4f1638-5e74-4ab9-ad5b-6a19e042d211	client-1	2392	Bâtiments sur sol d’autrui en cours	actif	immobilisation	474efd08-311b-42b5-9780-8b7ff86b8e27	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+c6995cda-5bee-4512-9b55-8119ea4b5052	client-1	2393	Ouvrages d'infrastructure en cours	actif	immobilisation	474efd08-311b-42b5-9780-8b7ff86b8e27	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+4e78786c-6e54-4695-b30d-b722debe8c07	client-1	2394	Aménagements, agencements et installations techniques en cours	actif	immobilisation	474efd08-311b-42b5-9780-8b7ff86b8e27	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+c1045b49-eafd-4de8-a5b8-42487efaa027	client-1	2395	Aménagements de bureaux en cours	actif	immobilisation	474efd08-311b-42b5-9780-8b7ff86b8e27	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+1dd2dacf-0a7e-44b4-bf35-58e505931ece	client-1	2396	Bâtiments en cours-immeubles de placement	actif	immobilisation	474efd08-311b-42b5-9780-8b7ff86b8e27	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+a2145b1c-d200-4c90-9f25-3a76274d0f9f	client-1	2398	Autres installations et agencements en cours	actif	immobilisation	474efd08-311b-42b5-9780-8b7ff86b8e27	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+66760e0a-14c3-4ada-a835-2fbf8a5e399c	client-1	2411	Matériel industriel	actif	immobilisation	af19d765-6446-40a9-a55c-c1e31cfa4f88	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+f5ac037d-52a8-4d54-81a0-b6ab420d4847	client-1	2412	Outillage industriel	actif	immobilisation	af19d765-6446-40a9-a55c-c1e31cfa4f88	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+8bef700e-7f81-4045-b475-d9f9e934240a	client-1	2413	Matériel commercial	actif	immobilisation	af19d765-6446-40a9-a55c-c1e31cfa4f88	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+04ea877e-82a2-47cf-92d9-ccd3e5bf3bca	client-1	2414	Outillage commercial	actif	immobilisation	af19d765-6446-40a9-a55c-c1e31cfa4f88	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+eee7d201-ed94-4076-8784-7a70da8b035f	client-1	2416	Matériel et outillage industriel et commercial de location - acquisition	actif	immobilisation	af19d765-6446-40a9-a55c-c1e31cfa4f88	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+7d46f0a0-12f8-49e3-9201-cf3fe435eef1	client-1	2421	Matériel agricole	actif	immobilisation	aa2fdca5-0ecd-47d1-ba10-8a6729f9f0dc	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+3d177b18-7482-42f7-853c-3afecf0f9f46	client-1	2422	Outillage agricole	actif	immobilisation	aa2fdca5-0ecd-47d1-ba10-8a6729f9f0dc	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+8da6ed1b-0098-427b-afc9-c78bba31080e	client-1	2426	Matériel et outillage agricole de location-acquisition	actif	immobilisation	aa2fdca5-0ecd-47d1-ba10-8a6729f9f0dc	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+0400e6df-c193-4355-954a-571f9d2a9975	client-1	2441	Matériel et mobilier de bureau	actif	immobilisation	dd810c51-c313-422f-b8e5-80d4ac19d834	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+2cf40a13-e990-4a7c-8643-c77c6d056eeb	client-1	2442	Matériel informatique et bureautique	actif	immobilisation	dd810c51-c313-422f-b8e5-80d4ac19d834	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+1fd06985-0ba1-4820-bb7c-5a74414d2fca	client-1	2443	Matériel et mobilier religieux	actif	immobilisation	dd810c51-c313-422f-b8e5-80d4ac19d834	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+b994b4b0-6c5e-43b9-bba2-15b633bfb81e	client-1	2444	Matériel et mobilier sportifs	actif	immobilisation	dd810c51-c313-422f-b8e5-80d4ac19d834	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+2d2cd2a2-1912-441c-9b1c-535ca64862a7	client-1	2445	Matériel et mobilier - immeubles de placement	actif	immobilisation	dd810c51-c313-422f-b8e5-80d4ac19d834	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+bfd4c785-c2d1-47e1-b436-2763a5681525	client-1	2446	Matériel et mobilier de location - acquisition	actif	immobilisation	dd810c51-c313-422f-b8e5-80d4ac19d834	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+459beca0-e191-4520-9a1b-2b4249a6ed23	client-1	2447	Matériel et mobilier des logements du personnel	actif	immobilisation	dd810c51-c313-422f-b8e5-80d4ac19d834	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+9555a20f-d0f8-43ee-8b8a-633d8b2f6b5c	client-1	2451	Matériel automobile	actif	immobilisation	b55594a1-7e86-41cf-afd6-5f66f51605ca	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+ebba02c3-66f6-4111-af3a-23e9829382c8	client-1	2452	Matériel ferroviaire	actif	immobilisation	b55594a1-7e86-41cf-afd6-5f66f51605ca	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+2abbadb0-3b6a-4dc7-9824-8708bd213d51	client-1	2453	Matériel fluvial, lagunaire	actif	immobilisation	b55594a1-7e86-41cf-afd6-5f66f51605ca	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+9ee3fc29-73cd-471e-8182-28968c3853d4	client-1	2454	Matériel naval	actif	immobilisation	b55594a1-7e86-41cf-afd6-5f66f51605ca	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+5cdc1fe9-197b-4e3d-9f47-8fbd117794c6	client-1	2455	Matériel aérien	actif	immobilisation	b55594a1-7e86-41cf-afd6-5f66f51605ca	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+e142a4e1-804e-41c8-83c2-5f16bc244133	client-1	2456	Matériel de transport de location - acquisition	actif	immobilisation	b55594a1-7e86-41cf-afd6-5f66f51605ca	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+2542a694-01b3-4f11-afe8-b9ea186dc07d	client-1	2457	Matériel hippomobile	actif	immobilisation	b55594a1-7e86-41cf-afd6-5f66f51605ca	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+f16b515a-8461-4f7d-b388-9dd4af5c6176	client-1	2458	Autres matériels de transport	actif	immobilisation	b55594a1-7e86-41cf-afd6-5f66f51605ca	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+23530cad-166c-4a76-8f6d-a0c220f9a637	client-1	2461	Cheptel, animaux de trait	actif	immobilisation	d2597569-3077-4375-b7a5-1779860a3781	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+95c517ea-d969-4c54-bb6b-3e0788eaecc8	client-1	2462	Cheptel, animaux reproducteurs	actif	immobilisation	d2597569-3077-4375-b7a5-1779860a3781	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+23116aba-4468-45bf-92b4-5700bbb0c3b4	client-1	2463	Animaux de garde	actif	immobilisation	d2597569-3077-4375-b7a5-1779860a3781	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+b1fe937b-0c0e-418e-b3ea-e4a6ba09b9e1	client-1	2465	Plnntatinnc aurirnlpQ	actif	immobilisation	d2597569-3077-4375-b7a5-1779860a3781	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+37fc82a2-6bb9-4b03-aeb9-5d0bb69f63b8	client-1	2468	Autres actifs biologiques	actif	immobilisation	d2597569-3077-4375-b7a5-1779860a3781	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+a9c88ed8-dc0e-4972-b9d5-af0e8be41afc	client-1	2471	Agencements et aménagements du matériel	actif	immobilisation	dc2611fb-7a99-4b4b-afe3-73b96699e05b	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+2633f777-ba39-4947-80f3-71510d8d31cb	client-1	2472	Agencements et aménagements des actifs biologiques	actif	immobilisation	dc2611fb-7a99-4b4b-afe3-73b96699e05b	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+a936c008-c15f-43e4-a206-8998f067c81e	client-1	2478	Autres agencements, aménagements du matériel et des actifs biologiques	actif	immobilisation	dc2611fb-7a99-4b4b-afe3-73b96699e05b	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+5f4f727f-fe92-48a9-9b34-c97a3230cd2f	client-1	2481	Collections et œuvres d’art	actif	immobilisation	86d534aa-3011-4964-9812-5500a4e30cb1	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+ad352d26-e633-45e6-8a9e-0390759238bb	client-1	2488	Divers matériels et mobiliers	actif	immobilisation	86d534aa-3011-4964-9812-5500a4e30cb1	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+40a4bab9-90f5-4691-ba56-322410e7bd5c	client-1	2491	Matériel et outillage industriel et commercial	actif	immobilisation	8d53bd45-98ff-4cf4-a001-068fb24849e3	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+9d0fc23e-5cde-4699-be4a-2cb24bab8ea3	client-1	2492	Matériel et outillage agricole	actif	immobilisation	8d53bd45-98ff-4cf4-a001-068fb24849e3	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+e85c75a7-2f66-4532-bba9-b9f6731f9947	client-1	2493	Matériel d'emballage récupérable et identifiable	actif	immobilisation	8d53bd45-98ff-4cf4-a001-068fb24849e3	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+25193b64-6aca-444f-b79a-0f87c988cfd0	client-1	2494	Matériel et mobilier de bureau	actif	immobilisation	8d53bd45-98ff-4cf4-a001-068fb24849e3	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+e52e241e-bf53-45c9-bd55-91f295a57ef4	client-1	2495	Matériel de transport	actif	immobilisation	8d53bd45-98ff-4cf4-a001-068fb24849e3	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+ee824fad-971f-4bd0-ac61-64c612aaa816	client-1	2496	Actifs biologiques	actif	immobilisation	8d53bd45-98ff-4cf4-a001-068fb24849e3	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+36269764-929c-4cb3-a50a-6a53d7c0185a	client-1	2497	Agencements et aménagements du matériel et des actifs biologiques	actif	immobilisation	8d53bd45-98ff-4cf4-a001-068fb24849e3	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+99ea8c9d-1146-4259-8624-cefc209166b8	client-1	2498	Autres matériels et actifs biologiques	actif	immobilisation	8d53bd45-98ff-4cf4-a001-068fb24849e3	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+9954b7c0-d01a-490d-a46d-95ffd25de3e5	client-1	2711	Prêts participatifs	actif	immobilisation	a5ea74b8-afe4-4075-bcfd-1e7964a7f6e2	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+6fc35b66-aff2-4129-87d7-75240a291345	client-1	2713	Billets de fonds	actif	immobilisation	a5ea74b8-afe4-4075-bcfd-1e7964a7f6e2	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+6479f719-69c5-4e2f-801b-1d84ed104ee6	client-1	2715	Titres prêtés	actif	immobilisation	a5ea74b8-afe4-4075-bcfd-1e7964a7f6e2	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+d3d62280-8c6d-4852-94b4-b6bedd378433	client-1	2718	Autres prêts et créances	actif	immobilisation	a5ea74b8-afe4-4075-bcfd-1e7964a7f6e2	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+89b44df5-0758-48df-b89f-3072c67e1c05	client-1	2721	Prêts immobiliers	actif	immobilisation	76514502-0d65-4146-8a4a-7c80a89ef90b	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+061848d7-1f7e-4aed-b2de-268f1ec23210	client-1	2722	Prêts mobiliers et d'installation	actif	immobilisation	76514502-0d65-4146-8a4a-7c80a89ef90b	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+3b15bb6b-e930-4493-92ef-3d8135a54f12	client-1	2728	Autres prêts au personnel	actif	immobilisation	76514502-0d65-4146-8a4a-7c80a89ef90b	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+347b95af-3299-4862-a4ab-b7830256569d	client-1	2731	Retenues de garantie	actif	immobilisation	896b8e39-c904-4be3-bfbf-cfe0e0ed9f21	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+d0cf3fb9-e94f-42c8-83b0-715682440e0a	client-1	2733	Fonds réglementé	actif	immobilisation	896b8e39-c904-4be3-bfbf-cfe0e0ed9f21	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+07c565db-71df-414e-8816-9dbfa800965b	client-1	2738	Autres créances sur l'Etat	actif	immobilisation	896b8e39-c904-4be3-bfbf-cfe0e0ed9f21	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+1af08a6c-1ebd-4bb3-821b-04e89a59dff5	client-1	2741	Titres immobilisés de l’activité de portefeuille (T.I.A.P.)	actif	immobilisation	9566e8fa-1f5e-483e-9ba3-8b14ea70e80b	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+27edacd3-0ec2-4e59-9748-fa5cca5ba9c5	client-1	2742	Titres participatifs	actif	immobilisation	9566e8fa-1f5e-483e-9ba3-8b14ea70e80b	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+c40e586f-429b-4d44-a4f0-a6ce74aa5009	client-1	2743	Certificats d'investissement	actif	immobilisation	9566e8fa-1f5e-483e-9ba3-8b14ea70e80b	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+cb7a6e70-2866-4cce-96bc-84eac15faed6	client-1	2744	Parts de fonds commun de plac i ent(F.C.P.)	actif	immobilisation	9566e8fa-1f5e-483e-9ba3-8b14ea70e80b	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+39f1b649-f05f-484f-b167-d2db94fc9d23	client-1	2745	Obligations	actif	immobilisation	9566e8fa-1f5e-483e-9ba3-8b14ea70e80b	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+f461e5af-5ddd-4f1b-a3b1-beae929a9918	client-1	2748	Autres titres immobilisés	actif	immobilisation	9566e8fa-1f5e-483e-9ba3-8b14ea70e80b	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+9c94a598-b8ee-4587-947e-8b7d069c518e	client-1	2751	Dépôts pour loyers d'avance	actif	immobilisation	018a510a-faf2-4261-85a0-b2060cf74cdf	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+2144676a-5693-40ac-beb2-0729ce3f1c32	client-1	2752	Dépôts pour l'électricité	actif	immobilisation	018a510a-faf2-4261-85a0-b2060cf74cdf	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+2e43e312-0853-4429-99a1-fca55cd221d8	client-1	2753	Dépôts pour l’eau	actif	immobilisation	018a510a-faf2-4261-85a0-b2060cf74cdf	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+77fe7928-7011-4db2-b5e1-3723d63b23b6	client-1	2754	Dépôts pour le gaz	actif	immobilisation	018a510a-faf2-4261-85a0-b2060cf74cdf	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+1605e77d-46d6-4d4e-8fe7-5cb3be6a03ca	client-1	2755	Dépôts pour le téléphone, la télécopie	actif	immobilisation	018a510a-faf2-4261-85a0-b2060cf74cdf	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+1b930ea6-0d3f-4419-9dbb-c7c57fd45430	client-1	2758	Autres dépôts et cautionnement	actif	immobilisation	018a510a-faf2-4261-85a0-b2060cf74cdf	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+5e779c05-4c3e-4fb4-87eb-ea1dd2b75cb3	client-1	2761	Prêts et créances	actif	immobilisation	64d25d29-6201-4a18-9259-a141a625b08c	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+c42e6eb8-7bcf-43cf-8d5d-473d872aaaf5	client-1	2762	Prêts au personnel	actif	immobilisation	64d25d29-6201-4a18-9259-a141a625b08c	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+b7c9ae6d-5d17-4657-bad2-24c8ab775afb	client-1	2763	Créances sur l'Etat	actif	immobilisation	64d25d29-6201-4a18-9259-a141a625b08c	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+0a2c8885-bc2b-4b08-94d5-8ba6ebb8a0dc	client-1	2764	Titres immobilisés	actif	immobilisation	64d25d29-6201-4a18-9259-a141a625b08c	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+e2d41ef1-7659-4c02-b4ad-8afa30442468	client-1	2765	Dépôts et cautionnements versés	actif	immobilisation	64d25d29-6201-4a18-9259-a141a625b08c	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+76b35747-3a24-46eb-a7b5-d9755521f379	client-1	2768	Immobilisations financières diverses	actif	immobilisation	64d25d29-6201-4a18-9259-a141a625b08c	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+87ed5513-0b7f-42b9-9990-ab18a71abc3d	client-1	2781	Créances diverses	actif	immobilisation	759ffc54-ebb5-4533-83a3-f165ba172861	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+9dc5da2d-92f6-469f-8359-c8c56d17cf34	client-1	2784	Banques dépôts à tenue et opérations assimilées	actif	immobilisation	759ffc54-ebb5-4533-83a3-f165ba172861	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+6a18b543-b531-4605-94f8-74dde01cf89a	client-1	2785	Or et métaux précieux11 ’	actif	immobilisation	759ffc54-ebb5-4533-83a3-f165ba172861	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+a95eb3fc-7abd-4742-8cd6-0e6aa9e5c801	client-1	2788	Autres immobilisations financières	actif	immobilisation	759ffc54-ebb5-4533-83a3-f165ba172861	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+40417735-2e9f-4917-a0a7-aa925ca00a58	client-1	2812	Amortissements des brevets, licences, concessions et droits similaires	actif	immobilisation	9b981dfb-859a-401f-954b-7aecf9e3c036	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+b6a88922-9a5c-475d-89b6-616fb20bd329	client-1	2813	Amortissements des logiciels et sites internet	actif	immobilisation	9b981dfb-859a-401f-954b-7aecf9e3c036	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+e052b4d2-1a5e-4b37-b63a-851ae66c070d	client-1	2814	Amortissements des marques	actif	immobilisation	9b981dfb-859a-401f-954b-7aecf9e3c036	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+7d9fe324-fabe-4bff-8a01-b3612202558d	client-1	2817	Amortissements des Indemnités de transfert aux joueurs	actif	immobilisation	9b981dfb-859a-401f-954b-7aecf9e3c036	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+a7eb7570-218f-4a90-b5b6-19ba21a53ec3	client-1	2818	Amortissements des autres droits et valeurs incorporels	actif	immobilisation	9b981dfb-859a-401f-954b-7aecf9e3c036	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+781e9290-b9d9-4657-a825-9028618ba6af	client-1	2824	Amortissements des travaux de mise en valeur des terrains	actif	immobilisation	729f70d0-2330-4310-b807-defda2e6abce	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+ecca4730-e8af-4999-bf10-302745e93e29	client-1	2831	I Amortissements des bâtiments industriels, agricoles, administratifs, commerciaux,	actif	immobilisation	b4e0d6f2-2403-435a-87c5-470646a2aef8	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+7cbd558c-f34a-4e81-8ed5-a939865dd9ab	client-1	2832	Amortissements des bâtiments industriels, agricoles, administratifs, commerciaux,	actif	immobilisation	b4e0d6f2-2403-435a-87c5-470646a2aef8	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+6e3ff9b1-d9a0-4659-916e-e2d99b2b001a	client-1	2833	Amortissements des ouvrages d’infrastructure	actif	immobilisation	b4e0d6f2-2403-435a-87c5-470646a2aef8	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+5eee919d-99d0-43a3-bc06-76deefea3cd7	client-1	2834	Amortissements des aménagements, agencements et installations techniques	actif	immobilisation	b4e0d6f2-2403-435a-87c5-470646a2aef8	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+99628430-3dad-4f46-acf3-71f8e82c1920	client-1	2835	Amortissements des aménagements de bureaux	actif	immobilisation	b4e0d6f2-2403-435a-87c5-470646a2aef8	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+22601f60-a590-4a32-8f37-2688023f915a	client-1	2838	Amortissements des autres installations et agencements	actif	immobilisation	b4e0d6f2-2403-435a-87c5-470646a2aef8	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+911df421-1d52-4573-9f92-4f214e787b7e	client-1	2841	Amortissements du matériel et de l’outillage industriel et commercial	actif	immobilisation	404263ab-1644-4d83-812a-fafde448a896	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+15552b34-7039-4d84-8d6c-82e1d2d907f9	client-1	2842	Amortissements du matériel et de l’outillage agricole	actif	immobilisation	404263ab-1644-4d83-812a-fafde448a896	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+733b27d6-9c17-4dc2-b318-f96a8992a770	client-1	2843	Amortissements du matériel d'emballage récupérable et identifiable	actif	immobilisation	404263ab-1644-4d83-812a-fafde448a896	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+cb781f2e-72db-4135-ab37-95f8d85a3c9e	client-1	2844	Amortissements du matériel et du mobilier	actif	immobilisation	404263ab-1644-4d83-812a-fafde448a896	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+f6b54b0a-4828-4482-824e-41c1ad946979	client-1	2845	Amortissements du matériel de transport	actif	immobilisation	404263ab-1644-4d83-812a-fafde448a896	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+a15d48ad-8f36-42d8-8689-49174c3526d6	client-1	2846	Amortissements des actifs biologiques	actif	immobilisation	404263ab-1644-4d83-812a-fafde448a896	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+c4913308-75f4-463b-97e2-31d3c09c3dfe	client-1	2847	Amortissements des agencements et aménagements du matériel et des actifs biologiques	actif	immobilisation	404263ab-1644-4d83-812a-fafde448a896	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+5ce0a357-bc62-4436-a068-781464d54b59	client-1	2848	Amortissements des autres matériels	actif	immobilisation	404263ab-1644-4d83-812a-fafde448a896	3	actif	2025-11-23 01:47:59.529457+00	2025-11-23 01:47:59.529457+00	\N
+534045af-c96e-4357-8065-858a9f8469c1	client-1	47818	Diminution des créances 1IAO	actif	creance	f883d3a0-6c23-4257-af73-b5c480965de0	4	actif	2025-11-23 01:47:59.836891+00	2025-11-23 01:47:59.836891+00	\N
+9918ed32-b3e9-44de-968b-460a10c552ca	client-1	47831	Augmentation des dettes d'exploitation	actif	creance	8bd15fba-74bf-434d-8ff3-de6d94f61ef3	4	actif	2025-11-23 01:47:59.836891+00	2025-11-23 01:47:59.836891+00	\N
+c2214d6c-776f-4c50-b689-441ae66cddde	client-1	47838	Augmentation des dettes HAO	actif	creance	8bd15fba-74bf-434d-8ff3-de6d94f61ef3	4	actif	2025-11-23 01:47:59.836891+00	2025-11-23 01:47:59.836891+00	\N
+78d74c80-e49c-432e-93bd-b76dfa394b87	client-1	2901	Dépréciations d'usufruit temporaire	actif	immobilisation	20580c48-55bc-48b7-beb8-9a6fa1787097	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+5370e0c2-1be0-4151-9538-215fce86ee89	client-1	2902	Dépréciations des immobilisations destinées à la vente provenant de dons et legs non	actif	immobilisation	20580c48-55bc-48b7-beb8-9a6fa1787097	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+758d0c47-c79d-44ae-9d88-f264de4a4d7e	client-1	2912	Dépréciations des brevets, licences, concessions et droits similaires	actif	immobilisation	a26a628a-73b4-4073-ae8e-75b07c964b24	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+06868035-1e6a-47f1-a40f-7e744a3386fd	client-1	2913	Dépréciations des logiciels et sites internet	actif	immobilisation	a26a628a-73b4-4073-ae8e-75b07c964b24	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+ab906306-d650-49b6-97ba-dfd057eb73f9	client-1	3351	Emballages perdus	actif	stock	e09da26c-c7ac-45c6-88da-49f85868ad0d	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+7353253b-1ebf-4d78-a798-6029e007c62e	client-1	3352	Emballages récupérables non identifiables	actif	stock	e09da26c-c7ac-45c6-88da-49f85868ad0d	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+a28a83a2-527a-4cea-ae76-4bebe44967a8	client-1	3353	Emballages à usage mixte	actif	stock	e09da26c-c7ac-45c6-88da-49f85868ad0d	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+ea7a731e-a349-4309-8e76-1edb930e5332	client-1	3358	Autres emballages	actif	stock	e09da26c-c7ac-45c6-88da-49f85868ad0d	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+f1770aa4-de59-4ec7-bd5e-232a9b278fb0	client-1	3631	Animaux	actif	stock	ce24bef2-972d-42f7-a4a1-65be9faa4967	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+d3370d6f-97cf-401d-8018-12b733cd8914	client-1	3632	Végétaux	actif	stock	ce24bef2-972d-42f7-a4a1-65be9faa4967	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+b06456c9-c1f7-47ca-82d9-361a0ce520f6	client-1	3638	Autres stocks (activités annexes)	actif	stock	ce24bef2-972d-42f7-a4a1-65be9faa4967	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+24a01051-f09e-454d-9f68-a61e566902f0	client-1	3771	Stock en consignation	actif	stock	5cb5ea74-48d7-49af-b9e0-501bf4e97bd6	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+f92836ce-7566-4d6e-a8cc-a2b6b907965d	client-1	3772	Stock en dépôt	actif	stock	5cb5ea74-48d7-49af-b9e0-501bf4e97bd6	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+6b51bd2c-04a6-41f6-95f7-b9e29699a4ec	client-1	4011	Fournisseurs	passif	dette	0f9b50f2-35af-472e-baec-0359e27464c3	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+e017afc0-57b4-485a-a847-d51936925c93	client-1	4013	Fournisseurs sous-traitants	passif	dette	0f9b50f2-35af-472e-baec-0359e27464c3	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+67707b39-6cd5-4b88-bd03-3eb13f40b9de	client-1	4016	Fournisseurs, réserve de propriété	passif	dette	0f9b50f2-35af-472e-baec-0359e27464c3	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+2f0bdf42-b8d6-4ea7-8005-39e0863955df	client-1	4017	Fournisseurs, retenues de garantie	passif	dette	0f9b50f2-35af-472e-baec-0359e27464c3	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+4f272d85-2aac-44a7-8e54-e8ccd2fae0f5	client-1	4021	Fournisseurs, effets à payer	passif	dette	e8f43182-9ca1-4f9d-943d-ab71ddeb25b3	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+35b67763-425a-45ce-abfd-ceeaf9507138	client-1	4023	Fournisseurs sous-traitants, effets à payer	passif	dette	e8f43182-9ca1-4f9d-943d-ab71ddeb25b3	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+ff628dbe-785b-460a-9d61-978c478ead45	client-1	4081	Fournisseurs	passif	dette	12ed7c70-1c8b-4126-a83e-69434df9ad4b	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+984fff00-9897-47ae-aa9c-eee6089ff1f1	client-1	4083	Fournisseurs sous-traitants	passif	dette	12ed7c70-1c8b-4126-a83e-69434df9ad4b	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+4feba38e-ff90-4c7e-924e-d0a2dd77d804	client-1	4086	Fournisseurs, intérêts courus	passif	dette	12ed7c70-1c8b-4126-a83e-69434df9ad4b	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+c90fd852-2b78-4b93-98cb-ad9f43d48d02	client-1	4091	Fournisseurs avances et acomptes versés	passif	dette	b26c7d65-53d8-496f-bd14-18c5b7cb414d	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+1f24f27b-4538-4d9c-b64a-ab2ac22650eb	client-1	4093	Fournisseurs sous-traitants avances et acomptes versés	passif	dette	b26c7d65-53d8-496f-bd14-18c5b7cb414d	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+20e6fb6b-e7f0-41ef-9327-433e9466e1af	client-1	4094	Fournisseurs créances pour emballages et matériels à rendre	passif	dette	b26c7d65-53d8-496f-bd14-18c5b7cb414d	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+7e4610e2-9376-4191-a885-c88dcfbe051b	client-1	4098	Fournisseurs, rabais, remises, ristournes et autres avoirs à obtenir	passif	dette	b26c7d65-53d8-496f-bd14-18c5b7cb414d	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+b5fb03ce-de78-4215-980b-8e5229b4cd91	client-1	4131	Adhérents, chèques impayés	passif	dette	bbaa78c3-47ef-4901-84ce-9d6bc16945fa	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+054a133c-8e34-41a0-840e-0275f28ec15c	client-1	4132	Clients-usagers, chèques impayés	passif	dette	bbaa78c3-47ef-4901-84ce-9d6bc16945fa	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+7d81a9ff-f416-41f9-92fe-c72d52ecbc8e	client-1	4133	Adhérents, Autres valeurs impayées	passif	dette	bbaa78c3-47ef-4901-84ce-9d6bc16945fa	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+6bc14438-058a-499d-aea2-562ddca09c28	client-1	4138	Clients-usagers, autres valeurs impayées	passif	dette	bbaa78c3-47ef-4901-84ce-9d6bc16945fa	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+f6c427f7-4cc4-42a7-b89a-3ad137f3994d	client-1	4161	Adhérents cotisations litigieuses ou douteuses	passif	dette	a01068e9-b1ea-4685-af40-c5100b200b85	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+7f672326-522c-432b-bf03-72a69f67f3f3	client-1	4162	Créances litigieuses ou douteuses	passif	dette	a01068e9-b1ea-4685-af40-c5100b200b85	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+6c4560cf-f988-4fad-a8b7-cf5c9aeb4c13	client-1	4181	Adhérents, appels de fonds à établir	passif	dette	affc0aac-0e87-4397-a07a-cb21a6333b47	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+66afed34-c19b-4ec8-a3be-600bc5b15e38	client-1	4182	Clients- usagers, factures à établir	passif	dette	affc0aac-0e87-4397-a07a-cb21a6333b47	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+b3f3aa89-a4a8-4815-8e82-5df7af1e6539	client-1	4186	Adhérents. Clients-usagers, intérêts courus	passif	dette	affc0aac-0e87-4397-a07a-cb21a6333b47	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+04738327-6f29-4566-84c9-5de3b8b98c49	client-1	4191	Adhérents, avances reçues	passif	dette	9af4422e-fcb3-4308-a050-f99539bbd750	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+d3eff7df-d10b-4247-9b78-1d32275065ca	client-1	4192	Clients-usagers, avances et acomptes reçus	passif	dette	9af4422e-fcb3-4308-a050-f99539bbd750	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+29b7deb0-e398-4818-b0ec-434d9f33de25	client-1	4194	Clients-usagers, dettes pour emballages et matériels consignés	passif	dette	9af4422e-fcb3-4308-a050-f99539bbd750	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+99963395-6066-4dd1-acbd-ae13085da0ac	client-1	4198	Clients-usagers, rabais, remises, ristournes et autres avoirs à accorder	passif	dette	9af4422e-fcb3-4308-a050-f99539bbd750	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+2adedbc9-aead-43d3-915f-6d45319b012a	client-1	4212	Personnel, acomptes	passif	dette	4bcb3232-ff60-4adb-ae61-1095cdfb9a9d	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+f2dc8e65-959d-456f-a203-c4181e5c9595	client-1	4213	Frais avancés et fournitures au personnel	passif	dette	4bcb3232-ff60-4adb-ae61-1095cdfb9a9d	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+2748a3c0-043d-4710-9e9c-c5a70ad5326c	client-1	4231	Personnel, oppositions	passif	dette	fb03edc5-ab2f-4744-874d-fdfeb575eb80	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+bc6b6955-fec0-47b0-a70e-5e11d26e9a36	client-1	4232	Personnel, saisies arrêts	passif	dette	fb03edc5-ab2f-4744-874d-fdfeb575eb80	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+1241ef30-b823-466b-a4d1-177adebe12ff	client-1	4233	Personnel, avis à tiers détenteur	passif	dette	fb03edc5-ab2f-4744-874d-fdfeb575eb80	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+d3625d64-3d18-4401-a8b8-7c315d1e135d	client-1	4241	Assistance médicale	passif	dette	0204031c-8136-4fee-904b-0901b146f50e	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+736c8646-8b3d-47f7-8fca-b470c215d047	client-1	4242	Allocations familiales	passif	dette	0204031c-8136-4fee-904b-0901b146f50e	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+ae85c5b8-3534-4fb0-8ea9-623a5cd0db2c	client-1	4245	Organismes sociaux rattachés à l'entité	passif	dette	0204031c-8136-4fee-904b-0901b146f50e	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+f2d894fd-ef0a-4247-a3e7-cadc140d630e	client-1	4248	Autres œuvres sociales internes	passif	dette	0204031c-8136-4fee-904b-0901b146f50e	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+4085bd27-8214-407a-9b45-1e5a1128f528	client-1	4251	Délégués du personnel	passif	dette	7cbc6c43-88e0-4f63-838a-0a3abe9fe319	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+8eacaff5-4df3-4f21-9417-c6a7626e3629	client-1	4252	Syndicats et assimilés	passif	dette	7cbc6c43-88e0-4f63-838a-0a3abe9fe319	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+0bc0b80b-3e11-4304-9fba-d407471a7aff	client-1	4258	Autres représentants du personnel	passif	dette	7cbc6c43-88e0-4f63-838a-0a3abe9fe319	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+55855626-8986-4cbe-8eea-28ba059eb06c	client-1	4281	Personnel congés à payer	passif	dette	5cab7ff2-0e5a-479e-b513-41b47d119fa8	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+0c87e4a0-0a95-46b8-bb17-e1885ab19aa9	client-1	4286	Autres Charges à payer	passif	dette	5cab7ff2-0e5a-479e-b513-41b47d119fa8	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+dc9abf6d-e7d3-4985-802d-715c9876fa75	client-1	4287	Produits à recevoir	passif	dette	5cab7ff2-0e5a-479e-b513-41b47d119fa8	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+9912d7e0-9b03-4f02-a644-e2cb6f80614d	client-1	4311	Prestations familiales	passif	dette	678b79b5-bc39-4488-80e8-9e6f431ac43a	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+3e285c03-7e6a-4e2c-9c0c-7cb052078429	client-1	4312	Accidents de travail	passif	dette	678b79b5-bc39-4488-80e8-9e6f431ac43a	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+280150d5-c34e-4d03-b1ba-cfd221491a66	client-1	4318	Autres cotisations sociales	passif	dette	678b79b5-bc39-4488-80e8-9e6f431ac43a	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+7992f798-f278-4d7f-85c1-8e9d585abbbc	client-1	4321	Caisse de retraite obligatoire	passif	dette	0cd63ae3-4649-46c1-9da8-0dd899e26330	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+938a6d70-cb51-4be1-a7a9-5f4415fc81d6	client-1	4322	Caisse de retraite complémentaire	passif	dette	0cd63ae3-4649-46c1-9da8-0dd899e26330	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+f9200e35-0c40-4ec8-a37a-f46e052cc0a7	client-1	4328	Autres caisses de retraites	passif	dette	0cd63ae3-4649-46c1-9da8-0dd899e26330	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+eb418296-95ab-4282-9ad8-3549945801c5	client-1	4331	Mutuelle de santé	passif	dette	6c777e7c-b9e7-4cf9-ba8d-24fa5badc28f	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+38627f2f-d303-4317-be18-fa27384e599a	client-1	4332	Assurances retraite	passif	dette	6c777e7c-b9e7-4cf9-ba8d-24fa5badc28f	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+b21c21c3-0cd3-42ba-80a4-67795906858b	client-1	4333	Assurances et organismes de santé	passif	dette	6c777e7c-b9e7-4cf9-ba8d-24fa5badc28f	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+6bd4e256-14a8-4ace-90e0-935aac0fac1e	client-1	4381	Charges sociales sur gratifications à payer	passif	dette	6b7f9e8d-2bdd-4b3e-83ff-64c83a137c8f	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+74410bc4-9f01-45a4-8e2e-ebed8cc0abfc	client-1	4386	Autres charges à payer	passif	dette	6b7f9e8d-2bdd-4b3e-83ff-64c83a137c8f	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+f47ec999-f0a4-4374-81b6-552849e1d31e	client-1	4387	Produits à recevoir	passif	dette	6b7f9e8d-2bdd-4b3e-83ff-64c83a137c8f	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+81f1ac68-5cf7-4daf-b887-1d7d8743a161	client-1	4421	impôts et taxes d'Etal	passif	dette	b9590d9c-6acc-4cd5-aa45-eeb94ddc6325	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+267a4f35-18e8-4d2a-a223-14162b682ea8	client-1	4422	Impôts et taxes pour les collectivités publiques	passif	dette	b9590d9c-6acc-4cd5-aa45-eeb94ddc6325	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+b10bedd9-c997-455f-9913-0e823511e89d	client-1	4423	Impôts et taxes recouvrables sur des obligataires	passif	dette	b9590d9c-6acc-4cd5-aa45-eeb94ddc6325	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+778f8455-394e-476d-8a3a-0d16bf3be392	client-1	4424	Impôts et taxes recouvrables sur des adhérents et autres	passif	dette	b9590d9c-6acc-4cd5-aa45-eeb94ddc6325	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+1d996466-39df-4847-a0ff-2cb5f3bfa1a8	client-1	4426	Droits de douane	passif	dette	b9590d9c-6acc-4cd5-aa45-eeb94ddc6325	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+d8c5fd05-321f-4d3b-874e-cd028436ad2d	client-1	4428	Autres impôts et taxes	passif	dette	b9590d9c-6acc-4cd5-aa45-eeb94ddc6325	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+9eb4808f-3a56-42c5-b173-a74c7c3cb306	client-1	4471	Impôt général sur le revenu	passif	dette	32e28ed2-51f4-4fca-90a6-2f8e8cb8d6c2	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+2871a93f-6a8a-4811-b402-f4bf4ced6ca8	client-1	4472	Impôts sur salaires	passif	dette	32e28ed2-51f4-4fca-90a6-2f8e8cb8d6c2	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+8726eca9-530c-4399-9fc0-352987d271b7	client-1	4473	Contribution nationale	passif	dette	32e28ed2-51f4-4fca-90a6-2f8e8cb8d6c2	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+20548454-13ef-44fc-a637-0fba9970bf35	client-1	4474	Contribution nationale de solidarité	passif	dette	32e28ed2-51f4-4fca-90a6-2f8e8cb8d6c2	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+bd867e11-d548-48bf-b958-36a22aa4f9f1	client-1	4478	Autres impôts et contributions	passif	dette	32e28ed2-51f4-4fca-90a6-2f8e8cb8d6c2	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+572985a5-553d-4cb9-9d9b-a3545c5350dd	client-1	4486	Charges à payer	passif	dette	c4a74cdc-19b2-4fee-9217-42d5bd4721d3	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+fd80cf71-3dc9-40b7-bd03-8fdb082f81d9	client-1	4487	Produits à recevoir	passif	dette	c4a74cdc-19b2-4fee-9217-42d5bd4721d3	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+731deb2e-c5fd-4c5c-84f5-8f82ee5a68a8	client-1	4491	Etat, Subvention à recevoir	passif	dette	b249d2f8-94f2-4334-a820-394cc8f37347	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+69233eb8-dbf7-43de-89ee-43e82b85afe9	client-1	4511	Apporteurs en nature	passif	dette	2da1ebfd-eaa5-4939-9b2f-e7f40d8aeadc	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+ea26e654-02cf-411f-a80e-70fc282b20ac	client-1	4512	Apporteurs en numéraire	passif	dette	2da1ebfd-eaa5-4939-9b2f-e7f40d8aeadc	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+05ef2562-a6c9-4033-99f3-a305145978ad	client-1	4515	Adhérents, dirigeants, comptes courants	passif	dette	2da1ebfd-eaa5-4939-9b2f-e7f40d8aeadc	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+11ca6088-5622-4f25-b12c-eac4e5622a89	client-1	4521	Apporteurs en nature	passif	dette	5850c71e-9ced-4c13-a831-e8d655c3171a	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+f22ad16b-3e16-4385-8a20-81a35f709fb1	client-1	4522	Apporteurs en numéraire	passif	dette	5850c71e-9ced-4c13-a831-e8d655c3171a	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+8c80b2da-7723-4fa9-804b-d1822c477f46	client-1	4555	Fondateurs, dirigeants, comptes courants	passif	dette	bf5643b0-2521-4495-bdca-7c3d76e848d7	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+bc970340-0c24-4ce6-80b8-d12b3b8e4339	client-1	4531	Apporteurs en nature	passif	dette	d0a43762-e1fa-4818-aac3-b00f852029ae	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+3d91e13c-e985-43a4-90d4-f6ea00afe977	client-1	4532	Apporteurs en numéraire	passif	dette	d0a43762-e1fa-4818-aac3-b00f852029ae	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+19c9142d-f311-4429-b157-8cb985ed1800	client-1	4535	Membres, dirigeants, comptes courants	passif	dette	d0a43762-e1fa-4818-aac3-b00f852029ae	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+bf14d54c-5595-45ad-a750-a7e438dad392	client-1	4541	Apporteurs en nature	passif	dette	9579e035-5533-4698-abc5-0e4e6feaa652	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+322f19c6-09fc-420e-a32e-d0df64a1773b	client-1	4542	Apporteurs en numéraire	passif	dette	9579e035-5533-4698-abc5-0e4e6feaa652	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+f2c7d5f1-cdb2-479e-90e8-93c283d9e994	client-1	4545	Adhérents, dirigeants, comptes courants	passif	dette	9579e035-5533-4698-abc5-0e4e6feaa652	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+ea0b2ea2-81a0-4311-be92-b608392dc5b5	client-1	4551	Apporteurs en nature	passif	dette	bf5643b0-2521-4495-bdca-7c3d76e848d7	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+831ee022-e104-4832-8ac6-3f02e5f69e57	client-1	4552	Apporteurs en numéraire	passif	dette	bf5643b0-2521-4495-bdca-7c3d76e848d7	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+4335c719-01be-4909-9eb2-03cc1d2b97e1	client-1	4561	Congrégations religieuses et assimilées	passif	dette	8860a089-ef8f-4d93-b860-661066d05971	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+dd942168-e714-42cc-b26a-85bee53762b3	client-1	4562	et assimilés	passif	dette	8860a089-ef8f-4d93-b860-661066d05971	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+76ce8d0f-19bd-4f5d-9c69-cab52e13f70e	client-1	4571	Mécènes et assimilés	passif	dette	787b60e7-b35b-4e61-aee6-9499c20e492f	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+56c13d26-d974-4ec8-b1ef-57d14a357fa1	client-1	4572	Bénévoles et assimilés	passif	dette	787b60e7-b35b-4e61-aee6-9499c20e492f	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+7c8fe837-50ef-4c4f-8e45-0e69df65646c	client-1	4692	Bailleurs -Fonds d’administration à recevoir	actif	creance	81750469-7e99-4236-bbac-e816356cc38e	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+38a07dcf-f284-40f9-956e-f3ef91cc8bcb	client-1	4693	Etat-Fonds d'administration à recevoir	actif	creance	81750469-7e99-4236-bbac-e816356cc38e	3	actif	2025-11-23 01:47:59.584581+00	2025-11-23 01:47:59.584581+00	\N
+17b32785-0d92-43ae-8823-4c45f2c0b02b	client-1	4694	Autres tiers ou organismes de financement assimilés-Fonds d’administration à recevoir	actif	creance	81750469-7e99-4236-bbac-e816356cc38e	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+da7fd4de-a179-4b74-802d-28c8b9b2eb06	client-1	4712	Créditeurs divers	actif	creance	35241f1b-a315-4942-8415-94a6c876cdee	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+24824718-a5e4-4853-b55c-f8260c3726fc	client-1	4713	Créditeurs, dons en nature courants non consommés	actif	creance	35241f1b-a315-4942-8415-94a6c876cdee	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+11e7369f-8fcf-47d1-b5b4-c1f8cf58623a	client-1	4717	Débiteurs divers - retenues de garantie	actif	creance	35241f1b-a315-4942-8415-94a6c876cdee	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+ac4b63e8-1f02-49e3-804b-9d38f21fcb84	client-1	4719	Bons de souscription d'actions et d’obligations	actif	creance	35241f1b-a315-4942-8415-94a6c876cdee	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+4e6ce0c9-b554-49c6-9a67-b2c565f2ee01	client-1	4721	Créances sur cessions de titres de placement	actif	creance	83f78647-8364-4647-9537-2fdaef25030a	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+67f917f8-4aa0-464c-a22a-481895cf188f	client-1	4726	Versements restant à effectuer sur titres de placement non libérés	actif	creance	83f78647-8364-4647-9537-2fdaef25030a	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+a1191476-7792-4bac-b767-6ebfd775392e	client-1	4731	Subventions d'investissement à recevoir	actif	creance	6b504fa3-df73-4a56-8738-d08e4b88ad65	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+30368aff-d852-4fbd-a7a0-11f5a0a6c707	client-1	4732	Subventions d'exploitation à recevoir	actif	creance	6b504fa3-df73-4a56-8738-d08e4b88ad65	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+4e4a1aa6-fe73-44aa-b8b6-0c16731f7e36	client-1	4733	Subventions d'équilibre à recevoir	actif	creance	6b504fa3-df73-4a56-8738-d08e4b88ad65	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+baaa431b-a367-422e-8d72-6a41b1a0ff0a	client-1	4738	Autres subventions à recevoir	actif	creance	6b504fa3-df73-4a56-8738-d08e4b88ad65	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+77bb2536-0fee-40ba-a755-2ef8f33a892d	client-1	4739	Subventions à reverser	actif	creance	6b504fa3-df73-4a56-8738-d08e4b88ad65	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+64e46547-52cf-4d13-9cbb-f0bd06628d1f	client-1	4746	Compte de répartition périodique des charges	actif	creance	c25d1c13-1af5-42e0-aa4b-eb25045d8537	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+e7520b4d-d015-4b66-9b7f-07b7c3fe3c8c	client-1	4747	Compte de répartition périodique des produits	actif	creance	c25d1c13-1af5-42e0-aa4b-eb25045d8537	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+f883d3a0-6c23-4257-af73-b5c480965de0	client-1	4781	Diminution des créances d'exploitation et H AO	actif	creance	8c7acd35-dc92-4e0c-96ed-508f8d2d3f2b	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+d34060a4-2541-46a5-ae78-85c8a7297bbd	client-1	4782	Diminution des créances financières	actif	creance	8c7acd35-dc92-4e0c-96ed-508f8d2d3f2b	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+8bd15fba-74bf-434d-8ff3-de6d94f61ef3	client-1	4783	Augmentation des dettes d'exploitation et HAO	actif	creance	8c7acd35-dc92-4e0c-96ed-508f8d2d3f2b	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+054ff924-739b-44e4-8195-9fd6087eedd6	client-1	4784	Augmentation des dettes financières	actif	creance	8c7acd35-dc92-4e0c-96ed-508f8d2d3f2b	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+74a87db4-f362-44f7-9970-a5ca8565b36f	client-1	4786	Différences d évaluation sur instruments de trésorerie	actif	creance	8c7acd35-dc92-4e0c-96ed-508f8d2d3f2b	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+e7c09940-3d6c-4bcb-ac3d-f5bc6bf024f0	client-1	4788	Différences compensées par couverture de change	actif	creance	8c7acd35-dc92-4e0c-96ed-508f8d2d3f2b	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+09847f48-cd14-4685-ab05-ec159612b725	client-1	4812	Fournisseurs, immobilisations corporelles	actif	creance	ce3b2993-2bdd-45eb-b1dd-9fd5d968f9d5	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+cf42ae78-9291-4267-a5e9-07099cf9002a	client-1	4813	Versements restant à effectuer sur litres de participation et titres immobilisés non libérés	actif	creance	ce3b2993-2bdd-45eb-b1dd-9fd5d968f9d5	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+32d7be6d-a809-43ec-9215-d1ed93a252d2	client-1	4816	Fournisseurs, réserve de propriété - immobilisations	actif	creance	ce3b2993-2bdd-45eb-b1dd-9fd5d968f9d5	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+92dc74e3-d098-476c-b100-f926d8d5557d	client-1	4817	Fournisseurs, retenues de garantie- immobilisations	actif	creance	ce3b2993-2bdd-45eb-b1dd-9fd5d968f9d5	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+4b94dcbc-b545-4ef5-9d9f-dd89d0ea7203	client-1	4818	Fournisseurs, factures non parvenues - immobilisations	actif	creance	ce3b2993-2bdd-45eb-b1dd-9fd5d968f9d5	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+807f8b27-9df8-4940-8338-51498d8d939e	client-1	4851	Créances, en compte, immobilisations incorporelles	actif	creance	23d71990-8c93-4533-bdc6-8b9e0c30faa6	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+2f567d02-dc75-4d18-990e-b0a060f00cd8	client-1	4852	Créances, en compte, immobilisations corporelles	actif	creance	23d71990-8c93-4533-bdc6-8b9e0c30faa6	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+c9476f8d-47fc-40f2-a858-3a2f5be3695a	client-1	4856	Créances, immobilisations financières	actif	creance	23d71990-8c93-4533-bdc6-8b9e0c30faa6	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+f1fdb453-70e7-4949-a557-c143e8379968	client-1	4857	Créances. Retenues de garantie sur cession immobilisations	actif	creance	23d71990-8c93-4533-bdc6-8b9e0c30faa6	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+e7e0e567-af01-47cc-9640-d08f9040ed63	client-1	4858	Créances sur cession d’immobilisations, factures à établir	actif	creance	23d71990-8c93-4533-bdc6-8b9e0c30faa6	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+81e7bfe1-ba4d-417d-8e18-8af0877f3740	client-1	4861	Dettes des dons et legs d’immobilisations	actif	creance	a6bbfcf1-95e7-46fb-8876-4a20f471dcaf	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+4b2b4968-6356-4719-bdc7-e1988e922e79	client-1	4865	Créances reçues surdons et legs d’immobilisations	actif	creance	a6bbfcf1-95e7-46fb-8876-4a20f471dcaf	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+34817c50-770f-4fcc-bf12-830d1809becc	client-1	4881	Créditeurs, dons en nature HAO non consommés	actif	creance	9691b9ba-c60a-400e-8118-1141954e7f19	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+822a5983-03a4-4b52-8559-0c67e1260bc8	client-1	5011	Titres du Trésor à court terme	actif	tresorerie	5cfa8ab7-16be-473f-8009-318a6569f652	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+142ef170-77b1-41ef-9834-033bf457268d	client-1	5012	Titres d'organismes financiers	actif	tresorerie	5cfa8ab7-16be-473f-8009-318a6569f652	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+f102e06e-d7bb-40b2-ad0d-ffa8840f5507	client-1	5013	Bons de caisse à court terme	actif	tresorerie	5cfa8ab7-16be-473f-8009-318a6569f652	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+bb84da28-e986-4586-ae0f-9d18a1b0d22f	client-1	5016	Frais d'acquisition des titres de trésor et bons de caisse	actif	tresorerie	5cfa8ab7-16be-473f-8009-318a6569f652	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+181ce75a-f167-4b7d-9125-72823687b889	client-1	5022	Actions cotées	actif	tresorerie	23ce9917-7a06-4801-b817-c4e688ff4a9d	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+3d3adaee-4654-46f2-a874-5472fd72d9fb	client-1	5023	Actions non cotées	actif	tresorerie	23ce9917-7a06-4801-b817-c4e688ff4a9d	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+a44de1d3-3d72-479f-9af8-f4c580cc573a	client-1	5025	Autres actions	actif	tresorerie	23ce9917-7a06-4801-b817-c4e688ff4a9d	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+0dd612fb-611d-4ca7-8ccb-b8c9be3eb238	client-1	5026	Frais d’acquisition des actions	actif	tresorerie	23ce9917-7a06-4801-b817-c4e688ff4a9d	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+387139f1-5e34-47fc-80be-943056beafae	client-1	5032	Obligations cotées	actif	tresorerie	ff74a73e-dc8a-4ee5-ac77-f43c4e4ed0f8	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+b7c55273-f521-4024-8e2b-0ee74cc30443	client-1	5033	Obligations non cotées	actif	tresorerie	ff74a73e-dc8a-4ee5-ac77-f43c4e4ed0f8	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+dc91d3c1-3ebd-476e-8e13-85af3f040c42	client-1	5035	Autres obligations	actif	tresorerie	ff74a73e-dc8a-4ee5-ac77-f43c4e4ed0f8	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+c14c84d5-0c05-4740-88f7-faa512981ab1	client-1	5036	Frais d'acquisition des obligations	actif	tresorerie	ff74a73e-dc8a-4ee5-ac77-f43c4e4ed0f8	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+a4cce830-c4a8-4df9-8fa6-0734917abbad	client-1	5042	Bons de souscription d'actions	actif	tresorerie	801bb12c-95ed-410b-bdf8-faf1eb632abb	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+6907e528-989b-48b9-b7fa-ccac7ed88202	client-1	5043	Bons de souscription d'obligations	actif	tresorerie	801bb12c-95ed-410b-bdf8-faf1eb632abb	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+175f0b8c-d076-45e0-8a5f-eb4886029c03	client-1	5061	l itres du l'résor et bons de caisse à court terme	actif	tresorerie	e4d174de-06c5-4ea8-8b09-7abb77804868	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+86293594-4eae-47a0-a21e-afddf708f289	client-1	5062	Actions	actif	tresorerie	e4d174de-06c5-4ea8-8b09-7abb77804868	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+8edc2276-f629-4584-a0f1-60b19f72f46f	client-1	5063	Obligations	actif	tresorerie	e4d174de-06c5-4ea8-8b09-7abb77804868	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+3af78a73-544d-4dde-a764-4bbd2fa05764	client-1	5185	Chèques de voyage	actif	tresorerie	13e67900-dae6-4d4a-9e94-fd7c57188118	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+a37eebbd-d2d8-4aa3-9b14-5936b36641f4	client-1	5187	Intérêts échus des obligations	actif	tresorerie	13e67900-dae6-4d4a-9e94-fd7c57188118	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+114abd2d-84a1-427d-a2b6-e31756fd58d7	client-1	5215	Banques en devises	actif	tresorerie	f35f742b-38d8-4eee-8f17-aeb7fcb810fc	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+9afb6d1f-3d67-47fc-8d6d-86de939afa16	client-1	5261	Banque, intérêts courus charges à payer	actif	tresorerie	7ba65c5e-ef3f-470f-a8c3-afec84b73cdc	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+7282039a-8d37-4449-83e3-5da027d14d06	client-1	5267	Banque, intérêts courus produits à recevoir	actif	tresorerie	7ba65c5e-ef3f-470f-a8c3-afec84b73cdc	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+f21417aa-7756-4e9d-bb96-e5a0849588a1	client-1	5361	Établissements financiers, intérêts courus charges à payer	actif	tresorerie	bb98bd5f-6f8c-44fb-b102-41d872a2f9f3	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+546c3af7-bed3-48e7-ae92-b7eef618cacd	client-1	5367	Établissements financiers, intérêts courus produits à recevoir	actif	tresorerie	bb98bd5f-6f8c-44fb-b102-41d872a2f9f3	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+815016cf-e513-4e53-9855-14038cbc928b	client-1	6015	1 Achats de biens et services liés à Pactivite dans l’Etat partie	charge	exploitation	4f6cf89e-8443-4df6-8c57-ec6bab7af3e4	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+da1751e3-3daf-471a-9f61-138655ee1bb6	client-1	6012	Achats de biens et services liés à P activité dans la Région	charge	exploitation	4f6cf89e-8443-4df6-8c57-ec6bab7af3e4	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+42349c41-177b-4d86-9bfa-6965ab9cba42	client-1	6013	Achats de biens et services liés à P activité hors Région	charge	exploitation	4f6cf89e-8443-4df6-8c57-ec6bab7af3e4	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+223a1616-1f64-4dc8-af85-c97be8d55c7e	client-1	6019	Rabais, Remises et Ristournes obtenus (non ventilés)	charge	exploitation	4f6cf89e-8443-4df6-8c57-ec6bab7af3e4	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+454e9d93-ef01-4498-8290-8327a18331af	client-1	6021	Achats de marchandises et matières premières dans l’Etat partie	charge	exploitation	6af1094a-9389-4cf7-97f6-c2b320590d46	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+3d021c49-c689-4c9f-bb16-c423bfac8ee2	client-1	6022	Achats de marchandises et matières premières dans la Région	charge	exploitation	6af1094a-9389-4cf7-97f6-c2b320590d46	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+e44e9ac4-9bdf-4ba0-a6b1-b7b8b19312c7	client-1	6023	Achats de marchandises et matières premières hors Région	charge	exploitation	6af1094a-9389-4cf7-97f6-c2b320590d46	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+ff616f4c-ab88-401d-ab99-af50d8637963	client-1	6025	frais sur achats de marchandises et matières ( 2 ’	charge	exploitation	6af1094a-9389-4cf7-97f6-c2b320590d46	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+97557493-133b-451e-b45d-66a2d7b688e2	client-1	6029	Rabais, Remises et Ristournes obtenus (non ventilés)	charge	exploitation	6af1094a-9389-4cf7-97f6-c2b320590d46	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+3876da88-cb6e-424b-ae12-819e5d87cff9	client-1	6031	Variations des stocks de biens et services liés à l'activité	charge	exploitation	e9eac726-88fd-4b39-8be1-7606fdd6071a	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+0d0af5d6-ca7c-4370-86aa-8abf69b77338	client-1	6032	Variations des stocks de marchandises	charge	exploitation	e9eac726-88fd-4b39-8be1-7606fdd6071a	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+a3c09ee7-de5a-41f0-a23d-17326390b333	client-1	6033	Variations des stocks de matières premières et fournitures liées	charge	exploitation	e9eac726-88fd-4b39-8be1-7606fdd6071a	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+7234c487-e5de-445a-a835-50566c1fcd15	client-1	6034	Variations des stocks d'autres approvisionnements	charge	exploitation	e9eac726-88fd-4b39-8be1-7606fdd6071a	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+921e8307-fd48-4ac2-a410-973d1846bc21	client-1	6035	Variations de stocks de dons en nature à distribuer	charge	exploitation	e9eac726-88fd-4b39-8be1-7606fdd6071a	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+1dab392a-7324-4073-869e-3de0e9fd7358	client-1	6041	Matières consommables	charge	exploitation	3f33c3d6-385a-471c-abfb-63e1840f7977	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+0f28bd6c-f7ac-40fb-a19c-169b6b5c68bd	client-1	6042	Matières combustibles	charge	exploitation	3f33c3d6-385a-471c-abfb-63e1840f7977	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+2a52a015-60d5-4f30-9d8a-85512a6cac25	client-1	6043	Produits d'entretien	charge	exploitation	3f33c3d6-385a-471c-abfb-63e1840f7977	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+c8eb1de1-ecf8-42f9-9d0f-82e1f1d86796	client-1	6045	Frais sur achats ,2) matières et fournitures consommables	charge	exploitation	3f33c3d6-385a-471c-abfb-63e1840f7977	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+ad986fc0-0958-4933-a9b6-0c6bc51728b4	client-1	6046	Fournitures de magasin	charge	exploitation	3f33c3d6-385a-471c-abfb-63e1840f7977	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+b4254dea-fefc-418d-9f9d-cba206977d20	client-1	6047	Fournitures de bureau	charge	exploitation	3f33c3d6-385a-471c-abfb-63e1840f7977	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+93a03d60-6016-43c3-a5cc-d0e64fe7ceb4	client-1	6049	Rabais, Remises et Ristournes obtenus (non ventilés)	charge	exploitation	3f33c3d6-385a-471c-abfb-63e1840f7977	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+57cd0513-b2b1-411d-b17b-2e061bf72391	client-1	6051	Fournitures non stockables -Eau	charge	exploitation	a38c6063-79e2-4af9-a60b-adbf35cd2882	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+ba4920d5-7324-4485-b34d-6d0040f34d25	client-1	6052	Fournitures non stockables - Électricité	charge	exploitation	a38c6063-79e2-4af9-a60b-adbf35cd2882	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+064144e0-67d5-4962-aff5-9a469e341274	client-1	6053	Fournitures non stockables — Autres énergies	charge	exploitation	a38c6063-79e2-4af9-a60b-adbf35cd2882	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+31c4d947-a602-42e1-ba8f-d9f148a91214	client-1	6054	Fournitures d'entretien non stockables	charge	exploitation	a38c6063-79e2-4af9-a60b-adbf35cd2882	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+1b68edb7-2511-4c07-a43a-f923b7616caf	client-1	6055	Fournitures de bureau non stockables	charge	exploitation	a38c6063-79e2-4af9-a60b-adbf35cd2882	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+bb529376-5ef9-40b7-aea5-12eb271da67c	client-1	6056	Achats de petit matériel et outillage	charge	exploitation	a38c6063-79e2-4af9-a60b-adbf35cd2882	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+2cb0be86-c0c2-4dcb-a889-07aebd39075b	client-1	6057	Achats d'études et prestations de services	charge	exploitation	a38c6063-79e2-4af9-a60b-adbf35cd2882	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+ae4b4fe5-837e-40fb-b1c8-b4fa696394af	client-1	6058	Achats de travaux, matériels et équipements	charge	exploitation	a38c6063-79e2-4af9-a60b-adbf35cd2882	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+c8d5bcc7-7e88-468e-9a5b-5b9ee34e3467	client-1	6059	Rabais. Remises et Ristournes obtenus (non ventilés)	charge	exploitation	a38c6063-79e2-4af9-a60b-adbf35cd2882	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+7b885d44-5246-4d0e-b51f-1bcd16e07542	client-1	6061	Billetteries	charge	exploitation	bd3edebf-7158-4a0a-a3e0-aec0f2615bb6	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+3f47513f-58df-49b6-898e-2b0297b984e5	client-1	6062	Tombola et autres jeux	charge	exploitation	bd3edebf-7158-4a0a-a3e0-aec0f2615bb6	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+69b1ecc9-66e6-4c1f-ae77-fa87569c5c94	client-1	6063	Bons d ' achats	charge	exploitation	bd3edebf-7158-4a0a-a3e0-aec0f2615bb6	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+15ada465-a309-4008-9205-243563c10a9a	client-1	6064	Voyages et sorties	charge	exploitation	bd3edebf-7158-4a0a-a3e0-aec0f2615bb6	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+3426e78c-4b86-4fe1-9da9-6c21a05aaf64	client-1	6068	Autres activités	charge	exploitation	bd3edebf-7158-4a0a-a3e0-aec0f2615bb6	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+94a7bc1c-bd9f-42a1-a5fc-4fa50fe7e927	client-1	6081	Emballages perdus	charge	exploitation	bb6784fe-f8c4-44f1-8146-929c17f1fde4	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+e329e6a8-7cc0-46ed-8ccb-ad5e701f602d	client-1	6082	Emballages récupérables non idk n labiés	charge	exploitation	bb6784fe-f8c4-44f1-8146-929c17f1fde4	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+0fb40f2c-7c1d-43ff-8517-277c621a52ad	client-1	6083	Emballages à usage mixte	charge	exploitation	bb6784fe-f8c4-44f1-8146-929c17f1fde4	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+b5d2c52f-7be2-4a8a-9578-de9cc9715ec3	client-1	6085	Frais sur achats <2,d’emballages	charge	exploitation	bb6784fe-f8c4-44f1-8146-929c17f1fde4	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+e7054c5b-5469-4bc7-aa20-5d08ba1b915c	client-1	6089	Rabais. Remises et Ristournes obtenus (non ventilés)	charge	exploitation	bb6784fe-f8c4-44f1-8146-929c17f1fde4	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+951f9e55-6394-4601-a288-4738c8209235	client-1	6181	Voyages et déplacements	charge	exploitation	09e9abea-3330-4217-8431-d5063415c178	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+fd56d37a-a3d8-4e34-a2e1-af5b799a52ee	client-1	6183	Transports administratifs	charge	exploitation	09e9abea-3330-4217-8431-d5063415c178	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+21802ea8-5eff-48c7-b157-ec2aa531b44c	client-1	6221	Locations de terrains	charge	exploitation	17eb7e52-7b64-4a8a-b575-b0fd33ef0d2a	3	actif	2025-11-23 01:47:59.645735+00	2025-11-23 01:47:59.645735+00	\N
+214363f8-9817-46ab-9fe6-20be52b104ed	client-1	6222	Locations de bâtiments	charge	exploitation	17eb7e52-7b64-4a8a-b575-b0fd33ef0d2a	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+f8441f83-19c5-47af-b426-28b239edd599	client-1	6223	Locations de matériels et outillages	charge	exploitation	17eb7e52-7b64-4a8a-b575-b0fd33ef0d2a	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+37c2257b-77aa-43a9-87d0-3c676cbf9205	client-1	6224	Malis sur emballages	charge	exploitation	17eb7e52-7b64-4a8a-b575-b0fd33ef0d2a	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+859660b0-e679-4ecc-ae23-bb36a0dc02ab	client-1	6225	Locations d'emballages	charge	exploitation	17eb7e52-7b64-4a8a-b575-b0fd33ef0d2a	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+ad5248f1-99b0-4ebe-bcf4-eaacb5449f8f	client-1	6226	Fermages et loyers du foncier	charge	exploitation	17eb7e52-7b64-4a8a-b575-b0fd33ef0d2a	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+fafd014b-9d2f-4f8b-8c79-9d3c090695bb	client-1	6228	Locations et charges locatives diverses	charge	exploitation	17eb7e52-7b64-4a8a-b575-b0fd33ef0d2a	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+3a642956-02ec-48bf-9494-6925f869435e	client-1	6232	Crédit-bail immobilier	charge	exploitation	44b934a9-0983-4c50-a810-67a28ccb0f7d	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+eda23e09-7ba9-4527-8f54-65906d236fa7	client-1	6233	Crédit-bail mobilier	charge	exploitation	44b934a9-0983-4c50-a810-67a28ccb0f7d	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+8af54e6b-7944-4fa9-8512-e74f5423e6cf	client-1	6234	Location-vente	charge	exploitation	44b934a9-0983-4c50-a810-67a28ccb0f7d	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+4e9050cb-b8c2-4164-ba6d-48a18af847f5	client-1	6238	Autres contrats de location-acquisition	charge	exploitation	44b934a9-0983-4c50-a810-67a28ccb0f7d	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+957a27dd-846e-49e7-999e-47f235cbd4f9	client-1	6241	Entretien et réparation des biens immobiliers	charge	exploitation	16aee7da-87f1-4d1c-913e-1bf295c4bee6	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+ce226e3b-dd99-4be2-8743-7683c7455d8a	client-1	6242	Entretien et réparation des biens mobiliers	charge	exploitation	16aee7da-87f1-4d1c-913e-1bf295c4bee6	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+d61596f1-19ef-4151-b4d4-09c90ae45433	client-1	6243	Maintenance	charge	exploitation	16aee7da-87f1-4d1c-913e-1bf295c4bee6	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+d77775cc-e299-4a54-96fe-c184e5ffbac0	client-1	6244	Charges de démantèlement et remise en état	charge	exploitation	16aee7da-87f1-4d1c-913e-1bf295c4bee6	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+29fac76d-8e18-477c-b946-c890f925888e	client-1	6248	Autres entretiens et réparation	charge	exploitation	16aee7da-87f1-4d1c-913e-1bf295c4bee6	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+617bdf07-06d4-4d45-a1d7-9607dc11acdb	client-1	6251	Assurances multirisques	charge	exploitation	f10918fb-c06d-4ae5-8ab7-fbec4b75981b	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+a41ca020-fe41-4b55-9445-53b833d44f70	client-1	6252	Assurances matériel de transport	charge	exploitation	f10918fb-c06d-4ae5-8ab7-fbec4b75981b	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+ec4ea088-3307-4b9b-81c4-fa120a723fc5	client-1	6253	Assurances risques d'exploitation	charge	exploitation	f10918fb-c06d-4ae5-8ab7-fbec4b75981b	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+40f6626a-bcd2-4e77-9fa9-c08b5858420d	client-1	6371	Personnel intérimaire	charge	exploitation	8b57b64f-bbfe-406d-a1a9-01a5aed9b4a2	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+fa4ba341-f825-4d8c-94ac-9346efd911f7	client-1	6372	Personnel détaché ou prêté à l'entité	charge	exploitation	8b57b64f-bbfe-406d-a1a9-01a5aed9b4a2	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+d8a2df73-33bd-41d4-b157-10a5a9f0cf54	client-1	6381	Frais de recrutement du personnel	charge	exploitation	e8b12a96-241e-421e-9e5c-5e67ab95e1ca	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+4c865f04-b4a3-44a1-a778-7111be05375c	client-1	6382	Frais de déménagement	charge	exploitation	e8b12a96-241e-421e-9e5c-5e67ab95e1ca	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+0393dba4-9ce3-4e32-bfe9-7cb69d9fdce9	client-1	6383	Réceptions	charge	exploitation	e8b12a96-241e-421e-9e5c-5e67ab95e1ca	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+72b4a2f0-1c80-4168-9d55-491db074f214	client-1	6384	Missions	charge	exploitation	e8b12a96-241e-421e-9e5c-5e67ab95e1ca	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+f5cd4b24-a469-4f7c-8900-e99a04ece026	client-1	6385	Charges de copropriété	charge	exploitation	e8b12a96-241e-421e-9e5c-5e67ab95e1ca	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+d80f40f1-8017-442e-877a-690962573408	client-1	6388	Charges externes diverses	charge	exploitation	e8b12a96-241e-421e-9e5c-5e67ab95e1ca	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+b91668cd-9d38-4b73-8724-6c84cbdc92cd	client-1	6461	Droits de mutation	charge	exploitation	0d139239-e37b-45f9-b2e8-5d4d15d9efe7	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+3fec284a-2446-43bc-beb3-e14be6526076	client-1	6462	Droits de timbre	charge	exploitation	0d139239-e37b-45f9-b2e8-5d4d15d9efe7	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+70c8bd2b-25c4-450b-a6ef-732261f6f578	client-1	6464	Vignettes	charge	exploitation	0d139239-e37b-45f9-b2e8-5d4d15d9efe7	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+5faad1f4-282c-4cf8-8c9c-26d61e101dfe	client-1	6468	Autres droits d’enregistrement	charge	exploitation	0d139239-e37b-45f9-b2e8-5d4d15d9efe7	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+5fc5ffe7-ec70-4754-81e5-d4167c8de7be	client-1	6471	Pénalités d'assiette, impôts directs	charge	exploitation	2743721c-7f38-4e5b-833f-fbfb8b12ea35	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+34dee04f-d86f-45e6-95ab-ff6023202871	client-1	6472	Pénalités d'assiette, impôts indirects	charge	exploitation	2743721c-7f38-4e5b-833f-fbfb8b12ea35	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+df9864b1-96d3-4f36-9886-825f089c2a97	client-1	6473	Pénalités de recouvrement, impôts directs	charge	exploitation	2743721c-7f38-4e5b-833f-fbfb8b12ea35	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+14032e36-1be3-4acb-90bc-2a7cbfdb60f2	client-1	6474	Pénalités de recouvrement, impôts indirects	charge	exploitation	2743721c-7f38-4e5b-833f-fbfb8b12ea35	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+f78ec1e7-ccc4-4805-b726-9c5a9cd333f3	client-1	6478	Autres pénalités et amendes fiscales	charge	exploitation	2743721c-7f38-4e5b-833f-fbfb8b12ea35	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+eb3c4cc8-6261-4e51-a2ab-bcd91e5f34f9	client-1	6511	Clients-usagers	charge	exploitation	442d247a-d8b6-4652-9485-b6c5949f4762	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+5f97910a-f724-495b-98fc-c47641a910e5	client-1	6512	Adhérents	charge	exploitation	442d247a-d8b6-4652-9485-b6c5949f4762	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+62f3f667-00a2-4ee8-a384-2e2a3e983d18	client-1	6515	Autres débiteurs	charge	exploitation	442d247a-d8b6-4652-9485-b6c5949f4762	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+87a9b0d6-4584-4ae4-91fc-37cc5eeeaf5c	client-1	6541	Dons en nature courants à distribuer non affectés	charge	exploitation	e69d4de7-b641-45dd-99ed-8c9422797e52	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+afcc9e65-2d23-471e-b943-51ba4c2052d0	client-1	6545	Dons en nature courants à distribuer affectés	charge	exploitation	e69d4de7-b641-45dd-99ed-8c9422797e52	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+bbee5066-9f9f-4f3c-ad4c-eb013ed475d5	client-1	6591	Provisions sur risques à court terme	charge	exploitation	c488e589-ccf3-4172-9ae9-3e5020fc47cf	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+1608ffc4-c846-4823-b045-f2e3ea1c9daf	client-1	6593	Charges pour dépréciations sur stocks	charge	exploitation	c488e589-ccf3-4172-9ae9-3e5020fc47cf	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+08cc7460-0e26-4b97-8b20-5d2b83c732ec	client-1	6594	Charges pour dépréciations sur créances	charge	exploitation	c488e589-ccf3-4172-9ae9-3e5020fc47cf	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+33febbb7-83de-4017-832b-04b899065c33	client-1	6598	Autres charges pour dépréciations et provisions pour risques à court terme	charge	exploitation	c488e589-ccf3-4172-9ae9-3e5020fc47cf	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+2ff73ca3-dc9f-4541-a084-d032645d65a5	client-1	6611	Appointements salaires et commissions	charge	financier	c4cfb5f4-a1dd-43c1-8d70-124a06cc48d6	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+b27072a1-56bd-4c20-917e-6626d0253676	client-1	6612	Primes et gratifications	charge	financier	c4cfb5f4-a1dd-43c1-8d70-124a06cc48d6	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+e427d5db-bbd1-43e6-b4bf-f1f6484b4891	client-1	6613	Conges payés	charge	financier	c4cfb5f4-a1dd-43c1-8d70-124a06cc48d6	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+d1462db3-3d60-45b2-ac32-dd9ef950ae51	client-1	6614	Indemnités de préavis et de licenciement	charge	financier	c4cfb5f4-a1dd-43c1-8d70-124a06cc48d6	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+dc0e9cfe-ee76-4d95-bad2-2a267fd83db7	client-1	6615	Indemnités de maladie versées aux travailleurs	charge	financier	c4cfb5f4-a1dd-43c1-8d70-124a06cc48d6	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+9a2b493e-8743-4b10-882b-10d590877059	client-1	6616	Supplément familial	charge	financier	c4cfb5f4-a1dd-43c1-8d70-124a06cc48d6	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+77c32dfa-3fc0-46e3-8f6b-f61ee0c0d9b6	client-1	6617	Avantages en nature	charge	financier	c4cfb5f4-a1dd-43c1-8d70-124a06cc48d6	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+045a5601-e9a1-4f92-b2e4-e929b74b9817	client-1	6618	Autres rémunérations directes	charge	financier	c4cfb5f4-a1dd-43c1-8d70-124a06cc48d6	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+b6823233-0b94-46d6-82e2-26c1c50ea3ec	client-1	6621	Appointements salaires et commissions	charge	financier	575ce81c-489d-47b0-be64-ede9dd35c738	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+042f458f-46fa-45e5-838f-319117a251a0	client-1	6771	Pertes sur cessions de titres de placement	charge	financier	42de24e5-1e8a-473c-976a-e237a8aa570e	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+7f45f38b-e7c5-49d9-8838-3607ee415c33	client-1	6781	sur rentes viagères	charge	financier	edde2b0a-cdd7-40dd-ae7f-2c6809036c08	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+0abd575d-a869-4987-8e72-3e9136297951	client-1	6782	sur opérations financières	charge	financier	edde2b0a-cdd7-40dd-ae7f-2c6809036c08	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+54b753df-b186-443a-91fc-8d7a99998266	client-1	6791	sur risques financiers	charge	financier	a605d36b-7c0f-4514-95be-041921ccb79e	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+8a5617e4-be0a-4ff8-acaa-90080add8e5c	client-1	6795	sur titres de placement	charge	financier	a605d36b-7c0f-4514-95be-041921ccb79e	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+a921c95d-8bf4-479e-82f1-9174f663f5af	client-1	6798	Autres charges pour dépréciations et provisions pour risques à court terme financières	charge	financier	a605d36b-7c0f-4514-95be-041921ccb79e	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+7683fbe5-0e96-4204-8612-72403627e761	client-1	6812	Dotations aux amortissements des immobilisations incorporelles	charge	exploitation	363fbe37-8cef-4725-a5fe-1a7b2e3b3107	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+9ddc534e-8954-4747-a0ac-069d4606cf25	client-1	6813	Dotations aux amortissements des immobilisations corporelles	charge	exploitation	363fbe37-8cef-4725-a5fe-1a7b2e3b3107	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+3d688ace-d36a-4a14-a2b8-da895ed4b753	client-1	6911	Dotations aux provisions pour risques et charges	charge	exploitation	199e12c6-c18f-417c-9d9c-c8723f1065af	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+9c0bbbca-86ac-47d0-9ae7-cef0eb7964fc	client-1	6913	Dotations aux dépréciations des immobilisations incorporelles	charge	exploitation	199e12c6-c18f-417c-9d9c-c8723f1065af	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+02fa80b8-8bc1-4eaf-a6cf-7ff67ac637b1	client-1	6914	Dotations aux dépréciations des immobilisations corporelles	charge	exploitation	199e12c6-c18f-417c-9d9c-c8723f1065af	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+077c7432-3edf-42ea-84f6-f0e3d0128c23	client-1	6951	Dotations aux dépréciations d*usufruit temporaire	charge	exploitation	bee60b91-7db7-43b5-9063-c79a225af98c	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+8c77b4c0-2d0f-419f-8bd9-d94c225e6b3e	client-1	6952	non encore reçus Dotations aux dépréciations d'immobilisations destinées à la vente provenant des dons et	charge	exploitation	bee60b91-7db7-43b5-9063-c79a225af98c	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+0eafa3fe-d3b8-457b-8e15-c088b0395fe9	client-1	6971	Dotations aux provisions pour risques et charges	charge	exploitation	9366b37c-0f2f-4d67-b51c-bd66e515b958	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+4cdb55ae-6cf9-40f7-bbb0-8825fc1d9a3e	client-1	6972	Dotations aux dépréciations des immobilisations financières	charge	exploitation	9366b37c-0f2f-4d67-b51c-bd66e515b958	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+99b9313e-f98f-4b35-8a1e-9db7a47b6949	client-1	7041	Dons	produit	exploitation	07b38608-2cd0-4e49-94f7-12000658c4f7	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+c0222b2a-566b-4d0b-928b-d74b19914ae3	client-1	7042	Legs	produit	exploitation	07b38608-2cd0-4e49-94f7-12000658c4f7	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+301a3668-7a93-4e4a-a4a4-0d055a67077e	client-1	7043	Deniers du culte	produit	exploitation	07b38608-2cd0-4e49-94f7-12000658c4f7	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+c3a884d3-3aa1-400d-8d7b-04e2eb251961	client-1	7044	Zakat, Dîme, quête et assimilées	produit	exploitation	07b38608-2cd0-4e49-94f7-12000658c4f7	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+67ae60b8-83e1-4989-b3c9-454d8ff59c41	client-1	7045	Célébrations	produit	exploitation	07b38608-2cd0-4e49-94f7-12000658c4f7	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+d6e3ed39-6e7c-4174-b792-c19791727d46	client-1	7046	Mécénats	produit	exploitation	07b38608-2cd0-4e49-94f7-12000658c4f7	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+f2d32000-a6a6-4504-a4c9-7271d57e3f16	client-1	7047	Parrainage	produit	exploitation	07b38608-2cd0-4e49-94f7-12000658c4f7	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+75ab1d25-2c29-4100-88e5-67da2e23f7ff	client-1	7048	Autres revenus liés à la générosité	produit	exploitation	07b38608-2cd0-4e49-94f7-12000658c4f7	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+45a24ef0-2ce2-4aed-9a08-932987d82e33	client-1	7051	Ventes marchandises	produit	exploitation	b2fc0115-c91f-41f6-9edc-1f54272d978b	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+b3615251-df07-475b-9d22-6b4fdeee434e	client-1	7052	Services vendus	produit	exploitation	b2fc0115-c91f-41f6-9edc-1f54272d978b	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+72445e80-8b63-4513-84e8-b3fbe8973c02	client-1	7053	Ventes de produits finis	produit	exploitation	b2fc0115-c91f-41f6-9edc-1f54272d978b	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+71f22274-b533-4da6-831d-7e8532d67bd9	client-1	7054	Ventes de produits intermédiaires	produit	exploitation	b2fc0115-c91f-41f6-9edc-1f54272d978b	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+91454c1f-7492-4dda-acd6-d8a06914cfff	client-1	7055	Ventes de produits résiduels	produit	exploitation	b2fc0115-c91f-41f6-9edc-1f54272d978b	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+1dbae299-077d-4045-beec-73f00e27b9c5	client-1	7081	Ventes de dons en nature	produit	exploitation	76851780-016f-4f2a-8549-b7832aa2c98d	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+e4c2ad8e-d91b-4098-8f00-22993fa902e3	client-1	7082	Revenus d'usufruit	produit	exploitation	76851780-016f-4f2a-8549-b7832aa2c98d	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+82e4bd79-1de0-4126-864a-c20aa7045a92	client-1	7542	Dons en nature courants reçus à distribuer	produit	exploitation	932146ef-d6f1-4578-a3d7-0dfc4dfa11fa	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+f6bfc58f-daf9-409d-b0f2-76b2d3337b23	client-1	7582	Indemnités d'assurances reçues	produit	exploitation	b0218b4d-cb26-4d0b-9e45-879686670107	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+e8943fb0-7534-4147-80a7-320d1bd1606a	client-1	7583	Abandons de frais par les bénévoles	produit	exploitation	b0218b4d-cb26-4d0b-9e45-879686670107	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+f1413881-5729-4bd9-8566-292672b1ffec	client-1	7588	Autres produits divers	produit	exploitation	b0218b4d-cb26-4d0b-9e45-879686670107	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+c5738074-3f0a-4183-91a6-de1aabd50813	client-1	7591	Reprises provisions sur risques à court terme	produit	exploitation	77078759-150e-4afa-9e09-2d1ad42dcee3	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+1ce8a57a-b507-43f3-a2bb-3cb3c6677f26	client-1	7593	Reprises de charges pour dépréciations sur stocks	produit	exploitation	77078759-150e-4afa-9e09-2d1ad42dcee3	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+05c5708f-0623-4578-9dac-3fbcf6985be9	client-1	7594	Reprises de charges pour dépréciations sur créances	produit	exploitation	77078759-150e-4afa-9e09-2d1ad42dcee3	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+cfadb47e-d99f-489a-8ba7-bd355562f1c6	client-1	7598	Autres reprises de charges pour dépréciations et provisions pour risques à court terme	produit	exploitation	77078759-150e-4afa-9e09-2d1ad42dcee3	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+5f0a1ffb-6e25-4191-8ee3-043e8e984139	client-1	7712	Intérêts de prêts	produit	financier	40748122-cc1a-49eb-963b-6c489fef133b	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+0778939c-893a-4919-9656-9c77d73358bb	client-1	7713	Intérêts sur créances diverses	produit	financier	40748122-cc1a-49eb-963b-6c489fef133b	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+2af3641d-cdf0-40fd-a5e5-0643765e7200	client-1	7721	Revenus des titres de participation	produit	financier	7bcc6ab5-520c-441d-8775-97523ffb226f	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+39e4092d-d9f8-4d82-ba40-e754214f7ee4	client-1	7722	Revenus autres titres immobilisés	produit	financier	7bcc6ab5-520c-441d-8775-97523ffb226f	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+8df76791-651f-46eb-8f1d-34154f8146de	client-1	7745	Revenus des obligations	produit	financier	d9fdf1b4-5b5e-4b89-8ad9-c56c3b9da39d	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+572c34d2-b165-467a-a641-2a60f8c12e97	client-1	7746	Revenus des titres de placement	produit	financier	d9fdf1b4-5b5e-4b89-8ad9-c56c3b9da39d	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+4be58029-41e7-4c89-8afc-49ee8f1b9d2f	client-1	7747	Revenus des dépôts à terme et opérations assimilées	produit	financier	d9fdf1b4-5b5e-4b89-8ad9-c56c3b9da39d	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+83e44290-95c1-48ed-895e-e5a1228c1040	client-1	7748	Autres revenus de placement	produit	financier	d9fdf1b4-5b5e-4b89-8ad9-c56c3b9da39d	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+172acdb3-f7b7-4fae-a13e-6e6a8bb49173	client-1	7781	Gains sur rentes viagères	produit	financier	0b10bbd3-1cdd-4a23-b5bb-0ab0bd89d03b	3	actif	2025-11-23 01:47:59.695308+00	2025-11-23 01:47:59.695308+00	\N
+e9ef5446-66e1-4b1e-acf7-3d3597941429	client-1	8311	Dons en nature H.A.O. non affectés	resultat	autre	6582b72a-71bc-4037-bb1d-0f7b8b08e68a	3	actif	2025-11-23 01:47:59.753492+00	2025-11-23 01:47:59.753492+00	\N
+fcb09e30-a75b-49ed-8ff6-d60cf02af054	client-1	8315	Dons en nature H.A.O. affectés	resultat	autre	6582b72a-71bc-4037-bb1d-0f7b8b08e68a	3	actif	2025-11-23 01:47:59.753492+00	2025-11-23 01:47:59.753492+00	\N
+76b1546f-355a-47bd-88b4-d984e45c8749	client-1	8411	Dons en nature HAO vendus	resultat	autre	b3e4fc5f-bdd3-4894-aea8-13a17871ab81	3	actif	2025-11-23 01:47:59.753492+00	2025-11-23 01:47:59.753492+00	\N
+ed9cca32-d529-4655-ad98-d6b76fb4c8cd	client-1	8412	Prestations de services en nature HAO	resultat	autre	b3e4fc5f-bdd3-4894-aea8-13a17871ab81	3	actif	2025-11-23 01:47:59.753492+00	2025-11-23 01:47:59.753492+00	\N
+2e83c833-8bba-4456-bef9-30686a805d1d	client-1	8415	Dons en nature HAO à distribuer	resultat	autre	b3e4fc5f-bdd3-4894-aea8-13a17871ab81	3	actif	2025-11-23 01:47:59.753492+00	2025-11-23 01:47:59.753492+00	\N
+\.
+
+
+--
+-- Data for Name: parametres_referentiels; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.parametres_referentiels (id, client_id, categorie, code, libelle, description, ordre, actif, modifiable, created_at, updated_at, created_by) FROM stdin;
+e4e06608-0235-4688-bc07-82195e8f67c1	client-1	compte_type	actif	Actif	\N	1	t	f	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+6fdae240-fcc4-45f6-926b-1c0e0d603a04	client-1	compte_type	passif	Passif	\N	2	t	f	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+53c2286c-ae0a-4f45-9809-cf6a69bad76b	client-1	compte_type	charge	Charge	\N	3	t	f	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+d67f4dde-3996-4105-8cdd-83d4ab17fa9b	client-1	compte_type	produit	Produit	\N	4	t	f	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+ef18842c-7cfb-4c67-ad34-345b17bf67fe	client-1	compte_type	resultat	Résultat	\N	5	t	f	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+b06d5724-92a1-4186-8947-b16202c51ee6	client-1	compte_categorie	immobilisation	Immobilisation	\N	1	t	f	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+445eeab8-79b7-49ee-b455-cabde64cce76	client-1	compte_categorie	stock	Stock	\N	2	t	f	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+f54e1da7-ac94-4502-af4a-40ea0ad82a4e	client-1	compte_categorie	creance	Créance	\N	3	t	f	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+b506d375-eb69-41c1-acfb-8b64283f2282	client-1	compte_categorie	tresorerie	Trésorerie	\N	4	t	f	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+286dcc78-8c53-418e-a5dc-7bba5ebfded9	client-1	compte_categorie	dette	Dette	\N	5	t	f	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+02ee4522-36af-4ff8-a951-5a1a0b86642f	client-1	compte_categorie	capital	Capital	\N	6	t	f	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+522517ae-c96f-44bf-b714-703ec85135ed	client-1	compte_categorie	exploitation	Exploitation	\N	7	t	f	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+3c8ab022-cc58-442c-aa9d-f5be60cc6490	client-1	compte_categorie	financier	Financier	\N	8	t	f	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+11dc1e4a-5304-4209-ae2c-28ba91dc55e2	client-1	compte_categorie	exceptionnel	Exceptionnel	\N	9	t	f	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+de800032-d162-45f5-b7aa-735ed790361c	client-1	compte_categorie	autre	Autre	\N	10	t	f	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+3825ff8b-4be0-4b11-a567-00a2bd38e097	client-1	structure_type	entite	Entité	\N	1	t	f	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+582e4fcc-505b-4bc5-8267-c33d61d4a1d6	client-1	structure_type	service	Service	\N	2	t	f	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+68dbd0e3-d227-48c1-bd96-aedc8149e72d	client-1	structure_type	centre_cout	Centre de coût	\N	3	t	f	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+c338c8a0-20d0-4fea-9072-39bc94793fca	client-1	structure_type	direction	Direction	\N	4	t	f	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+8ca6aea9-e077-4b1d-8ad8-eb79430920ed	client-1	source_financement	budget_etat	Budget État	\N	1	t	t	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+db61f0ab-e193-40f9-b429-e601fb166481	client-1	source_financement	fonds_propres	Fonds propres	\N	2	t	t	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+d29570df-b4d7-4957-85e6-0c3d1a419086	client-1	source_financement	subvention	Subvention	\N	3	t	t	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+04cf82ae-6190-4a94-81e8-fc82bfb34ab9	client-1	source_financement	emprunt	Emprunt	\N	4	t	t	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+078c5317-9bcf-4579-aafe-d9ea2052bff3	client-1	source_financement	partenaire	Partenaire	\N	5	t	t	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+7e9cea3c-d54c-4a49-8b1d-5de513c4f61b	client-1	statut_general	actif	Actif	\N	1	t	f	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+28139b46-7c70-4266-9bfb-35b60652c623	client-1	statut_general	inactif	Inactif	\N	2	t	f	2025-10-18 21:40:42.311652+00	2025-10-18 21:40:42.311652+00	\N
+6788b408-90f6-4ed0-bc29-668edf966179	client-1	compte_categorie	test	test		0	t	t	2025-10-18 21:53:41.325955+00	2025-10-18 21:53:41.325955+00	282c8ec5-ecbb-44cf-8810-09e566280cae
+bb1aabc9-1e07-464d-96b1-87fb1b1b2c18	client-1	type_projet	infrastructure	Infrastructure	Projets d'infrastructure et équipements	1	t	t	2025-10-18 22:09:44.836406+00	2025-10-18 22:09:44.836406+00	\N
+5f33a1e2-2cae-4dfa-8277-6e9caecdf1cf	client-1	type_projet	formation	Formation	Projets de formation et renforcement des capacités	2	t	t	2025-10-18 22:09:44.836406+00	2025-10-18 22:09:44.836406+00	\N
+94366b44-f388-483c-ba29-f9df271beb57	client-1	type_projet	sante	Santé	Projets du secteur santé	3	t	t	2025-10-18 22:09:44.836406+00	2025-10-18 22:09:44.836406+00	\N
+d33f86b7-7ee0-4b4a-a621-b718992a121b	client-1	type_projet	education	Éducation	Projets du secteur éducation	4	t	t	2025-10-18 22:09:44.836406+00	2025-10-18 22:09:44.836406+00	\N
+9507f123-742f-45da-b8d6-4112a75c0ce3	client-1	type_projet	autre	Autre	Autres types de projets	5	t	t	2025-10-18 22:09:44.836406+00	2025-10-18 22:09:44.836406+00	\N
+3bd33611-b1a3-4d28-9ff8-45070ede8bc3	client-1	statut_projet	planifie	Planifié	Projet en phase de planification	1	t	t	2025-10-18 22:09:44.836406+00	2025-10-18 22:09:44.836406+00	\N
+ef64d4f9-45c9-47f7-abc0-88f7bc2748b1	client-1	statut_projet	en_cours	En cours	Projet en cours d'exécution	2	t	t	2025-10-18 22:09:44.836406+00	2025-10-18 22:09:44.836406+00	\N
+211faed3-facf-4ac1-a4ab-18e576a2cdfc	client-1	statut_projet	en_attente	En attente	Projet en attente de décision ou déblocage	3	t	t	2025-10-18 22:09:44.836406+00	2025-10-18 22:09:44.836406+00	\N
+8e0f5754-9deb-4d73-aec8-f503a7ddf2f3	client-1	statut_projet	termine	Terminé	Projet terminé et clôturé	4	t	t	2025-10-18 22:09:44.836406+00	2025-10-18 22:09:44.836406+00	\N
+71fb0f48-004f-4b14-9646-9b3547aaf7bc	client-1	statut_projet	annule	Annulé	Projet annulé	5	t	t	2025-10-18 22:09:44.836406+00	2025-10-18 22:09:44.836406+00	\N
+df3f1d1d-7194-4211-911b-6d64da4b24b0	client-1	priorite_projet	haute	Haute	Priorité haute - urgent	1	t	t	2025-10-18 22:21:21.022625+00	2025-10-18 22:21:21.022625+00	\N
+15da5d0f-ac57-4363-bc1d-ef70c8409f8d	client-1	priorite_projet	moyenne	Moyenne	Priorité moyenne - standard	2	t	t	2025-10-18 22:21:21.022625+00	2025-10-18 22:21:21.022625+00	\N
+fae8ef61-fa99-4215-b774-f2bc61ee33a6	client-1	priorite_projet	basse	Basse	Priorité basse - peut attendre	3	t	t	2025-10-18 22:21:21.022625+00	2025-10-18 22:21:21.022625+00	\N
+\.
+
+
+--
+-- Data for Name: profiles; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.profiles (id, email, nom, prenom, client_id, created_at, updated_at) FROM stdin;
+282c8ec5-ecbb-44cf-8810-09e566280cae	super@agilys.com	Super	Admin	agilys-hq	2025-10-18 20:06:12.056138+00	2025-10-18 20:06:12.056138+00
+fbe0c8e3-b2c8-4165-818f-0338801b9b63	admin@portonovo.bj	Admin	Client	client-1	2025-10-18 20:06:12.898247+00	2025-10-18 20:06:12.898247+00
+4c2a63f7-bce3-4af4-ac44-7b25df3c7cc9	directeur@portonovo.bj	Directeur	Financier	client-1	2025-10-18 20:06:13.215807+00	2025-10-18 20:06:13.215807+00
+8dd5171b-d559-4636-825e-1b183a56c97c	comptable@portonovo.bj	Comptable	Test	client-1	2025-10-18 20:06:13.499343+00	2025-10-18 20:06:13.499343+00
+\.
+
+
+--
+-- Data for Name: user_roles; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.user_roles (id, user_id, role, created_at) FROM stdin;
+bea44e16-fba9-480e-8717-98f103edcf2a	282c8ec5-ecbb-44cf-8810-09e566280cae	super_admin	2025-10-18 20:06:12.651149+00
+79ac4e9c-3ebb-42b3-83a8-8d05c5e5d533	fbe0c8e3-b2c8-4165-818f-0338801b9b63	admin_client	2025-10-18 20:06:13.008943+00
+2441bbdf-dc7f-4945-9675-01281174445a	4c2a63f7-bce3-4af4-ac44-7b25df3c7cc9	directeur_financier	2025-10-18 20:06:13.286249+00
+ea135576-f3da-43dd-a0ab-3035ea4d8f53	8dd5171b-d559-4636-825e-1b183a56c97c	comptable	2025-10-18 20:06:13.572674+00
+\.
+
+
+--
+-- Name: comptes comptes_client_id_numero_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comptes
+    ADD CONSTRAINT comptes_client_id_numero_key UNIQUE (client_id, numero);
+
+
+--
+-- Name: comptes comptes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comptes
+    ADD CONSTRAINT comptes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: parametres_referentiels parametres_referentiels_client_id_categorie_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.parametres_referentiels
+    ADD CONSTRAINT parametres_referentiels_client_id_categorie_code_key UNIQUE (client_id, categorie, code);
+
+
+--
+-- Name: parametres_referentiels parametres_referentiels_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.parametres_referentiels
+    ADD CONSTRAINT parametres_referentiels_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: profiles profiles_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.profiles
+    ADD CONSTRAINT profiles_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_roles user_roles_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_roles
+    ADD CONSTRAINT user_roles_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_roles user_roles_user_id_role_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_roles
+    ADD CONSTRAINT user_roles_user_id_role_key UNIQUE (user_id, role);
+
+
+--
+-- Name: idx_comptes_client; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_comptes_client ON public.comptes USING btree (client_id);
+
+
+--
+-- Name: idx_comptes_numero; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_comptes_numero ON public.comptes USING btree (numero);
+
+
+--
+-- Name: idx_comptes_parent; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_comptes_parent ON public.comptes USING btree (parent_id);
+
+
+--
+-- Name: idx_profiles_client_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_profiles_client_id ON public.profiles USING btree (client_id);
+
+
+--
+-- Name: idx_profiles_email; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_profiles_email ON public.profiles USING btree (email);
+
+
+--
+-- Name: idx_user_roles_role; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_user_roles_role ON public.user_roles USING btree (role);
+
+
+--
+-- Name: idx_user_roles_user_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_user_roles_user_id ON public.user_roles USING btree (user_id);
+
+
+--
+-- Name: comptes update_comptes_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER update_comptes_updated_at BEFORE UPDATE ON public.comptes FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: parametres_referentiels update_parametres_referentiels_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER update_parametres_referentiels_updated_at BEFORE UPDATE ON public.parametres_referentiels FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: profiles update_profiles_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: comptes comptes_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comptes
+    ADD CONSTRAINT comptes_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id);
+
+
+--
+-- Name: comptes comptes_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comptes
+    ADD CONSTRAINT comptes_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.comptes(id) ON DELETE SET NULL;
+
+
+--
+-- Name: parametres_referentiels parametres_referentiels_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.parametres_referentiels
+    ADD CONSTRAINT parametres_referentiels_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id);
+
+
+--
+-- Name: profiles profiles_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.profiles
+    ADD CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: comptes Admins can insert comptes; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Admins can insert comptes" ON public.comptes FOR INSERT WITH CHECK ((((client_id = public.get_user_client_id(auth.uid())) AND (public.has_role(auth.uid(), 'admin_client'::public.app_role) OR public.has_role(auth.uid(), 'directeur_financier'::public.app_role) OR public.has_role(auth.uid(), 'comptable'::public.app_role))) OR public.has_role(auth.uid(), 'super_admin'::public.app_role)));
+
+
+--
+-- Name: parametres_referentiels Admins can insert referentiels; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Admins can insert referentiels" ON public.parametres_referentiels FOR INSERT WITH CHECK ((((client_id = public.get_user_client_id(auth.uid())) AND (public.has_role(auth.uid(), 'admin_client'::public.app_role) OR public.has_role(auth.uid(), 'directeur_financier'::public.app_role))) OR public.has_role(auth.uid(), 'super_admin'::public.app_role)));
+
+
+--
+-- Name: user_roles Admins can manage roles; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Admins can manage roles" ON public.user_roles TO authenticated USING (public.has_role(auth.uid(), 'super_admin'::public.app_role));
+
+
+--
+-- Name: comptes Admins can update comptes; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Admins can update comptes" ON public.comptes FOR UPDATE USING ((((client_id = public.get_user_client_id(auth.uid())) AND (public.has_role(auth.uid(), 'admin_client'::public.app_role) OR public.has_role(auth.uid(), 'directeur_financier'::public.app_role) OR public.has_role(auth.uid(), 'comptable'::public.app_role))) OR public.has_role(auth.uid(), 'super_admin'::public.app_role)));
+
+
+--
+-- Name: parametres_referentiels Admins can update referentiels; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Admins can update referentiels" ON public.parametres_referentiels FOR UPDATE USING ((((client_id = public.get_user_client_id(auth.uid())) AND (public.has_role(auth.uid(), 'admin_client'::public.app_role) OR public.has_role(auth.uid(), 'directeur_financier'::public.app_role))) OR public.has_role(auth.uid(), 'super_admin'::public.app_role)));
+
+
+--
+-- Name: comptes Super admins can delete comptes; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Super admins can delete comptes" ON public.comptes FOR DELETE USING (public.has_role(auth.uid(), 'super_admin'::public.app_role));
+
+
+--
+-- Name: parametres_referentiels Super admins can delete referentiels; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Super admins can delete referentiels" ON public.parametres_referentiels FOR DELETE TO authenticated USING (public.has_role(auth.uid(), 'super_admin'::public.app_role));
+
+
+--
+-- Name: profiles Super admins can view own client profiles; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Super admins can view own client profiles" ON public.profiles FOR SELECT USING (((id = auth.uid()) OR (public.has_role(auth.uid(), 'super_admin'::public.app_role) AND (client_id = public.get_user_client_id(auth.uid())))));
+
+
+--
+-- Name: profiles Users can update own profile; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE TO authenticated USING ((id = auth.uid()));
+
+
+--
+-- Name: comptes Users can view own client comptes; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can view own client comptes" ON public.comptes FOR SELECT USING (((client_id = public.get_user_client_id(auth.uid())) OR public.has_role(auth.uid(), 'super_admin'::public.app_role)));
+
+
+--
+-- Name: parametres_referentiels Users can view own client referentiels; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can view own client referentiels" ON public.parametres_referentiels FOR SELECT USING (((client_id = public.get_user_client_id(auth.uid())) OR public.has_role(auth.uid(), 'super_admin'::public.app_role)));
+
+
+--
+-- Name: profiles Users can view own profile; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT TO authenticated USING ((id = auth.uid()));
+
+
+--
+-- Name: user_roles Users can view their own roles; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can view their own roles" ON public.user_roles FOR SELECT TO authenticated USING ((user_id = auth.uid()));
+
+
+--
+-- Name: comptes; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.comptes ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: parametres_referentiels; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.parametres_referentiels ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: profiles; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: user_roles; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: TABLE comptes; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON TABLE public.comptes TO anon;
+GRANT ALL ON TABLE public.comptes TO authenticated;
+GRANT ALL ON TABLE public.comptes TO service_role;
+
+
+--
+-- Name: TABLE parametres_referentiels; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON TABLE public.parametres_referentiels TO anon;
+GRANT ALL ON TABLE public.parametres_referentiels TO authenticated;
+GRANT ALL ON TABLE public.parametres_referentiels TO service_role;
+
+
+--
+-- Name: TABLE profiles; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON TABLE public.profiles TO anon;
+GRANT ALL ON TABLE public.profiles TO authenticated;
+GRANT ALL ON TABLE public.profiles TO service_role;
+
+
+--
+-- Name: TABLE user_roles; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON TABLE public.user_roles TO anon;
+GRANT ALL ON TABLE public.user_roles TO authenticated;
+GRANT ALL ON TABLE public.user_roles TO service_role;
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict 6hgjQyjbeChBhEEdzsKGSPtiEJmL5mffGbQeJnE9GVkHtxT9ebfzjmxyIovNHua
+

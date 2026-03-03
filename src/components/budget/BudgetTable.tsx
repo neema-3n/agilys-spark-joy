@@ -2,6 +2,8 @@ import { useState, useMemo, Fragment } from 'react';
 import { LigneBudgetaire, Section, Programme, Action } from '@/types/budget.types';
 import { Compte } from '@/types/compte.types';
 import { Enveloppe } from '@/types/enveloppe.types';
+import { formatMontant } from '@/lib/utils';
+import { BudgetStatusBadge } from '@/components/ui/status-badge';
 import {
   Table,
   TableBody,
@@ -114,13 +116,12 @@ export const BudgetTable = ({
     () => getInitialViewMode(clientId, exerciceId)
   );
 
-  const formatMontant = (montant: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(montant);
-  };
-
+  /**
+   * Toggles the expansion state of a section in the hierarchical budget table view.
+   * If the section is currently expanded, it collapses it; otherwise, it expands it.
+   * The new state is updated in the component state and persisted to localStorage.
+   * @param sectionId - The unique identifier of the section to toggle.
+   */
   const toggleSection = (sectionId: string) => {
     const newExpanded = new Set(expandedSections);
     if (newExpanded.has(sectionId)) {
@@ -378,9 +379,7 @@ export const BudgetTable = ({
           </div>
         </TableCell>
         <TableCell>
-          <Badge variant={ligne.statut === 'actif' ? 'default' : 'secondary'}>
-            {ligne.statut}
-          </Badge>
+          <BudgetStatusBadge status={ligne.statut} />
         </TableCell>
         <TableCell>
           <DropdownMenu>
@@ -576,9 +575,7 @@ export const BudgetTable = ({
                               </Badge>
                             </TableCell>
                             <TableCell className="text-center">
-                              <Badge variant={ligne.statut === 'actif' ? 'default' : 'secondary'}>
-                                {ligne.statut}
-                              </Badge>
+                              <BudgetStatusBadge status={ligne.statut} />
                             </TableCell>
                             <TableCell>
                               <div className="flex justify-end">

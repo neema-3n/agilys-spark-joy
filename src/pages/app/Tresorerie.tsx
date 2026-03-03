@@ -3,7 +3,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Plus, Loader2, Wallet, FileText, ArrowLeftRight, CheckSquare } from 'lucide-react';
+import { Plus, Loader2, Wallet, FileText, ArrowLeftRight } from 'lucide-react';
 import { useRecettes } from '@/hooks/useRecettes';
 import { useOperationsTresorerie } from '@/hooks/useOperationsTresorerie';
 import { useComptesTresorerie } from '@/hooks/useComptesTresorerie';
@@ -90,10 +90,6 @@ const Tresorerie = () => {
               <ArrowLeftRight className="h-4 w-4 mr-2" />
               Opérations
             </TabsTrigger>
-            <TabsTrigger value="rapprochement">
-              <CheckSquare className="h-4 w-4 mr-2" />
-              Rapprochement
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="comptes" className="space-y-4">
@@ -162,18 +158,6 @@ const Tresorerie = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="rapprochement" className="space-y-4">
-            <Card>
-              <CardContent className="py-12">
-                <div className="text-center space-y-4">
-                  <CheckSquare className="h-12 w-12 mx-auto text-muted-foreground" />
-                  <p className="text-muted-foreground">
-                    Fonctionnalité de rapprochement bancaire à venir...
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
       </div>
 

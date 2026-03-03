@@ -5,7 +5,9 @@ import { SnapshotBase } from '@/components/shared/SnapshotBase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { formatMontant, formatDate } from '@/lib/snapshot-utils';
+import { formatMontant } from '@/lib/utils';
+import { formatDate } from '@/lib/snapshot-utils';
+import { BudgetStatusBadge } from '@/components/ui/status-badge';
 import { Activity, Building2, FolderOpen, GitBranch, LayoutList, Layers, Wallet } from 'lucide-react';
 
 interface LigneBudgetaireSnapshotProps {
@@ -131,9 +133,7 @@ export const LigneBudgetaireSnapshot = ({
           </div>
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Statut</p>
-            <Badge variant={ligne.statut === 'actif' ? 'default' : 'secondary'}>
-              {ligne.statut}
-            </Badge>
+            <BudgetStatusBadge status={ligne.statut} />
           </div>
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Créée le</p>

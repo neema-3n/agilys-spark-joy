@@ -1,6 +1,7 @@
 import { LigneBudgetaire, Section, Programme, Action } from '@/types/budget.types';
 import { Compte } from '@/types/compte.types';
 import { Enveloppe } from '@/types/enveloppe.types';
+import { formatMontant } from './utils';
 
 interface ExportContext {
   sections: Section[];
@@ -9,13 +10,6 @@ interface ExportContext {
   comptes: Compte[];
   enveloppes: Enveloppe[];
 }
-
-const formatMontant = (montant: number) => {
-  return new Intl.NumberFormat('fr-FR', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(montant);
-};
 
 const getSectionCode = (actionId: string, context: ExportContext) => {
   const action = context.actions.find(a => a.id === actionId);

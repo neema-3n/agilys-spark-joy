@@ -1,11 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { AlertCircle, TrendingUp } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+import { cn, formatMontant } from '@/lib/utils';
+import { BudgetAlertBadge } from '@/components/ui/status-badge';
 import type { LigneBudgetaire } from '@/types/budget.types';
 
 interface DepensesTableProps {
@@ -18,13 +17,6 @@ export const DepensesTable = ({ lignesBudgetaires }: DepensesTableProps) => {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
 
-  const formatMontant = (montant: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'decimal',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(montant);
-  };
 
   const getStatut = (ligne: LigneBudgetaire): 'depassement' | 'alert' | 'ok' => {
     if (ligne.disponible < 0) return 'depassement';
@@ -33,16 +25,6 @@ export const DepensesTable = ({ lignesBudgetaires }: DepensesTableProps) => {
     return 'ok';
   };
 
-  const getStatutBadge = (statut: 'depassement' | 'alert' | 'ok') => {
-    switch (statut) {
-      case 'depassement':
-        return <Badge variant="destructive" className="gap-1"><AlertCircle className="h-3 w-3" />Dépassement</Badge>;
-      case 'alert':
-        return <Badge variant="warning" className="gap-1"><TrendingUp className="h-3 w-3" />Alerte</Badge>;
-      default:
-        return <Badge variant="success">Normal</Badge>;
-    }
-  };
 
   const getTauxConsommation = (ligne: LigneBudgetaire) => {
     const budget = ligne.montantModifie || ligne.montantInitial;
@@ -166,7 +148,7 @@ export const DepensesTable = ({ lignesBudgetaires }: DepensesTableProps) => {
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
-                        {getStatutBadge(statut)}
+                        <BudgetAlertBadge status={statut} />
                       </TableCell>
                     </TableRow>
                   );
