@@ -2,7 +2,7 @@ import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Wallet, FileText, Receipt, BarChart3, Settings, ChevronLeft, ChevronRight, ChevronDown, Users, CreditCard, Wallet2, ShieldCheck, LineChart, TrendingUp, BookmarkCheck, ShoppingCart, DollarSign, FolderKanban, Layers, PlayCircle, Target, BookOpen } from 'lucide-react';
+import { LayoutDashboard, Wallet, FileText, Receipt, BarChart3, Settings, ChevronLeft, ChevronRight, ChevronDown, Users, CreditCard, Wallet2, BookmarkCheck, ShoppingCart, DollarSign, FolderKanban, Layers, PlayCircle, Target, BookOpen } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -23,7 +23,6 @@ const AppLayout = () => {
     'Opérations': true,
     'Trésorerie': true,
     'Comptabilité': true,
-    'Conformité': true,
     'Analyse': true,
     'Système': true
   });
@@ -38,7 +37,7 @@ const AppLayout = () => {
     pilotage: {
       label: 'Pilotage & Contrôle',
       icon: Target,
-      sections: ['Comptabilité', 'Conformité', 'Analyse', 'Système']
+      sections: ['Comptabilité', 'Analyse', 'Système']
     }
   };
 
@@ -57,10 +56,6 @@ const AppLayout = () => {
       name: 'Budget',
       href: '/app/budgets',
       icon: Wallet
-    }, {
-      name: 'Prévisions Budgétaires',
-      href: '/app/previsions',
-      icon: TrendingUp
     }]
   }, {
     title: 'Opérations',
@@ -111,14 +106,6 @@ const AppLayout = () => {
       icon: BookOpen
     }]
   }, {
-    title: 'Conformité',
-    icon: ShieldCheck,
-    items: [{
-      name: 'Contrôle Interne',
-      href: '/app/controle-interne',
-      icon: ShieldCheck
-    }]
-  }, {
     title: 'Analyse',
     icon: BarChart3,
     items: [{
@@ -129,10 +116,6 @@ const AppLayout = () => {
       name: 'Projets & Analytique',
       href: '/app/projets',
       icon: FolderKanban
-    }, {
-      name: 'Analyses Financières',
-      href: '/app/analyses',
-      icon: LineChart
     }, {
       name: 'Reporting',
       href: '/app/reporting',

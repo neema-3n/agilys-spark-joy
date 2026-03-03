@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { CalendarDays, Briefcase, Building2, BookOpen, Users, Settings as SettingsIcon, Database, Menu, Layers, Calculator } from 'lucide-react';
+import { CalendarDays, Briefcase, Building2, BookOpen, Users, Database, Menu, Layers, Calculator } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ExercicesManager } from '@/components/parametres/ExercicesManager';
@@ -23,7 +23,6 @@ const SECTION_IDS = [
   'regles-comptables',
   'referentiels',
   'utilisateurs',
-  'general',
 ] as const;
 
 type ParametreSection = (typeof SECTION_IDS)[number];
@@ -115,23 +114,6 @@ const Parametres = () => {
               Utilisateurs
             </CardTitle>
             <CardDescription>Module de gestion des utilisateurs à venir</CardDescription>
-          </CardHeader>
-        </Card>
-      )
-    },
-    {
-      id: 'general' as ParametreSection,
-      title: 'Paramètres Généraux',
-      description: 'Configuration système',
-      icon: SettingsIcon,
-      component: (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <SettingsIcon className="h-5 w-5" />
-              Paramètres Généraux
-            </CardTitle>
-            <CardDescription>Paramètres généraux à venir</CardDescription>
           </CardHeader>
         </Card>
       )
