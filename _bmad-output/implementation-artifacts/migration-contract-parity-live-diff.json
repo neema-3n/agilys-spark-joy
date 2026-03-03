@@ -1,7 +1,6 @@
 {
   "generatedAt": "1970-01-01T00:00:00.000Z",
-  "comparedEndpoints": 0,
+  "comparedEndpoints": 19,
   "diffs": [],
-  "skipped": true,
-  "skipReason": "CONTRACT_PARITY_LEGACY_BASE_URL/CONTRACT_PARITY_CURRENT_BASE_URL non configures; execution live ignoree."
+  "skipped": false
 }

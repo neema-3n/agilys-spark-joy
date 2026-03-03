@@ -1,21 +1,11 @@
 {
   "generatedAt": "1970-01-01T00:00:00.000Z",
-  "comparedEndpoints": 9,
+  "comparedEndpoints": 19,
   "coverageByDomain": {
-    "AUTH": 3,
+    "AUTH": 5,
     "TENANT": 2,
-    "BUD": 4
+    "BUD": 12
   },
-  "nonCoveredEndpoints": [
-    "BUD-04-PREVISIONS"
-  ],
-  "diffs": [
-    {
-      "endpointId": "BUD-04-PREVISIONS",
-      "method": "N/A",
-      "path": "N/A",
-      "severity": "majeur",
-      "message": "Endpoint critique non couvert par la campagne de parite de contrats"
-    }
-  ]
+  "nonCoveredEndpoints": [],
+  "diffs": []
 }

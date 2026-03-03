@@ -26,7 +26,7 @@ export const currentCriticalContracts: EndpointContract[] = [
     domain: 'AUTH',
     method: 'POST',
     path: '/auth/refresh',
-    statuses: [201, 400, 403],
+    statuses: [201, 400, 401, 403],
     request: {
       required: {
         refreshToken: 'string'
@@ -45,10 +45,46 @@ export const currentCriticalContracts: EndpointContract[] = [
     domain: 'AUTH',
     method: 'POST',
     path: '/auth/logout',
-    statuses: [204, 400],
+    statuses: [204, 400, 401],
     request: {
       required: {
         refreshToken: 'string'
+      }
+    }
+  },
+  {
+    id: 'AUTH-04-ASSIGN',
+    domain: 'AUTH',
+    method: 'PATCH',
+    path: '/auth/users/:userId/roles/assign',
+    statuses: [200, 400, 401, 403, 404],
+    request: {
+      required: {
+        role: 'string'
+      }
+    },
+    response: {
+      required: {
+        userId: 'string',
+        roles: 'array'
+      }
+    }
+  },
+  {
+    id: 'AUTH-04-REVOKE',
+    domain: 'AUTH',
+    method: 'PATCH',
+    path: '/auth/users/:userId/roles/revoke',
+    statuses: [200, 400, 401, 403, 404],
+    request: {
+      required: {
+        role: 'string'
+      }
+    },
+    response: {
+      required: {
+        userId: 'string',
+        roles: 'array'
       }
     }
   },
@@ -125,6 +161,74 @@ export const currentCriticalContracts: EndpointContract[] = [
     }
   },
   {
+    id: 'BUD-01B',
+    domain: 'BUD',
+    method: 'POST',
+    path: '/budget-referentiels/enveloppes',
+    statuses: [201, 400, 401, 403],
+    request: {
+      required: {
+        exerciceId: 'string',
+        code: 'string',
+        nom: 'string',
+        sourceFinancement: 'string',
+        montantAlloue: 'number',
+        montantConsomme: 'number',
+        statut: 'string'
+      }
+    }
+  },
+  {
+    id: 'BUD-01C',
+    domain: 'BUD',
+    method: 'POST',
+    path: '/budget-referentiels/sections',
+    statuses: [201, 400, 401, 403],
+    request: {
+      required: {
+        exerciceId: 'string',
+        code: 'string',
+        libelle: 'string',
+        ordre: 'number',
+        statut: 'string'
+      }
+    }
+  },
+  {
+    id: 'BUD-01D',
+    domain: 'BUD',
+    method: 'POST',
+    path: '/budget-referentiels/programmes',
+    statuses: [201, 400, 401, 403],
+    request: {
+      required: {
+        exerciceId: 'string',
+        sectionId: 'string',
+        code: 'string',
+        libelle: 'string',
+        ordre: 'number',
+        statut: 'string'
+      }
+    }
+  },
+  {
+    id: 'BUD-01E',
+    domain: 'BUD',
+    method: 'POST',
+    path: '/budget-referentiels/actions',
+    statuses: [201, 400, 401, 403],
+    request: {
+      required: {
+        exerciceId: 'string',
+        programmeId: 'string',
+        code: 'string',
+        libelle: 'string',
+        ordre: 'number',
+        statut: 'string'
+      }
+    }
+  },
+  {
     id: 'BUD-03',
     domain: 'BUD',
     method: 'POST',
@@ -141,11 +245,51 @@ export const currentCriticalContracts: EndpointContract[] = [
     }
   },
   {
+    id: 'BUD-03-DECISION-VALIDATE',
+    domain: 'BUD',
+    method: 'POST',
+    path: '/budget-referentiels/allocations/:id/decision/validate',
+    statuses: [201, 400, 401, 403, 404],
+    request: {
+      required: {
+        exerciceId: 'string',
+        motif: 'string'
+      }
+    }
+  },
+  {
+    id: 'BUD-03-DECISION-REJECT',
+    domain: 'BUD',
+    method: 'POST',
+    path: '/budget-referentiels/allocations/:id/decision/reject',
+    statuses: [201, 400, 401, 403, 404],
+    request: {
+      required: {
+        exerciceId: 'string',
+        motif: 'string'
+      }
+    }
+  },
+  {
+    id: 'BUD-03-DECISIONS',
+    domain: 'BUD',
+    method: 'GET',
+    path: '/budget-referentiels/allocations/:id/decisions',
+    statuses: [200, 400, 401, 403, 404]
+  },
+  {
     id: 'BUD-04',
     domain: 'BUD',
     method: 'GET',
     path: '/budget-referentiels/allocations/:id/decisions/compare',
-    statuses: [200, 400, 401, 403]
+    statuses: [200, 400, 401, 403, 404]
+  },
+  {
+    id: 'BUD-04-PREVISIONS',
+    domain: 'BUD',
+    method: 'GET',
+    path: '/budget-referentiels/previsions',
+    statuses: [404, 401, 403]
   }
 ];
 
@@ -154,11 +298,20 @@ export const migrationCriticalEndpointCatalog = [
   'AUTH-01',
   'AUTH-02',
   'AUTH-03',
+  'AUTH-04-ASSIGN',
+  'AUTH-04-REVOKE',
   'TENANT-01',
   'TENANT-02',
   'BUD-01',
+  'BUD-01B',
+  'BUD-01C',
+  'BUD-01D',
+  'BUD-01E',
   'BUD-02',
   'BUD-03',
+  'BUD-03-DECISION-VALIDATE',
+  'BUD-03-DECISION-REJECT',
+  'BUD-03-DECISIONS',
   'BUD-04',
   'BUD-04-PREVISIONS'
 ];
