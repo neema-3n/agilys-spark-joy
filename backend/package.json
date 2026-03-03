@@ -2,6 +2,7 @@
   "name": "agilys-auth-api",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@9.12.0",
   "type": "commonjs",
   "scripts": {
     "start": "node dist/main.js",

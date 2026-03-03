@@ -1,6 +1,6 @@
 # Story CC-01.05 - Commande dev unique et ports par service
 
-Status: review
+Status: done
 Epic: CC-01 - Fondations techniques migration
 Story Key: cc-01-05-commande-dev-unique-et-ports
 Created: 2026-03-02
@@ -47,7 +47,7 @@ so that l'execution locale est simple et flexible.
 
 - Story ID: `CC-01.05`
 - Story Key: `cc-01-05-commande-dev-unique-et-ports`
-- Final Status: `review`
+- Final Status: `done`
 
 ## Dev Agent Record
 
@@ -57,6 +57,9 @@ so that l'execution locale est simple et flexible.
 - `pnpm run lint` -> PASS
 - `pnpm run test` -> PASS (frontend Playwright + backend Jest)
 - Smoke test runtime: `WEB_PORT=18080 API_PORT=13001 DB_PORT=15432 pnpm dev` -> stack demarree (web/api/db)
+- Review fix: `pnpm run test:dev-command` -> PASS
+- Review fix: `pnpm run lint` -> PASS
+- Review fix: `pnpm run test` -> PASS
 
 ### Completion Notes
 
@@ -65,6 +68,9 @@ so that l'execution locale est simple et flexible.
 - Verification anti-conflit de ports ajoutee dans le script dev.
 - Runbook ajoute pour onboarding et surcharge des ports.
 - Tests automatiques dedies ajoutes pour valider defaults, overrides et conflits de ports.
+- Durcissement review: attente de readiness PostgreSQL avant lancement API.
+- Durcissement review: detection de ports localement occupes pour WEB/API.
+- Traçabilite story alignee sur la liste complete des fichiers modifies du commit.
 - DoR: PASS
 - DoD: PASS
 
@@ -76,7 +82,16 @@ so that l'execution locale est simple et flexible.
 - .env.example
 - README.md
 - docs/runbooks/local-dev-command-and-ports.md
+- pnpm-lock.yaml
+- pnpm-workspace.yaml
+- package-lock.json
+- backend/package-lock.json
+- tests/README.md
+- _bmad-output/implementation-artifacts/cc-01-04-migration-npm-vers-pnpm.md
+- _bmad-output/implementation-artifacts/cc-01-05-commande-dev-unique-et-ports.md
+- _bmad-output/implementation-artifacts/sprint-status.yaml
 
 ## Change Log
 
 - 2026-03-02: implementation CC-01.05 (commande `pnpm dev` unifiee, ports parametrables, runbook, tests, validation complete).
+- 2026-03-02: review fix - robustesse du script dev (readiness DB + port occupancy check), tests renforces et File List complete.
