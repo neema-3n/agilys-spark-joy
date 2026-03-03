@@ -10,6 +10,7 @@
     "build": "tsc -p tsconfig.build.json",
     "test": "jest --runInBand",
     "test:contracts": "jest --runInBand src/contracts/contract-parity.spec.ts",
+    "test:contracts:live": "jest --runInBand src/contracts/live-contract-parity.spec.ts",
     "test:watch": "jest --watch",
     "lint": "tsc --noEmit",
     "migrate:lot-b": "ts-node src/migration/lot-b/cli.ts"

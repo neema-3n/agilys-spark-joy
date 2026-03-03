@@ -1,0 +1,50 @@
+name: Contract Parity
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - bmad/**
+      - codex/**
+
+jobs:
+  contract-parity:
+    runs-on: ubuntu-latest
+    env:
+      CONTRACT_PARITY_LEGACY_BASE_URL: ${{ secrets.CONTRACT_PARITY_LEGACY_BASE_URL }}
+      CONTRACT_PARITY_CURRENT_BASE_URL: ${{ secrets.CONTRACT_PARITY_CURRENT_BASE_URL }}
+      CONTRACT_PARITY_TEST_EMAIL: ${{ secrets.CONTRACT_PARITY_TEST_EMAIL }}
+      CONTRACT_PARITY_TEST_PASSWORD: ${{ secrets.CONTRACT_PARITY_TEST_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint backend
+        run: pnpm --dir backend run lint
+
+      - name: Contract parity (declared contracts)
+        run: pnpm --dir backend run test:contracts
+
+      - name: Contract parity (live gate)
+        if: ${{ env.CONTRACT_PARITY_LEGACY_BASE_URL != '' && env.CONTRACT_PARITY_CURRENT_BASE_URL != '' }}
+        run: pnpm --dir backend run test:contracts:live
+
+      - name: Contract parity (live skipped)
+        if: ${{ env.CONTRACT_PARITY_LEGACY_BASE_URL == '' || env.CONTRACT_PARITY_CURRENT_BASE_URL == '' }}
+        run: echo "Live contract parity gate skipped because live base URLs are not configured."
