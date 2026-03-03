@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { hashSync } from 'bcryptjs';
+import type { DatabaseError } from 'pg';
 import { resolveAuthStorageMode } from '../auth/auth-storage-mode';
 import { PostgresService } from '../common/postgres.service';
 
@@ -40,21 +41,8 @@ export class UsersService implements OnModuleInit {
   private async ensurePostgresReady(): Promise<void> {
     if (!this.initPromise) {
       this.initPromise = (async () => {
-        await this.postgresService.query(`
-          CREATE TABLE IF NOT EXISTS public.auth_users (
-            id TEXT PRIMARY KEY,
-            email TEXT NOT NULL UNIQUE,
-            password_hash TEXT NOT NULL,
-            tenant_id TEXT NOT NULL,
-            roles TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
-            is_active BOOLEAN NOT NULL DEFAULT true,
-            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-          )
-        `);
-
         const seededUser = this.users[0];
-        await this.postgresService.query(
+        await this.runPostgresQuery(
           `
             INSERT INTO public.auth_users (id, email, password_hash, tenant_id, roles, is_active)
             VALUES ($1, $2, $3, $4, $5, true)
@@ -80,7 +68,7 @@ export class UsersService implements OnModuleInit {
     }
 
     await this.ensurePostgresReady();
-    const result = await this.postgresService.query<{
+    const result = await this.runPostgresQuery<{
       id: string;
       email: string;
       password_hash: string;
@@ -116,7 +104,7 @@ export class UsersService implements OnModuleInit {
     }
 
     await this.ensurePostgresReady();
-    const result = await this.postgresService.query<{
+    const result = await this.runPostgresQuery<{
       id: string;
       email: string;
       password_hash: string;
@@ -144,5 +132,22 @@ export class UsersService implements OnModuleInit {
       tenantId: row.tenant_id,
       roles: row.roles
     };
+  }
+
+  private async runPostgresQuery<T extends object>(
+    text: string,
+    values: unknown[] = []
+  ): Promise<{ rows: T[]; rowCount: number }> {
+    try {
+      const result = await this.postgresService.query<T>(text, values);
+      return { rows: result.rows, rowCount: result.rowCount ?? 0 };
+    } catch (error) {
+      const dbError = error as DatabaseError;
+      if (dbError.code === '42P01') {
+        throw new Error('Missing auth_users table. Run `pnpm run db:migrate` before starting auth storage in postgres mode.');
+      }
+
+      throw error;
+    }
   }
 }

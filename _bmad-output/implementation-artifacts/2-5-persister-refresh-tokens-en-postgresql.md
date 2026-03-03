@@ -1,6 +1,6 @@
 # Story 2.5 - Persister les refresh tokens en PostgreSQL
 
-Status: ready-for-dev
+Status: done
 Epic: 2 - Gouvernance d'acces, roles et isolation multi-tenant
 Story Key: 2-5-persister-refresh-tokens-en-postgresql
 Created: 2026-03-02
@@ -52,12 +52,12 @@ So that la revocation survive aux redemarrages et fonctionne en multi-instance.
 
 ## Tasks / Subtasks
 
-- [ ] Definir schema SQL et contraintes (unicite `jti`, index expiration/revocation, FK si applicables).
-- [ ] Ajouter migration SQL et script d'execution.
-- [ ] Implementer `RefreshTokenStore` PostgreSQL (save/find/revoke).
-- [ ] Adapter `AuthService` pour utiliser le store persistant.
-- [ ] Ajouter/adapter tests unitaires et integration.
-- [ ] Documenter variables d'environnement DB et prerequis locaux.
+- [x] Definir schema SQL et contraintes (unicite `jti`, index expiration/revocation, FK si applicables).
+- [x] Ajouter migration SQL et script d'execution.
+- [x] Implementer `RefreshTokenStore` PostgreSQL (save/find/revoke).
+- [x] Adapter `AuthService` pour utiliser le store persistant.
+- [x] Ajouter/adapter tests unitaires et integration.
+- [x] Documenter variables d'environnement DB et prerequis locaux.
 
 ## Dependencies / Blockers
 
@@ -83,3 +83,53 @@ So that la revocation survive aux redemarrages et fonctionne en multi-instance.
 
 - Story precedente: `/Volumes/mySD1.5/projects/agilys-spark-joy/_bmad-output/implementation-artifacts/2-1-mettre-en-place-lauth-nestjs-jwt-refresh.md`
 - Sprint status: `/Volumes/mySD1.5/projects/agilys-spark-joy/_bmad-output/implementation-artifacts/sprint-status.yaml`
+
+## Dev Agent Record
+
+### Debug Log
+
+- `pnpm --dir backend run lint` ✅
+- `pnpm --dir backend run test` ✅
+- `pnpm run db:migrate` ✅ (migration appliquee localement)
+- `AUTH_STORAGE_MODE=postgres pnpm --dir backend exec jest --runInBand test/auth.e2e.spec.ts` ✅
+
+### Completion Notes
+
+- Migration SQL versionnee ajoutee pour `auth_refresh_tokens` avec FK vers `auth_users`, index (`expires_at`, `revoked_at`, `user_id, tenant_id`) et trigger `updated_at`.
+- `RefreshTokenStore` aligne sur la migration versionnee (suppression du DDL runtime) avec message d'erreur actionnable si la migration n'a pas ete appliquee.
+- Couverture tests etendue avec un spec dedie au store PostgreSQL (save/find/revoke + gestion erreur table absente).
+- Documentation mise a jour pour expliciter prerequis DB et variables d'environnement en mode auth PostgreSQL.
+- Rotation du refresh token rendue atomique via `revokeAndSave` (revoke + insertion nouveau token dans une meme operation DB), pour eviter les etats intermediaires.
+- Validation explicite multi-instance ajoutee: token revoque sur instance A est refuse sur instance B (mode postgres).
+- `UsersService` aligne sur la strategie migrations versionnees: suppression de la creation runtime de `auth_users`, message d'erreur actionnable si migration manquante.
+
+## File List
+
+- `supabase/migrations/20260302193000_auth_refresh_tokens_postgresql.sql` (new)
+- `backend/src/auth/refresh-token.store.ts` (modified)
+- `backend/src/auth/refresh-token.store.spec.ts` (new)
+- `backend/src/auth/auth.service.ts` (modified)
+- `backend/src/users/users.service.ts` (modified)
+- `backend/test/auth.e2e.spec.ts` (modified)
+- `backend/README.md` (modified)
+- `README.md` (modified)
+- `.env.example` (modified)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (modified)
+- `_bmad-output/implementation-artifacts/2-5-persister-refresh-tokens-en-postgresql.md` (modified)
+
+## Senior Developer Review (AI)
+
+- Decision: **APPROVED WITH FIXES APPLIED**.
+- Findings critiques/majeurs traites:
+  - AC4 multi-instance desormais couverte par un test e2e dedie (mode postgres).
+  - Rotation refresh token rendue atomique pour eviter revoke sans re-emission en cas d'erreur intermediaire.
+  - Suppression du DDL runtime `auth_users` pour conserver une source de verite unique via migrations.
+- Verification locale apres correction:
+  - `pnpm --dir backend run lint` ✅
+  - `pnpm --dir backend run test` ✅
+  - `AUTH_STORAGE_MODE=postgres pnpm --dir backend exec jest --runInBand test/auth.e2e.spec.ts` ✅
+
+## Change Log
+
+- 2026-03-02: Implementation completee pour la persistance PostgreSQL des refresh tokens (migration versionnee, store aligne migrations, tests backend et docs), story passee a `review`.
+- 2026-03-02: Revue senior adversariale executee, correctifs HIGH/MEDIUM appliques (multi-instance e2e, rotation atomique, suppression DDL runtime `auth_users`), story passee a `done`.

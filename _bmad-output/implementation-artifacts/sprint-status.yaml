@@ -1,33 +1,9 @@
-# generated: 2026-03-01
-# project: agilys-spark-joy
-# project_key: NOKEY
-# tracking_system: file-system
-# story_location: /Volumes/mySD1.5/projects/agilys-spark-joy/_bmad-output/implementation-artifacts
-
-# STATUS DEFINITIONS:
-# ==================
-# Epic Status:
-#   - backlog: Epic not yet started
-#   - in-progress: Epic actively being worked on
-#   - done: All stories in epic completed
-#
-# Story Status:
-#   - backlog: Story only exists in epic file
-#   - ready-for-dev: Story file created in stories folder
-#   - in-progress: Developer actively working on implementation
-#   - review: Ready for code review
-#   - done: Story completed
-#
-# Retrospective Status:
-#   - optional: Can be completed but not required
-#   - done: Retrospective has been completed
-#
+---
 generated: 2026-03-01
 project: agilys-spark-joy
 project_key: NOKEY
 tracking_system: file-system
-story_location: /Volumes/mySD1.5/projects/agilys-spark-joy/_bmad-output/implementation-artifacts
-
+story_location: "/Volumes/mySD1.5/projects/agilys-spark-joy/_bmad-output/implementation-artifacts"
 development_status:
   epic-1: backlog
   1-1-structurer-la-vitrine-multi-pages: backlog
@@ -35,36 +11,31 @@ development_status:
   1-3-instrumenter-le-funnel-vitrine-app: backlog
   1-4-garantir-performances-et-seo-de-la-vitrine: backlog
   epic-1-retrospective: optional
-
   epic-2: in-progress
   2-1-mettre-en-place-lauth-nestjs-jwt-refresh: done
-  2-2-appliquer-rbac-et-separation-des-responsabilites: backlog
+  2-2-appliquer-rbac-et-separation-des-responsabilites: ready-for-dev
   2-3-isoler-les-donnees-et-politiques-par-tenant: backlog
   2-4-migrer-le-frontend-auth-sans-rupture-ux: done
-  2-5-persister-refresh-tokens-en-postgresql: ready-for-dev
+  2-5-persister-refresh-tokens-en-postgresql: done
   epic-2-retrospective: optional
-
   epic-3: in-progress
   3-1-configurer-referentiels-budgetaires-de-base: done
   3-2-gerer-allocations-et-reallocations-de-credits: backlog
   3-3-versionner-les-decisions-budgetaires: backlog
   3-4-produire-previsions-et-ecarts-prevision-execution: backlog
   epic-3-retrospective: optional
-
   epic-4: backlog
   4-1-gerer-reservations-et-engagements: backlog
   4-2-gerer-bons-de-commande-et-factures: backlog
   4-3-constituer-et-liquider-une-depense: backlog
   4-4-executer-paiement-et-gestion-des-cas-partiels-rejets: backlog
   epic-4-retrospective: optional
-
   epic-5: backlog
   5-1-evaluer-le-risque-cash-sur-transitions-critiques: backlog
   5-2-expliquer-blocages-et-proposer-remediations: backlog
   5-3-gerer-workflow-dexception-avec-quorum: backlog
   5-4-offrir-supervision-tresorerie-et-audit-des-exceptions: backlog
   epic-5-retrospective: optional
-
   epic-6: backlog
   6-1-versionner-plan-comptable-et-mapping-ecritures: backlog
   6-2-generer-ecritures-en-double-entree-idempotentes: backlog
@@ -73,33 +44,28 @@ development_status:
   6-5-implementer-rapprochement-bancaire-auto-manuel: backlog
   6-6-produire-dossier-de-cloture-et-migration-reconciliation: backlog
   epic-6-retrospective: optional
-
   epic-7: backlog
   7-1-exposer-dashboard-budgetaire-de-pilotage: backlog
   7-2-fournir-vues-danalyse-et-axes-analytiques: backlog
   7-3-produire-dossier-daudit-exportable: backlog
   7-4-activer-module-controle-interne: backlog
   epic-7-retrospective: optional
-
   epic-8: backlog
   8-1-mettre-en-place-flux-dintegration-asynchrones: backlog
   8-2-gerer-mode-degrade-et-reprise-apres-reconnexion: backlog
   8-3-superviser-divergences-et-sla-de-rattrapage: backlog
   epic-8-retrospective: optional
-
   epic-9: backlog
   9-1-generer-balance-grand-livre-et-fiche-compte: backlog
   9-2-produire-etat-dettes-fournisseurs-et-avances: backlog
   9-3-produire-execution-budgetaire-et-tresorerie: backlog
   epic-9-retrospective: optional
-
   epic-10: backlog
   10-1-offrir-tableaux-croises-et-dashboards-analytiques-avances: backlog
   10-2-produire-dossier-de-depense-unifie-avec-preuves: backlog
   10-3-produire-dsf-conforme-ohada-sycebnl: backlog
   10-4-mesurer-les-temps-de-traitement-par-etape: backlog
   epic-10-retrospective: optional
-
   epic-cc-01: in-progress
   cc-01-02-postgresql-local-docker: done
   cc-01-03-migrations-db-versionnees: done

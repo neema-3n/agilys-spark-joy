@@ -62,13 +62,11 @@ export class AuthService {
       throw new ForbiddenException('Refresh token mismatch');
     }
 
-    await this.refreshTokenStore.revoke(claims.jti);
-
     const tokens = await this.issueTokenPair({
       sub: claims.sub,
       tenantId: claims.tenantId,
       roles: claims.roles
-    });
+    }, claims.jti);
 
     this.authLogger.logEvent('refresh', claims.sub, claims.tenantId);
     return tokens;
@@ -80,7 +78,7 @@ export class AuthService {
     this.authLogger.logEvent('logout', claims.sub, claims.tenantId);
   }
 
-  private async issueTokenPair(claims: AccessTokenClaims): Promise<AuthResponse> {
+  private async issueTokenPair(claims: AccessTokenClaims, rotateFromJti?: string): Promise<AuthResponse> {
     const accessToken = await this.jwtService.signAsync(claims, {
       secret: this.accessTokenSecret,
       expiresIn: this.accessTokenTtlSeconds
@@ -99,14 +97,23 @@ export class AuthService {
     });
 
     const refreshTokenHash = await hash(refreshToken, 10);
-    await this.refreshTokenStore.save({
+    const refreshRecord = {
       jti: refreshJti,
       userId: claims.sub,
       tenantId: claims.tenantId,
       tokenHash: refreshTokenHash,
       expiresAt: new Date(Date.now() + this.refreshTokenTtlSeconds * 1000),
       revokedAt: null
-    });
+    };
+
+    if (rotateFromJti) {
+      const rotated = await this.refreshTokenStore.revokeAndSave(rotateFromJti, refreshRecord);
+      if (!rotated) {
+        throw new ForbiddenException('Refresh token revoked or expired');
+      }
+    } else {
+      await this.refreshTokenStore.save(refreshRecord);
+    }
 
     return {
       accessToken,
