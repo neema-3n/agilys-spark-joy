@@ -1,4 +1,4 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import request = require('supertest');
@@ -13,6 +13,7 @@ describe('TenantPoliciesController (e2e)', () => {
   let superAdminToken: string;
   let authorizationAuditService: AuthorizationAuditService;
   let logDecisionSpy: jest.SpyInstance;
+  let tenantPoliciesAuditLogSpy: jest.SpyInstance;
 
   beforeAll(async () => {
     applyTestEnv();
@@ -70,9 +71,11 @@ describe('TenantPoliciesController (e2e)', () => {
 
     authorizationAuditService = moduleFixture.get(AuthorizationAuditService);
     logDecisionSpy = jest.spyOn(authorizationAuditService, 'logDecision');
+    tenantPoliciesAuditLogSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
   });
 
   afterAll(async () => {
+    tenantPoliciesAuditLogSpy.mockRestore();
     logDecisionSpy.mockRestore();
     await app.close();
   });
@@ -126,6 +129,26 @@ describe('TenantPoliciesController (e2e)', () => {
     expect(response.body.message).toContain('Access hors tenant refuse');
   });
 
+  it('rejects cross-tenant read for non super-admin', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/tenant-policies/retention')
+      .query({ tenantId: 'tenant-2' })
+      .set('Authorization', `Bearer ${tenant1AdminToken}`);
+
+    expect(response.status).toBe(403);
+    expect(response.body.message).toContain('Access hors tenant refuse');
+  });
+
+  it('rejects cross-tenant read for super-admin to enforce strict tenant isolation on reads', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/tenant-policies/retention')
+      .query({ tenantId: 'tenant-2' })
+      .set('Authorization', `Bearer ${superAdminToken}`);
+
+    expect(response.status).toBe(403);
+    expect(response.body.message).toContain('Access hors tenant refuse');
+  });
+
   it('ensures tenant A policy changes do not affect tenant B', async () => {
     const updateTenant1 = await request(app.getHttpServer())
       .patch('/tenant-policies/retention')
@@ -174,6 +197,20 @@ describe('TenantPoliciesController (e2e)', () => {
     expect(response.body.tenantId).toBe('tenant-2');
   });
 
+  it('rejects policy update when target tenant does not exist', async () => {
+    const response = await request(app.getHttpServer())
+      .patch('/tenant-policies/retention')
+      .set('Authorization', `Bearer ${superAdminToken}`)
+      .send({
+        tenantId: 'tenant-inconnu',
+        retentionDays: 400,
+        legalHoldEnabled: true
+      });
+
+    expect(response.status).toBe(404);
+    expect(response.body.message).toContain('Tenant cible introuvable');
+  });
+
   it('logs minimal authorization audit payload for tenant policy endpoints', async () => {
     const response = await request(app.getHttpServer())
       .get('/tenant-policies/retention')
@@ -194,5 +231,25 @@ describe('TenantPoliciesController (e2e)', () => {
     expect(lastCall).not.toHaveProperty('password');
     expect(lastCall).not.toHaveProperty('passwordHash');
     expect(lastCall).not.toHaveProperty('refreshToken');
+  });
+
+  it('logs minimal deny audit payload for tenant policy cross-tenant denial', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/tenant-policies/retention')
+      .query({ tenantId: 'tenant-2' })
+      .set('Authorization', `Bearer ${tenant1AdminToken}`);
+
+    expect(response.status).toBe(403);
+
+    const payloads = tenantPoliciesAuditLogSpy.mock.calls
+      .map((call) => call[0])
+      .filter((value): value is string => typeof value === 'string')
+      .filter((payload) => payload.includes('"action":"retention_policy_read"') && payload.includes('"decision":"deny"'));
+
+    expect(payloads.length).toBeGreaterThan(0);
+    expect(payloads.some((payload) => payload.includes('"reason":"Access hors tenant refuse"'))).toBe(true);
+    expect(payloads.every((payload) => !payload.includes('password'))).toBe(true);
+    expect(payloads.every((payload) => !payload.includes('passwordHash'))).toBe(true);
+    expect(payloads.every((payload) => !payload.includes('refreshToken'))).toBe(true);
   });
 });

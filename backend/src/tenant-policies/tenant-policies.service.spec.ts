@@ -1,6 +1,7 @@
-import { ForbiddenException, Logger } from '@nestjs/common';
+import { ForbiddenException, Logger, NotFoundException } from '@nestjs/common';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { PostgresService } from '../common/postgres.service';
+import type { UsersService } from '../users/users.service';
 import { TenantPoliciesService } from './tenant-policies.service';
 
 describe('TenantPoliciesService', () => {
@@ -18,6 +19,14 @@ describe('TenantPoliciesService', () => {
 
   let previousStorageMode: string | undefined;
 
+  const buildService = (tenantExists = true): TenantPoliciesService => {
+    const usersServiceMock = {
+      existsByTenantId: jest.fn().mockResolvedValue(tenantExists)
+    } as unknown as UsersService;
+
+    return new TenantPoliciesService({} as PostgresService, usersServiceMock);
+  };
+
   beforeEach(() => {
     previousStorageMode = process.env.AUTH_STORAGE_MODE;
     process.env.AUTH_STORAGE_MODE = 'memory';
@@ -33,7 +42,7 @@ describe('TenantPoliciesService', () => {
   });
 
   it('returns default policy when tenant has no persisted policy yet', async () => {
-    const service = new TenantPoliciesService({} as PostgresService);
+    const service = buildService();
 
     const policy = await service.getRetentionPolicy(actorTenant1);
 
@@ -44,7 +53,7 @@ describe('TenantPoliciesService', () => {
   });
 
   it('versions policy updates per tenant without destructive overwrite', async () => {
-    const service = new TenantPoliciesService({} as PostgresService);
+    const service = buildService();
 
     const first = await service.updateRetentionPolicy(actorTenant1, {
       retentionDays: 180,
@@ -65,7 +74,7 @@ describe('TenantPoliciesService', () => {
   });
 
   it('rejects cross-tenant updates for non super-admin', async () => {
-    const service = new TenantPoliciesService({} as PostgresService);
+    const service = buildService();
 
     await expect(
       service.updateRetentionPolicy(actorTenant1, {
@@ -77,7 +86,7 @@ describe('TenantPoliciesService', () => {
   });
 
   it('allows super-admin to target another tenant', async () => {
-    const service = new TenantPoliciesService({} as PostgresService);
+    const service = buildService();
 
     const policy = await service.updateRetentionPolicy(superAdmin, {
       tenantId: 'tenant-2',
@@ -89,8 +98,28 @@ describe('TenantPoliciesService', () => {
     expect(policy.version).toBe(1);
   });
 
+  it('rejects cross-tenant read for super-admin', async () => {
+    const service = buildService();
+
+    await expect(service.getRetentionPolicy(superAdmin, 'tenant-2')).rejects.toThrow(
+      new ForbiddenException('Access hors tenant refuse')
+    );
+  });
+
+  it('rejects super-admin updates for unknown tenant id', async () => {
+    const service = buildService(false);
+
+    await expect(
+      service.updateRetentionPolicy(superAdmin, {
+        tenantId: 'tenant-inconnu',
+        retentionDays: 90,
+        legalHoldEnabled: true
+      })
+    ).rejects.toThrow(new NotFoundException('Tenant cible introuvable'));
+  });
+
   it('writes minimal audit payload on allow and deny decisions', async () => {
-    const service = new TenantPoliciesService({} as PostgresService);
+    const service = buildService();
     const logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
 
     await service.getRetentionPolicy(actorTenant1);
