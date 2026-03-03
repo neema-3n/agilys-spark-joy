@@ -162,6 +162,30 @@ export class UsersService implements OnModuleInit {
     };
   }
 
+  async existsByTenantId(tenantId: string): Promise<boolean> {
+    if (this.storageMode === 'memory') {
+      return this.users.some((user) => user.tenantId === tenantId);
+    }
+
+    await this.ensurePostgresReady();
+    const catalogExists = await this.existsTenantInCatalog(tenantId);
+    if (catalogExists !== null) {
+      return catalogExists;
+    }
+
+    const result = await this.runPostgresQuery<{ exists: number }>(
+      `
+        SELECT 1 AS exists
+        FROM public.auth_users
+        WHERE tenant_id = $1 AND is_active = true
+        LIMIT 1
+      `,
+      [tenantId]
+    );
+
+    return result.rowCount > 0;
+  }
+
   async assignRole(userId: string, role: string): Promise<UserRecord | undefined> {
     if (this.storageMode === 'memory') {
       const user = this.users.find((candidate) => candidate.id === userId);
@@ -260,6 +284,28 @@ export class UsersService implements OnModuleInit {
 
   private sanitizeRoles(roles: readonly string[]): string[] {
     return [...new Set(roles.map((role) => role.trim()).filter((role) => role.length > 0))];
+  }
+
+  private async existsTenantInCatalog(tenantId: string): Promise<boolean | null> {
+    try {
+      const result = await this.postgresService.query<{ exists: number }>(
+        `
+          SELECT 1 AS exists
+          FROM public.tenants
+          WHERE id = $1 AND is_active = true
+          LIMIT 1
+        `,
+        [tenantId]
+      );
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      const dbError = error as DatabaseError;
+      if (dbError.code === '42P01') {
+        return null;
+      }
+
+      throw error;
+    }
   }
 
   private async runPostgresQuery<T extends object>(

@@ -1,6 +1,6 @@
 # Story 2.3 - Isoler les donnees et politiques par tenant
 
-Status: review
+Status: done
 Epic: 2 - Gouvernance d'acces, roles et isolation multi-tenant
 Story Key: 2-3-isoler-les-donnees-et-politiques-par-tenant
 Created: 2026-03-02
@@ -54,7 +54,7 @@ So that les donnees et configurations ne fuient jamais entre organisations.
   - [x] Refuser toute mutation si `actor.tenantId !== targetTenantId` (sauf `super_admin`).
 
 - [x] Renforcer l'isolation tenant sur ressources existantes prioritaires (AC: 1)
-  - [x] Verifier et harmoniser les filtres tenant sur services cibles deja actifs (auth, referentiels budgetaires).
+  - [x] Verifier et harmoniser les filtres tenant sur services cibles deja actifs (auth, referentiels budgetaires) - verification explicite sur `backend/src/auth/auth.service.ts` + `backend/src/budget-referentiels/budget-referentiels.service.ts`, aucun changement necessaire sur referentiels.
   - [x] Uniformiser les erreurs cross-tenant (`ForbiddenException: Access hors tenant refuse`).
   - [x] Eviter toute duplication: reutiliser les helpers/gardes existants avant de creer de nouveaux composants.
 
@@ -178,24 +178,49 @@ GPT-5 Codex
 - Persistence/versioning implementes via migration SQL `tenant_retention_policies` (historique non destructif, index d'unicite tenant+cle+version, current unique).
 - Isolation cross-tenant renforcee: refus explicite `Access hors tenant refuse` pour mutations hors scope (sauf `super_admin`) et harmonisation du message dans `AuthService`.
 - Audit minimal stable ajoute sur policies (allow/deny, tenantId, actorId, action, version, reason, timestamp) sans donnees sensibles.
+- Correctif review P1/P2 applique: verrou transactionnel + retry sur versioning concurrent, validation d'existence du tenant cible, test e2e de lecture cross-tenant, et migration de borne max DB (`retention_days <= 36500`).
+- Correctifs review complementaires appliques: refus strict de lecture cross-tenant (y compris `super_admin`), couverture e2e deny/audit renforcee, et introduction d'un catalogue `tenants` comme source de verite prioritaire pour l'existence tenant.
 
 ### File List
 
 - _bmad-output/implementation-artifacts/2-3-isoler-les-donnees-et-politiques-par-tenant.md
-- backend/src/app.module.ts
-- backend/src/auth/auth.service.ts
-- backend/src/auth/authorization.types.ts
-- backend/src/tenant-policies/dto/retention-policy.dto.ts
-- backend/src/tenant-policies/tenant-policies.controller.ts
-- backend/src/tenant-policies/tenant-policies.module.ts
 - backend/src/tenant-policies/tenant-policies.service.spec.ts
 - backend/src/tenant-policies/tenant-policies.service.ts
-- backend/src/tenant-policies/tenant-policies.types.ts
-- backend/test/auth.e2e.spec.ts
+- backend/src/users/users.service.ts
 - backend/test/tenant-policies.e2e.spec.ts
-- supabase/migrations/20260302203000_tenant_retention_policies.sql
+- supabase/migrations/20260303023500_tenant_retention_policies_max_retention_days.sql
+- supabase/migrations/20260303031000_create_tenants_catalog.sql
 
 ## Change Log
 
 - 2026-03-02: Story 2.3 creee avec contexte implementation complet et statut `ready-for-dev`.
 - 2026-03-02: Story 2.3 implementee (module tenant policies, migration versionnee, tests unitaires/e2e, harmonisation erreur cross-tenant) et statut passe a `review`.
+- 2026-03-02: Correctifs de review appliques (P1/P2): robustesse concurrence versioning, validation tenant cible, couverture e2e lecture cross-tenant et contrainte DB de borne max.
+- 2026-03-02: Correctifs review P2/P3 appliques: isolation stricte sur lecture cross-tenant, renforcement tests e2e (read deny super-admin + audit deny), verification tenant via catalogue dedie (`public.tenants`), et synchronisation File List avec les fichiers modifies.
+
+## Senior Developer Review (AI)
+
+### Date
+
+2026-03-02
+
+### Reviewer
+
+Max (AI)
+
+### Findings Addressed
+
+- [x] [P2] Couverture e2e completee: ajout scenario explicite de lecture cross-tenant par `super_admin` (refus attendu) et test dedie de payload audit deny minimal sur `tenant-policies`.
+- [x] [P3] AC1 aligne avec implementation: lecture cross-tenant desormais refusee explicitement, y compris pour `super_admin`.
+- [x] [P3] Tracabilite story/git regularisee: File List alignee sur les fichiers modifies dans cette vague de correction.
+- [x] [P2] Existence tenant decouplee des seuls utilisateurs actifs: verification prioritaire via catalogue `public.tenants` (fallback legacy si table absente).
+
+### Verification
+
+- `pnpm --dir backend run lint` ✅
+- `pnpm --dir backend run test -- tenant-policies` ✅
+
+### Outcome
+
+- Decision: **Approve**
+- Story status: **done**
