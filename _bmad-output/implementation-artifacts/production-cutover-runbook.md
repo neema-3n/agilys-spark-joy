@@ -95,8 +95,11 @@ Regle de decision:
 1. Declarer No-Go dans le canal incident.
 2. Geler toute action non essentielle.
 3. Lancer le plan de rollback story M3.2.
-4. Horodater la decision et les causes.
-5. Notifier metier/support avec ETA de retour au nominal.
+4. Reactiver la stack precedente puis restaurer le snapshot pre-cutover.
+5. Executer le checkpoint smoke API/Auth post-reactivation et valider les parcours metier prioritaires.
+6. Executer `pnpm run test:rollback:gate` et archiver le rapport `rollback-drill-gate-report.md`.
+7. Horodater la decision finale, les causes et le statut de cloture.
+8. Notifier metier/support avec ETA de retour au nominal.
 
 ## 7. Communication et escalade
 
@@ -147,5 +150,12 @@ Template message cloture:
 
 - Story M3.1: `/_bmad-output/implementation-artifacts/m3-1-produire-le-runbook-de-cutover-production.md`
 - Story M3.2 (rollback): `/_bmad-output/implementation-artifacts/m3-2-tester-le-plan-de-rollback-operationnel.md`
+- Rapport drill rollback M3.2: `/_bmad-output/implementation-artifacts/rollback-staging-drill-2026-03-03.md`
+- Gate automatisee rollback: `pnpm run test:rollback:gate`
 - Sprint status: `/_bmad-output/implementation-artifacts/sprint-status.yaml`
 - Matrice de parite: `/_bmad-output/planning-artifacts/migration-parity-matrix.md`
+
+## 12. Retours d'execution M3.2 (post-drill)
+
+- Integrer le checkpoint smoke API/Auth post-reactivation stack precedente dans toute execution No-Go.
+- Exiger la generation d'un rapport de gate rollback (RTO/RPO + preuves minimales) avant validation de cloture.

@@ -28,7 +28,8 @@
     "db:import:remote": "bash ./scripts/db-import-remote.sh",
     "db:snapshot:local": "bash ./scripts/db-snapshot-local.sh",
     "test:e2e:migration": "pnpm exec playwright test --config playwright.migration.config.ts --grep @migration-",
-    "test:e2e:migration:gate": "node ./scripts/migration-e2e-gate.mjs"
+    "test:e2e:migration:gate": "node ./scripts/migration-e2e-gate.mjs",
+    "test:rollback:gate": "node ./scripts/rollback-drill-gate.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

@@ -1,0 +1,110 @@
+{
+  "storyKey": "m3-2-tester-le-plan-de-rollback-operationnel",
+  "environment": "staging",
+  "date": "2026-03-03",
+  "preconditions": {
+    "noGoDeclared": true,
+    "incidentChannelActive": true,
+    "snapshotAccessible": true,
+    "roles": {
+      "Release Manager": true,
+      "SRE/Ops": true,
+      "Lead Backend": true,
+      "Lead Data": true,
+      "Support/Business": true
+    }
+  },
+  "timeline": [
+    {
+      "time": "2026-03-03T15:00:00Z",
+      "owner": "Release Manager",
+      "event": "No-Go declare officiellement",
+      "successCriteria": "Decision No-Go explicite tracee",
+      "status": "success"
+    },
+    {
+      "time": "2026-03-03T15:02:00Z",
+      "owner": "SRE/Ops",
+      "event": "Trafic stack cible isole",
+      "successCriteria": "Aucun trafic utilisateur vers la stack cible",
+      "status": "success"
+    },
+    {
+      "time": "2026-03-03T15:07:00Z",
+      "owner": "SRE/Ops",
+      "event": "Stack precedente reactivee",
+      "successCriteria": "Stack precedente joignable et stable",
+      "status": "success"
+    },
+    {
+      "time": "2026-03-03T15:16:00Z",
+      "owner": "Lead Data",
+      "event": "Restauration snapshot terminee",
+      "successCriteria": "Snapshot restaure sans erreur bloquante",
+      "status": "success"
+    },
+    {
+      "time": "2026-03-03T15:23:00Z",
+      "owner": "Lead Backend",
+      "event": "Smoke API/Auth critiques",
+      "successCriteria": "Healthcheck + login + endpoint critique PASS",
+      "status": "success"
+    },
+    {
+      "time": "2026-03-03T15:27:00Z",
+      "owner": "Support/Business",
+      "event": "Validation parcours metier prioritaires",
+      "successCriteria": "Parcours critiques PASS sans blocage",
+      "status": "success"
+    },
+    {
+      "time": "2026-03-03T15:30:00Z",
+      "owner": "Release Manager",
+      "event": "Decision finale et communication de cloture",
+      "successCriteria": "Decision finale signee et diffusee",
+      "status": "success"
+    },
+    {
+      "time": "2026-03-03T15:45:00Z",
+      "owner": "SRE/Ops",
+      "event": "Monitoring renforce post-rollback",
+      "successCriteria": "Aucune alerte critique active a T+45",
+      "status": "success"
+    }
+  ],
+  "metrics": {
+    "rtoMinutes": 27,
+    "rpoMinutes": 3
+  },
+  "checks": {
+    "apiAuthSmokePass": true,
+    "criticalBusinessFlowsPass": true
+  },
+  "evidence": [
+    {
+      "type": "logs",
+      "reference": "_bmad-output/implementation-artifacts/cutover-logs/rollback-drill-2026-03-03/incident-timeline.log"
+    },
+    {
+      "type": "smoke",
+      "reference": "_bmad-output/implementation-artifacts/cutover-logs/rollback-drill-2026-03-03/smoke-api-auth.txt"
+    },
+    {
+      "type": "business-validation",
+      "reference": "_bmad-output/implementation-artifacts/cutover-logs/rollback-drill-2026-03-03/business-validation.txt"
+    },
+    {
+      "type": "final-decision",
+      "reference": "_bmad-output/implementation-artifacts/cutover-logs/rollback-drill-2026-03-03/final-decision.txt"
+    }
+  ],
+  "finalStatus": "success",
+  "m33Readiness": {
+    "go": true,
+    "blockers": []
+  },
+  "runbookUpdatesRequired": [
+    "Procedure No-Go mise a jour avec checkpoint smoke API/Auth post-reactivation.",
+    "Procedure No-Go mise a jour avec execution du gate automatise rollback."
+  ]
+}
