@@ -68,7 +68,7 @@ development_status:
   epic-10-retrospective: optional
   epic-m1: backlog
   m1-1-etablir-linventaire-de-parite-fonctionnelle: done
-  m1-2-verifier-la-parite-des-contrats-api: backlog
+  m1-2-verifier-la-parite-des-contrats-api: ready-for-dev
   m1-3-executer-la-non-regression-e2e-de-migration: backlog
   epic-m1-retrospective: optional
   epic-m2: backlog
