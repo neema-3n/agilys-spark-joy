@@ -1,0 +1,9 @@
+Rollback drill staging - smoke API/Auth
+Date: 2026-03-03
+
+- GET /health: 200 OK
+- POST /api/auth/login: 200 OK
+- GET /api/migration/parity: 200 OK
+- RBAC guard check (role finance-manager): PASS
+
+Conclusion: PASS
