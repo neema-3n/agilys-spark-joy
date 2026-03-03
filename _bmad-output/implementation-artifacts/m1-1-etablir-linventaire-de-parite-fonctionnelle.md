@@ -1,6 +1,6 @@
 # Story M1.1: Etablir l'inventaire de parite fonctionnelle
 
-Status: in-progress
+Status: review
 
 ## Story
 
@@ -42,9 +42,9 @@ so that aucun flux critique ne soit oublie avant bascule.
 - [x] [AI-Review][HIGH] Completer l'inventaire des routes/pages pour couvrir tous les parcours app (`/app/dashboard`, `/app/mandats`, `/app/fournisseurs`, `/app/projets`, etc.) et assurer le mapping `route/page -> API -> table` pour chaque item [/_bmad-output/planning-artifacts/migration-parity-matrix.md:13] (fait le 2026-03-03)
 - [x] [AI-Review][HIGH] Ajouter la priorite explicite (P0/P1/...) par flux critique dans la matrice et aligner la tache AC3 marquee complete [/_bmad-output/planning-artifacts/migration-parity-matrix.md:15] (fait le 2026-03-03)
 - [x] [AI-Review][HIGH] Documenter une preuve de revue croisee metier/technique (participants, decisions, ajustements) et lier cette preuve au changelog [/_bmad-output/implementation-artifacts/m1-1-etablir-linventaire-de-parite-fonctionnelle.md:38] (fait le 2026-03-03)
-- [ ] [AI-Review][MEDIUM] Expliciter les dependances techniques/externes par flux dans la matrice (contrats, prerequis, services) au lieu d'un bloc global [/_bmad-output/planning-artifacts/migration-parity-matrix.md:43]
-- [ ] [AI-Review][MEDIUM] Requalifier les statuts `migre` pointant vers le store JSON transitoire ou documenter clairement la justification par flux [/_bmad-output/planning-artifacts/migration-parity-matrix.md:22]
-- [ ] [AI-Review][MEDIUM] Renforcer la tracabilite du lot avec references de commit(s)/hash dans la story pour corréler File List et implementation [/_bmad-output/implementation-artifacts/m1-1-etablir-linventaire-de-parite-fonctionnelle.md:88]
+- [x] [AI-Review][MEDIUM] Expliciter les dependances techniques/externes par flux dans la matrice (contrats, prerequis, services) au lieu d'un bloc global [/_bmad-output/planning-artifacts/migration-parity-matrix.md:43] (fait le 2026-03-03)
+- [x] [AI-Review][MEDIUM] Requalifier les statuts `migre` pointant vers le store JSON transitoire ou documenter clairement la justification par flux [/_bmad-output/planning-artifacts/migration-parity-matrix.md:22] (fait le 2026-03-03)
+- [x] [AI-Review][MEDIUM] Renforcer la tracabilite du lot avec references de commit(s)/hash dans la story pour corréler File List et implementation [/_bmad-output/implementation-artifacts/m1-1-etablir-linventaire-de-parite-fonctionnelle.md:88] (fait le 2026-03-03)
 
 ## Dev Notes
 
@@ -93,6 +93,9 @@ GPT-5 Codex
 - Story M1.1 executee: inventaire routes/API/data consolide et publie dans `migration-parity-matrix.md`.
 - Statuts de flux critiques alignes avec `sprint-status.yaml` et etat implementation backend/front observe.
 - Gaps structurants identifies: modules Epic 4-10 non migres, store budget encore transitoire JSON.
+- ✅ Resolved review finding [MEDIUM]: dependances techniques/externes explicitees par flux critique avec triplet `Contrat / Prerequis / Services`.
+- ✅ Resolved review finding [MEDIUM]: statuts budget adosses au store JSON transitoire requalifies de `migre` vers `partiel`.
+- ✅ Resolved review finding [MEDIUM]: tracabilite lot/story renforcee via references de commits deja documentees (`9c1a7d996ba50fa0af1dbb9c6b7937d1acd4e1d7`, `c3cfbde1af674d1756b06df0460fb0b8df06e097`) et correlation explicite avec la File List.
 
 ### File List
 
@@ -138,3 +141,4 @@ GPT-5 Codex
 - 2026-03-03: Ajout de preuves de tracabilite (hash commits) pour corréler la File List aux changements historiques Git.
 - 2026-03-03: Code review adversarial execute, 6 action items AI ajoutes (3 HIGH, 3 MEDIUM), statut repasse a `in-progress`.
 - 2026-03-03: Correctifs P1 appliques sur la matrice (couverture routes manquantes + priorites), et preuve de revue croisee metier/technique ajoutee.
+- 2026-03-03: Correctifs P2 appliques (dependances par flux structurees, requalification des statuts budget transitoires en `partiel`, tracabilite lot/story consolidee), toutes les review follow-ups AI cloturees.
