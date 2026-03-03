@@ -1,0 +1,9 @@
+2026-03-03T15:00:00Z [Release Manager] No-Go declare (motif: erreurs 5xx API critique sur stack cible)
+2026-03-03T15:02:00Z [SRE/Ops] Isolation trafic stack cible effectuee
+2026-03-03T15:07:00Z [SRE/Ops] Reactivation stack precedente confirmee
+2026-03-03T15:16:00Z [Lead Data] Restauration snapshot pre-cutover complete
+2026-03-03T15:23:00Z [Lead Backend] Smoke API/Auth critique: PASS
+2026-03-03T15:27:00Z [Support/Business] Parcours metier prioritaire: PASS
+2026-03-03T15:30:00Z [Release Manager] Decision finale + communication de cloture: SUCCESS
+2026-03-03T15:45:00Z [SRE/Ops] Monitoring renforce post-rollback (T+45): PASS
+2026-03-03T15:45:00Z [Release Manager] Execution rollback cloturee: SUCCESS
