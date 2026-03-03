@@ -56,6 +56,9 @@ const App = () => (
               >
                 <Routes>
                   <Route path="/" element={<Index />} />
+                  <Route path="/fonctionnalites" element={<Index />} />
+                  <Route path="/cas-clients" element={<Index />} />
+                  <Route path="/contact" element={<Index />} />
                   <Route path="/auth/login" element={<Login />} />
                   <Route path="/auth/init-test-users" element={<InitTestUsers />} />
                   <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>

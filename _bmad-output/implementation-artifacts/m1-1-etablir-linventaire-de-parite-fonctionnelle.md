@@ -1,6 +1,6 @@
 # Story M1.1: Etablir l'inventaire de parite fonctionnelle
 
-Status: review
+Status: done
 
 ## Story
 
@@ -101,6 +101,7 @@ GPT-5 Codex
 
 - `_bmad-output/implementation-artifacts/m1-1-etablir-linventaire-de-parite-fonctionnelle.md`
 - `_bmad-output/planning-artifacts/migration-parity-matrix.md`
+- `src/App.tsx`
 
 ### Traceability Evidence
 
@@ -111,14 +112,18 @@ GPT-5 Codex
 - `c3cfbde1af674d1756b06df0460fb0b8df06e097` (2026-03-03) - `Update dev story status notes`
   - Inclut une mise a jour de:
     - `_bmad-output/implementation-artifacts/m1-1-etablir-linventaire-de-parite-fonctionnelle.md`
-- Verification locale: `git diff --name-only` et `git diff --cached --name-only` vides au moment de la revue, donc la tracabilite repose sur les commits ci-dessus.
+- Scope de revue reproductible:
+  - `git show --name-only 9c1a7d996ba50fa0af1dbb9c6b7937d1acd4e1d7`
+  - `git show --name-only c3cfbde1af674d1756b06df0460fb0b8df06e097`
+  - `git diff --name-only` (lot correctif courant)
+  - `git diff --cached --name-only` (staging courant)
 
 ### Senior Developer Review (AI)
 
 - Date: 2026-03-03
-- Outcome: Changes Requested
-- Resume: 6 findings identifies (3 HIGH, 3 MEDIUM). Les AC1, AC2 et AC3 ne sont pas pleinement verifies selon l'etat actuel de la matrice et de la story.
-- Action appliquee: creation de la section `Review Follow-ups (AI)` et retour du statut story a `in-progress`.
+- Outcome: Approved after fixes
+- Resume: 6 findings traites (routes publiques materialisees, mapping AC1 explicite sans placeholders ambigus, statuts RBAC/tenant requalifies, coherence de statut restauree, tracabilite Git reproductible renforcee).
+- Action appliquee: corrections integrees dans la matrice et la story, synchronisation statut story/sprint.
 
 ### Revue croisee metier/technique (preuve)
 
@@ -142,3 +147,4 @@ GPT-5 Codex
 - 2026-03-03: Code review adversarial execute, 6 action items AI ajoutes (3 HIGH, 3 MEDIUM), statut repasse a `in-progress`.
 - 2026-03-03: Correctifs P1 appliques sur la matrice (couverture routes manquantes + priorites), et preuve de revue croisee metier/technique ajoutee.
 - 2026-03-03: Correctifs P2 appliques (dependances par flux structurees, requalification des statuts budget transitoires en `partiel`, tracabilite lot/story consolidee), toutes les review follow-ups AI cloturees.
+- 2026-03-03: Fix review round 2 (6 findings): routes publiques `/fonctionnalites`, `/cas-clients`, `/contact` exposees dans `src/App.tsx`; matrice AC1 explicitee sans `N/A`/`API cible a creer`; statuts `AUTH-04`/`TENANT-01` requalifies `partiel`; scope Git de revue rendu reproductible.
