@@ -127,6 +127,41 @@ describe('reconcileBeforeAfter', () => {
     expect(result.anomalies.some((item) => item.code === 'DUPLICATE_SAMPLE')).toBe(true);
   });
 
+  it('returns NO_GO when cumulative amount delta exceeds threshold', () => {
+    const input = baseInput();
+    input.thresholds = { maxAmountDelta: 100 };
+    input.samplesSource = [
+      {
+        entity: 'allocations',
+        businessKey: 'alloc-001',
+        amount: 1000
+      },
+      {
+        entity: 'allocations',
+        businessKey: 'alloc-002',
+        amount: 2000
+      }
+    ];
+    input.samplesTarget = [
+      {
+        entity: 'allocations',
+        businessKey: 'alloc-001',
+        amount: 1080
+      },
+      {
+        entity: 'allocations',
+        businessKey: 'alloc-002',
+        amount: 2080
+      }
+    ];
+
+    const result = reconcileBeforeAfter(input);
+
+    expect(result.decision).toBe('NO_GO');
+    expect(result.anomalies.some((item) => item.code === 'AMOUNT_SUM_MISMATCH')).toBe(true);
+    expect(result.anomalies.some((item) => item.code === 'AMOUNT_MISMATCH')).toBe(false);
+  });
+
   it('throws when criticalEntities is empty', () => {
     const input = baseInput();
     input.criticalEntities = [];
@@ -134,6 +169,22 @@ describe('reconcileBeforeAfter', () => {
     expect(() => reconcileBeforeAfter(input)).toThrow(
       'Invalid reconciliation input: criticalEntities must contain at least one entity'
     );
+  });
+
+  it('throws when threshold values are invalid', () => {
+    const input = baseInput();
+    input.thresholds = {
+      maxHighAnomalies: -1
+    };
+
+    expect(() => reconcileBeforeAfter(input)).toThrow(
+      'Invalid reconciliation input: thresholds.maxHighAnomalies must be a finite non-negative integer'
+    );
+  });
+
+  it('marks cardinality as INFO when no delta is detected', () => {
+    const result = reconcileBeforeAfter(baseInput());
+    expect(result.cardinality.every((entry) => entry.severity === 'info')).toBe(true);
   });
 
   it('is deterministic for a same batch and same input payload', () => {
