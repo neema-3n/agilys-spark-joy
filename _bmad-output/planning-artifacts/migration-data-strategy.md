@@ -1,6 +1,6 @@
-# Migration Data Strategy (V1)
+# Migration Data Strategy (V2)
 
-Date: 2026-03-02  
+Date: 2026-03-03  
 Objectif: executer une migration data progressive, idempotente et auditable vers PostgreSQL/NestJS.
 
 ## Principes d'execution
@@ -26,7 +26,7 @@ Objectif: executer une migration data progressive, idempotente et auditable vers
 - Cible: tables PostgreSQL budget referentiels/allocations/decision versions
 - Prerequis:
   - schema cible cree
-  - mapping validé (`migration-data-mapping.md`)
+  - mapping valide (`migration-data-mapping.md`)
 - Post-check:
   - CRUD referentiels OK
   - allocations/reallocations coherentes
@@ -88,6 +88,19 @@ Objectif: executer une migration data progressive, idempotente et auditable vers
 2. Ecart montants critiques (controle): `0`.
 3. Taux de rejet hors seuil: `< 0.5%` (hors cas explicitement exclus).
 4. Tous les rejets doivent etre traces dans un rapport actionnable.
+
+## Points de controle de reconciliation par lot
+
+| Lot | Controle | Regle | Seuil |
+|---|---|---|---|
+| A | Cardinalite users/tokens/tenants | source = cible | 0 ecart |
+| A | Integrite auth | refresh token invalide apres revoke | 100% |
+| B | Soldes allocations | somme avant/apres stable | 0 ecart critique |
+| B | Version decisions | monotonicite `version_no` | 100% |
+| C | Chaine depense->paiement | transitions autorisees uniquement | 100% |
+| C | Comptabilite | `sum(debit) = sum(credit)` par piece | 100% |
+| D | Reporting financier | echantillons rapport vs source | <= 0.5% non critique |
+| D | Rapprochement bancaire | ecarts qualifies | 100% ecarts traces |
 
 ## Strategie d'anomalies
 

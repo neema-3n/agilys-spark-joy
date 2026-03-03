@@ -67,12 +67,12 @@ development_status:
   10-4-mesurer-les-temps-de-traitement-par-etape: backlog
   epic-10-retrospective: optional
   epic-m1: backlog
-  m1-1-etablir-linventaire-de-parite-fonctionnelle: review
+  m1-1-etablir-linventaire-de-parite-fonctionnelle: done
   m1-2-verifier-la-parite-des-contrats-api: backlog
   m1-3-executer-la-non-regression-e2e-de-migration: backlog
   epic-m1-retrospective: optional
   epic-m2: backlog
-  m2-1-definir-mapping-et-strategie-de-migration-data: review
+  m2-1-definir-mapping-et-strategie-de-migration-data: done
   m2-2-implementer-le-backfill-idempotent-par-lots: done
   m2-3-reconciler-avant-apres-sur-donnees-critiques: backlog
   epic-m2-retrospective: optional
