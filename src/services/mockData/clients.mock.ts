@@ -3,10 +3,10 @@ import { Client } from '@/types';
 export const MOCK_CLIENTS: Client[] = [
   {
     id: 'client-1',
-    nom: 'Commune de Porto-Novo',
+    nom: 'CAP CUE',
     code: 'CPN-2024',
-    pays: 'Bénin',
-    devise: 'XOF',
+    pays: 'Cameroun',
+    devise: 'XAF',
     statut: 'actif'
   },
   {
@@ -15,7 +15,7 @@ export const MOCK_CLIENTS: Client[] = [
     code: 'MCO-2024',
     pays: 'Bénin',
     devise: 'XOF',
-    statut: 'actif'
+    statut: 'inactif'
   },
   {
     id: 'client-3',
@@ -23,6 +23,6 @@ export const MOCK_CLIENTS: Client[] = [
     code: 'CDL-2024',
     pays: 'Bénin',
     devise: 'XOF',
-    statut: 'actif'
+    statut: 'inactif'
   }
 ];

@@ -25,7 +25,7 @@ export const ClientProvider = ({ children }: { children: ReactNode }) => {
       setCurrentClient(allClients[0] || null);
     } else {
       const userClient = allClients.find(c => c.id === user?.clientId);
-      setCurrentClient(userClient || null);
+      setCurrentClient(userClient || allClients[0] || null);
     }
     setHasLoaded(true);
     setIsLoading(false);
