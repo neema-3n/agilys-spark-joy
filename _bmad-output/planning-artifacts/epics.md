@@ -958,3 +958,46 @@ So that la conformite de la bascule soit verifiable.
 **When** le dossier d'audit est genere
 **Then** il contient decisions, evidences, reconciliations, incidents et resolutions
 **And** la cloture migration est signee par les responsables metier et technique.
+
+## Ordre d'execution impose - Migration closeout
+
+Cette section est **normative** pour les epics `M1` a `M4`.
+Toute implementation hors de cet ordre est consideree non conforme.
+
+### Sequence obligatoire
+
+1. `M1.1` Etablir l'inventaire de parite fonctionnelle
+2. `M2.1` Definir mapping et strategie de migration data
+3. `M2.2` Implementer le backfill idempotent par lots
+4. `M2.3` Reconciler avant/apres sur donnees critiques
+5. `M1.2` Verifier la parite des contrats API
+6. `M1.3` Executer la non-regression E2E de migration
+7. `M3.1` Produire le runbook de cutover production
+8. `M3.2` Tester le plan de rollback operationnel
+9. `M3.3` Decommissionner Supabase de facon controlee
+10. `M4.1` Revalider RBAC/ABAC et separation des responsabilites
+11. `M4.2` Produire le dossier d'audit de migration
+12. `M3.4` Organiser l'hypercare post-bascule
+
+### Gates de blocage obligatoires
+
+- Gate A (avant `M3.1`):
+  - `M1.1`, `M2.1`, `M2.2`, `M2.3`, `M1.2`, `M1.3` doivent etre en `done`.
+- Gate B (avant `M3.3`):
+  - `M3.1` et `M3.2` doivent etre en `done`.
+- Gate C (cloture migration):
+  - `M3.3`, `M4.1`, `M4.2`, `M3.4` doivent etre en `done`.
+
+### Regle d'application
+
+- Aucun item `M3.*` ne peut commencer tant que Gate A n'est pas validee.
+- Aucun item `M4.*` ne peut etre marque `done` avant `M3.3`.
+- `M3.4` est la derniere story autorisee de la sequence.
+
+### Regle de maintenance de la matrice (obligatoire)
+
+- La matrice `/_bmad-output/planning-artifacts/migration-parity-matrix.md` doit etre mise a jour **a chaque changement de statut** d'une story `M*` vers `review` ou `done`.
+- Chaque mise a jour de la matrice doit etre synchronisee dans le meme lot de changements avec:
+  - `/_bmad-output/implementation-artifacts/sprint-status.yaml`
+  - le fichier story concerne dans `/_bmad-output/implementation-artifacts/`
+- Une story `M*` ne peut pas etre consideree `done` si la matrice de parite n'est pas alignee avec son etat reel.
