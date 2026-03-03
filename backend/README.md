@@ -91,3 +91,14 @@ Errors:
 - `POSTGRES_DB` (default: `agilys`)
 - `POSTGRES_USER` (default: `agilys_app`)
 - `POSTGRES_PASSWORD` (default: `change-me-local-only`)
+
+## Prerequis PostgreSQL pour les refresh tokens persistants (Story 2.5)
+
+Avant de lancer l'API en mode `AUTH_STORAGE_MODE=postgres`, appliquer les migrations SQL:
+
+```bash
+pnpm run db:migrate
+```
+
+La migration cree la table `public.auth_refresh_tokens` (hash du refresh token, `jti`, expiration/revocation) et ses index.
+Sans cette migration, l'API retournera une erreur explicite demandant d'executer `db:migrate`.

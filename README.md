@@ -53,6 +53,7 @@ Notes:
 - Les variables `AUTH_TEST_USER_EMAIL` et `AUTH_TEST_USER_PASSWORD` se configurent côté backend (voir `backend/README.md`).
 - Si le frontend tourne sur un port différent de l'API (`localhost:8082` par exemple), définir `CORS_ORIGINS` côté backend (ex: `CORS_ORIGINS=http://localhost:8080,http://localhost:8082`).
 - Le backend auth utilise PostgreSQL local par défaut (`AUTH_STORAGE_MODE=postgres`). Pour les tests backend rapides, basculer en `AUTH_STORAGE_MODE=memory`.
+- En mode `AUTH_STORAGE_MODE=postgres`, appliquer les migrations (`pnpm run db:migrate`) avant de démarrer l'API pour créer `auth_refresh_tokens`.
 
 ## 🐘 PostgreSQL Local via Docker (Story CC-01.02)
 

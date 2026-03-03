@@ -1,4 +1,5 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import type { DatabaseError } from 'pg';
 import { resolveAuthStorageMode } from './auth-storage-mode';
 import { PostgresService } from '../common/postgres.service';
 
@@ -12,43 +13,11 @@ interface RefreshTokenRecord {
 }
 
 @Injectable()
-export class RefreshTokenStore implements OnModuleInit {
+export class RefreshTokenStore {
   private readonly storageMode = resolveAuthStorageMode();
   private readonly tokens = new Map<string, RefreshTokenRecord>();
-  private initPromise: Promise<void> | null = null;
 
   constructor(private readonly postgresService: PostgresService) {}
-
-  async onModuleInit(): Promise<void> {
-    if (this.storageMode === 'postgres') {
-      await this.ensurePostgresReady();
-    }
-  }
-
-  private async ensurePostgresReady(): Promise<void> {
-    if (!this.initPromise) {
-      this.initPromise = (async () => {
-        await this.postgresService.query(`
-          CREATE TABLE IF NOT EXISTS public.auth_refresh_tokens (
-            jti TEXT PRIMARY KEY,
-            user_id TEXT NOT NULL,
-            tenant_id TEXT NOT NULL,
-            token_hash TEXT NOT NULL,
-            expires_at TIMESTAMPTZ NOT NULL,
-            revoked_at TIMESTAMPTZ NULL,
-            created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-          )
-        `);
-
-        await this.postgresService.query(`
-          CREATE INDEX IF NOT EXISTS idx_auth_refresh_tokens_user_id
-          ON public.auth_refresh_tokens (user_id)
-        `);
-      })();
-    }
-
-    await this.initPromise;
-  }
 
   async save(record: RefreshTokenRecord): Promise<void> {
     if (this.storageMode === 'memory') {
@@ -56,8 +25,7 @@ export class RefreshTokenStore implements OnModuleInit {
       return;
     }
 
-    await this.ensurePostgresReady();
-    await this.postgresService.query(
+    await this.runPostgresQuery(
       `
         INSERT INTO public.auth_refresh_tokens (jti, user_id, tenant_id, token_hash, expires_at, revoked_at)
         VALUES ($1, $2, $3, $4, $5, $6)
@@ -78,8 +46,7 @@ export class RefreshTokenStore implements OnModuleInit {
       return this.tokens.get(jti);
     }
 
-    await this.ensurePostgresReady();
-    const result = await this.postgresService.query<{
+    const result = await this.runPostgresQuery<{
       jti: string;
       user_id: string;
       tenant_id: string;
@@ -121,8 +88,7 @@ export class RefreshTokenStore implements OnModuleInit {
       return;
     }
 
-    await this.ensurePostgresReady();
-    await this.postgresService.query(
+    await this.runPostgresQuery(
       `
         UPDATE public.auth_refresh_tokens
         SET revoked_at = now()
@@ -130,5 +96,54 @@ export class RefreshTokenStore implements OnModuleInit {
       `,
       [jti]
     );
+  }
+
+  async revokeAndSave(previousJti: string, record: RefreshTokenRecord): Promise<boolean> {
+    if (this.storageMode === 'memory') {
+      const previous = this.tokens.get(previousJti);
+      if (!previous || previous.revokedAt) {
+        return false;
+      }
+
+      previous.revokedAt = new Date();
+      this.tokens.set(previousJti, previous);
+      this.tokens.set(record.jti, record);
+      return true;
+    }
+
+    const result = await this.runPostgresQuery<{ jti: string }>(
+      `
+        WITH revoked AS (
+          UPDATE public.auth_refresh_tokens
+          SET revoked_at = now()
+          WHERE jti = $1 AND revoked_at IS NULL
+          RETURNING jti
+        )
+        INSERT INTO public.auth_refresh_tokens (jti, user_id, tenant_id, token_hash, expires_at, revoked_at)
+        SELECT $2, $3, $4, $5, $6, $7
+        WHERE EXISTS (SELECT 1 FROM revoked)
+        RETURNING jti
+      `,
+      [previousJti, record.jti, record.userId, record.tenantId, record.tokenHash, record.expiresAt, record.revokedAt]
+    );
+
+    return result.rowCount > 0;
+  }
+
+  private async runPostgresQuery<T extends object>(
+    text: string,
+    values: unknown[] = []
+  ): Promise<{ rows: T[]; rowCount: number }> {
+    try {
+      const result = await this.postgresService.query<T>(text, values);
+      return { rows: result.rows, rowCount: result.rowCount ?? 0 };
+    } catch (error) {
+      const dbError = error as DatabaseError;
+      if (dbError.code === '42P01') {
+        throw new Error('Missing auth_refresh_tokens table. Run `pnpm run db:migrate` before starting auth storage in postgres mode.');
+      }
+
+      throw error;
+    }
   }
 }

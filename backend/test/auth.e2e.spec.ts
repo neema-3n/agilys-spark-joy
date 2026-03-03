@@ -4,6 +4,8 @@ import request = require('supertest');
 import { AppModule } from '../src/app.module';
 import { applyTestEnv } from './test-env';
 
+const postgresOnly = (process.env.AUTH_STORAGE_MODE ?? '').toLowerCase() === 'postgres' ? it : it.skip;
+
 describe('AuthController (e2e)', () => {
   let app: INestApplication;
 
@@ -103,6 +105,41 @@ describe('AuthController (e2e)', () => {
     });
 
     expect(refreshResponse.status).toBe(403);
+  });
+
+  postgresOnly('revocation done on instance A is enforced on instance B', async () => {
+    const moduleFixtureB = await Test.createTestingModule({
+      imports: [AppModule]
+    }).compile();
+    const appB = moduleFixtureB.createNestApplication();
+    appB.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true
+      })
+    );
+    await appB.init();
+
+    try {
+      const loginResponse = await request(app.getHttpServer()).post('/auth/login').send({
+        email: 'user@agilys.local',
+        password: 'ChangeMe123!'
+      });
+      const refreshToken = loginResponse.body.refreshToken;
+
+      const logoutResponse = await request(app.getHttpServer()).post('/auth/logout').send({
+        refreshToken
+      });
+      expect(logoutResponse.status).toBe(204);
+
+      const refreshFromSecondInstance = await request(appB.getHttpServer()).post('/auth/refresh').send({
+        refreshToken
+      });
+      expect(refreshFromSecondInstance.status).toBe(403);
+    } finally {
+      await appB.close();
+    }
   });
 
   it('POST /auth/refresh returns 400 for invalid payload', async () => {
