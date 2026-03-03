@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { formatMontant } from './utils';
+export { formatMontant } from './utils';
 
 /**
  * Formate une date au format court français (dd/MM/yyyy)
