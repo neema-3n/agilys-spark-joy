@@ -1,6 +1,6 @@
 # Story M1.1: Etablir l'inventaire de parite fonctionnelle
 
-Status: review
+Status: in-progress
 
 ## Story
 
@@ -36,6 +36,15 @@ so that aucun flux critique ne soit oublie avant bascule.
 - [x] Ajouter pour chaque item critique: statut, owner, priorite, date cible (AC: 3)
 - [x] Produire un fichier de matrice de parite versionne dans `/_bmad-output/planning-artifacts/` (AC: 1, 2, 3)
 - [x] Faire une revue croisee metier/technique et enregistrer les ajustements dans le changelog de la story (AC: 2, 3)
+
+### Review Follow-ups (AI)
+
+- [ ] [AI-Review][HIGH] Completer l'inventaire des routes/pages pour couvrir tous les parcours app (`/app/dashboard`, `/app/mandats`, `/app/fournisseurs`, `/app/projets`, etc.) et assurer le mapping `route/page -> API -> table` pour chaque item [/_bmad-output/planning-artifacts/migration-parity-matrix.md:13]
+- [ ] [AI-Review][HIGH] Ajouter la priorite explicite (P0/P1/...) par flux critique dans la matrice et aligner la tache AC3 marquee complete [/_bmad-output/planning-artifacts/migration-parity-matrix.md:15]
+- [ ] [AI-Review][HIGH] Documenter une preuve de revue croisee metier/technique (participants, decisions, ajustements) et lier cette preuve au changelog [/_bmad-output/implementation-artifacts/m1-1-etablir-linventaire-de-parite-fonctionnelle.md:38]
+- [ ] [AI-Review][MEDIUM] Expliciter les dependances techniques/externes par flux dans la matrice (contrats, prerequis, services) au lieu d'un bloc global [/_bmad-output/planning-artifacts/migration-parity-matrix.md:43]
+- [ ] [AI-Review][MEDIUM] Requalifier les statuts `migre` pointant vers le store JSON transitoire ou documenter clairement la justification par flux [/_bmad-output/planning-artifacts/migration-parity-matrix.md:22]
+- [ ] [AI-Review][MEDIUM] Renforcer la tracabilite du lot avec references de commit(s)/hash dans la story pour corréler File List et implementation [/_bmad-output/implementation-artifacts/m1-1-etablir-linventaire-de-parite-fonctionnelle.md:88]
 
 ## Dev Notes
 
@@ -90,7 +99,15 @@ GPT-5 Codex
 - `_bmad-output/implementation-artifacts/m1-1-etablir-linventaire-de-parite-fonctionnelle.md`
 - `_bmad-output/planning-artifacts/migration-parity-matrix.md`
 
+### Senior Developer Review (AI)
+
+- Date: 2026-03-03
+- Outcome: Changes Requested
+- Resume: 6 findings identifies (3 HIGH, 3 MEDIUM). Les AC1, AC2 et AC3 ne sont pas pleinement verifies selon l'etat actuel de la matrice et de la story.
+- Action appliquee: creation de la section `Review Follow-ups (AI)` et retour du statut story a `in-progress`.
+
 ### Change Log
 
 - 2026-03-02: Story M1.1 preparee (ready-for-dev).
 - 2026-03-02: Story M1.1 executee, matrice de parite baseline produite, statut passe a `review`.
+- 2026-03-03: Code review adversarial execute, 6 action items AI ajoutes (3 HIGH, 3 MEDIUM), statut repasse a `in-progress`.
