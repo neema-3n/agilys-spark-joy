@@ -5,7 +5,7 @@ import { useClient } from '@/contexts/ClientContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { PageHeader } from '@/components/PageHeader';
 import { showNavigationToast } from '@/lib/navigation-toast';
-import { budgetService } from '@/services/api/budget.service';
+import { budgetService, type CreateLigneBudgetaireInput } from '@/services/api/budget.service';
 import { applyModificationsToLignes, budgetModificationsService } from '@/services/api/budget-modifications.service';
 import { useSections } from '@/hooks/useSections';
 import { useProgrammes } from '@/hooks/useProgrammes';
@@ -34,6 +34,7 @@ import { exportBudgetToCSV, exportBudgetToPDF, printBudgetResults } from '@/lib/
 import { useToast } from '@/hooks/use-toast';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { useSnapshotState } from '@/hooks/useSnapshotState';
+import type { ReservationCreditFormData } from '@/types/reservation.types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -156,7 +157,28 @@ const Budgets = () => {
     if (!currentClient || !user) return;
     
     try {
-      await budgetService.createLigneBudgetaire(data as any, currentClient.id, user.id);
+      if (
+        !data.exerciceId ||
+        !data.actionId ||
+        !data.compteId ||
+        !data.libelle ||
+        data.montantInitial === undefined ||
+        !data.statut
+      ) {
+        throw new Error('Données de ligne budgétaire incomplètes');
+      }
+
+      const payload: CreateLigneBudgetaireInput = {
+        exerciceId: data.exerciceId,
+        actionId: data.actionId,
+        compteId: data.compteId,
+        enveloppeId: data.enveloppeId ?? null,
+        libelle: data.libelle,
+        montantInitial: data.montantInitial,
+        statut: data.statut
+      };
+
+      await budgetService.createLigneBudgetaire(payload, currentClient.id, user.id);
       toast({
         title: 'Succès',
         description: 'Ligne budgétaire créée avec succès',
@@ -215,7 +237,7 @@ const Budgets = () => {
     }
   };
 
-  const handleCreateModification = async (data: any) => {
+  const handleCreateModification = async (data: ModificationFormData) => {
     if (!currentExercice || !currentClient) return;
 
     try {
@@ -274,7 +296,7 @@ const Budgets = () => {
     setDecisionCompareOpen(true);
   };
 
-  const handleSaveReservation = async (data: any) => {
+  const handleSaveReservation = async (data: ReservationCreditFormData) => {
     try {
       const ligne = ligneForReservation;
       await createReservation(data);
@@ -710,3 +732,10 @@ const Budgets = () => {
 };
 
 export default Budgets;
+  type ModificationFormData = {
+    type: 'augmentation' | 'virement';
+    ligneSourceId?: string;
+    ligneDestinationId: string;
+    montant: number;
+    motif: string;
+  };

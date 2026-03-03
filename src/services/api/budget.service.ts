@@ -18,6 +18,16 @@ type LigneBudgetaireApiModel = {
   createdAt: string;
 };
 
+export type CreateLigneBudgetaireInput = {
+  exerciceId: string;
+  actionId: string;
+  compteId: string;
+  enveloppeId?: string | null;
+  libelle: string;
+  montantInitial: number;
+  statut: LigneBudgetaire['statut'];
+};
+
 const mapApiLigne = (entry: LigneBudgetaireApiModel): LigneBudgetaire => ({
   id: entry.id,
   exerciceId: entry.exerciceId,
@@ -64,7 +74,7 @@ export const budgetService = {
   },
 
   createLigneBudgetaire: async (
-    ligne: Omit<LigneBudgetaire, 'id' | 'dateCreation'>,
+    ligne: CreateLigneBudgetaireInput,
     _clientId: string,
     _userId: string
   ): Promise<LigneBudgetaire> => {
