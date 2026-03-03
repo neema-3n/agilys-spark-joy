@@ -5,7 +5,7 @@ export const clientsService = {
   getAll: async (): Promise<Client[]> => {
     // Simulation d'un délai réseau
     await new Promise(resolve => setTimeout(resolve, 300));
-    return MOCK_CLIENTS;
+    return MOCK_CLIENTS.filter((client) => client.statut === 'actif');
   },
 
   getById: async (id: string): Promise<Client | null> => {
