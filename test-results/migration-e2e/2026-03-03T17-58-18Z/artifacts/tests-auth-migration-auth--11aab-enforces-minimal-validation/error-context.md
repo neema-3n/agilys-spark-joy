@@ -1,0 +1,291 @@
+# Page snapshot
+
+```yaml
+- generic [active]:
+  - generic:
+    - list:
+      - listitem [ref=e1]:
+        - generic [ref=e2]:
+          - generic [ref=e3]: Erreur de validation
+          - generic [ref=e4]: Au moins une imputation budgétaire est requise
+        - button [ref=e5] [cursor=pointer]:
+          - img [ref=e6]
+    - region "Notifications alt+T"
+    - generic:
+      - complementary:
+        - generic:
+          - generic:
+            - generic:
+              - generic: A
+            - generic: AGILYS
+        - generic:
+          - generic:
+            - button:
+              - img
+              - generic: Opérations
+            - button:
+              - img
+              - generic: Pilotage
+        - navigation:
+          - generic:
+            - generic: Fournisseurs
+            - link:
+              - /url: /app/fournisseurs
+              - img
+              - generic: Fournisseurs
+          - generic:
+            - button [expanded]:
+              - generic:
+                - img
+                - generic: Budget
+              - img
+            - generic:
+              - link:
+                - /url: /app/budgets
+                - img
+                - generic: Budget
+              - link:
+                - /url: /app/previsions
+                - img
+                - generic: Prévisions Budgétaires
+          - generic:
+            - button [expanded]:
+              - generic:
+                - img
+                - generic: Opérations
+              - img
+            - generic:
+              - link:
+                - /url: /app/reservations
+                - img
+                - generic: Réservation De Crédits
+              - link:
+                - /url: /app/engagements
+                - img
+                - generic: Engagements
+              - link:
+                - /url: /app/bons-commande
+                - img
+                - generic: Bons De Commande
+              - link:
+                - /url: /app/factures
+                - img
+                - generic: Factures
+              - link:
+                - /url: /app/depenses
+                - img
+                - generic: Dépenses
+              - link:
+                - /url: /app/paiements
+                - img
+                - generic: Paiements
+          - generic:
+            - generic: Trésorerie
+            - link:
+              - /url: /app/tresorerie
+              - img
+              - generic: Suivi De Trésorerie
+        - generic:
+          - generic:
+            - button:
+              - img
+      - generic:
+        - banner:
+          - generic:
+            - generic:
+              - button:
+                - generic: Commune de Porto-Novo
+              - button:
+                - generic: Sélectionner un exercice
+            - generic:
+              - generic:
+                - img
+                - searchbox
+              - button:
+                - img
+                - generic: Toggle theme
+              - button:
+                - img
+                - generic: "3"
+                - generic: Notifications
+              - button:
+                - generic:
+                  - generic: UD
+                - generic: User Depense
+                - img
+        - main:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - heading [level=1]: Gestion des Dépenses
+                    - paragraph: Ordonnancement et liquidation des dépenses
+                  - generic:
+                    - button:
+                      - img
+                      - text: Nouvelle dépense
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - heading [level=3]: Total Dépenses
+                    - img
+                  - generic:
+                    - generic: "0"
+                    - paragraph: 0 dépense
+                - generic:
+                  - generic:
+                    - heading [level=3]: Validées
+                    - img
+                  - generic:
+                    - generic: "0"
+                    - paragraph: 0 dépense
+                - generic:
+                  - generic:
+                    - heading [level=3]: Ordonnancées
+                    - img
+                  - generic:
+                    - generic: "0"
+                    - paragraph: 0 dépense
+                - generic:
+                  - generic:
+                    - heading [level=3]: Payées
+                    - img
+                  - generic:
+                    - generic: "0"
+                    - paragraph: 0 dépense
+                - generic:
+                  - generic:
+                    - heading [level=3]: Taux d'exécution
+                    - img
+                  - generic:
+                    - generic: 0.0%
+                    - paragraph: 0 en brouillon
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - heading [level=3]: Liste des dépenses
+                      - paragraph: Recherche, filtres et actions groupées sur les dépenses
+                  - generic:
+                    - generic:
+                      - img
+                      - textbox:
+                        - /placeholder: Rechercher par numéro, objet, bénéficiaire...
+                    - generic:
+                      - generic:
+                        - button: "Statut: Tous"
+                      - generic:
+                        - button: Actions groupées
+                - generic:
+                  - generic:
+                    - generic:
+                      - table:
+                        - rowgroup:
+                          - row:
+                            - columnheader:
+                              - checkbox
+                            - columnheader: Numéro
+                            - columnheader: Date
+                            - columnheader: Objet
+                            - columnheader: Bénéficiaire
+                            - columnheader: Montant TTC
+                            - columnheader: Payé
+                            - columnheader: Solde
+                            - columnheader: Statut
+                            - columnheader: Imputation
+                            - columnheader: Actions
+                        - rowgroup:
+                          - row:
+                            - cell: Aucune dépense trouvée
+  - dialog "Nouvelle dépense" [ref=e10]:
+    - heading "Nouvelle dépense" [level=2] [ref=e12]
+    - generic [ref=e16]:
+      - generic [ref=e17]:
+        - heading "Type d'imputation budgétaire" [level=3] [ref=e18]
+        - radiogroup [ref=e19]:
+          - generic [ref=e20] [cursor=pointer]:
+            - radio "Depuis un engagement" [ref=e21]
+            - radio
+            - generic [ref=e22]: Depuis un engagement
+          - generic [ref=e23] [cursor=pointer]:
+            - radio "Depuis une réservation" [ref=e24]
+            - radio
+            - generic [ref=e25]: Depuis une réservation
+          - generic [ref=e26] [cursor=pointer]:
+            - radio "Depuis une facture" [ref=e27]
+            - radio
+            - generic [ref=e28]: Depuis une facture
+          - generic [ref=e29] [cursor=pointer]:
+            - radio "Imputation directe" [checked] [ref=e30]:
+              - img [ref=e32]
+            - radio [checked]
+            - generic [ref=e34]: Imputation directe
+      - generic [ref=e36]:
+        - text: Ligne budgétaire
+        - combobox "Ligne budgétaire" [ref=e37] [cursor=pointer]:
+          - generic: Sélectionner une ligne budgétaire
+          - img [ref=e38]
+        - combobox [ref=e40]
+      - generic [ref=e41]:
+        - heading "Bénéficiaire" [level=3] [ref=e42]
+        - radiogroup [ref=e43]:
+          - generic [ref=e44] [cursor=pointer]:
+            - radio "Fournisseur" [checked] [ref=e45]:
+              - img [ref=e47]
+            - radio [checked]
+            - generic [ref=e49]: Fournisseur
+          - generic [ref=e50] [cursor=pointer]:
+            - radio "Bénéficiaire direct" [ref=e51]
+            - radio
+            - generic [ref=e52]: Bénéficiaire direct
+        - generic [ref=e53]:
+          - text: Fournisseur
+          - combobox "Fournisseur" [ref=e54] [cursor=pointer]:
+            - generic: Sélectionner un fournisseur
+            - img [ref=e55]
+          - combobox [ref=e57]
+      - generic [ref=e58]:
+        - heading "Informations de la dépense" [level=3] [ref=e59]
+        - generic [ref=e60]:
+          - text: Objet de la dépense *
+          - textbox "Objet de la dépense *" [ref=e61]:
+            - /placeholder: Description de la dépense
+            - text: Achat minimal de test migration
+        - generic [ref=e62]:
+          - generic [ref=e63]:
+            - text: Montant (€) *
+            - spinbutton "Montant (€) *" [ref=e64]: "1500"
+          - generic [ref=e65]:
+            - text: Date de la dépense *
+            - textbox "Date de la dépense *" [ref=e66]: 2026-03-03
+        - generic [ref=e67]:
+          - text: Projet (optionnel)
+          - combobox "Projet (optionnel)" [ref=e68] [cursor=pointer]:
+            - generic: Sélectionner un projet
+            - img [ref=e69]
+          - combobox [ref=e71]
+        - generic [ref=e72]:
+          - generic [ref=e73]:
+            - text: Mode de paiement (optionnel)
+            - combobox "Mode de paiement (optionnel)" [ref=e74] [cursor=pointer]:
+              - generic: Sélectionner
+              - img [ref=e75]
+            - combobox [ref=e77]
+          - generic [ref=e78]:
+            - text: Référence de paiement (optionnel)
+            - textbox "Référence de paiement (optionnel)" [ref=e79]:
+              - /placeholder: "Ex: numéro de chèque"
+        - generic [ref=e80]:
+          - text: Observations (optionnel)
+          - textbox "Observations (optionnel)" [ref=e81]:
+            - /placeholder: Notes complémentaires
+    - generic [ref=e82]:
+      - button "Annuler" [ref=e83] [cursor=pointer]
+      - button "Créer la dépense" [ref=e84] [cursor=pointer]
+    - button "Close" [ref=e85] [cursor=pointer]:
+      - img [ref=e86]
+      - generic [ref=e89]: Close
+  - status: Notification Erreur de validationAu moins une imputation budgétaire est requise
+```

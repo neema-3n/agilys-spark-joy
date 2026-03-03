@@ -69,7 +69,7 @@ development_status:
   epic-m1: backlog
   m1-1-etablir-linventaire-de-parite-fonctionnelle: done
   m1-2-verifier-la-parite-des-contrats-api: review
-  m1-3-executer-la-non-regression-e2e-de-migration: backlog
+  m1-3-executer-la-non-regression-e2e-de-migration: done
   epic-m1-retrospective: optional
   epic-m2: backlog
   m2-1-definir-mapping-et-strategie-de-migration-data: done
