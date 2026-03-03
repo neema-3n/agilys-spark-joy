@@ -5,6 +5,7 @@ export type ReferentielEntityType =
   | 'programme'
   | 'action'
   | 'allocation'
+  | 'ligne_budgetaire'
   | 'decision_version';
 
 export interface EntityBase {
@@ -76,6 +77,21 @@ export interface AllocationEntity extends EntityBase {
   statut: 'validee';
   dateValidation: string;
   validePar: string;
+}
+
+export interface LigneBudgetaireEntity extends EntityBase {
+  exerciceId: string;
+  actionId: string;
+  compteId: string;
+  enveloppeId: string | null;
+  libelle: string;
+  montantInitial: number;
+  montantModifie: number;
+  montantEngage: number;
+  montantLiquide: number;
+  montantPaye: number;
+  disponible: number;
+  statut: 'actif' | 'cloture';
 }
 
 export type BudgetDecisionStatus = 'validated' | 'rejected';

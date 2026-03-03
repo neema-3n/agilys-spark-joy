@@ -9,7 +9,15 @@ interface RequestShape {
   body?: Record<string, unknown>;
 }
 
-const EXERCICE_SCOPED_ROUTES = ['enveloppes', 'sections', 'programmes', 'actions', 'allocations', 'reallocations'];
+const EXERCICE_SCOPED_ROUTES = [
+  'enveloppes',
+  'sections',
+  'programmes',
+  'actions',
+  'allocations',
+  'reallocations',
+  'lignes-budgetaires'
+];
 
 @Injectable()
 export class TenantExerciceScopeGuard implements CanActivate {

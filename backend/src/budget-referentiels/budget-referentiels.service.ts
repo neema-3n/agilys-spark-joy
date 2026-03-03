@@ -16,6 +16,7 @@ import type {
   DecisionVersionEntity,
   EnveloppeEntity,
   ExerciceEntity,
+  LigneBudgetaireEntity,
   ProgrammeEntity,
   ReferentielEntityType,
   SectionEntity
@@ -34,6 +35,8 @@ import type {
   ProgrammeCreateDto,
   ProgrammeUpdateDto,
   ReallocationCreateDto,
+  LigneBudgetaireCreateDto,
+  LigneBudgetaireUpdateDto,
   SectionCreateDto,
   SectionUpdateDto
 } from './dto/referentiels.dto';
@@ -48,6 +51,7 @@ export class BudgetReferentielsService {
   private readonly programmes = new Map<string, ProgrammeEntity>();
   private readonly actions = new Map<string, ActionEntity>();
   private readonly allocations = new Map<string, AllocationEntity>();
+  private readonly lignesBudgetaires = new Map<string, LigneBudgetaireEntity>();
   private readonly decisionVersions = new Map<string, DecisionVersionEntity[]>();
   private readonly auditLog: AuditEntry[] = [];
 
@@ -59,6 +63,7 @@ export class BudgetReferentielsService {
     this.programmes = new Map(snapshot.programmes.map((entry) => [entry.id, entry]));
     this.actions = new Map(snapshot.actions.map((entry) => [entry.id, entry]));
     this.allocations = new Map((snapshot.allocations ?? []).map((entry) => [entry.id, entry]));
+    this.lignesBudgetaires = new Map((snapshot.lignesBudgetaires ?? []).map((entry) => [entry.id, entry]));
     for (const version of snapshot.decisionVersions ?? []) {
       const versions = this.decisionVersions.get(version.allocationId) ?? [];
       versions.push(version);
@@ -469,6 +474,115 @@ export class BudgetReferentielsService {
       .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
   }
 
+  getLignesBudgetaires(user: AuthenticatedUser, exerciceId: string): LigneBudgetaireEntity[] {
+    this.ensureExerciceAccessible(user.tenantId, exerciceId);
+
+    return this.filterByTenant(this.lignesBudgetaires, user.tenantId)
+      .filter((item) => item.exerciceId === exerciceId)
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+  }
+
+  createLigneBudgetaire(user: AuthenticatedUser, payload: LigneBudgetaireCreateDto): LigneBudgetaireEntity {
+    this.ensureExerciceAccessible(user.tenantId, payload.exerciceId);
+    this.ensureActionAccessible(user.tenantId, payload.actionId, payload.exerciceId, 'destination');
+    this.assertValidMontantOrZero(payload.montantInitial, 'montantInitial');
+
+    const now = new Date().toISOString();
+    const entity: LigneBudgetaireEntity = {
+      id: randomUUID(),
+      clientId: user.tenantId,
+      exerciceId: payload.exerciceId,
+      actionId: payload.actionId.trim(),
+      compteId: payload.compteId.trim(),
+      enveloppeId: payload.enveloppeId?.trim() || null,
+      libelle: payload.libelle.trim(),
+      montantInitial: payload.montantInitial,
+      montantModifie: payload.montantInitial,
+      montantEngage: 0,
+      montantLiquide: 0,
+      montantPaye: 0,
+      disponible: payload.montantInitial,
+      statut: payload.statut ?? 'actif',
+      createdAt: now,
+      updatedAt: now,
+      createdBy: user.sub,
+      archivedAt: null
+    };
+
+    this.lignesBudgetaires.set(entity.id, entity);
+    this.appendAudit(user, 'ligne_budgetaire', entity.id, 'create', null, entity);
+    this.persist();
+
+    return entity;
+  }
+
+  updateLigneBudgetaire(
+    user: AuthenticatedUser,
+    id: string,
+    payload: LigneBudgetaireUpdateDto,
+    exerciceId: string
+  ): LigneBudgetaireEntity {
+    const current = this.getByTenantOrThrow(this.lignesBudgetaires, id, user.tenantId, 'Ligne budgétaire introuvable');
+    this.assertEntityWithinExercice(current.exerciceId, exerciceId);
+
+    if (payload.actionId) {
+      this.ensureActionAccessible(user.tenantId, payload.actionId, current.exerciceId, 'destination');
+    }
+    if (payload.montantInitial !== undefined) {
+      this.assertValidMontantOrZero(payload.montantInitial, 'montantInitial');
+    }
+    if (payload.montantModifie !== undefined) {
+      this.assertValidMontantOrZero(payload.montantModifie, 'montantModifie');
+    }
+    if (payload.montantEngage !== undefined) {
+      this.assertValidMontantOrZero(payload.montantEngage, 'montantEngage');
+    }
+    if (payload.montantLiquide !== undefined) {
+      this.assertValidMontantOrZero(payload.montantLiquide, 'montantLiquide');
+    }
+    if (payload.montantPaye !== undefined) {
+      this.assertValidMontantOrZero(payload.montantPaye, 'montantPaye');
+    }
+    if (payload.disponible !== undefined) {
+      this.assertValidMontantOrZero(payload.disponible, 'disponible');
+    }
+
+    const updated: LigneBudgetaireEntity = {
+      ...current,
+      ...payload,
+      actionId: payload.actionId?.trim() ?? current.actionId,
+      compteId: payload.compteId?.trim() ?? current.compteId,
+      enveloppeId: payload.enveloppeId !== undefined ? (payload.enveloppeId?.trim() || null) : current.enveloppeId,
+      libelle: payload.libelle?.trim() ?? current.libelle,
+      updatedAt: new Date().toISOString()
+    };
+
+    this.lignesBudgetaires.set(id, updated);
+    this.appendAudit(user, 'ligne_budgetaire', id, 'update', current, updated);
+    this.persist();
+
+    return updated;
+  }
+
+  archiveLigneBudgetaire(user: AuthenticatedUser, id: string, exerciceId: string): LigneBudgetaireEntity {
+    const current = this.getByTenantOrThrow(this.lignesBudgetaires, id, user.tenantId, 'Ligne budgétaire introuvable');
+    this.assertEntityWithinExercice(current.exerciceId, exerciceId);
+    const now = new Date().toISOString();
+
+    const archived: LigneBudgetaireEntity = {
+      ...current,
+      statut: 'cloture',
+      archivedAt: now,
+      updatedAt: now
+    };
+
+    this.lignesBudgetaires.set(id, archived);
+    this.appendAudit(user, 'ligne_budgetaire', id, 'archive', current, archived);
+    this.persist();
+
+    return archived;
+  }
+
   createDecisionValidation(user: AuthenticatedUser, allocationId: string, payload: BudgetDecisionActionDto): DecisionVersionEntity {
     return this.appendDecisionVersion(user, allocationId, payload, 'validated');
   }
@@ -488,7 +602,6 @@ export class BudgetReferentielsService {
       exerciceId,
       historySize: history.length
     });
-    this.persist();
 
     return history;
   }
@@ -549,7 +662,6 @@ export class BudgetReferentielsService {
       rightVersion: right.version,
       differences
     });
-    this.persist();
 
     return {
       allocationId,
@@ -1058,6 +1170,12 @@ export class BudgetReferentielsService {
     }
   }
 
+  private assertValidMontantOrZero(montant: number, field: string): void {
+    if (!Number.isFinite(montant) || montant < 0) {
+      throw new BadRequestException(`${field} incoherent: doit etre superieur ou egal a 0`);
+    }
+  }
+
   private getAxeBalance(tenantId: string, exerciceId: string, axeId: string): number {
     return [...this.allocations.values()]
       .filter((entry) => entry.clientId === tenantId && entry.exerciceId === exerciceId && !entry.archivedAt)
@@ -1133,6 +1251,7 @@ export class BudgetReferentielsService {
       programmes: [...this.programmes.values()],
       actions: [...this.actions.values()],
       allocations: [...this.allocations.values()],
+      lignesBudgetaires: [...this.lignesBudgetaires.values()],
       decisionVersions: [...this.decisionVersions.values()].flat(),
       auditLog: this.auditLog
     });

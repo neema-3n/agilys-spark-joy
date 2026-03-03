@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  ParseIntPipe,
   Param,
   Patch,
   Post,
@@ -28,6 +29,8 @@ import {
   ExerciceCreateDto,
   ExerciceScopedQueryDto,
   ExerciceUpdateDto,
+  LigneBudgetaireCreateDto,
+  LigneBudgetaireUpdateDto,
   ProgrammeCreateDto,
   ProgrammeUpdateDto,
   ReallocationCreateDto,
@@ -202,6 +205,39 @@ export class BudgetReferentielsController {
     return this.service.getAllocations(user, query.exerciceId);
   }
 
+  @Get('lignes-budgetaires')
+  @RequirePermissions('referentiels:read')
+  getLignesBudgetaires(@CurrentUser() user: AuthenticatedUser, @Query() query: ExerciceScopedQueryDto) {
+    return this.service.getLignesBudgetaires(user, query.exerciceId);
+  }
+
+  @Post('lignes-budgetaires')
+  @RequirePermissions('referentiels:write')
+  createLigneBudgetaire(@CurrentUser() user: AuthenticatedUser, @Body() body: LigneBudgetaireCreateDto) {
+    return this.service.createLigneBudgetaire(user, body);
+  }
+
+  @Patch('lignes-budgetaires/:id')
+  @RequirePermissions('referentiels:write')
+  updateLigneBudgetaire(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: LigneBudgetaireUpdateDto,
+    @Query() query: ExerciceScopedQueryDto
+  ) {
+    return this.service.updateLigneBudgetaire(user, id, body, query.exerciceId);
+  }
+
+  @Delete('lignes-budgetaires/:id')
+  @RequirePermissions('referentiels:write')
+  archiveLigneBudgetaire(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Query() query: ExerciceScopedQueryDto
+  ) {
+    return this.service.archiveLigneBudgetaire(user, id, query.exerciceId);
+  }
+
   @Post('allocations')
   @RequirePermissions('referentiels:write')
   createAllocation(@CurrentUser() user: AuthenticatedUser, @Body() body: AllocationCreateDto) {
@@ -249,10 +285,10 @@ export class BudgetReferentielsController {
   getDecisionVersion(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Param('version') version: string,
+    @Param('version', ParseIntPipe) version: number,
     @Query() query: ExerciceScopedQueryDto
   ) {
-    return this.service.getDecisionVersion(user, id, query.exerciceId, Number(version));
+    return this.service.getDecisionVersion(user, id, query.exerciceId, version);
   }
 
   @Post('reallocations')
