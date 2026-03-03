@@ -66,6 +66,26 @@ development_status:
   10-3-produire-dsf-conforme-ohada-sycebnl: backlog
   10-4-mesurer-les-temps-de-traitement-par-etape: backlog
   epic-10-retrospective: optional
+  epic-m1: backlog
+  m1-1-etablir-linventaire-de-parite-fonctionnelle: review
+  m1-2-verifier-la-parite-des-contrats-api: backlog
+  m1-3-executer-la-non-regression-e2e-de-migration: backlog
+  epic-m1-retrospective: optional
+  epic-m2: backlog
+  m2-1-definir-mapping-et-strategie-de-migration-data: review
+  m2-2-implementer-le-backfill-idempotent-par-lots: backlog
+  m2-3-reconciler-avant-apres-sur-donnees-critiques: backlog
+  epic-m2-retrospective: optional
+  epic-m3: backlog
+  m3-1-produire-le-runbook-de-cutover-production: backlog
+  m3-2-tester-le-plan-de-rollback-operationnel: backlog
+  m3-3-decommissionner-supabase-de-facon-controlee: backlog
+  m3-4-organiser-lhypercare-post-bascule: backlog
+  epic-m3-retrospective: optional
+  epic-m4: backlog
+  m4-1-revalider-rbac-abac-et-separation-des-responsabilites: backlog
+  m4-2-produire-le-dossier-daudit-de-migration: backlog
+  epic-m4-retrospective: optional
   epic-cc-01: in-progress
   cc-01-02-postgresql-local-docker: done
   cc-01-03-migrations-db-versionnees: done
