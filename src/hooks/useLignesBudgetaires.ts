@@ -39,7 +39,7 @@ export function useLignesBudgetaires() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, updates }: { id: string; updates: Partial<LigneBudgetaire> }) =>
-      budgetService.updateLigneBudgetaire(id, updates),
+      budgetService.updateLigneBudgetaire(id, updates, currentClient!.id, currentExercice!.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lignes-budgetaires'] });
       toast({
@@ -57,7 +57,7 @@ export function useLignesBudgetaires() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => budgetService.deleteLigneBudgetaire(id),
+    mutationFn: (id: string) => budgetService.deleteLigneBudgetaire(id, currentClient!.id, currentExercice!.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lignes-budgetaires'] });
       toast({

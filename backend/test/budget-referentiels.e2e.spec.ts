@@ -167,6 +167,240 @@ describe('BudgetReferentielsController (e2e)', () => {
     expect(auditResponse.body[0].after).toBeTruthy();
   });
 
+  it('creates allocation and reallocation with audit and scope enforcement', async () => {
+    const createExerciceResponse = await request(app.getHttpServer())
+      .post('/budget-referentiels/exercices')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        libelle: 'Exercice alloc e2e',
+        code: 'E2E-ALLOC',
+        dateDebut: '2040-01-01',
+        dateFin: '2040-12-31',
+        statut: 'ouvert'
+      });
+
+    expect(createExerciceResponse.status).toBe(201);
+    const exerciceId = createExerciceResponse.body.id as string;
+    const sectionResponse = await request(app.getHttpServer())
+      .post('/budget-referentiels/sections')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        exerciceId,
+        code: 'SEC-ALLOC-E2E',
+        libelle: 'Section alloc e2e',
+        ordre: 1,
+        statut: 'actif'
+      });
+    expect(sectionResponse.status).toBe(201);
+    const programmeResponse = await request(app.getHttpServer())
+      .post('/budget-referentiels/programmes')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        exerciceId,
+        sectionId: sectionResponse.body.id,
+        code: 'PRG-ALLOC-E2E',
+        libelle: 'Programme alloc e2e',
+        ordre: 1,
+        statut: 'actif'
+      });
+    expect(programmeResponse.status).toBe(201);
+    const actionAResponse = await request(app.getHttpServer())
+      .post('/budget-referentiels/actions')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        exerciceId,
+        programmeId: programmeResponse.body.id,
+        code: 'ACT-ALLOC-A',
+        libelle: 'Action alloc A',
+        ordre: 1,
+        statut: 'actif'
+      });
+    expect(actionAResponse.status).toBe(201);
+    const actionBResponse = await request(app.getHttpServer())
+      .post('/budget-referentiels/actions')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        exerciceId,
+        programmeId: programmeResponse.body.id,
+        code: 'ACT-ALLOC-B',
+        libelle: 'Action alloc B',
+        ordre: 2,
+        statut: 'actif'
+      });
+    expect(actionBResponse.status).toBe(201);
+
+    const allocationResponse = await request(app.getHttpServer())
+      .post('/budget-referentiels/allocations')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        exerciceId,
+        destinationAxeId: actionAResponse.body.id,
+        montant: 1000,
+        motif: 'Dotation initiale AXE-A'
+      });
+
+    expect(allocationResponse.status).toBe(201);
+    expect(allocationResponse.body.operationType).toBe('allocation');
+
+    const reallocationResponse = await request(app.getHttpServer())
+      .post('/budget-referentiels/reallocations')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        exerciceId,
+        sourceAxeId: actionAResponse.body.id,
+        destinationAxeId: actionBResponse.body.id,
+        montant: 300,
+        motif: 'Arbitrage vers AXE-B'
+      });
+
+    expect(reallocationResponse.status).toBe(201);
+    expect(reallocationResponse.body.operationType).toBe('reallocation');
+
+    const allocationsResponse = await request(app.getHttpServer())
+      .get('/budget-referentiels/allocations')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .query({ exerciceId });
+
+    expect(allocationsResponse.status).toBe(200);
+    expect(allocationsResponse.body).toHaveLength(2);
+
+    const insufficientBalanceResponse = await request(app.getHttpServer())
+      .post('/budget-referentiels/reallocations')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        exerciceId,
+        sourceAxeId: actionAResponse.body.id,
+        destinationAxeId: actionBResponse.body.id,
+        montant: 2000,
+        motif: 'Doit echouer'
+      });
+
+    expect(insufficientBalanceResponse.status).toBe(400);
+    expect(String(insufficientBalanceResponse.body.message)).toContain('Montant incoherent');
+
+    const crossTenantReadResponse = await request(app.getHttpServer())
+      .get('/budget-referentiels/allocations')
+      .set('Authorization', `Bearer ${otherTenantToken}`)
+      .query({ exerciceId });
+
+    expect(crossTenantReadResponse.status).toBe(403);
+  });
+
+  it('versionne les decisions budgetaires et expose historique + comparaison', async () => {
+    const createExerciceResponse = await request(app.getHttpServer())
+      .post('/budget-referentiels/exercices')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        libelle: 'Exercice decisions e2e',
+        code: 'E2E-DEC',
+        dateDebut: '2043-01-01',
+        dateFin: '2043-12-31',
+        statut: 'ouvert'
+      });
+    expect(createExerciceResponse.status).toBe(201);
+    const exerciceId = createExerciceResponse.body.id as string;
+
+    const sectionResponse = await request(app.getHttpServer())
+      .post('/budget-referentiels/sections')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        exerciceId,
+        code: 'SEC-DEC-E2E',
+        libelle: 'Section decision e2e',
+        ordre: 1,
+        statut: 'actif'
+      });
+    expect(sectionResponse.status).toBe(201);
+
+    const programmeResponse = await request(app.getHttpServer())
+      .post('/budget-referentiels/programmes')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        exerciceId,
+        sectionId: sectionResponse.body.id,
+        code: 'PRG-DEC-E2E',
+        libelle: 'Programme decision e2e',
+        ordre: 1,
+        statut: 'actif'
+      });
+    expect(programmeResponse.status).toBe(201);
+
+    const actionResponse = await request(app.getHttpServer())
+      .post('/budget-referentiels/actions')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        exerciceId,
+        programmeId: programmeResponse.body.id,
+        code: 'ACT-DEC-E2E',
+        libelle: 'Action decision e2e',
+        ordre: 1,
+        statut: 'actif'
+      });
+    expect(actionResponse.status).toBe(201);
+
+    const allocationResponse = await request(app.getHttpServer())
+      .post('/budget-referentiels/allocations')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        exerciceId,
+        destinationAxeId: actionResponse.body.id,
+        montant: 900,
+        motif: 'Dotation pour decision'
+      });
+    expect(allocationResponse.status).toBe(201);
+
+    const decisionId = allocationResponse.body.id as string;
+
+    const rejectResponse = await request(app.getHttpServer())
+      .post(`/budget-referentiels/allocations/${decisionId}/decision/reject`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        exerciceId,
+        motif: 'Refus pour controle complementaire'
+      });
+    expect(rejectResponse.status).toBe(201);
+    expect(rejectResponse.body.version).toBe(2);
+    expect(rejectResponse.body.statutDecision).toBe('rejected');
+
+    const validateResponse = await request(app.getHttpServer())
+      .post(`/budget-referentiels/allocations/${decisionId}/decision/validate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        exerciceId,
+        motif: 'Validation apres correction'
+      });
+    expect(validateResponse.status).toBe(201);
+    expect(validateResponse.body.version).toBe(3);
+    expect(validateResponse.body.statutDecision).toBe('validated');
+
+    const historyResponse = await request(app.getHttpServer())
+      .get(`/budget-referentiels/allocations/${decisionId}/decisions`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .query({ exerciceId });
+    expect(historyResponse.status).toBe(200);
+    expect(historyResponse.body).toHaveLength(3);
+    expect(historyResponse.body[0].snapshotAvant).toBeDefined();
+    expect(historyResponse.body[0].snapshotApres).toBeDefined();
+
+    const compareResponse = await request(app.getHttpServer())
+      .get(`/budget-referentiels/allocations/${decisionId}/decisions/compare`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .query({
+        exerciceId,
+        leftVersion: 2,
+        rightVersion: 3
+      });
+    expect(compareResponse.status).toBe(200);
+    expect(compareResponse.body.differences.statutDecision).toBeDefined();
+    expect(compareResponse.body.differences.motif).toBeDefined();
+
+    const crossTenantHistoryResponse = await request(app.getHttpServer())
+      .get(`/budget-referentiels/allocations/${decisionId}/decisions`)
+      .set('Authorization', `Bearer ${otherTenantToken}`)
+      .query({ exerciceId });
+    expect(crossTenantHistoryResponse.status).toBe(403);
+  });
+
   it('rejects inconsistent parent/exercice link', async () => {
     const firstExercice = await request(app.getHttpServer())
       .post('/budget-referentiels/exercices')
@@ -214,6 +448,62 @@ describe('BudgetReferentielsController (e2e)', () => {
       });
 
     expect(invalidProgramme.status).toBe(400);
+  });
+
+  it('rejects invalid axe id format with actionable message', async () => {
+    const createExerciceResponse = await request(app.getHttpServer())
+      .post('/budget-referentiels/exercices')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        libelle: 'Exercice invalid axe format',
+        code: 'E2E-AXE-FORMAT',
+        dateDebut: '2041-01-01',
+        dateFin: '2041-12-31',
+        statut: 'ouvert'
+      });
+
+    expect(createExerciceResponse.status).toBe(201);
+
+    const response = await request(app.getHttpServer())
+      .post('/budget-referentiels/allocations')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        exerciceId: createExerciceResponse.body.id,
+        destinationAxeId: 'AXE-A',
+        montant: 100,
+        motif: 'Axe invalide'
+      });
+
+    expect(response.status).toBe(400);
+    expect(String(response.body.message)).toContain('identifiant axe attendu au format UUID');
+  });
+
+  it('rejects allocation when axe does not exist in exercice scope', async () => {
+    const createExerciceResponse = await request(app.getHttpServer())
+      .post('/budget-referentiels/exercices')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        libelle: 'Exercice unknown axe',
+        code: 'E2E-UNKNOWN-AXE',
+        dateDebut: '2042-01-01',
+        dateFin: '2042-12-31',
+        statut: 'ouvert'
+      });
+
+    expect(createExerciceResponse.status).toBe(201);
+
+    const response = await request(app.getHttpServer())
+      .post('/budget-referentiels/allocations')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        exerciceId: createExerciceResponse.body.id,
+        destinationAxeId: '11111111-1111-4111-8111-111111111111',
+        montant: 100,
+        motif: 'Axe inconnu'
+      });
+
+    expect(response.status).toBe(404);
+    expect(String(response.body.message)).toContain('Axe destination introuvable');
   });
 
   it('enforces RBAC on write endpoints', async () => {

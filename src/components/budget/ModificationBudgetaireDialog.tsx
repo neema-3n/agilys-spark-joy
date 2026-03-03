@@ -148,7 +148,6 @@ export const ModificationBudgetaireDialog = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="augmentation">Augmentation</SelectItem>
-                  <SelectItem value="diminution">Diminution</SelectItem>
                   <SelectItem value="virement">Virement</SelectItem>
                 </SelectContent>
               </Select>

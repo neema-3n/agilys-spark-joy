@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PageHeader } from '@/components/PageHeader';
 import { showNavigationToast } from '@/lib/navigation-toast';
 import { budgetService } from '@/services/api/budget.service';
+import { applyModificationsToLignes, budgetModificationsService } from '@/services/api/budget-modifications.service';
 import { useSections } from '@/hooks/useSections';
 import { useProgrammes } from '@/hooks/useProgrammes';
 import { useActions } from '@/hooks/useActions';
@@ -18,11 +19,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Plus, FileEdit, CheckCircle, XCircle, Clock, Send, ArrowDown } from 'lucide-react';
+import { Plus, FileEdit, Clock, ArrowDown } from 'lucide-react';
 import { BudgetTable } from '@/components/budget/BudgetTable';
 import { LigneBudgetaireSnapshot } from '@/components/budget/LigneBudgetaireSnapshot';
 import { LigneBudgetaireDialog } from '@/components/budget/LigneBudgetaireDialog';
 import { ModificationBudgetaireDialog } from '@/components/budget/ModificationBudgetaireDialog';
+import { BudgetDecisionCompareDialog } from '@/components/budget/BudgetDecisionCompareDialog';
 import { ReservationDialog } from '@/components/reservations/ReservationDialog';
 import { BudgetSearchPanel } from '@/components/search/BudgetSearchPanel';
 import { ActiveFiltersBar } from '@/components/search/ActiveFiltersBar';
@@ -97,10 +99,17 @@ const Budgets = () => {
   const [ligneForReservation, setLigneForReservation] = useState<LigneBudgetaire | null>(null);
   const [ligneForModification, setLigneForModification] = useState<LigneBudgetaire | null>(null);
   const [ligneToDelete, setLigneToDelete] = useState<string | null>(null);
+  const [decisionCompareAllocationId, setDecisionCompareAllocationId] = useState<string | null>(null);
+  const [decisionCompareOpen, setDecisionCompareOpen] = useState(false);
   
   const { ligneId: ligneIdFromRoute } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'lignes';
+
+  const getErrorMessage = (error: unknown, fallback: string) =>
+    error instanceof Error && error.message.trim().length > 0 ? error.message : fallback;
+  const findLigneByAxeId = (axeId?: string) =>
+    axeId ? lignes.find((ligne) => ligne.id === axeId || ligne.actionId === axeId) : undefined;
   
   const handleTabChange = (value: string) => {
     if (value !== 'lignes' && ligneIdFromRoute) {
@@ -126,17 +135,16 @@ const Budgets = () => {
       const [lignesData, modificationsData] = 
         await Promise.all([
           budgetService.getLignesBudgetaires(currentExercice.id, currentClient.id),
-          budgetService.getModifications(currentExercice.id, currentClient.id),
+          budgetModificationsService.getModifications(currentExercice.id),
         ]);
 
-      // Les montants (engagé, payé, disponible, réservé) sont maintenant calculés automatiquement 
-      // par les triggers PostgreSQL - on utilise directement les valeurs de la base de données
-      setLignes(lignesData);
+      // Projette allocations/reallocations backend sur les lignes pour garantir la visibilité immédiate.
+      setLignes(applyModificationsToLignes(lignesData, modificationsData));
       setModifications(modificationsData);
     } catch (error) {
       toast({
         title: 'Erreur',
-        description: 'Impossible de charger les données budgétaires',
+        description: getErrorMessage(error, 'Impossible de charger les données budgétaires'),
         variant: 'destructive',
       });
     } finally {
@@ -157,17 +165,17 @@ const Budgets = () => {
     } catch (error) {
       toast({
         title: 'Erreur',
-        description: 'Impossible de créer la ligne budgétaire',
+        description: getErrorMessage(error, 'Impossible de créer la ligne budgétaire'),
         variant: 'destructive',
       });
     }
   };
 
   const handleUpdateLigne = async (data: Partial<LigneBudgetaire>) => {
-    if (!data.id) return;
+    if (!data.id || !currentClient || !currentExercice) return;
     
     try {
-      await budgetService.updateLigneBudgetaire(data.id, data);
+      await budgetService.updateLigneBudgetaire(data.id, data, currentClient.id, currentExercice.id);
       toast({
         title: 'Succès',
         description: 'Ligne budgétaire modifiée avec succès',
@@ -177,17 +185,17 @@ const Budgets = () => {
     } catch (error) {
       toast({
         title: 'Erreur',
-        description: 'Impossible de modifier la ligne budgétaire',
+        description: getErrorMessage(error, 'Impossible de modifier la ligne budgétaire'),
         variant: 'destructive',
       });
     }
   };
 
   const handleDeleteLigne = async () => {
-    if (!ligneToDelete) return;
+    if (!ligneToDelete || !currentClient || !currentExercice) return;
 
     try {
-      await budgetService.deleteLigneBudgetaire(ligneToDelete);
+      await budgetService.deleteLigneBudgetaire(ligneToDelete, currentClient.id, currentExercice.id);
       toast({
         title: 'Succès',
         description: 'Ligne budgétaire supprimée avec succès',
@@ -212,12 +220,22 @@ const Budgets = () => {
 
     try {
       const ligne = ligneForModification;
+      const destinationLigne = lignes.find((entry) => entry.id === data.ligneDestinationId);
+      const sourceLigne = data.ligneSourceId ? lignes.find((entry) => entry.id === data.ligneSourceId) : undefined;
+
+      if (!destinationLigne) {
+        throw new Error('Ligne destination introuvable pour cette modification');
+      }
+      if (data.type === 'virement' && !sourceLigne) {
+        throw new Error('Ligne source introuvable pour ce virement');
+      }
       
-      await budgetService.createModification({
+      await budgetModificationsService.createModification({
         ...data,
+        ligneDestinationId: destinationLigne.actionId,
+        ligneSourceId: sourceLigne?.actionId,
         exerciceId: currentExercice.id,
-        statut: 'brouillon' as const,
-      }, currentClient.id);
+      });
 
       setModificationDialogOpen(false);
       setLigneForModification(null);
@@ -235,60 +253,7 @@ const Budgets = () => {
     } catch (error) {
       toast({
         title: 'Erreur',
-        description: 'Impossible de créer la modification budgétaire',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleValiderModification = async (id: string) => {
-    if (!user) return;
-
-    try {
-      await budgetService.validerModification(id, user.id);
-      toast({
-        title: 'Succès',
-        description: 'Modification validée avec succès',
-      });
-      loadData();
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de valider la modification',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleSoumettreModification = async (id: string) => {
-    try {
-      await budgetService.soumettreModification(id);
-      toast({
-        title: 'Succès',
-        description: 'Modification soumise pour validation',
-      });
-      loadData();
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de soumettre la modification',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleRejeterModification = async (id: string) => {
-    try {
-      await budgetService.rejeterModification(id);
-      toast({
-        title: 'Succès',
-        description: 'Modification rejetée',
-      });
-      loadData();
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de rejeter la modification',
+        description: error instanceof Error ? error.message : 'Impossible de créer la modification budgétaire',
         variant: 'destructive',
       });
     }
@@ -302,6 +267,11 @@ const Budgets = () => {
   const handleCreateModificationFromLigne = (ligne: LigneBudgetaire) => {
     setLigneForModification(ligne);
     setModificationDialogOpen(true);
+  };
+
+  const handleOpenDecisionCompare = (allocationId: string) => {
+    setDecisionCompareAllocationId(allocationId);
+    setDecisionCompareOpen(true);
   };
 
   const handleSaveReservation = async (data: any) => {
@@ -325,7 +295,7 @@ const Budgets = () => {
     } catch (error) {
       toast({
         title: 'Erreur',
-        description: 'Impossible de créer la réservation',
+        description: getErrorMessage(error, 'Impossible de créer la réservation'),
         variant: 'destructive',
       });
       throw error;
@@ -362,7 +332,6 @@ const Budgets = () => {
   const getTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
       augmentation: 'Augmentation',
-      diminution: 'Diminution',
       virement: 'Virement',
     };
     return labels[type] || type;
@@ -594,7 +563,7 @@ const Budgets = () => {
                 </TableHeader>
                 <TableBody>
                   {modifications.map((modification) => {
-                    const ligne = lignes.find(l => l.id === modification.ligneDestinationId);
+                    const ligne = findLigneByAxeId(modification.ligneDestinationId);
                     
                     return (
                       <TableRow key={modification.id} className="align-top">
@@ -606,7 +575,7 @@ const Budgets = () => {
                           {modification.type === 'virement' && modification.ligneSourceId ? (
                             <div className="flex flex-col gap-0.5 py-1">
                               <span className="text-sm text-muted-foreground truncate">
-                                {lignes.find(l => l.id === modification.ligneSourceId)?.libelle || '-'}
+                                {findLigneByAxeId(modification.ligneSourceId)?.libelle || '-'}
                               </span>
                               <div className="flex justify-start">
                                 <ArrowDown className="h-3 w-3 text-primary" />
@@ -634,45 +603,21 @@ const Budgets = () => {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {modification.statut === 'brouillon' && (
-                            <div className="flex gap-1 justify-end">
-                              <Button
-                                size="sm"
-                                onClick={() => handleSoumettreModification(modification.id)}
-                              >
-                                <Send className="h-4 w-4 mr-1" />
-                                Soumettre
-                              </Button>
-                            </div>
-                          )}
-                          {modification.statut === 'en_attente' && (
-                            <div className="flex gap-2 justify-end">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-green-600 border-green-600 hover:bg-green-50"
-                                onClick={() => handleValiderModification(modification.id)}
-                              >
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                Valider
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-red-600 border-red-600 hover:bg-red-50"
-                                onClick={() => handleRejeterModification(modification.id)}
-                              >
-                                <XCircle className="h-4 w-4 mr-1" />
-                                Rejeter
-                              </Button>
-                            </div>
-                          )}
-                          {modification.statut === 'validee' && (
-                            <div className="flex items-center justify-end gap-2 text-sm text-muted-foreground">
-                              <Clock className="h-4 w-4" />
-                              {modification.dateValidation}
-                            </div>
-                          )}
+                          <div className="flex items-center justify-end gap-2">
+                            {modification.statut === 'validee' && (
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Clock className="h-4 w-4" />
+                                {modification.dateValidation}
+                              </div>
+                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleOpenDecisionCompare(modification.id)}
+                            >
+                              Historique
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -752,6 +697,13 @@ const Budgets = () => {
         onSave={handleSaveReservation}
         reservation={undefined}
         preSelectedLigneBudgetaire={ligneForReservation}
+      />
+
+      <BudgetDecisionCompareDialog
+        open={decisionCompareOpen}
+        allocationId={decisionCompareAllocationId}
+        exerciceId={currentExercice?.id || ''}
+        onClose={() => setDecisionCompareOpen(false)}
       />
     </div>
   );

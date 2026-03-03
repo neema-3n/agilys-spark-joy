@@ -15,6 +15,33 @@ const otherTenantUser: AuthenticatedUser = {
   roles: ['admin_client']
 };
 
+const createActionAxe = (service: BudgetReferentielsService, user: AuthenticatedUser, exerciceId: string, suffix: string) => {
+  const section = service.createSection(user, {
+    exerciceId,
+    code: `SEC-${suffix}`,
+    libelle: `Section ${suffix}`,
+    ordre: 1,
+    statut: 'actif'
+  });
+  const programme = service.createProgramme(user, {
+    exerciceId,
+    sectionId: section.id,
+    code: `PRG-${suffix}`,
+    libelle: `Programme ${suffix}`,
+    ordre: 1,
+    statut: 'actif'
+  });
+
+  return service.createAction(user, {
+    exerciceId,
+    programmeId: programme.id,
+    code: `ACT-${suffix}`,
+    libelle: `Action ${suffix}`,
+    ordre: 1,
+    statut: 'actif'
+  });
+};
+
 describe('BudgetReferentielsService', () => {
   let service: BudgetReferentielsService;
 
@@ -145,5 +172,196 @@ describe('BudgetReferentielsService', () => {
     expect(archiveEntry).toBeDefined();
     expect(archiveEntry?.before).not.toBeNull();
     expect(archiveEntry?.after).not.toBeNull();
+  });
+
+  it('creates allocation and reallocation with audit trace and non-destructive history', () => {
+    const exercice = service.createExercice(adminUser, {
+      libelle: 'Exercice allocations',
+      code: 'EX-ALLOC',
+      dateDebut: '2030-01-01',
+      dateFin: '2030-12-31',
+      statut: 'ouvert'
+    });
+    const axeA = createActionAxe(service, adminUser, exercice.id, 'A');
+    const axeB = createActionAxe(service, adminUser, exercice.id, 'B');
+
+    const allocation = service.createAllocation(adminUser, {
+      exerciceId: exercice.id,
+      destinationAxeId: axeA.id,
+      montant: 1000,
+      motif: 'Dotation initiale axe A'
+    });
+
+    const reallocation = service.createReallocation(adminUser, {
+      exerciceId: exercice.id,
+      sourceAxeId: axeA.id,
+      destinationAxeId: axeB.id,
+      montant: 400,
+      motif: 'Arbitrage vers axe B'
+    });
+
+    expect(allocation.operationType).toBe('allocation');
+    expect(reallocation.operationType).toBe('reallocation');
+
+    const list = service.getAllocations(adminUser, exercice.id);
+    expect(list).toHaveLength(2);
+    expect(list.some((entry) => entry.id === allocation.id)).toBeTruthy();
+    expect(list.some((entry) => entry.id === reallocation.id)).toBeTruthy();
+
+    const auditEntries = service.getAuditLog(adminUser, 'allocation');
+    const actions = new Set(auditEntries.map((entry) => entry.action));
+    expect(actions.has('allocate')).toBeTruthy();
+    expect(actions.has('reallocate')).toBeTruthy();
+  });
+
+  it('rejects reallocation when source balance is insufficient', () => {
+    const exercice = service.createExercice(adminUser, {
+      libelle: 'Exercice insuffisant',
+      code: 'EX-INS',
+      dateDebut: '2031-01-01',
+      dateFin: '2031-12-31',
+      statut: 'ouvert'
+    });
+    const axeA = createActionAxe(service, adminUser, exercice.id, 'INS-A');
+    const axeB = createActionAxe(service, adminUser, exercice.id, 'INS-B');
+
+    service.createAllocation(adminUser, {
+      exerciceId: exercice.id,
+      destinationAxeId: axeA.id,
+      montant: 200,
+      motif: 'Base axe A'
+    });
+
+    expect(() =>
+      service.createReallocation(adminUser, {
+        exerciceId: exercice.id,
+        sourceAxeId: axeA.id,
+        destinationAxeId: axeB.id,
+        montant: 500,
+        motif: 'Tentative depassement'
+      })
+    ).toThrow('Montant incoherent');
+  });
+
+  it('enforces tenant isolation on allocations', () => {
+    const exercice = service.createExercice(adminUser, {
+      libelle: 'Exercice tenant allocation',
+      code: 'EX-TEN-ALLOC',
+      dateDebut: '2032-01-01',
+      dateFin: '2032-12-31',
+      statut: 'ouvert'
+    });
+    const axe = createActionAxe(service, adminUser, exercice.id, 'TENANT');
+
+    expect(() =>
+      service.createAllocation(otherTenantUser, {
+        exerciceId: exercice.id,
+        destinationAxeId: axe.id,
+        montant: 300,
+        motif: 'Cross tenant interdit'
+      })
+    ).toThrow(ForbiddenException);
+  });
+
+  it('creates decision versions append-only and compares consecutive versions', () => {
+    const exercice = service.createExercice(adminUser, {
+      libelle: 'Exercice versions',
+      code: 'EX-VERS',
+      dateDebut: '2035-01-01',
+      dateFin: '2035-12-31',
+      statut: 'ouvert'
+    });
+    const axe = createActionAxe(service, adminUser, exercice.id, 'VERS');
+    const allocation = service.createAllocation(adminUser, {
+      exerciceId: exercice.id,
+      destinationAxeId: axe.id,
+      montant: 1000,
+      motif: 'Dotation initiale'
+    });
+
+    const rejectedVersion = service.createDecisionRejection(adminUser, allocation.id, {
+      exerciceId: exercice.id,
+      motif: 'Pieces justificatives insuffisantes'
+    });
+
+    const validatedVersion = service.createDecisionValidation(adminUser, allocation.id, {
+      exerciceId: exercice.id,
+      motif: 'Validation finale apres correction'
+    });
+
+    expect(rejectedVersion.version).toBe(2);
+    expect(validatedVersion.version).toBe(3);
+
+    const history = service.getDecisionHistory(adminUser, allocation.id, exercice.id);
+    expect(history).toHaveLength(3);
+    expect(history[0]?.version).toBe(1);
+    expect(history[2]?.statutDecision).toBe('validated');
+
+    const comparison = service.compareDecisionVersions(adminUser, allocation.id, {
+      exerciceId: exercice.id,
+      leftVersion: 2,
+      rightVersion: 3
+    });
+    expect(comparison.leftVersion.version).toBe(2);
+    expect(comparison.rightVersion.version).toBe(3);
+    expect(comparison.differences.statutDecision).toBeDefined();
+    expect(comparison.differences.motif).toBeDefined();
+  });
+
+  it('rejects decision history access outside tenant or exercice scope', () => {
+    const exercice = service.createExercice(adminUser, {
+      libelle: 'Exercice scope',
+      code: 'EX-SCOPE',
+      dateDebut: '2036-01-01',
+      dateFin: '2036-12-31',
+      statut: 'ouvert'
+    });
+    const axe = createActionAxe(service, adminUser, exercice.id, 'SCOPE');
+    const allocation = service.createAllocation(adminUser, {
+      exerciceId: exercice.id,
+      destinationAxeId: axe.id,
+      montant: 500,
+      motif: 'Dotation scope'
+    });
+
+    expect(() => service.getDecisionHistory(otherTenantUser, allocation.id, exercice.id)).toThrow(ForbiddenException);
+  });
+
+  it('rejects allocation when axe does not exist in exercice scope', () => {
+    const exercice = service.createExercice(adminUser, {
+      libelle: 'Exercice missing axe',
+      code: 'EX-MISSING-AXE',
+      dateDebut: '2034-01-01',
+      dateFin: '2034-12-31',
+      statut: 'ouvert'
+    });
+
+    expect(() =>
+      service.createAllocation(adminUser, {
+        exerciceId: exercice.id,
+        destinationAxeId: '11111111-1111-4111-8111-111111111111',
+        montant: 100,
+        motif: 'Axe inconnu'
+      })
+    ).toThrow('Axe destination introuvable');
+  });
+
+  it('rejects invalid axe identifier format', () => {
+    const exercice = service.createExercice(adminUser, {
+      libelle: 'Exercice invalid axe',
+      code: 'EX-INV-AXE',
+      dateDebut: '2033-01-01',
+      dateFin: '2033-12-31',
+      statut: 'ouvert'
+    });
+
+    expect(() =>
+      service.createAllocation(adminUser, {
+        exerciceId: exercice.id,
+        destinationAxeId: 'AXE-A',
+        montant: 100,
+        motif: 'Axe invalide'
+      })
+    ).toThrow('identifiant axe attendu au format UUID');
   });
 });

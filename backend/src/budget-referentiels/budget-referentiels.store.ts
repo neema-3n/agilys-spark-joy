@@ -3,7 +3,9 @@ import { closeSync, existsSync, mkdirSync, openSync, readFileSync, renameSync, r
 import { dirname, resolve } from 'path';
 import type {
   ActionEntity,
+  AllocationEntity,
   AuditEntry,
+  DecisionVersionEntity,
   EnveloppeEntity,
   ExerciceEntity,
   ProgrammeEntity,
@@ -16,6 +18,8 @@ interface BudgetReferentielsSnapshot {
   sections: SectionEntity[];
   programmes: ProgrammeEntity[];
   actions: ActionEntity[];
+  allocations: AllocationEntity[];
+  decisionVersions: DecisionVersionEntity[];
   auditLog: AuditEntry[];
 }
 
@@ -25,6 +29,8 @@ const EMPTY_SNAPSHOT: BudgetReferentielsSnapshot = {
   sections: [],
   programmes: [],
   actions: [],
+  allocations: [],
+  decisionVersions: [],
   auditLog: []
 };
 
@@ -52,6 +58,8 @@ export class BudgetReferentielsStore {
         sections: parsed.sections ?? [],
         programmes: parsed.programmes ?? [],
         actions: parsed.actions ?? [],
+        allocations: parsed.allocations ?? [],
+        decisionVersions: parsed.decisionVersions ?? [],
         auditLog: parsed.auditLog ?? []
       };
     } catch (error) {

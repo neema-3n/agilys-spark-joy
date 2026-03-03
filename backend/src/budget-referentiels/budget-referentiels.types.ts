@@ -1,4 +1,11 @@
-export type ReferentielEntityType = 'exercice' | 'enveloppe' | 'section' | 'programme' | 'action';
+export type ReferentielEntityType =
+  | 'exercice'
+  | 'enveloppe'
+  | 'section'
+  | 'programme'
+  | 'action'
+  | 'allocation'
+  | 'decision_version';
 
 export interface EntityBase {
   id: string;
@@ -55,12 +62,70 @@ export interface ActionEntity extends EntityBase {
   statut: 'actif' | 'archive';
 }
 
+export type AllocationOperationType = 'allocation' | 'reallocation';
+
+export interface AllocationEntity extends EntityBase {
+  exerciceId: string;
+  numero: string;
+  operationType: AllocationOperationType;
+  sourceAxeId: string | null;
+  destinationAxeId: string;
+  montant: number;
+  motif: string;
+  effectiveAt: string;
+  statut: 'validee';
+  dateValidation: string;
+  validePar: string;
+}
+
+export type BudgetDecisionStatus = 'validated' | 'rejected';
+
+export interface DecisionSnapshot {
+  operationType: AllocationOperationType;
+  sourceAxeId: string | null;
+  destinationAxeId: string;
+  montant: number;
+  statutDecision: BudgetDecisionStatus;
+  motif: string;
+  auteur: string;
+  horodatage: string;
+  soldes: {
+    sourceAvant: number | null;
+    sourceApres: number | null;
+    destinationAvant: number;
+    destinationApres: number;
+  };
+}
+
+export interface DecisionVersionEntity extends EntityBase {
+  decisionId: string;
+  allocationId: string;
+  exerciceId: string;
+  version: number;
+  statutDecision: BudgetDecisionStatus;
+  motif: string;
+  auteur: string;
+  horodatage: string;
+  snapshotAvant: DecisionSnapshot;
+  snapshotApres: DecisionSnapshot;
+}
+
 export interface AuditEntry {
   id: string;
   tenantId: string;
   entityType: ReferentielEntityType;
   entityId: string;
-  action: 'create' | 'update' | 'archive';
+  action:
+    | 'create'
+    | 'update'
+    | 'archive'
+    | 'allocate'
+    | 'reallocate'
+    | 'decision_validate'
+    | 'decision_reject'
+    | 'decision_compare'
+    | 'decision_history_read'
+    | 'decision_scope_denied';
   timestamp: string;
   authorId: string;
   before: unknown | null;

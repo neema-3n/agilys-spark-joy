@@ -9,7 +9,11 @@ import { randomUUID } from 'crypto';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import type {
   ActionEntity,
+  AllocationEntity,
   AuditEntry,
+  BudgetDecisionStatus,
+  DecisionSnapshot,
+  DecisionVersionEntity,
   EnveloppeEntity,
   ExerciceEntity,
   ProgrammeEntity,
@@ -20,23 +24,31 @@ import { BudgetReferentielsStore } from './budget-referentiels.store';
 import type {
   ActionCreateDto,
   ActionUpdateDto,
+  AllocationCreateDto,
+  BudgetDecisionActionDto,
+  BudgetDecisionCompareQueryDto,
   EnveloppeCreateDto,
   EnveloppeUpdateDto,
   ExerciceCreateDto,
   ExerciceUpdateDto,
   ProgrammeCreateDto,
   ProgrammeUpdateDto,
+  ReallocationCreateDto,
   SectionCreateDto,
   SectionUpdateDto
 } from './dto/referentiels.dto';
 
 @Injectable()
 export class BudgetReferentielsService {
+  private static readonly MAX_AXE_BALANCE = 1_000_000_000;
+  private static readonly UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   private readonly exercices = new Map<string, ExerciceEntity>();
   private readonly enveloppes = new Map<string, EnveloppeEntity>();
   private readonly sections = new Map<string, SectionEntity>();
   private readonly programmes = new Map<string, ProgrammeEntity>();
   private readonly actions = new Map<string, ActionEntity>();
+  private readonly allocations = new Map<string, AllocationEntity>();
+  private readonly decisionVersions = new Map<string, DecisionVersionEntity[]>();
   private readonly auditLog: AuditEntry[] = [];
 
   constructor(private readonly store: BudgetReferentielsStore = new BudgetReferentielsStore()) {
@@ -46,6 +58,12 @@ export class BudgetReferentielsService {
     this.sections = new Map(snapshot.sections.map((entry) => [entry.id, entry]));
     this.programmes = new Map(snapshot.programmes.map((entry) => [entry.id, entry]));
     this.actions = new Map(snapshot.actions.map((entry) => [entry.id, entry]));
+    this.allocations = new Map((snapshot.allocations ?? []).map((entry) => [entry.id, entry]));
+    for (const version of snapshot.decisionVersions ?? []) {
+      const versions = this.decisionVersions.get(version.allocationId) ?? [];
+      versions.push(version);
+      this.decisionVersions.set(version.allocationId, versions);
+    }
     this.auditLog.push(...snapshot.auditLog);
   }
 
@@ -443,12 +461,431 @@ export class BudgetReferentielsService {
     return archived;
   }
 
+  getAllocations(user: AuthenticatedUser, exerciceId: string): AllocationEntity[] {
+    this.ensureExerciceAccessible(user.tenantId, exerciceId);
+
+    return this.filterByTenant(this.allocations, user.tenantId)
+      .filter((item) => item.exerciceId === exerciceId)
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+  }
+
+  createDecisionValidation(user: AuthenticatedUser, allocationId: string, payload: BudgetDecisionActionDto): DecisionVersionEntity {
+    return this.appendDecisionVersion(user, allocationId, payload, 'validated');
+  }
+
+  createDecisionRejection(user: AuthenticatedUser, allocationId: string, payload: BudgetDecisionActionDto): DecisionVersionEntity {
+    return this.appendDecisionVersion(user, allocationId, payload, 'rejected');
+  }
+
+  getDecisionHistory(user: AuthenticatedUser, allocationId: string, exerciceId: string): DecisionVersionEntity[] {
+    const allocation = this.ensureAllocationAccessible(user.tenantId, allocationId, exerciceId, user.sub);
+    const history = [...(this.decisionVersions.get(allocation.id) ?? [])]
+      .filter((version) => version.clientId === user.tenantId && version.exerciceId === exerciceId)
+      .sort((left, right) => left.version - right.version);
+
+    this.appendAudit(user, 'decision_version', allocation.id, 'decision_history_read', null, {
+      allocationId: allocation.id,
+      exerciceId,
+      historySize: history.length
+    });
+    this.persist();
+
+    return history;
+  }
+
+  getDecisionVersion(user: AuthenticatedUser, allocationId: string, exerciceId: string, version: number): DecisionVersionEntity {
+    const history = this.getDecisionHistory(user, allocationId, exerciceId);
+    const selected = history.find((entry) => entry.version === version);
+
+    if (!selected) {
+      throw new NotFoundException(`Version de decision ${version} introuvable`);
+    }
+
+    return selected;
+  }
+
+  compareDecisionVersions(
+    user: AuthenticatedUser,
+    allocationId: string,
+    query: BudgetDecisionCompareQueryDto
+  ): {
+    allocationId: string;
+    exerciceId: string;
+    leftVersion: DecisionVersionEntity;
+    rightVersion: DecisionVersionEntity;
+    differences: Record<string, { from: unknown; to: unknown }>;
+  } {
+    const history = this.getDecisionHistory(user, allocationId, query.exerciceId);
+    if (history.length < 2) {
+      throw new BadRequestException('Comparaison impossible: minimum 2 versions requises');
+    }
+
+    const right =
+      query.rightVersion !== undefined
+        ? history.find((entry) => entry.version === query.rightVersion)
+        : history[history.length - 1];
+    if (!right) {
+      throw new NotFoundException(`Version cible ${query.rightVersion} introuvable`);
+    }
+
+    const left =
+      query.leftVersion !== undefined
+        ? history.find((entry) => entry.version === query.leftVersion)
+        : history.find((entry) => entry.version === right.version - 1);
+    if (!left) {
+      throw new NotFoundException(
+        query.leftVersion !== undefined
+          ? `Version source ${query.leftVersion} introuvable`
+          : 'Version precedente introuvable pour la comparaison'
+      );
+    }
+
+    if (left.version === right.version) {
+      throw new BadRequestException('Comparaison invalide: deux versions distinctes sont requises');
+    }
+
+    const differences = this.computeDecisionDiff(left, right);
+    this.appendAudit(user, 'decision_version', allocationId, 'decision_compare', left, {
+      rightVersion: right.version,
+      differences
+    });
+    this.persist();
+
+    return {
+      allocationId,
+      exerciceId: query.exerciceId,
+      leftVersion: left,
+      rightVersion: right,
+      differences
+    };
+  }
+
+  createAllocation(user: AuthenticatedUser, payload: AllocationCreateDto): AllocationEntity {
+    this.ensureExerciceAccessible(user.tenantId, payload.exerciceId);
+    this.assertValidAxeId(payload.destinationAxeId, 'destination');
+    this.ensureActionAccessible(user.tenantId, payload.destinationAxeId, payload.exerciceId, 'destination');
+    this.assertValidMotif(payload.motif);
+    this.assertValidMontant(payload.montant);
+
+    const currentDestinationBalance = this.getAxeBalance(user.tenantId, payload.exerciceId, payload.destinationAxeId);
+    const nextDestinationBalance = currentDestinationBalance + payload.montant;
+
+    if (nextDestinationBalance > BudgetReferentielsService.MAX_AXE_BALANCE) {
+      throw new BadRequestException(
+        `Plafond destination depasse: ${BudgetReferentielsService.MAX_AXE_BALANCE.toLocaleString('fr-FR')} maximum autorise`
+      );
+    }
+
+    const now = new Date().toISOString();
+    const entity: AllocationEntity = {
+      id: randomUUID(),
+      clientId: user.tenantId,
+      exerciceId: payload.exerciceId,
+      numero: this.nextAllocationNumber(payload.exerciceId),
+      operationType: 'allocation',
+      sourceAxeId: null,
+      destinationAxeId: payload.destinationAxeId.trim(),
+      montant: payload.montant,
+      motif: payload.motif.trim(),
+      effectiveAt: now,
+      statut: 'validee',
+      dateValidation: now,
+      validePar: user.sub,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: user.sub,
+      archivedAt: null
+    };
+
+    this.allocations.set(entity.id, entity);
+    this.registerInitialDecisionVersion(user, entity, {
+      sourceAvant: null,
+      sourceApres: null,
+      destinationAvant: currentDestinationBalance,
+      destinationApres: nextDestinationBalance
+    });
+    this.appendAudit(user, 'allocation', entity.id, 'allocate', null, {
+      after: entity,
+      destinationBefore: currentDestinationBalance,
+      destinationAfter: nextDestinationBalance
+    });
+    this.persist();
+
+    return entity;
+  }
+
+  createReallocation(user: AuthenticatedUser, payload: ReallocationCreateDto): AllocationEntity {
+    this.ensureExerciceAccessible(user.tenantId, payload.exerciceId);
+    this.assertValidAxeId(payload.sourceAxeId, 'source');
+    this.assertValidAxeId(payload.destinationAxeId, 'destination');
+    this.ensureActionAccessible(user.tenantId, payload.sourceAxeId, payload.exerciceId, 'source');
+    this.ensureActionAccessible(user.tenantId, payload.destinationAxeId, payload.exerciceId, 'destination');
+    this.assertValidMotif(payload.motif);
+    this.assertValidMontant(payload.montant);
+
+    if (payload.sourceAxeId.trim() === payload.destinationAxeId.trim()) {
+      throw new BadRequestException('Axe source et axe destination doivent etre differents');
+    }
+
+    const sourceBalance = this.getAxeBalance(user.tenantId, payload.exerciceId, payload.sourceAxeId);
+    if (sourceBalance < payload.montant) {
+      throw new BadRequestException(
+        `Montant incoherent: disponible source insuffisant (${sourceBalance.toLocaleString('fr-FR')})`
+      );
+    }
+
+    const destinationBalance = this.getAxeBalance(user.tenantId, payload.exerciceId, payload.destinationAxeId);
+    const nextDestinationBalance = destinationBalance + payload.montant;
+    if (nextDestinationBalance > BudgetReferentielsService.MAX_AXE_BALANCE) {
+      throw new BadRequestException(
+        `Plafond destination depasse: ${BudgetReferentielsService.MAX_AXE_BALANCE.toLocaleString('fr-FR')} maximum autorise`
+      );
+    }
+
+    const now = new Date().toISOString();
+    const entity: AllocationEntity = {
+      id: randomUUID(),
+      clientId: user.tenantId,
+      exerciceId: payload.exerciceId,
+      numero: this.nextAllocationNumber(payload.exerciceId),
+      operationType: 'reallocation',
+      sourceAxeId: payload.sourceAxeId.trim(),
+      destinationAxeId: payload.destinationAxeId.trim(),
+      montant: payload.montant,
+      motif: payload.motif.trim(),
+      effectiveAt: now,
+      statut: 'validee',
+      dateValidation: now,
+      validePar: user.sub,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: user.sub,
+      archivedAt: null
+    };
+
+    this.allocations.set(entity.id, entity);
+    this.registerInitialDecisionVersion(user, entity, {
+      sourceAvant: sourceBalance,
+      sourceApres: sourceBalance - payload.montant,
+      destinationAvant: destinationBalance,
+      destinationApres: nextDestinationBalance
+    });
+    this.appendAudit(user, 'allocation', entity.id, 'reallocate', null, {
+      after: entity,
+      sourceBefore: sourceBalance,
+      sourceAfter: sourceBalance - payload.montant,
+      destinationBefore: destinationBalance,
+      destinationAfter: nextDestinationBalance,
+      reason: payload.motif.trim()
+    });
+    this.persist();
+
+    return entity;
+  }
+
   getAuditLog(user: AuthenticatedUser, entityType?: ReferentielEntityType, entityId?: string): AuditEntry[] {
     return this.auditLog
       .filter((entry) => entry.tenantId === user.tenantId)
       .filter((entry) => (entityType ? entry.entityType === entityType : true))
       .filter((entry) => (entityId ? entry.entityId === entityId : true))
       .sort((left, right) => right.timestamp.localeCompare(left.timestamp));
+  }
+
+  private appendDecisionVersion(
+    user: AuthenticatedUser,
+    allocationId: string,
+    payload: BudgetDecisionActionDto,
+    statutDecision: BudgetDecisionStatus
+  ): DecisionVersionEntity {
+    const allocation = this.ensureAllocationAccessible(user.tenantId, allocationId, payload.exerciceId, user.sub);
+    const history = this.getDecisionHistoryUnsafe(allocation.id, user.tenantId, payload.exerciceId);
+    const latest = history[history.length - 1];
+    const now = new Date().toISOString();
+    const nextVersion = history.length + 1;
+
+    const beforeSnapshot = latest?.snapshotApres ?? this.buildDecisionSnapshot(allocation, {
+      sourceAvant: null,
+      sourceApres: null,
+      destinationAvant: allocation.montant,
+      destinationApres: allocation.montant
+    }, latest?.statutDecision ?? 'validated', latest?.motif ?? allocation.motif, latest?.auteur ?? allocation.validePar, latest?.horodatage ?? now);
+
+    const afterSnapshot = this.buildDecisionSnapshot(
+      allocation,
+      {
+        sourceAvant: beforeSnapshot.soldes.sourceAvant,
+        sourceApres: beforeSnapshot.soldes.sourceApres,
+        destinationAvant: beforeSnapshot.soldes.destinationAvant,
+        destinationApres: beforeSnapshot.soldes.destinationApres
+      },
+      statutDecision,
+      payload.motif.trim(),
+      user.sub,
+      now
+    );
+
+    const entry: DecisionVersionEntity = {
+      id: randomUUID(),
+      decisionId: allocation.id,
+      allocationId: allocation.id,
+      clientId: allocation.clientId,
+      exerciceId: allocation.exerciceId,
+      version: nextVersion,
+      statutDecision,
+      motif: payload.motif.trim(),
+      auteur: user.sub,
+      horodatage: now,
+      snapshotAvant: beforeSnapshot,
+      snapshotApres: afterSnapshot,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: user.sub,
+      archivedAt: null
+    };
+
+    history.push(entry);
+    this.decisionVersions.set(allocation.id, history);
+    this.appendAudit(
+      user,
+      'decision_version',
+      allocation.id,
+      statutDecision === 'validated' ? 'decision_validate' : 'decision_reject',
+      beforeSnapshot,
+      afterSnapshot
+    );
+    this.persist();
+
+    return entry;
+  }
+
+  private registerInitialDecisionVersion(
+    user: AuthenticatedUser,
+    allocation: AllocationEntity,
+    soldes: DecisionSnapshot['soldes']
+  ): void {
+    const now = new Date().toISOString();
+    const snapshotBefore = this.buildDecisionSnapshot(
+      allocation,
+      {
+        sourceAvant: soldes.sourceAvant,
+        sourceApres: soldes.sourceAvant,
+        destinationAvant: soldes.destinationAvant,
+        destinationApres: soldes.destinationAvant
+      },
+      'validated',
+      allocation.motif,
+      user.sub,
+      now
+    );
+    const snapshotAfter = this.buildDecisionSnapshot(allocation, soldes, 'validated', allocation.motif, user.sub, now);
+    const initialVersion: DecisionVersionEntity = {
+      id: randomUUID(),
+      decisionId: allocation.id,
+      allocationId: allocation.id,
+      clientId: allocation.clientId,
+      exerciceId: allocation.exerciceId,
+      version: 1,
+      statutDecision: 'validated',
+      motif: allocation.motif,
+      auteur: user.sub,
+      horodatage: now,
+      snapshotAvant: snapshotBefore,
+      snapshotApres: snapshotAfter,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: user.sub,
+      archivedAt: null
+    };
+    this.decisionVersions.set(allocation.id, [initialVersion]);
+    this.appendAudit(user, 'decision_version', allocation.id, 'decision_validate', snapshotBefore, snapshotAfter);
+  }
+
+  private ensureAllocationAccessible(
+    tenantId: string,
+    allocationId: string,
+    exerciceId: string,
+    actorIdForAudit: string
+  ): AllocationEntity {
+    const allocation = this.allocations.get(allocationId);
+    if (!allocation || allocation.archivedAt) {
+      throw new NotFoundException('Decision budgetaire introuvable');
+    }
+
+    if (allocation.clientId !== tenantId || allocation.exerciceId !== exerciceId) {
+      this.auditLog.push({
+        id: randomUUID(),
+        tenantId,
+        entityType: 'decision_version',
+        entityId: allocationId,
+        action: 'decision_scope_denied',
+        timestamp: new Date().toISOString(),
+        authorId: actorIdForAudit,
+        before: { requestedExerciceId: exerciceId, requestedTenantId: tenantId },
+        after: { allocationTenantId: allocation.clientId, allocationExerciceId: allocation.exerciceId }
+      });
+      throw new ForbiddenException('Access hors perimetre tenant/exercice refuse');
+    }
+
+    return allocation;
+  }
+
+  private getDecisionHistoryUnsafe(allocationId: string, tenantId: string, exerciceId: string): DecisionVersionEntity[] {
+    return [...(this.decisionVersions.get(allocationId) ?? [])]
+      .filter((version) => version.clientId === tenantId && version.exerciceId === exerciceId)
+      .sort((left, right) => left.version - right.version);
+  }
+
+  private buildDecisionSnapshot(
+    allocation: AllocationEntity,
+    soldes: DecisionSnapshot['soldes'],
+    statutDecision: BudgetDecisionStatus,
+    motif: string,
+    auteur: string,
+    horodatage: string
+  ): DecisionSnapshot {
+    return {
+      operationType: allocation.operationType,
+      sourceAxeId: allocation.sourceAxeId,
+      destinationAxeId: allocation.destinationAxeId,
+      montant: allocation.montant,
+      statutDecision,
+      motif,
+      auteur,
+      horodatage,
+      soldes
+    };
+  }
+
+  private computeDecisionDiff(
+    left: DecisionVersionEntity,
+    right: DecisionVersionEntity
+  ): Record<string, { from: unknown; to: unknown }> {
+    const fields: ReadonlyArray<[string, unknown, unknown]> = [
+      ['montant', left.snapshotApres.montant, right.snapshotApres.montant],
+      ['sourceAxeId', left.snapshotApres.sourceAxeId, right.snapshotApres.sourceAxeId],
+      ['destinationAxeId', left.snapshotApres.destinationAxeId, right.snapshotApres.destinationAxeId],
+      ['statutDecision', left.statutDecision, right.statutDecision],
+      ['motif', left.motif, right.motif],
+      ['auteur', left.auteur, right.auteur],
+      ['horodatage', left.horodatage, right.horodatage]
+    ];
+    const soldesFields: ReadonlyArray<[string, unknown, unknown]> = [
+      ['soldes.sourceAvant', left.snapshotApres.soldes.sourceAvant, right.snapshotApres.soldes.sourceAvant],
+      ['soldes.sourceApres', left.snapshotApres.soldes.sourceApres, right.snapshotApres.soldes.sourceApres],
+      [
+        'soldes.destinationAvant',
+        left.snapshotApres.soldes.destinationAvant,
+        right.snapshotApres.soldes.destinationAvant
+      ],
+      ['soldes.destinationApres', left.snapshotApres.soldes.destinationApres, right.snapshotApres.soldes.destinationApres]
+    ];
+
+    return [...fields, ...soldesFields].reduce<Record<string, { from: unknown; to: unknown }>>((acc, [key, from, to]) => {
+      if (from !== to) {
+        acc[key] = { from, to };
+      }
+      return acc;
+    }, {});
   }
 
   private filterByTenant<T extends { clientId: string; archivedAt?: string | null }>(
@@ -571,17 +1008,107 @@ export class BudgetReferentielsService {
     return programme;
   }
 
+  private ensureActionAccessible(
+    tenantId: string,
+    actionId: string,
+    exerciceId: string,
+    role: 'source' | 'destination'
+  ): ActionEntity {
+    const action = this.actions.get(actionId);
+    if (!action || action.archivedAt) {
+      throw new NotFoundException(`Axe ${role} introuvable`);
+    }
+
+    if (action.clientId !== tenantId) {
+      throw new ForbiddenException('Access hors tenant refuse');
+    }
+
+    if (action.exerciceId !== exerciceId) {
+      throw new BadRequestException(`Incoherence exercice: axe ${role} hors exercice cible`);
+    }
+
+    return action;
+  }
+
   private assertEntityWithinExercice(entityExerciceId: string, expectedExerciceId: string): void {
     if (entityExerciceId !== expectedExerciceId) {
       throw new ForbiddenException('Access hors exercice refuse');
     }
   }
 
+  private assertValidAxeId(axeId: string, role: 'source' | 'destination'): void {
+    if (typeof axeId !== 'string' || axeId.trim().length === 0) {
+      throw new BadRequestException(`Axe ${role} invalide`);
+    }
+
+    if (!BudgetReferentielsService.UUID_PATTERN.test(axeId.trim())) {
+      throw new BadRequestException(`Axe ${role} invalide: identifiant axe attendu au format UUID`);
+    }
+  }
+
+  private assertValidMotif(motif: string): void {
+    if (typeof motif !== 'string' || motif.trim().length < 5) {
+      throw new BadRequestException('Motif obligatoire (minimum 5 caracteres)');
+    }
+  }
+
+  private assertValidMontant(montant: number): void {
+    if (!Number.isFinite(montant) || montant <= 0) {
+      throw new BadRequestException('Montant incoherent: doit etre strictement superieur a 0');
+    }
+  }
+
+  private getAxeBalance(tenantId: string, exerciceId: string, axeId: string): number {
+    return [...this.allocations.values()]
+      .filter((entry) => entry.clientId === tenantId && entry.exerciceId === exerciceId && !entry.archivedAt)
+      .reduce((sum, entry) => {
+        if (entry.operationType === 'allocation') {
+          return entry.destinationAxeId === axeId ? sum + entry.montant : sum;
+        }
+
+        if (entry.sourceAxeId === axeId) {
+          return sum - entry.montant;
+        }
+
+        if (entry.destinationAxeId === axeId) {
+          return sum + entry.montant;
+        }
+
+        return sum;
+      }, 0);
+  }
+
+  private nextAllocationNumber(exerciceId: string): string {
+    const year = new Date().getUTCFullYear();
+    const existingNumbers = new Set(
+      [...this.allocations.values()].filter((entry) => entry.exerciceId === exerciceId).map((entry) => entry.numero)
+    );
+    let sequence = existingNumbers.size + 1;
+    let candidate = `ALC-${year}-${String(sequence).padStart(4, '0')}`;
+
+    while (existingNumbers.has(candidate)) {
+      sequence += 1;
+      candidate = `ALC-${year}-${String(sequence).padStart(4, '0')}`;
+    }
+
+    return candidate;
+  }
+
   private appendAudit(
     user: AuthenticatedUser,
     entityType: ReferentielEntityType,
     entityId: string,
-    action: 'create' | 'update' | 'archive',
+    action:
+      | 'create'
+      | 'update'
+      | 'archive'
+      | 'allocate'
+      | 'reallocate'
+      | 'decision_validate'
+      | 'decision_reject'
+      | 'decision_compare'
+      | 'decision_history_read'
+      | 'decision_scope_denied',
     before: unknown | null,
     after: unknown | null
   ): void {
@@ -605,6 +1132,8 @@ export class BudgetReferentielsService {
       sections: [...this.sections.values()],
       programmes: [...this.programmes.values()],
       actions: [...this.actions.values()],
+      allocations: [...this.allocations.values()],
+      decisionVersions: [...this.decisionVersions.values()].flat(),
       auditLog: this.auditLog
     });
   }

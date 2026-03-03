@@ -786,3 +786,175 @@ So that je reduis les goulots d'etranglement operatoires.
 **When** les indicateurs de temps sont calcules
 **Then** les mesures par etape et tendance periodique sont disponibles
 **And** les ecarts significatifs declenchent des alertes d'analyse.
+
+## Epic M1: Parite et validation de migration
+
+Assurer la parite fonctionnelle ancien -> nouveau et prouver l'absence de regression bloquante avant cutover.
+
+### Story M1.1: Etablir l'inventaire de parite fonctionnelle
+
+As a responsable migration,
+I want une matrice complete ancien -> nouveau,
+So that aucun flux critique ne soit oublie avant bascule.
+
+**Acceptance Criteria:**
+
+**Given** les parcours existants (frontend, API, data)
+**When** la matrice de parite est consolidee
+**Then** chaque item `route/page -> API -> table` possede un statut (`migre`, `partiel`, `non migre`)
+**And** chaque item critique possede owner, priorite et date cible.
+
+### Story M1.2: Verifier la parite des contrats API
+
+As a equipe plateforme,
+I want comparer les contrats API ancien/nouveau,
+So that les integrations ne cassent pas lors de la migration.
+
+**Acceptance Criteria:**
+
+**Given** les endpoints critiques identifies
+**When** les tests de contrat sont executes sur ancien et nouveau backend
+**Then** les payloads, codes retour et erreurs metier sont compares automatiquement
+**And** aucun ecart bloquant n'est accepte sur les flux critiques.
+
+### Story M1.3: Executer la non-regression E2E de migration
+
+As a QA migration,
+I want couvrir les parcours critiques en E2E,
+So that la bascule soit validee de bout en bout.
+
+**Acceptance Criteria:**
+
+**Given** les scenarios critiques de production
+**When** la suite E2E migration est executee en CI
+**Then** les parcours auth, budget et depense/paiement minimum passent sans regression
+**And** les preuves d'execution (rapport + horodatage) sont archivees.
+
+## Epic M2: Migration de donnees et reconciliation
+
+Migrer les donnees legacy vers PostgreSQL avec idempotence, tracabilite et reconciliation verifiable.
+
+### Story M2.1: Definir mapping et strategie de migration data
+
+As a architecte data,
+I want un mapping source -> cible explicite,
+So that la migration soit deterministe et audit-able.
+
+**Acceptance Criteria:**
+
+**Given** les schemas legacy et cible
+**When** le mapping est formalise
+**Then** chaque entite/attribut source est mappe vers la cible avec regle de transformation
+**And** les cas invalides/orphelins sont traites par regles explicites.
+
+### Story M2.2: Implementer le backfill idempotent par lots
+
+As a developpeur migration,
+I want des scripts rejouables sans doublons,
+So that la migration puisse etre reprise sans corruption.
+
+**Acceptance Criteria:**
+
+**Given** un lot de migration execute
+**When** le meme lot est rejoue
+**Then** aucun doublon ni derive de donnees n'est cree
+**And** un journal de lot conserve compteurs, erreurs, retries et statut final.
+
+### Story M2.3: Reconciler avant/apres sur donnees critiques
+
+As a controleur migration,
+I want prouver la coherence des donnees migrees,
+So that la bascule soit validee en confiance.
+
+**Acceptance Criteria:**
+
+**Given** une migration de lot terminee
+**When** la reconciliation est lancee
+**Then** les controles de cardinalite et checks de coherence sur entites critiques sont produits
+**And** un rapport d'ecarts avant/apres est genere et signe metier/technique.
+
+## Epic M3: Cutover, rollback et decommission Supabase
+
+Piloter la bascule en production de maniere gouvernee, reversible et sans dependance runtime residuelle a Supabase.
+
+### Story M3.1: Produire le runbook de cutover production
+
+As a responsable release,
+I want un runbook minute par minute,
+So that la bascule soit executable sans ambiguite.
+
+**Acceptance Criteria:**
+
+**Given** la fenetre de bascule preparee
+**When** le runbook est valide
+**Then** les etapes pre-check, bascule, post-check et validation sont detaillees
+**And** les criteres Go/No-Go et les responsabilites par role sont explicites.
+
+### Story M3.2: Tester le plan de rollback operationnel
+
+As a SRE/ops,
+I want un rollback teste en conditions proches prod,
+So that un echec cutover reste recuperable rapidement.
+
+**Acceptance Criteria:**
+
+**Given** un scenario d'echec de bascule simule
+**When** le rollback est execute en staging
+**Then** le retour a l'etat precedent est possible avec procedure verifiee
+**And** les objectifs RTO/RPO cibles sont mesures et traces.
+
+### Story M3.3: Decommissionner Supabase de facon controlee
+
+As a equipe plateforme,
+I want retirer toutes dependances Supabase runtime,
+So that l'architecture cible soit effectivement NestJS/NextJS/PostgreSQL.
+
+**Acceptance Criteria:**
+
+**Given** l'inventaire des usages Supabase
+**When** le plan de retrait est applique
+**Then** Auth, RLS, Storage, Functions, webhooks et secrets sont migres/retirees selon priorite
+**And** aucun appel runtime vers Supabase ne subsiste apres cutover.
+
+### Story M3.4: Organiser l'hypercare post-bascule
+
+As a equipe exploitation,
+I want une periode d'hypercare pilotee,
+So that les incidents post-cutover soient absorbes sans impact majeur.
+
+**Acceptance Criteria:**
+
+**Given** la bascule production effectuee
+**When** l'hypercare est activee sur 7 a 14 jours
+**Then** monitoring, alerting, triage incidents et SLA de correction sont operes quotidiennement
+**And** un rapport de fin d'hypercare statue sur la cloture definitive de migration.
+
+## Epic M4: Securite et conformite de migration
+
+Valider que la migration preserve la securite d'acces, la tracabilite et les exigences d'audit.
+
+### Story M4.1: Revalider RBAC/ABAC et separation des responsabilites
+
+As a security lead,
+I want revalider les regles d'acces sur le nouveau stack,
+So that aucune faille d'autorisation ne soit introduite.
+
+**Acceptance Criteria:**
+
+**Given** les operations sensibles du domaine
+**When** les tests d'autorisation sont executes
+**Then** RBAC/ABAC et separation ordonnateur/comptable sont appliques sans violation
+**And** toute tentative non autorisee est bloquee et journalisee.
+
+### Story M4.2: Produire le dossier d'audit de migration
+
+As a auditeur interne,
+I want un dossier d'audit complet de migration,
+So that la conformite de la bascule soit verifiable.
+
+**Acceptance Criteria:**
+
+**Given** les preuves techniques et metier de migration
+**When** le dossier d'audit est genere
+**Then** il contient decisions, evidences, reconciliations, incidents et resolutions
+**And** la cloture migration est signee par les responsables metier et technique.
