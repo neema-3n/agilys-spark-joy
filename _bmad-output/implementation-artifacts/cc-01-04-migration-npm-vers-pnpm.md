@@ -1,6 +1,6 @@
 # Story CC-01.04 - Migration npm vers pnpm
 
-Status: review
+Status: done
 Epic: CC-01 - Fondations techniques migration
 Story Key: cc-01-04-migration-npm-vers-pnpm
 Created: 2026-03-02
@@ -46,7 +46,7 @@ so that les executions locales et CI utilisent un outillage unique.
 
 - Story ID: `CC-01.04`
 - Story Key: `cc-01-04-migration-npm-vers-pnpm`
-- Final Status: `review`
+- Final Status: `done`
 
 ## Dev Agent Record
 
@@ -76,13 +76,13 @@ so that les executions locales et CI utilisent un outillage unique.
 - README.md
 - tests/README.md
 - package.json
+- backend/package.json
 - pnpm-workspace.yaml
 - pnpm-lock.yaml
 - package-lock.json (deleted)
 - backend/package-lock.json (deleted)
-- _bmad-output/implementation-artifacts/sprint-status.yaml
-- _bmad-output/implementation-artifacts/cc-01-04-migration-npm-vers-pnpm.md
 
 ## Change Log
 
 - 2026-03-02: Standardisation outillage npm -> pnpm (scripts, doc, workspace, lockfiles) et validations lint/test/build executees.
+- 2026-03-02: Correctifs review AI: enforcement pnpm au preinstall root, ajout `packageManager` au backend, nettoyage File List (sources applicatives uniquement).

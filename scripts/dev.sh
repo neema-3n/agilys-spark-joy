@@ -15,9 +15,60 @@ JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET:-dev-refresh-secret}"
 JWT_ACCESS_TTL_SECONDS="${JWT_ACCESS_TTL_SECONDS:-900}"
 JWT_REFRESH_TTL_SECONDS="${JWT_REFRESH_TTL_SECONDS:-604800}"
 
+is_port_in_use() {
+  local port="$1"
+
+  if command -v lsof >/dev/null 2>&1; then
+    lsof -nP -iTCP:"${port}" -sTCP:LISTEN >/dev/null 2>&1
+    return $?
+  fi
+
+  if command -v ss >/dev/null 2>&1; then
+    ss -ltn "( sport = :${port} )" 2>/dev/null | tail -n +2 | grep -q .
+    return $?
+  fi
+
+  if command -v netstat >/dev/null 2>&1; then
+    netstat -an 2>/dev/null | grep -E "[\.:]${port}[[:space:]].*LISTEN" >/dev/null 2>&1
+    return $?
+  fi
+
+  return 1
+}
+
+ensure_port_available() {
+  local name="$1"
+  local port="$2"
+
+  if is_port_in_use "${port}"; then
+    echo "[dev] ${name}=${port} est deja utilise par un autre processus local." >&2
+    exit 1
+  fi
+}
+
+wait_for_postgres_ready() {
+  local max_attempts=30
+  local attempt
+
+  for attempt in $(seq 1 "${max_attempts}"); do
+    if docker compose exec -T postgres pg_isready -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 1
+  done
+
+  echo "[dev] PostgreSQL n'est pas pret apres ${max_attempts}s. Verifier les logs Docker." >&2
+  exit 1
+}
+
 if [[ "${WEB_PORT}" == "${API_PORT}" || "${WEB_PORT}" == "${DB_PORT}" || "${API_PORT}" == "${DB_PORT}" ]]; then
   echo "[dev] WEB_PORT, API_PORT et DB_PORT doivent etre distincts (actuel: WEB=${WEB_PORT}, API=${API_PORT}, DB=${DB_PORT})." >&2
   exit 1
+fi
+
+if [[ "${DEV_SKIP_PORT_AVAILABILITY_CHECK:-0}" != "1" ]]; then
+  ensure_port_available "WEB_PORT" "${WEB_PORT}"
+  ensure_port_available "API_PORT" "${API_PORT}"
 fi
 
 if [[ "${DEV_VALIDATE_ONLY:-0}" == "1" ]]; then
@@ -59,6 +110,8 @@ POSTGRES_USER="${POSTGRES_USER}" \
 POSTGRES_PASSWORD="${POSTGRES_PASSWORD}" \
 POSTGRES_PORT="${DB_PORT}" \
   docker compose up -d postgres >/dev/null
+
+wait_for_postgres_ready
 
 echo "[dev] Demarrage API NestJS (API_PORT=${API_PORT})..."
 PORT="${API_PORT}" \
