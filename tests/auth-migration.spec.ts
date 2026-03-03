@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createTokenStorage, StorageLike } from '../src/services/auth/token-storage';
 import { createHttpClient } from '../src/services/api/http-client';
@@ -34,6 +34,33 @@ const makeJwt = (payload: Record<string, unknown>): string => {
 const UI_BASE_URL = 'http://127.0.0.1:45173';
 const UI_SERVER_START_TIMEOUT_MS = 60_000;
 let uiServerProcess: ChildProcess | null = null;
+
+const setupMigrationBudgetApiStubs = async (page: Page) => {
+  await page.route('**/budget-referentiels/**', async (route) => {
+    const requestUrl = route.request().url();
+    const isExercicesEndpoint = requestUrl.includes('/budget-referentiels/exercices');
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(
+        isExercicesEndpoint
+          ? [
+              {
+                id: 'ex-2026',
+                clientId: 'client-1',
+                libelle: 'Exercice 2026',
+                code: 'EX2026',
+                dateDebut: '2026-01-01',
+                dateFin: '2026-12-31',
+                statut: 'ouvert'
+              }
+            ]
+          : []
+      )
+    });
+  });
+};
 
 const waitForUiServer = async (timeoutMs: number): Promise<void> => {
   const startedAt = Date.now();
@@ -86,7 +113,7 @@ test.describe('auth ui routing flows', () => {
     }
   });
 
-  test('protected route redirects to login and successful login returns to requested route', async ({ page }) => {
+  test('@migration-auth @ac1 @flux-AUTH-01 protected route redirects to login and successful login returns to requested route', async ({ page }) => {
     const accessToken = makeJwt({
       sub: 'user-7',
       tenantId: 'tenant-1',
@@ -121,7 +148,7 @@ test.describe('auth ui routing flows', () => {
     await expect(page).toHaveURL(/\/app\/dashboard\?fromSpec=1$/);
   });
 
-  test('logout redirects to login and clears local tokens', async ({ page }) => {
+  test('@migration-auth @ac1 @flux-AUTH-03 logout redirects to login and clears local tokens', async ({ page }) => {
     const accessToken = makeJwt({
       sub: 'user-8',
       tenantId: 'tenant-1',
@@ -170,6 +197,90 @@ test.describe('auth ui routing flows', () => {
     }));
     expect(tokens.accessToken).toBeNull();
     expect(tokens.refreshToken).toBeNull();
+  });
+
+  test('@migration-depense @ac1 @flux-OPS-05 depenses flow allows opening creation dialog and enforces minimal validation', async ({ page }) => {
+    const accessToken = makeJwt({
+      sub: 'user-9',
+      tenantId: 'tenant-1',
+      roles: ['super_admin'],
+      email: 'depense@agilys.local',
+      nom: 'Depense',
+      prenom: 'User',
+      exp: Math.floor(Date.now() / 1000) + 600
+    });
+
+    await page.route('**/auth/login', async (route) => {
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          accessToken,
+          refreshToken: 'refresh-token-depense'
+        })
+      });
+    });
+    await setupMigrationBudgetApiStubs(page);
+
+    await page.addInitScript(() => {
+      window.localStorage.clear();
+    });
+
+    await page.goto(`${UI_BASE_URL}/auth/login?from=%2Fapp%2Fdepenses`);
+    await page.getByLabel('Email').fill('depense@agilys.local');
+    await page.getByLabel('Mot de passe').fill('ChangeMe123!');
+    await page.getByRole('button', { name: 'Se connecter' }).click();
+
+    await expect(page).toHaveURL(/\/app\/depenses$/);
+    await expect(page.getByRole('link', { name: 'Dépenses' })).toBeVisible();
+    await page.getByRole('button', { name: 'Nouvelle dépense' }).first().click();
+    await expect(page.getByRole('dialog', { name: 'Nouvelle dépense' })).toBeVisible();
+    await page.getByLabel('Objet de la dépense *').fill('Achat minimal de test migration');
+    await page.getByLabel('Montant (€) *').fill('1500');
+    await page.getByRole('button', { name: 'Créer la dépense' }).click();
+    await expect(page.getByText('Au moins une imputation budgétaire est requise').first()).toBeVisible();
+  });
+
+  test('@migration-budget @ac1 @flux-BUD-02 budgets flow exposes allocation/reallocation entrypoint in UI', async ({ page }) => {
+    const accessToken = makeJwt({
+      sub: 'user-10',
+      tenantId: 'tenant-1',
+      roles: ['super_admin'],
+      email: 'budget@agilys.local',
+      nom: 'Budget',
+      prenom: 'User',
+      exp: Math.floor(Date.now() / 1000) + 600
+    });
+
+    await page.route('**/auth/login', async (route) => {
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          accessToken,
+          refreshToken: 'refresh-token-budget'
+        })
+      });
+    });
+    await setupMigrationBudgetApiStubs(page);
+
+    await page.addInitScript(() => {
+      window.localStorage.clear();
+    });
+
+    await page.goto(`${UI_BASE_URL}/auth/login?from=%2Fapp%2Fbudgets%3Ftab%3Dmodifications`);
+    await page.getByLabel('Email').fill('budget@agilys.local');
+    await page.getByLabel('Mot de passe').fill('ChangeMe123!');
+    await page.getByRole('button', { name: 'Se connecter' }).click();
+
+    await expect(page).toHaveURL(/\/app\/budgets\?tab=modifications$/);
+    await expect(page.getByRole('heading', { name: 'Modifications Budgétaires' })).toBeVisible();
+    await page.getByRole('button', { name: 'Nouvelle modification' }).click();
+    await expect(page.getByRole('dialog', { name: 'Nouvelle modification budgétaire' })).toBeVisible();
+    await expect(page.getByText('Type de modification')).toBeVisible();
+    await expect(page.getByText('Ligne budgétaire')).toBeVisible();
+    await expect(page.getByLabel('Montant')).toBeVisible();
+    await expect(page.getByLabel('Motif')).toBeVisible();
   });
 });
 

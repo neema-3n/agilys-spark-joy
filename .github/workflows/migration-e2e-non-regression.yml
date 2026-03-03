@@ -1,0 +1,45 @@
+name: Migration E2E Non-Regression
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - bmad/**
+      - codex/**
+
+jobs:
+  migration-e2e-gate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run migration E2E gate
+        run: pnpm run test:e2e:migration:gate
+
+      - name: Upload migration E2E artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: migration-e2e-non-regression
+          path: test-results/migration-e2e
+          if-no-files-found: warn
