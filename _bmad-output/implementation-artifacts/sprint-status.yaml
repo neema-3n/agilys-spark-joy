@@ -73,7 +73,7 @@ development_status:
   epic-m1-retrospective: optional
   epic-m2: backlog
   m2-1-definir-mapping-et-strategie-de-migration-data: review
-  m2-2-implementer-le-backfill-idempotent-par-lots: backlog
+  m2-2-implementer-le-backfill-idempotent-par-lots: done
   m2-3-reconciler-avant-apres-sur-donnees-critiques: backlog
   epic-m2-retrospective: optional
   epic-m3: backlog

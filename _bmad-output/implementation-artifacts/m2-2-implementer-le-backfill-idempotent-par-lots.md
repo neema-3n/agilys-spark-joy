@@ -1,6 +1,6 @@
 # Story M2.2: Implementer le backfill idempotent par lots
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -30,12 +30,12 @@ so that la migration puisse etre reprise sans corruption.
 
 ## Tasks / Subtasks
 
-- [ ] Definir le format de `migration_batch_id` et de watermark par domaine (AC: 1, 3)
-- [ ] Implementer scripts SQL/Node idempotents pour Lot B (budget referentiels/allocations/decisions) (AC: 1)
-- [ ] Ajouter strategie `upsert`/`on conflict` et hash metier anti-doublon (AC: 1)
-- [ ] Produire journal de lot standardise (volumes, erreurs, retries, duree) (AC: 2)
-- [ ] Ajouter mecanisme de reprise sur sous-lots en echec (AC: 3)
-- [ ] Documenter commande d'execution + reprise dans un runbook court (AC: 2, 3)
+- [x] Definir le format de `migration_batch_id` et de watermark par domaine (AC: 1, 3)
+- [x] Implementer scripts SQL/Node idempotents pour Lot B (budget referentiels/allocations/decisions) (AC: 1)
+- [x] Ajouter strategie `upsert`/`on conflict` et hash metier anti-doublon (AC: 1)
+- [x] Produire journal de lot standardise (volumes, erreurs, retries, duree) (AC: 2)
+- [x] Ajouter mecanisme de reprise sur sous-lots en echec (AC: 3)
+- [x] Documenter commande d'execution + reprise dans un runbook court (AC: 2, 3)
 
 ## Dev Notes
 
@@ -84,15 +84,58 @@ so that la migration puisse etre reprise sans corruption.
 
 GPT-5 Codex
 
+### Implementation Plan
+
+- Ajouter une couche `runner` testable pour orchestrer le backfill par domaines et sous-lots (watermarks).
+- Ajouter un repository PostgreSQL pour `ON CONFLICT`, hash metier, journal batch/sous-lot et reprise selective.
+- Ajouter une migration SQL pour les tables de journalisation (`migration_batches`, `migration_batch_sub_lots`, `migration_business_hash_registry`) et les decisions versionnees (`budget_decision_versions`).
+- Exposer une CLI operationnelle (`pnpm --dir backend run migrate:lot-b`) et documenter run/reprise.
+- Prouver idempotence + reprise via tests unitaires et regression backend.
+
 ### Completion Notes List
 
-- Story M2.2 preparee au format implementation avec AC et taches executables.
-- Scope limite au backfill idempotent Lot B pour livrer rapidement une preuve de migration rejouable.
+- Backfill Lot B implemente en TypeScript avec orchestration par sous-lots (`domain:index/total`) et reprise selective sur sous-lots en echec.
+- Strategie idempotente appliquee via `INSERT ... ON CONFLICT DO UPDATE` + registre de hash metier par cle metier (`migration_business_hash_registry`) pour eviter les updates inutiles et prevenir les doublons.
+- Journalisation standardisee implementee au niveau lot et sous-lot (volumes, erreurs, retries, duree, anomalies rattachees au `migration_batch_id`).
+- Commande d'execution/reprise documentee dans le runbook, avec exemple de rapport d'execution.
+- Validation effectuee: `pnpm --dir backend run lint`, `pnpm --dir backend run test -- src/migration/lot-b/runner.spec.ts`, `pnpm --dir backend run test`.
 
 ### File List
 
 - `_bmad-output/implementation-artifacts/m2-2-implementer-le-backfill-idempotent-par-lots.md`
+- `backend/package.json`
+- `backend/src/migration/lot-b/types.ts`
+- `backend/src/migration/lot-b/runner.ts`
+- `backend/src/migration/lot-b/postgres-repository.ts`
+- `backend/src/migration/lot-b/cli.ts`
+- `backend/src/migration/lot-b/runner.spec.ts`
+- `supabase/migrations/20260303101500_migration_lot_b_batches.sql`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `_bmad-output/planning-artifacts/migration-batch-runbook.md`
+- `_bmad-output/planning-artifacts/migration-report-lot-b-example.md`
 
 ### Change Log
 
 - 2026-03-02: Creation de la story d'implementation M2.2 (ready-for-dev).
+- 2026-03-03: Implementation complete du backfill idempotent Lot B (runner + repository postgres + migration SQL + CLI + tests + runbook).
+- 2026-03-03: Revue senior appliquee - rejet ligne traite comme echec de sous-lot, `started_at` sous-lot fiabilise, secret DB hardcode retire, tests de reprise renforces.
+
+## Senior Developer Review (AI)
+
+Date: 2026-03-03  
+Reviewer: Max (AI)
+
+Outcome: Changes requested -> fixed in this pass.
+
+### Findings Traites
+
+- Rejet ligne par ligne ne pouvait pas interrompre un sous-lot; corrige pour forcer echec/reprise afin d'eviter le masquage de donnees rejetees.
+- `started_at` de sous-lot etait journalise avec un `now()` tardif; corrige pour persister l'horodatage reel de debut d'execution.
+- Secret DB fallback hardcode dans la CLI; corrige avec exigence explicite `POSTGRES_PASSWORD`/`PGPASSWORD`.
+- Couverture de test etendue avec un cas de non-regression "rejets -> sous-lot failed -> reprise selective".
+
+### Verification
+
+- `pnpm --dir backend run lint` ✅
+- `pnpm --dir backend run test -- src/migration/lot-b/runner.spec.ts` ✅
+- `pnpm --dir backend run test` ✅
