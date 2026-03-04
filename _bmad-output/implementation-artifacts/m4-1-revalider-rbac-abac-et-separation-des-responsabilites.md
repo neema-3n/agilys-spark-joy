@@ -1,6 +1,6 @@
 # Story M4.1: Revalider RBAC/ABAC et separation des responsabilites
 
-Status: ready-for-dev
+Status: done
 Epic: M4 - Securite et conformite de migration
 Story Key: m4-1-revalider-rbac-abac-et-separation-des-responsabilites
 Created: 2026-03-03
@@ -30,25 +30,25 @@ so that aucune faille d'autorisation ne soit introduite.
 
 ## Tasks / Subtasks
 
-- [ ] Construire la matrice de revalidation des autorisations sensibles (AC: 1, 2)
-  - [ ] Lister les endpoints critiques couverts par `JwtAuthGuard` + `AuthorizationPolicyGuard`
-  - [ ] Associer pour chaque endpoint: role attendu, permissions requises, cas refuse
-  - [ ] Prioriser les flux M3/M4 et les flux metier deja migres (auth, referentiels, tenant policies)
+- [x] Construire la matrice de revalidation des autorisations sensibles (AC: 1, 2)
+  - [x] Lister les endpoints critiques couverts par `JwtAuthGuard` + `AuthorizationPolicyGuard`
+  - [x] Associer pour chaque endpoint: role attendu, permissions requises, cas refuse
+  - [x] Prioriser les flux M3/M4 et les flux metier deja migres (auth, referentiels, tenant policies)
 
-- [ ] Etendre la couverture de tests de securite backend (AC: 1, 2, 3)
-  - [ ] Ajouter/mettre a jour tests e2e sur scenarios autorise/refuse par role
-  - [ ] Ajouter cas explicites separation ordonnateur/comptable sur permissions sensibles
-  - [ ] Ajouter cas inter-tenant (admin_client refuse, super_admin autorise selon politique)
+- [x] Etendre la couverture de tests de securite backend (AC: 1, 2, 3)
+  - [x] Ajouter/mettre a jour tests e2e sur scenarios autorise/refuse par role
+  - [x] Ajouter cas explicites separation ordonnateur/comptable sur permissions sensibles
+  - [x] Ajouter cas inter-tenant (admin_client refuse, super_admin autorise selon politique)
 
-- [ ] Verifier la qualite de la journalisation d'autorisation (AC: 1, 2)
-  - [ ] Valider payload minimal (`userId`, `tenantId`, `action`, `decision`, `timestamp`, `reason`)
-  - [ ] Confirmer l'absence de donnees sensibles dans les logs d'audit
-  - [ ] Produire un extrait de preuve dans les artefacts implementation
+- [x] Verifier la qualite de la journalisation d'autorisation (AC: 1, 2)
+  - [x] Valider payload minimal (`userId`, `tenantId`, `action`, `decision`, `timestamp`, `reason`)
+  - [x] Confirmer l'absence de donnees sensibles dans les logs d'audit
+  - [x] Produire un extrait de preuve dans les artefacts implementation
 
-- [ ] Produire un rapport de revalidation securite M4.1 (AC: 1, 2, 3)
-  - [ ] Ajouter un artefact dedie dans `/_bmad-output/implementation-artifacts/`
-  - [ ] Documenter couverture, resultats, ecarts et decisions GO/NO-GO
-  - [ ] Lier explicitement les resultats a la preparation du dossier d'audit M4.2
+- [x] Produire un rapport de revalidation securite M4.1 (AC: 1, 2, 3)
+  - [x] Ajouter un artefact dedie dans `/_bmad-output/implementation-artifacts/`
+  - [x] Documenter couverture, resultats, ecarts et decisions GO/NO-GO
+  - [x] Lier explicitement les resultats a la preparation du dossier d'audit M4.2
 
 ## Dev Notes
 
@@ -167,12 +167,36 @@ GPT-5 Codex
 - Story M4.1 creee avec contexte implementation complet et guardrails backend explicites.
 - Dependances, contraintes de securite, structure de fichiers et strategie de tests formalisees.
 - Story preparee pour execution `dev-story` avec statut `ready-for-dev`.
+- Revalidation securite M4.1 executee sur endpoints sensibles auth/tenant policies/referentiels avec matrice de controle d'acces documentee.
+- Couverture e2e auth etendue: deny explicite `roles:manage`, journalisation deny sur endpoint sensible, verification anti-fuite de donnees sensibles, et scenario super_admin inter-tenant.
+- Validations executees: `pnpm --dir backend run test -- auth.e2e.spec.ts tenant-policies.e2e.spec.ts` (PASS) et `pnpm --dir backend run lint` (PASS).
+- Regression backend complete executee: `pnpm --dir backend run test` (PASS, 14 suites, 90 tests passes, 1 skipped).
+- Rapport de preuve publie: `/_bmad-output/implementation-artifacts/m4-1-security-revalidation-report-2026-03-04.md` avec decision GO et lien explicite vers M4.2.
+- Revue senior adversariale executee: 4 findings (3 HIGH, 1 MEDIUM) sur robustesse des tests d'audit.
+- Correctifs appliques: reset des spies par test, assertion anti-fragile sans `lastCall`, verification explicite de `timestamp`, et tracabilite audit du scenario super-admin inter-tenant.
+- Re-validation post-correctifs: `pnpm --dir backend run test -- auth.e2e.spec.ts tenant-policies.e2e.spec.ts` (PASS, 22 tests passes, 1 skipped) + `pnpm --dir backend run lint` (PASS).
+
+### Senior Developer Review (AI)
+
+- Date: 2026-03-04
+- Reviewer: Max (AI Senior Dev Review)
+- Outcome: **Approve**
+- Findings traites:
+  - [HIGH] Assertions d'audit faussement positives (spies non reset) -> corrige
+  - [HIGH] Contrat d'audit incomplet (timestamp non verifie) -> corrige
+  - [HIGH] AC3 partiellement couverte (super-admin non trace) -> corrige
+  - [MEDIUM] Verification fragile par `lastCall` -> corrige
 
 ### File List
 
 - `/_bmad-output/implementation-artifacts/m4-1-revalider-rbac-abac-et-separation-des-responsabilites.md`
 - `/_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `/_bmad-output/implementation-artifacts/m4-1-security-revalidation-report-2026-03-04.md`
+- `backend/test/auth.e2e.spec.ts`
+- `backend/test/tenant-policies.e2e.spec.ts`
 
 ### Change Log
 
 - 2026-03-03: creation du contexte story M4.1 (ready-for-dev) avec exigences de revalidation RBAC/ABAC, separation des responsabilites et preuves d'audit.
+- 2026-03-04: revalidation M4.1 implementee (tests e2e securite etendus, verification journalisation deny, matrice de controles sensibles, rapport GO/NO-GO pour preparation M4.2).
+- 2026-03-04: revue senior adversariale executee; 4 findings fermes via durcissement des tests d'audit auth/tenant policies; statut story passe a `done`.

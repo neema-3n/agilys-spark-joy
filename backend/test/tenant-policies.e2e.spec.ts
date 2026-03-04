@@ -74,6 +74,11 @@ describe('TenantPoliciesController (e2e)', () => {
     tenantPoliciesAuditLogSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
   });
 
+  beforeEach(() => {
+    logDecisionSpy.mockClear();
+    tenantPoliciesAuditLogSpy.mockClear();
+  });
+
   afterAll(async () => {
     tenantPoliciesAuditLogSpy.mockRestore();
     logDecisionSpy.mockRestore();
@@ -225,12 +230,19 @@ describe('TenantPoliciesController (e2e)', () => {
       })
     );
 
-    const lastCall = logDecisionSpy.mock.calls[logDecisionSpy.mock.calls.length - 1]?.[0] as Record<string, unknown>;
-    expect(lastCall).toBeDefined();
-    expect(lastCall).toHaveProperty('action');
-    expect(lastCall).not.toHaveProperty('password');
-    expect(lastCall).not.toHaveProperty('passwordHash');
-    expect(lastCall).not.toHaveProperty('refreshToken');
+    const allowReadAuditPayload = logDecisionSpy.mock.calls
+      .map((call) => call[0] as Record<string, unknown>)
+      .find(
+        (payload) =>
+          payload.userId === 'user-1' && payload.tenantId === 'tenant-1' && payload.decision === 'allow'
+      );
+
+    expect(allowReadAuditPayload).toBeDefined();
+    expect(typeof allowReadAuditPayload?.action).toBe('string');
+    expect((allowReadAuditPayload?.action as string).length).toBeGreaterThan(0);
+    expect(allowReadAuditPayload).not.toHaveProperty('password');
+    expect(allowReadAuditPayload).not.toHaveProperty('passwordHash');
+    expect(allowReadAuditPayload).not.toHaveProperty('refreshToken');
   });
 
   it('logs minimal deny audit payload for tenant policy cross-tenant denial', async () => {
