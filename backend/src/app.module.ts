@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
 import { BudgetReferentielsModule } from './budget-referentiels/budget-referentiels.module';
 import { BonsCommandeModule } from './bons-commande/bons-commande.module';
+import { PostgresModule } from './common/postgres.module';
 import { ComptesModule } from './comptes/comptes.module';
 import { ComptesTresorerieModule } from './comptes-tresorerie/comptes-tresorerie.module';
 import { DepensesModule } from './depenses/depenses.module';
@@ -24,6 +25,7 @@ import { TenantPoliciesModule } from './tenant-policies/tenant-policies.module';
 
 @Module({
   imports: [
+    PostgresModule,
     AuthModule,
     BudgetReferentielsModule,
     BonsCommandeModule,
