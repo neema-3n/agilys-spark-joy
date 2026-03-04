@@ -1,13 +1,17 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request = require('supertest');
 import { AppModule } from '../src/app.module';
+import { AuthorizationAuditService } from '../src/auth/authorization-audit.service';
 import { applyTestEnv } from './test-env';
 
 const postgresOnly = (process.env.AUTH_STORAGE_MODE ?? '').toLowerCase() === 'postgres' ? it : it.skip;
 
 describe('AuthController (e2e)', () => {
   let app: INestApplication;
+  let authorizationAuditService: AuthorizationAuditService;
+  let logDecisionSpy: jest.SpyInstance;
+  let authorizationLoggerSpy: jest.SpyInstance;
 
   beforeAll(async () => {
     applyTestEnv();
@@ -25,9 +29,20 @@ describe('AuthController (e2e)', () => {
       })
     );
     await app.init();
+
+    authorizationAuditService = moduleFixture.get(AuthorizationAuditService);
+    logDecisionSpy = jest.spyOn(authorizationAuditService, 'logDecision');
+    authorizationLoggerSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+  });
+
+  beforeEach(() => {
+    logDecisionSpy.mockClear();
+    authorizationLoggerSpy.mockClear();
   });
 
   afterAll(async () => {
+    authorizationLoggerSpy.mockRestore();
+    logDecisionSpy.mockRestore();
     await app.close();
   });
 
@@ -268,6 +283,46 @@ describe('AuthController (e2e)', () => {
     expect(assignResponse.body.message).toContain('Access hors tenant refuse');
   });
 
+  it('PATCH /auth/users/:userId/roles allows super_admin to manage roles cross-tenant', async () => {
+    const superAdminSession = await request(app.getHttpServer()).post('/auth/login').send({
+      email: 'superadmin@agilys.local',
+      password: 'ChangeMe123!'
+    });
+    expect(superAdminSession.status).toBe(201);
+
+    const superToken = superAdminSession.body.accessToken as string;
+
+    const assignResponse = await request(app.getHttpServer())
+      .patch('/auth/users/user-other-tenant/roles/assign')
+      .set('Authorization', `Bearer ${superToken}`)
+      .send({ role: 'auditeur' });
+    expect(assignResponse.status).toBe(200);
+    expect(assignResponse.body.roles).toContain('auditeur');
+    expect(logDecisionSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-super',
+        tenantId: 'tenant-1',
+        action: 'PATCH /auth/users/:userId/roles/assign',
+        decision: 'allow'
+      })
+    );
+
+    const revokeResponse = await request(app.getHttpServer())
+      .patch('/auth/users/user-other-tenant/roles/revoke')
+      .set('Authorization', `Bearer ${superToken}`)
+      .send({ role: 'auditeur' });
+    expect(revokeResponse.status).toBe(200);
+    expect(revokeResponse.body.roles).not.toContain('auditeur');
+    expect(logDecisionSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-super',
+        tenantId: 'tenant-1',
+        action: 'PATCH /auth/users/:userId/roles/revoke',
+        decision: 'allow'
+      })
+    );
+  });
+
   it('PATCH /auth/users/:userId/roles blocks incompatible SoD role assignment', async () => {
     const adminSession = await request(app.getHttpServer()).post('/auth/login').send({
       email: 'user@agilys.local',
@@ -295,5 +350,70 @@ describe('AuthController (e2e)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ role: 'ordonnateur' });
     expect(cleanupOrdonnateur.status).toBe(200);
+  });
+
+  it('PATCH /auth/users/:userId/roles returns explicit deny reason and logs deny decision for insufficient permissions', async () => {
+    const operatorSession = await request(app.getHttpServer()).post('/auth/login').send({
+      email: 'ops@agilys.local',
+      password: 'ChangeMe123!'
+    });
+    expect(operatorSession.status).toBe(201);
+
+    const operatorToken = operatorSession.body.accessToken as string;
+    const denyResponse = await request(app.getHttpServer())
+      .patch('/auth/users/user-ops/roles/assign')
+      .set('Authorization', `Bearer ${operatorToken}`)
+      .send({ role: 'auditeur' });
+
+    expect(denyResponse.status).toBe(403);
+    expect(denyResponse.body.message).toContain('Permission insuffisante: roles:manage');
+
+    expect(logDecisionSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-ops',
+        tenantId: 'tenant-1',
+        action: 'PATCH /auth/users/:userId/roles/assign',
+        decision: 'deny',
+        reason: 'Permission insuffisante: roles:manage'
+      })
+    );
+  });
+
+  it('auth authorization audit logs keep minimal payload without sensitive fields', async () => {
+    const operatorSession = await request(app.getHttpServer()).post('/auth/login').send({
+      email: 'ops@agilys.local',
+      password: 'ChangeMe123!'
+    });
+    expect(operatorSession.status).toBe(201);
+
+    const operatorToken = operatorSession.body.accessToken as string;
+
+    const denyResponse = await request(app.getHttpServer())
+      .patch('/auth/users/user-ops/roles/assign')
+      .set('Authorization', `Bearer ${operatorToken}`)
+      .send({ role: 'auditeur' });
+    expect(denyResponse.status).toBe(403);
+
+    const payloads = authorizationLoggerSpy.mock.calls
+      .map((call) => call[0])
+      .filter((value): value is string => typeof value === 'string')
+      .filter(
+        (payload) =>
+          payload.includes('"action":"PATCH /auth/users/:userId/roles/assign"') && payload.includes('"decision":"deny"')
+      );
+
+    expect(payloads.length).toBeGreaterThan(0);
+    const parsedPayloads = payloads.map((payload) => JSON.parse(payload) as Record<string, unknown>);
+    expect(parsedPayloads.every((payload) => typeof payload.userId === 'string')).toBe(true);
+    expect(parsedPayloads.every((payload) => typeof payload.tenantId === 'string')).toBe(true);
+    expect(parsedPayloads.every((payload) => typeof payload.reason === 'string')).toBe(true);
+    expect(
+      parsedPayloads.every(
+        (payload) => typeof payload.timestamp === 'string' && !Number.isNaN(Date.parse(payload.timestamp as string))
+      )
+    ).toBe(true);
+    expect(payloads.every((payload) => !payload.includes('password'))).toBe(true);
+    expect(payloads.every((payload) => !payload.includes('passwordHash'))).toBe(true);
+    expect(payloads.every((payload) => !payload.includes('refreshToken'))).toBe(true);
   });
 });
