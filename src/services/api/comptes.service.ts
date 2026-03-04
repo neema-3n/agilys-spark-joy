@@ -1,144 +1,112 @@
-import { supabase } from '@/integrations/supabase/client';
+import { requestJson } from '@/services/api/api-utils';
 import { Compte, CreateCompteInput, UpdateCompteInput } from '@/types/compte.types';
 
+interface CompteApiModel {
+  id: string;
+  clientId: string;
+  numero: string;
+  libelle: string;
+  type: Compte['type'];
+  categorie: Compte['categorie'];
+  parentId?: string;
+  niveau: number;
+  statut: Compte['statut'];
+  createdAt: string;
+  updatedAt: string;
+}
+
+const mapFromApi = (c: CompteApiModel): Compte => ({
+  id: c.id,
+  clientId: c.clientId,
+  numero: c.numero,
+  libelle: c.libelle,
+  type: c.type,
+  categorie: c.categorie,
+  parentId: c.parentId,
+  niveau: Number(c.niveau),
+  statut: c.statut,
+  createdAt: c.createdAt,
+  updatedAt: c.updatedAt
+});
+
 export const comptesService = {
-  async getAll(clientId: string): Promise<Compte[]> {
-    const { data, error } = await supabase
-      .from('comptes')
-      .select('*')
-      .eq('client_id', clientId)
-      .order('numero', { ascending: true });
+  async getAll(_clientId: string): Promise<Compte[]> {
+    const payload = await requestJson<CompteApiModel[]>(
+      '/comptes',
+      { method: 'GET' },
+      'Erreur lors de la récupération des comptes'
+    );
 
-    if (error) throw error;
-
-    return (data || []).map(c => ({
-      id: c.id,
-      clientId: c.client_id,
-      numero: c.numero,
-      libelle: c.libelle,
-      type: c.type as Compte['type'],
-      categorie: c.categorie as Compte['categorie'],
-      parentId: c.parent_id || undefined,
-      niveau: c.niveau,
-      statut: c.statut as Compte['statut'],
-      createdAt: c.created_at,
-      updatedAt: c.updated_at
-    }));
+    return payload.map(mapFromApi);
   },
 
   async getById(id: string): Promise<Compte> {
-    const { data, error } = await supabase
-      .from('comptes')
-      .select('*')
-      .eq('id', id)
-      .single();
+    const payload = await requestJson<CompteApiModel>(
+      `/comptes/${encodeURIComponent(id)}`,
+      { method: 'GET' },
+      'Erreur lors de la récupération du compte'
+    );
 
-    if (error) throw error;
-
-    return {
-      id: data.id,
-      clientId: data.client_id,
-      numero: data.numero,
-      libelle: data.libelle,
-      type: data.type as Compte['type'],
-      categorie: data.categorie as Compte['categorie'],
-      parentId: data.parent_id || undefined,
-      niveau: data.niveau,
-      statut: data.statut as Compte['statut'],
-      createdAt: data.created_at,
-      updatedAt: data.updated_at
-    };
+    return mapFromApi(payload);
   },
 
   async create(input: CreateCompteInput): Promise<Compte> {
-    const { data, error } = await supabase
-      .from('comptes')
-      .insert({
-        client_id: input.clientId,
-        numero: input.numero,
-        libelle: input.libelle,
-        type: input.type,
-        categorie: input.categorie,
-        parent_id: input.parentId || null,
-        niveau: input.niveau || 1,
-        statut: input.statut || 'actif'
-      })
-      .select()
-      .single();
+    const payload = await requestJson<CompteApiModel>(
+      '/comptes',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          numero: input.numero,
+          libelle: input.libelle,
+          type: input.type,
+          categorie: input.categorie,
+          parentId: input.parentId,
+          niveau: input.niveau,
+          statut: input.statut
+        })
+      },
+      'Erreur lors de la création du compte'
+    );
 
-    if (error) throw error;
-
-    return {
-      id: data.id,
-      clientId: data.client_id,
-      numero: data.numero,
-      libelle: data.libelle,
-      type: data.type as Compte['type'],
-      categorie: data.categorie as Compte['categorie'],
-      parentId: data.parent_id || undefined,
-      niveau: data.niveau,
-      statut: data.statut as Compte['statut'],
-      createdAt: data.created_at,
-      updatedAt: data.updated_at
-    };
+    return mapFromApi(payload);
   },
 
   async update(id: string, input: UpdateCompteInput): Promise<Compte> {
-    const updateData: any = {};
-    if (input.numero) updateData.numero = input.numero;
-    if (input.libelle) updateData.libelle = input.libelle;
-    if (input.type) updateData.type = input.type;
-    if (input.categorie) updateData.categorie = input.categorie;
-    if (input.parentId !== undefined) updateData.parent_id = input.parentId || null;
-    if (input.niveau) updateData.niveau = input.niveau;
-    if (input.statut) updateData.statut = input.statut;
+    const payload = await requestJson<CompteApiModel>(
+      `/comptes/${encodeURIComponent(id)}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({
+          numero: input.numero,
+          libelle: input.libelle,
+          type: input.type,
+          categorie: input.categorie,
+          parentId: input.parentId,
+          niveau: input.niveau,
+          statut: input.statut
+        })
+      },
+      'Erreur lors de la mise à jour du compte'
+    );
 
-    const { data, error } = await supabase
-      .from('comptes')
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    return {
-      id: data.id,
-      clientId: data.client_id,
-      numero: data.numero,
-      libelle: data.libelle,
-      type: data.type as Compte['type'],
-      categorie: data.categorie as Compte['categorie'],
-      parentId: data.parent_id || undefined,
-      niveau: data.niveau,
-      statut: data.statut as Compte['statut'],
-      createdAt: data.created_at,
-      updatedAt: data.updated_at
-    };
+    return mapFromApi(payload);
   },
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('comptes')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
+    await requestJson(
+      `/comptes/${encodeURIComponent(id)}`,
+      { method: 'DELETE' },
+      'Erreur lors de la suppression du compte'
+    );
   },
 
-  /**
-   * Supprime tous les comptes d'un client
-   * ⚠️ Action irréversible - utiliser avec précaution
-   */
-  async deleteAll(clientId: string): Promise<number> {
-    const { data, error } = await supabase
-      .from('comptes')
-      .delete()
-      .eq('client_id', clientId)
-      .select('id');
-    
-    if (error) throw error;
-    
-    return data?.length || 0;
+  async deleteAll(_clientId: string): Promise<number> {
+    const payload = await requestJson<{ deletedCount: number }>(
+      '/comptes?all=true',
+      { method: 'DELETE' },
+      'Erreur lors de la suppression des comptes'
+    );
+
+    return payload.deletedCount ?? 0;
   }
 };

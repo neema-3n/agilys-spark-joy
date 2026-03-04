@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { requestJson } from '@/services/api/api-utils';
 
 export interface ImportReport {
   success: boolean;
@@ -17,68 +17,66 @@ export interface CSVValidation {
   preview?: Array<Record<string, string>>;
 }
 
+const encodeUtf8ToBase64 = (content: string): string => {
+  const encoded = encodeURIComponent(content).replace(/%([0-9A-F]{2})/g, (_match, p1: string) =>
+    String.fromCharCode(Number.parseInt(p1, 16))
+  );
+  return btoa(encoded);
+};
+
 export const importComptesService = {
-  async importFromCSV(
-    file: File,
-    clientId: string,
-    skipDuplicates: boolean = true
-  ): Promise<ImportReport> {
-    try {
-      const csvContent = await file.text();
-      const base64 = btoa(unescape(encodeURIComponent(csvContent)));
+  async importFromCSV(file: File, _clientId: string, skipDuplicates: boolean = true): Promise<ImportReport> {
+    const csvContent = await file.text();
+    const base64 = encodeUtf8ToBase64(csvContent);
 
-      const { data, error } = await supabase.functions.invoke('import-plan-comptable', {
-        body: {
+    return requestJson<ImportReport>(
+      '/comptes/import-csv',
+      {
+        method: 'POST',
+        body: JSON.stringify({
           csv: base64,
-          clientId,
-          skipDuplicates,
-        },
-      });
-
-      if (error) throw error;
-      return data;
-    } catch (error: any) {
-      console.error('Import error:', error);
-      throw new Error(error.message || 'Erreur lors de l\'import');
-    }
+          skipDuplicates
+        })
+      },
+      "Erreur lors de l'import"
+    );
   },
 
   async validateCSVFormat(file: File): Promise<CSVValidation> {
     try {
       const text = await file.text();
       const lines = text.trim().split('\n');
-      
+
       if (lines.length < 2) {
         return { valid: false, errors: ['Le fichier CSV est vide'] };
       }
 
-      const headers = lines[0].split(',').map(h => h.trim());
+      const headers = lines[0].split(',').map((header) => header.trim());
       const requiredHeaders = ['code', 'intitule', 'nb_chiffres'];
-      const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+      const missingHeaders = requiredHeaders.filter((header) => !headers.includes(header));
 
       if (missingHeaders.length > 0) {
         return {
           valid: false,
-          errors: [`Colonnes manquantes: ${missingHeaders.join(', ')}`],
+          errors: [`Colonnes manquantes: ${missingHeaders.join(', ')}`]
         };
       }
 
-      // Preview first 10 rows
-      const preview = lines.slice(1, 11).map(line => {
-        const values = line.split(',').map(v => v.trim());
+      const preview = lines.slice(1, 11).map((line) => {
+        const values = line.split(',').map((value) => value.trim());
         const row: Record<string, string> = {};
-        headers.forEach((header, i) => {
-          row[header] = values[i] || '';
+        headers.forEach((header, index) => {
+          row[header] = values[index] || '';
         });
         return row;
       });
 
       return { valid: true, errors: [], preview };
-    } catch (error: any) {
+    } catch (error) {
       return {
         valid: false,
-        errors: ['Erreur de lecture du fichier: ' + error.message],
+        errors: ['Erreur de lecture du fichier: ' + (error instanceof Error ? error.message : 'inconnue')]
       };
     }
-  },
+  }
 };

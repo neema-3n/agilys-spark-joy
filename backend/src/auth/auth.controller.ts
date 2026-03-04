@@ -31,6 +31,13 @@ export class AuthController {
     await this.authService.logout(body.refreshToken);
   }
 
+  @Post('init-test-users')
+  @UseGuards(JwtAuthGuard, AuthorizationPolicyGuard)
+  @RequirePermissions('roles:manage')
+  async initTestUsers() {
+    return this.authService.initTestUsers();
+  }
+
   @Patch('users/:userId/roles/assign')
   @UseGuards(JwtAuthGuard, AuthorizationPolicyGuard)
   @RequirePermissions('roles:manage')

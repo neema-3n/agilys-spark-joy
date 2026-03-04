@@ -1,140 +1,156 @@
-import { supabase } from '@/integrations/supabase/client';
-import type { CompteTresorerie, CompteTresorerieFormData, ComptesTresorerieStats } from '@/types/compte-tresorerie.types';
+import { requestJson } from '@/services/api/api-utils';
+import type {
+  CompteTresorerie,
+  CompteTresorerieFormData,
+  ComptesTresorerieStats
+} from '@/types/compte-tresorerie.types';
 
-const mapDbToCompteTresorerie = (data: any): CompteTresorerie => ({
+interface CompteTresorerieApiModel {
+  id: string;
+  clientId: string;
+  code: string;
+  libelle: string;
+  type: 'banque' | 'caisse';
+  banque?: string;
+  numeroCompte?: string;
+  devise: string;
+  soldeInitial: number;
+  soldeActuel: number;
+  statut: 'actif' | 'inactif' | 'cloture';
+  dateOuverture: string;
+  dateCloture?: string;
+  observations?: string;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const mapFromApi = (data: CompteTresorerieApiModel): CompteTresorerie => ({
   id: data.id,
-  clientId: data.client_id,
+  clientId: data.clientId,
   code: data.code,
   libelle: data.libelle,
   type: data.type,
   banque: data.banque,
-  numeroCompte: data.numero_compte,
+  numeroCompte: data.numeroCompte,
   devise: data.devise,
-  soldeInitial: data.solde_initial,
-  soldeActuel: data.solde_actuel,
+  soldeInitial: Number(data.soldeInitial || 0),
+  soldeActuel: Number(data.soldeActuel || 0),
   statut: data.statut,
-  dateOuverture: data.date_ouverture,
-  dateCloture: data.date_cloture,
+  dateOuverture: data.dateOuverture,
+  dateCloture: data.dateCloture,
   observations: data.observations,
-  createdBy: data.created_by,
-  createdAt: data.created_at,
-  updatedAt: data.updated_at,
-});
-
-const mapToDb = (data: Partial<CompteTresorerieFormData>) => ({
-  code: data.code,
-  libelle: data.libelle,
-  type: data.type,
-  banque: data.banque,
-  numero_compte: data.numeroCompte,
-  devise: data.devise || 'XOF',
-  solde_initial: data.soldeInitial,
-  date_ouverture: data.dateOuverture,
-  observations: data.observations,
+  createdBy: data.createdBy,
+  createdAt: data.createdAt,
+  updatedAt: data.updatedAt
 });
 
 export const comptesTresorerieService = {
-  async getAll(clientId: string): Promise<CompteTresorerie[]> {
-    const { data, error } = await supabase
-      .from('comptes_tresorerie')
-      .select('*')
-      .eq('client_id', clientId)
-      .order('created_at', { ascending: false });
+  async getAll(_clientId: string): Promise<CompteTresorerie[]> {
+    const payload = await requestJson<CompteTresorerieApiModel[]>(
+      '/comptes-tresorerie',
+      { method: 'GET' },
+      'Erreur lors de la récupération des comptes de trésorerie'
+    );
 
-    if (error) throw error;
-    return (data || []).map(mapDbToCompteTresorerie);
+    return payload.map(mapFromApi);
   },
 
   async getById(id: string): Promise<CompteTresorerie> {
-    const { data, error } = await supabase
-      .from('comptes_tresorerie')
-      .select('*')
-      .eq('id', id)
-      .single();
+    const payload = await requestJson<CompteTresorerieApiModel>(
+      `/comptes-tresorerie/${encodeURIComponent(id)}`,
+      { method: 'GET' },
+      'Erreur lors de la récupération du compte de trésorerie'
+    );
 
-    if (error) throw error;
-    return mapDbToCompteTresorerie(data);
+    return mapFromApi(payload);
   },
 
-  async getActifs(clientId: string): Promise<CompteTresorerie[]> {
-    const { data, error } = await supabase
-      .from('comptes_tresorerie')
-      .select('*')
-      .eq('client_id', clientId)
-      .eq('statut', 'actif')
-      .order('type', { ascending: true })
-      .order('libelle', { ascending: true });
+  async getActifs(_clientId: string): Promise<CompteTresorerie[]> {
+    const payload = await requestJson<CompteTresorerieApiModel[]>(
+      '/comptes-tresorerie/actifs',
+      { method: 'GET' },
+      'Erreur lors de la récupération des comptes de trésorerie actifs'
+    );
 
-    if (error) throw error;
-    return (data || []).map(mapDbToCompteTresorerie);
+    return payload.map(mapFromApi);
   },
 
-  async create(clientId: string, compte: CompteTresorerieFormData): Promise<CompteTresorerie> {
-    const { data, error } = await supabase
-      .from('comptes_tresorerie')
-      .insert({
-        client_id: clientId,
-        ...mapToDb(compte),
-        solde_actuel: compte.soldeInitial,
-      })
-      .select()
-      .single();
+  async create(_clientId: string, compte: CompteTresorerieFormData): Promise<CompteTresorerie> {
+    const payload = await requestJson<CompteTresorerieApiModel>(
+      '/comptes-tresorerie',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          code: compte.code,
+          libelle: compte.libelle,
+          type: compte.type,
+          banque: compte.banque,
+          numeroCompte: compte.numeroCompte,
+          devise: compte.devise || 'XOF',
+          soldeInitial: compte.soldeInitial,
+          dateOuverture: compte.dateOuverture,
+          observations: compte.observations
+        })
+      },
+      'Erreur lors de la création du compte de trésorerie'
+    );
 
-    if (error) throw error;
-    return mapDbToCompteTresorerie(data);
+    return mapFromApi(payload);
   },
 
   async update(id: string, updates: Partial<CompteTresorerieFormData>): Promise<void> {
-    const { error } = await supabase
-      .from('comptes_tresorerie')
-      .update({
-        ...mapToDb(updates),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id);
-
-    if (error) throw error;
+    await requestJson(
+      `/comptes-tresorerie/${encodeURIComponent(id)}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({
+          code: updates.code,
+          libelle: updates.libelle,
+          type: updates.type,
+          banque: updates.banque,
+          numeroCompte: updates.numeroCompte,
+          devise: updates.devise,
+          soldeInitial: updates.soldeInitial,
+          dateOuverture: updates.dateOuverture,
+          observations: updates.observations
+        })
+      },
+      'Erreur lors de la mise à jour du compte de trésorerie'
+    );
   },
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('comptes_tresorerie')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
+    await requestJson(
+      `/comptes-tresorerie/${encodeURIComponent(id)}`,
+      { method: 'DELETE' },
+      'Erreur lors de la suppression du compte de trésorerie'
+    );
   },
 
   async getStats(clientId: string): Promise<ComptesTresorerieStats> {
-    const { data, error } = await supabase
-      .from('comptes_tresorerie')
-      .select('type, solde_actuel')
-      .eq('client_id', clientId)
-      .eq('statut', 'actif');
-
-    if (error) throw error;
+    const comptesActifs = await this.getActifs(clientId);
 
     const stats: ComptesTresorerieStats = {
-      nombreTotal: data?.length || 0,
+      nombreTotal: comptesActifs.length,
       nombreBanques: 0,
       nombreCaisses: 0,
       soldeTotal: 0,
       soldeBanques: 0,
-      soldeCaisses: 0,
+      soldeCaisses: 0
     };
 
-    data?.forEach((compte) => {
-      stats.soldeTotal += compte.solde_actuel;
-      
+    for (const compte of comptesActifs) {
+      stats.soldeTotal += compte.soldeActuel;
       if (compte.type === 'banque') {
-        stats.nombreBanques++;
-        stats.soldeBanques += compte.solde_actuel;
+        stats.nombreBanques += 1;
+        stats.soldeBanques += compte.soldeActuel;
       } else if (compte.type === 'caisse') {
-        stats.nombreCaisses++;
-        stats.soldeCaisses += compte.solde_actuel;
+        stats.nombreCaisses += 1;
+        stats.soldeCaisses += compte.soldeActuel;
       }
-    });
+    }
 
     return stats;
-  },
+  }
 };

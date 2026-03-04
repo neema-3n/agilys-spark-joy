@@ -1,168 +1,218 @@
-import { supabase } from '@/integrations/supabase/client';
+import { requestJson } from '@/services/api/api-utils';
 import {
-  Fournisseur,
   CreateFournisseurInput,
-  UpdateFournisseurInput,
+  Fournisseur,
   FournisseurStats,
+  UpdateFournisseurInput
 } from '@/types/fournisseur.types';
 
-const mapFromDatabase = (row: any): Fournisseur => ({
+interface FournisseurApiModel {
+  id: string;
+  clientId: string;
+  code: string;
+  nom: string;
+  nomCourt?: string;
+  typeFournisseur: string;
+  categorie?: string;
+  email?: string;
+  telephone?: string;
+  telephoneMobile?: string;
+  adresse?: string;
+  ville?: string;
+  pays?: string;
+  siteWeb?: string;
+  numeroContribuable?: string;
+  registreCommerce?: string;
+  formeJuridique?: string;
+  banque?: string;
+  numeroCompte?: string;
+  codeSwift?: string;
+  iban?: string;
+  conditionsPaiement?: string;
+  delaiLivraisonMoyen?: number;
+  noteEvaluation?: number;
+  statut: string;
+  datePremiereCollaboration?: string;
+  dernierEngagementDate?: string;
+  montantTotalEngage: number;
+  nombreEngagements: number;
+  contactNom?: string;
+  contactPrenom?: string;
+  contactFonction?: string;
+  contactEmail?: string;
+  contactTelephone?: string;
+  commentaires?: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: string;
+}
+
+const mapFromApi = (row: FournisseurApiModel): Fournisseur => ({
   id: row.id,
-  clientId: row.client_id,
+  clientId: row.clientId,
   code: row.code,
   nom: row.nom,
-  nomCourt: row.nom_court,
-  typeFournisseur: row.type_fournisseur,
+  nomCourt: row.nomCourt,
+  typeFournisseur: row.typeFournisseur as Fournisseur['typeFournisseur'],
   categorie: row.categorie,
   email: row.email,
   telephone: row.telephone,
-  telephoneMobile: row.telephone_mobile,
+  telephoneMobile: row.telephoneMobile,
   adresse: row.adresse,
   ville: row.ville,
   pays: row.pays,
-  siteWeb: row.site_web,
-  numeroContribuable: row.numero_contribuable,
-  registreCommerce: row.registre_commerce,
-  formeJuridique: row.forme_juridique,
+  siteWeb: row.siteWeb,
+  numeroContribuable: row.numeroContribuable,
+  registreCommerce: row.registreCommerce,
+  formeJuridique: row.formeJuridique,
   banque: row.banque,
-  numeroCompte: row.numero_compte,
-  codeSwift: row.code_swift,
+  numeroCompte: row.numeroCompte,
+  codeSwift: row.codeSwift,
   iban: row.iban,
-  conditionsPaiement: row.conditions_paiement,
-  delaiLivraisonMoyen: row.delai_livraison_moyen,
-  noteEvaluation: row.note_evaluation ? parseFloat(row.note_evaluation) : undefined,
-  statut: row.statut,
-  datePremiereCollaboration: row.date_premiere_collaboration,
-  dernierEngagementDate: row.dernier_engagement_date,
-  montantTotalEngage: parseFloat(row.montant_total_engage || 0),
-  nombreEngagements: row.nombre_engagements || 0,
-  contactNom: row.contact_nom,
-  contactPrenom: row.contact_prenom,
-  contactFonction: row.contact_fonction,
-  contactEmail: row.contact_email,
-  contactTelephone: row.contact_telephone,
+  conditionsPaiement: row.conditionsPaiement,
+  delaiLivraisonMoyen: row.delaiLivraisonMoyen,
+  noteEvaluation: row.noteEvaluation,
+  statut: row.statut as Fournisseur['statut'],
+  datePremiereCollaboration: row.datePremiereCollaboration,
+  dernierEngagementDate: row.dernierEngagementDate,
+  montantTotalEngage: Number(row.montantTotalEngage || 0),
+  nombreEngagements: Number(row.nombreEngagements || 0),
+  contactNom: row.contactNom,
+  contactPrenom: row.contactPrenom,
+  contactFonction: row.contactFonction,
+  contactEmail: row.contactEmail,
+  contactTelephone: row.contactTelephone,
   commentaires: row.commentaires,
-  createdAt: row.created_at,
-  updatedAt: row.updated_at,
-  createdBy: row.created_by,
+  createdAt: row.createdAt,
+  updatedAt: row.updatedAt,
+  createdBy: row.createdBy
 });
 
-const mapToDatabase = (input: CreateFournisseurInput | UpdateFournisseurInput) => {
-  const payload: any = {};
-  
-  if ('code' in input) payload.code = input.code;
-  if ('nom' in input) payload.nom = input.nom;
-  if ('nomCourt' in input) payload.nom_court = input.nomCourt;
-  if ('typeFournisseur' in input) payload.type_fournisseur = input.typeFournisseur;
-  if ('categorie' in input) payload.categorie = input.categorie;
-  if ('email' in input) payload.email = input.email;
-  if ('telephone' in input) payload.telephone = input.telephone;
-  if ('telephoneMobile' in input) payload.telephone_mobile = input.telephoneMobile;
-  if ('adresse' in input) payload.adresse = input.adresse;
-  if ('ville' in input) payload.ville = input.ville;
-  if ('pays' in input) payload.pays = input.pays;
-  if ('siteWeb' in input) payload.site_web = input.siteWeb;
-  if ('numeroContribuable' in input) payload.numero_contribuable = input.numeroContribuable;
-  if ('registreCommerce' in input) payload.registre_commerce = input.registreCommerce;
-  if ('formeJuridique' in input) payload.forme_juridique = input.formeJuridique;
-  if ('banque' in input) payload.banque = input.banque;
-  if ('numeroCompte' in input) payload.numero_compte = input.numeroCompte;
-  if ('codeSwift' in input) payload.code_swift = input.codeSwift;
-  if ('iban' in input) payload.iban = input.iban;
-  if ('conditionsPaiement' in input) payload.conditions_paiement = input.conditionsPaiement;
-  if ('delaiLivraisonMoyen' in input) payload.delai_livraison_moyen = input.delaiLivraisonMoyen;
-  if ('noteEvaluation' in input) payload.note_evaluation = input.noteEvaluation;
-  if ('statut' in input) payload.statut = input.statut;
-  if ('datePremiereCollaboration' in input) payload.date_premiere_collaboration = input.datePremiereCollaboration;
-  if ('contactNom' in input) payload.contact_nom = input.contactNom;
-  if ('contactPrenom' in input) payload.contact_prenom = input.contactPrenom;
-  if ('contactFonction' in input) payload.contact_fonction = input.contactFonction;
-  if ('contactEmail' in input) payload.contact_email = input.contactEmail;
-  if ('contactTelephone' in input) payload.contact_telephone = input.contactTelephone;
-  if ('commentaires' in input) payload.commentaires = input.commentaires;
-  
-  return payload;
-};
-
 export const fournisseursService = {
-  async getAll(clientId: string): Promise<Fournisseur[]> {
-    const { data, error } = await supabase
-      .from('fournisseurs')
-      .select('*')
-      .eq('client_id', clientId)
-      .order('nom', { ascending: true });
+  async getAll(_clientId: string): Promise<Fournisseur[]> {
+    const payload = await requestJson<FournisseurApiModel[]>(
+      '/fournisseurs',
+      { method: 'GET' },
+      'Erreur lors de la récupération des fournisseurs'
+    );
 
-    if (error) throw error;
-    return (data || []).map(mapFromDatabase);
+    return payload.map(mapFromApi);
   },
 
   async getById(id: string): Promise<Fournisseur> {
-    const { data, error } = await supabase
-      .from('fournisseurs')
-      .select('*')
-      .eq('id', id)
-      .single();
+    const payload = await requestJson<FournisseurApiModel>(
+      `/fournisseurs/${encodeURIComponent(id)}`,
+      { method: 'GET' },
+      'Erreur lors de la récupération du fournisseur'
+    );
 
-    if (error) throw error;
-    return mapFromDatabase(data);
+    return mapFromApi(payload);
   },
 
-  async getByStatut(clientId: string, statut: string): Promise<Fournisseur[]> {
-    const { data, error } = await supabase
-      .from('fournisseurs')
-      .select('*')
-      .eq('client_id', clientId)
-      .eq('statut', statut)
-      .order('nom', { ascending: true });
+  async getByStatut(_clientId: string, statut: string): Promise<Fournisseur[]> {
+    const payload = await requestJson<FournisseurApiModel[]>(
+      `/fournisseurs?statut=${encodeURIComponent(statut)}`,
+      { method: 'GET' },
+      'Erreur lors de la récupération des fournisseurs'
+    );
 
-    if (error) throw error;
-    return (data || []).map(mapFromDatabase);
+    return payload.map(mapFromApi);
   },
 
   async create(input: CreateFournisseurInput & { clientId: string }): Promise<Fournisseur> {
-    const payload = {
-      ...mapToDatabase(input),
-      client_id: input.clientId,
-    };
+    const payload = await requestJson<FournisseurApiModel>(
+      '/fournisseurs',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          code: input.code,
+          nom: input.nom,
+          nomCourt: input.nomCourt,
+          typeFournisseur: input.typeFournisseur,
+          categorie: input.categorie,
+          email: input.email,
+          telephone: input.telephone,
+          telephoneMobile: input.telephoneMobile,
+          adresse: input.adresse,
+          ville: input.ville,
+          pays: input.pays,
+          siteWeb: input.siteWeb,
+          numeroContribuable: input.numeroContribuable,
+          registreCommerce: input.registreCommerce,
+          formeJuridique: input.formeJuridique,
+          banque: input.banque,
+          numeroCompte: input.numeroCompte,
+          codeSwift: input.codeSwift,
+          iban: input.iban,
+          conditionsPaiement: input.conditionsPaiement,
+          delaiLivraisonMoyen: input.delaiLivraisonMoyen,
+          noteEvaluation: input.noteEvaluation,
+          statut: input.statut,
+          datePremiereCollaboration: input.datePremiereCollaboration,
+          contactNom: input.contactNom,
+          contactPrenom: input.contactPrenom,
+          contactFonction: input.contactFonction,
+          contactEmail: input.contactEmail,
+          contactTelephone: input.contactTelephone,
+          commentaires: input.commentaires
+        })
+      },
+      'Erreur lors de la création du fournisseur'
+    );
 
-    console.log('🔍 Création fournisseur - Payload:', payload);
-
-    const { data, error } = await supabase
-      .from('fournisseurs')
-      .insert(payload)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('❌ Erreur création fournisseur:', error);
-      throw error;
-    }
-    
-    console.log('✅ Fournisseur créé:', data);
-    return mapFromDatabase(data);
+    return mapFromApi(payload);
   },
 
   async update(id: string, input: UpdateFournisseurInput): Promise<Fournisseur> {
-    const payload = mapToDatabase(input);
+    const payload = await requestJson<FournisseurApiModel>(
+      `/fournisseurs/${encodeURIComponent(id)}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({
+          code: input.code,
+          nom: input.nom,
+          nomCourt: input.nomCourt,
+          typeFournisseur: input.typeFournisseur,
+          categorie: input.categorie,
+          email: input.email,
+          telephone: input.telephone,
+          telephoneMobile: input.telephoneMobile,
+          adresse: input.adresse,
+          ville: input.ville,
+          pays: input.pays,
+          siteWeb: input.siteWeb,
+          numeroContribuable: input.numeroContribuable,
+          registreCommerce: input.registreCommerce,
+          formeJuridique: input.formeJuridique,
+          banque: input.banque,
+          numeroCompte: input.numeroCompte,
+          codeSwift: input.codeSwift,
+          iban: input.iban,
+          conditionsPaiement: input.conditionsPaiement,
+          delaiLivraisonMoyen: input.delaiLivraisonMoyen,
+          noteEvaluation: input.noteEvaluation,
+          statut: input.statut,
+          datePremiereCollaboration: input.datePremiereCollaboration,
+          contactNom: input.contactNom,
+          contactPrenom: input.contactPrenom,
+          contactFonction: input.contactFonction,
+          contactEmail: input.contactEmail,
+          contactTelephone: input.contactTelephone,
+          commentaires: input.commentaires
+        })
+      },
+      'Erreur lors de la mise à jour du fournisseur'
+    );
 
-    const { data, error } = await supabase
-      .from('fournisseurs')
-      .update(payload)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return mapFromDatabase(data);
+    return mapFromApi(payload);
   },
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('fournisseurs')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
+    await requestJson(
+      `/fournisseurs/${encodeURIComponent(id)}`,
+      { method: 'DELETE' },
+      'Erreur lors de la suppression du fournisseur'
+    );
   },
 
   async getStatistics(clientId: string): Promise<FournisseurStats> {
@@ -170,20 +220,21 @@ export const fournisseursService = {
 
     return {
       nombreTotal: fournisseurs.length,
-      nombreActifs: fournisseurs.filter(f => f.statut === 'actif').length,
-      nombreInactifs: fournisseurs.filter(f => f.statut === 'inactif').length,
-      nombreBlacklistes: fournisseurs.filter(f => f.statut === 'blackliste').length,
+      nombreActifs: fournisseurs.filter((f) => f.statut === 'actif').length,
+      nombreInactifs: fournisseurs.filter((f) => f.statut === 'inactif').length,
+      nombreBlacklistes: fournisseurs.filter((f) => f.statut === 'blackliste').length,
       montantTotalEngage: fournisseurs.reduce((sum, f) => sum + f.montantTotalEngage, 0),
       nombreEngagementsTotal: fournisseurs.reduce((sum, f) => sum + f.nombreEngagements, 0),
       topFournisseurs: fournisseurs
+        .slice()
         .sort((a, b) => b.montantTotalEngage - a.montantTotalEngage)
         .slice(0, 5)
-        .map(f => ({
+        .map((f) => ({
           id: f.id,
           nom: f.nom,
           montantTotal: f.montantTotalEngage,
-          nombreEngagements: f.nombreEngagements,
-        })),
+          nombreEngagements: f.nombreEngagements
+        }))
     };
-  },
+  }
 };

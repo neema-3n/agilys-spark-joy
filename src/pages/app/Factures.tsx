@@ -6,6 +6,7 @@ import { Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { showNavigationToast } from '@/lib/navigation-toast';
 import { useFacturesPaginated } from '@/hooks/useFactures';
+import { useBonsCommande } from '@/hooks/useBonsCommande';
 import { useDepenses } from '@/hooks/useDepenses';
 import { useFournisseurs } from '@/hooks/useFournisseurs';
 import { useProjets } from '@/hooks/useProjets';
@@ -22,7 +23,6 @@ import { FactureSnapshot } from '@/components/factures/FactureSnapshot';
 import { CreateDepenseFromFactureDialog } from '@/components/depenses/CreateDepenseFromFactureDialog';
 import { CreateFactureInput, Facture, StatutFacture } from '@/types/facture.types';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -106,6 +106,7 @@ export default function Factures() {
   const { projets } = useProjets();
   const { lignes: lignesBudgetaires } = useLignesBudgetaires();
   const { engagements } = useEngagements();
+  const { bonsCommande: allBonsCommande } = useBonsCommande();
 
   // Helper pour récupérer la facture depuis l'ID (source unique de vérité)
   const editingFacture = useMemo(
@@ -208,29 +209,10 @@ export default function Factures() {
   // Gérer le scroll pour l'effet de disparition du header
   const scrollProgress = useScrollProgress(!!snapshotFactureId);
 
-  // Récupérer les bons de commande réceptionnés
-  const { data: bonsCommande = [] } = useQuery({
-    queryKey: ['bons-commande-receptionnes', currentClient?.id, currentExercice?.id],
-    queryFn: async () => {
-      if (!currentClient) return [];
-      
-      let query = supabase
-        .from('bons_commande')
-        .select('id, numero, statut, fournisseur_id, engagement_id, ligne_budgetaire_id, projet_id, objet, montant')
-        .eq('client_id', currentClient.id)
-        .eq('statut', 'receptionne')
-        .order('numero', { ascending: false });
-
-      if (currentExercice) {
-        query = query.eq('exercice_id', currentExercice.id);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!currentClient,
-  });
+  const bonsCommande = useMemo(
+    () => allBonsCommande.filter((bc) => bc.statut === 'receptionne'),
+    [allBonsCommande]
+  );
 
   // Callbacks stables avec dépendances minimales
   const handleCreate = useCallback(() => {

@@ -17,7 +17,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { InfoIcon } from 'lucide-react';
 import type { Facture } from '@/types/facture.types';
 import { format } from 'date-fns';
-import { supabase } from '@/integrations/supabase/client';
+import { getDepenses } from '@/services/api/depenses.service';
 
 const schema = z.object({
   montant: z.coerce.number().positive('Le montant doit être positif'),
@@ -64,35 +64,33 @@ export const CreateDepenseFromFactureDialog = ({
 
       const fetchSolde = async () => {
         setIsLoadingSolde(true);
-        const { data, error } = await supabase
-          .from('depenses')
-          .select('montant, statut')
-          .eq('facture_id', facture.id)
-          .neq('statut', 'annulee');
+        try {
+          const depenses = await getDepenses(facture.exerciceId, facture.clientId);
+          if (!isActive) return;
 
-        if (!isActive) return;
+          const dejaLiquide = depenses
+            .filter((depense) => depense.factureId === facture.id && depense.statut !== 'annulee')
+            .reduce((sum, depense) => sum + Number(depense.montant), 0);
+          const solde = Number(facture.montantTTC) - dejaLiquide;
 
-        if (error) {
+          setMontantDejaLiquide(dejaLiquide);
+          setSoldeDisponible(solde);
+          form.reset({
+            montant: solde,
+            dateDepense: format(new Date(), 'yyyy-MM-dd'),
+            modePaiement: '',
+            referencePaiement: '',
+            observations: '',
+          });
+          setIsLoadingSolde(false);
+        } catch (error) {
+          if (!isActive) return;
+
           console.error('Erreur récupération dépenses facture:', error);
           setMontantDejaLiquide(Number(facture.montantLiquide || 0));
           setSoldeDisponible(Number(facture.montantTTC) - Number(facture.montantLiquide || 0));
           setIsLoadingSolde(false);
-          return;
         }
-
-        const dejaLiquide = (data || []).reduce((sum, d) => sum + Number(d.montant), 0);
-        const solde = Number(facture.montantTTC) - dejaLiquide;
-
-        setMontantDejaLiquide(dejaLiquide);
-        setSoldeDisponible(solde);
-        form.reset({
-          montant: solde,
-          dateDepense: format(new Date(), 'yyyy-MM-dd'),
-          modePaiement: '',
-          referencePaiement: '',
-          observations: '',
-        });
-        setIsLoadingSolde(false);
       };
 
       fetchSolde();

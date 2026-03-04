@@ -1,13 +1,27 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { requestJson } from '@/services/api/api-utils';
+
+type InitUserStatus = 'success' | 'error' | 'skipped';
+
+interface InitUserResult {
+  email: string;
+  message: string;
+  role?: string;
+  status: InitUserStatus;
+}
+
+interface InitTestUsersResponse {
+  message: string;
+  results?: InitUserResult[];
+}
 
 export default function InitTestUsers() {
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<any>(null);
+  const [results, setResults] = useState<InitTestUsersResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const initializeUsers = async () => {
@@ -16,18 +30,20 @@ export default function InitTestUsers() {
     setResults(null);
 
     try {
-      const { data, error: invokeError } = await supabase.functions.invoke('init-test-users', {
-        body: {}
-      });
-
-      if (invokeError) {
-        throw invokeError;
-      }
-
+      const data = await requestJson<InitTestUsersResponse>(
+        '/auth/init-test-users',
+        {
+          method: 'POST',
+          authenticated: false,
+          retryOnAuthFailure: false
+        },
+        "Impossible d'initialiser les utilisateurs de test."
+      );
       setResults(data);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error initializing users:', err);
-      setError(err.message || 'Une erreur est survenue');
+      const message = err instanceof Error ? err.message : 'Une erreur est survenue';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -71,7 +87,7 @@ export default function InitTestUsers() {
 
               <div className="space-y-2">
                 <h3 className="font-semibold">Résultats détaillés:</h3>
-                {results.results?.map((result: any, index: number) => (
+                {results.results?.map((result, index) => (
                   <Card key={index}>
                     <CardContent className="pt-4">
                       <div className="flex items-start justify-between">

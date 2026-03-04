@@ -47,4 +47,12 @@ describe('AuthService', () => {
 
     await expect(authService.refresh(session.refreshToken)).rejects.toThrow();
   });
+
+  it('initializes test users without Supabase runtime dependency', async () => {
+    const result = await authService.initTestUsers();
+
+    expect(result.message).toContain('Initialisation');
+    expect(result.results.length).toBeGreaterThan(0);
+    expect(result.results[0]?.status).toBe('success');
+  });
 });

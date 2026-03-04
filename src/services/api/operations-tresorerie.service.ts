@@ -1,175 +1,152 @@
-import { supabase } from '@/integrations/supabase/client';
-import type { OperationTresorerie, OperationTresorerieFormData, OperationsTresorerieStats } from '@/types/operation-tresorerie.types';
+import { requestJson } from '@/services/api/api-utils';
+import type {
+  OperationTresorerie,
+  OperationTresorerieFormData,
+  OperationsTresorerieStats
+} from '@/types/operation-tresorerie.types';
 
-const mapDbToOperation = (data: any): OperationTresorerie => ({
+interface OperationTresorerieApiModel {
+  id: string;
+  clientId: string;
+  exerciceId: string;
+  numero: string;
+  dateOperation: string;
+  typeOperation: 'encaissement' | 'decaissement' | 'transfert';
+  compteId: string;
+  compteContrepartieId?: string;
+  montant: number;
+  modePaiement?: string;
+  referenceBancaire?: string;
+  libelle: string;
+  categorie?: string;
+  pieceJustificative?: string;
+  paiementId?: string;
+  recetteId?: string;
+  depenseId?: string;
+  statut: 'validee' | 'rapprochee' | 'annulee';
+  rapproche: boolean;
+  dateRapprochement?: string;
+  observations?: string;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+  compte?: {
+    code: string;
+    libelle: string;
+    type: string;
+  };
+  compteContrepartie?: {
+    code: string;
+    libelle: string;
+    type: string;
+  };
+  paiement?: {
+    id: string;
+    numero: string;
+    depense?: {
+      id: string;
+      numero: string;
+      objet: string;
+      ligneBudgetaire?: {
+        id: string;
+        libelle: string;
+      };
+    };
+  };
+}
+
+const mapFromApi = (data: OperationTresorerieApiModel): OperationTresorerie => ({
   id: data.id,
-  clientId: data.client_id,
-  exerciceId: data.exercice_id,
+  clientId: data.clientId,
+  exerciceId: data.exerciceId,
   numero: data.numero,
-  dateOperation: data.date_operation,
-  typeOperation: data.type_operation,
-  compteId: data.compte_id,
-  compteContrepartieId: data.compte_contrepartie_id,
-  montant: data.montant,
-  modePaiement: data.mode_paiement,
-  referenceBancaire: data.reference_bancaire,
+  dateOperation: data.dateOperation,
+  typeOperation: data.typeOperation,
+  compteId: data.compteId,
+  compteContrepartieId: data.compteContrepartieId,
+  montant: Number(data.montant || 0),
+  modePaiement: data.modePaiement,
+  referenceBancaire: data.referenceBancaire,
   libelle: data.libelle,
   categorie: data.categorie,
-  pieceJustificative: data.piece_justificative,
-  paiementId: data.paiement_id,
-  recetteId: data.recette_id,
-  depenseId: data.depense_id,
+  pieceJustificative: data.pieceJustificative,
+  paiementId: data.paiementId,
+  recetteId: data.recetteId,
+  depenseId: data.depenseId,
   statut: data.statut,
   rapproche: data.rapproche,
-  dateRapprochement: data.date_rapprochement,
+  dateRapprochement: data.dateRapprochement,
   observations: data.observations,
-  createdBy: data.created_by,
-  createdAt: data.created_at,
-  updatedAt: data.updated_at,
-  compte: data.compte ? {
-    code: data.compte.code,
-    libelle: data.compte.libelle,
-    type: data.compte.type,
-  } : undefined,
-  compteContrepartie: data.compte_contrepartie ? {
-    code: data.compte_contrepartie.code,
-    libelle: data.compte_contrepartie.libelle,
-    type: data.compte_contrepartie.type,
-  } : undefined,
-  paiement: data.paiement ? {
-    id: data.paiement.id,
-    numero: data.paiement.numero,
-    depense: data.paiement.depense ? {
-      id: data.paiement.depense.id,
-      numero: data.paiement.depense.numero,
-      objet: data.paiement.depense.objet,
-      ligneBudgetaire: data.paiement.depense.ligne_budgetaire ? {
-        id: data.paiement.depense.ligne_budgetaire.id,
-        libelle: data.paiement.depense.ligne_budgetaire.libelle,
-      } : undefined,
-    } : undefined,
-  } : undefined,
+  createdBy: data.createdBy,
+  createdAt: data.createdAt,
+  updatedAt: data.updatedAt,
+  compte: data.compte,
+  compteContrepartie: data.compteContrepartie,
+  paiement: data.paiement
 });
 
 export const operationsTresorerieService = {
-  async getAll(clientId: string, exerciceId: string): Promise<OperationTresorerie[]> {
-    const { data, error } = await supabase
-      .from('operations_tresorerie')
-      .select(`
-        *,
-        compte:comptes_tresorerie!compte_id(code, libelle, type),
-        compte_contrepartie:comptes_tresorerie!compte_contrepartie_id(code, libelle, type),
-        paiement:paiements(
-          id,
-          numero,
-          depense:depenses(
-            id,
-            numero,
-            objet,
-            ligne_budgetaire:lignes_budgetaires(
-              id,
-              libelle,
-              action_id
-            )
-          )
-        )
-      `)
-      .eq('client_id', clientId)
-      .eq('exercice_id', exerciceId)
-      .order('date_operation', { ascending: false })
-      .order('numero', { ascending: false });
+  async getAll(_clientId: string, exerciceId: string): Promise<OperationTresorerie[]> {
+    const payload = await requestJson<OperationTresorerieApiModel[]>(
+      `/operations-tresorerie?exerciceId=${encodeURIComponent(exerciceId)}`,
+      { method: 'GET' },
+      'Erreur lors de la récupération des opérations de trésorerie'
+    );
 
-    if (error) throw error;
-    return (data || []).map(mapDbToOperation);
+    return payload.map(mapFromApi);
   },
 
   async getByCompte(compteId: string): Promise<OperationTresorerie[]> {
-    const { data, error } = await supabase
-      .from('operations_tresorerie')
-      .select(`
-        *,
-        compte:comptes_tresorerie!compte_id(code, libelle, type),
-        compte_contrepartie:comptes_tresorerie!compte_contrepartie_id(code, libelle, type)
-      `)
-      .eq('compte_id', compteId)
-      .order('date_operation', { ascending: false });
+    const payload = await requestJson<OperationTresorerieApiModel[]>(
+      `/operations-tresorerie/compte/${encodeURIComponent(compteId)}`,
+      { method: 'GET' },
+      'Erreur lors de la récupération des opérations du compte'
+    );
 
-    if (error) throw error;
-    return (data || []).map(mapDbToOperation);
+    return payload.map(mapFromApi);
   },
 
-  async create(
-    clientId: string,
-    exerciceId: string,
-    operation: OperationTresorerieFormData
-  ): Promise<OperationTresorerie> {
-    const { data, error } = await supabase.functions.invoke('create-operation-tresorerie', {
-      body: {
-        clientId,
-        exerciceId,
-        ...operation,
+  async create(_clientId: string, exerciceId: string, operation: OperationTresorerieFormData): Promise<OperationTresorerie> {
+    const payload = await requestJson<OperationTresorerieApiModel>(
+      '/operations-tresorerie',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          exerciceId,
+          dateOperation: operation.dateOperation,
+          typeOperation: operation.typeOperation,
+          compteId: operation.compteId,
+          compteContrepartieId: operation.compteContrepartieId,
+          montant: operation.montant,
+          modePaiement: operation.modePaiement,
+          referenceBancaire: operation.referenceBancaire,
+          libelle: operation.libelle,
+          categorie: operation.categorie,
+          observations: operation.observations
+        })
       },
-    });
+      "Erreur lors de l'enregistrement de l'opération"
+    );
 
-    if (error) throw error;
-    return data;
+    return mapFromApi(payload);
   },
 
   async rapprocher(operationIds: string[]): Promise<void> {
-    const { error } = await supabase
-      .from('operations_tresorerie')
-      .update({
-        rapproche: true,
-        statut: 'rapprochee',
-        date_rapprochement: new Date().toISOString().split('T')[0],
-        updated_at: new Date().toISOString(),
-      })
-      .in('id', operationIds);
-
-    if (error) throw error;
+    await requestJson(
+      '/operations-tresorerie/rapprocher',
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ operationIds })
+      },
+      'Erreur lors du rapprochement des opérations'
+    );
   },
 
-  async getStats(clientId: string, exerciceId: string): Promise<OperationsTresorerieStats> {
-    const { data, error } = await supabase
-      .from('operations_tresorerie')
-      .select('type_operation, montant, statut, rapproche')
-      .eq('client_id', clientId)
-      .eq('exercice_id', exerciceId)
-      .neq('statut', 'annulee');
-
-    if (error) throw error;
-
-    const stats: OperationsTresorerieStats = {
-      nombreTotal: data?.length || 0,
-      nombreEncaissements: 0,
-      nombreDecaissements: 0,
-      nombreTransferts: 0,
-      montantEncaissements: 0,
-      montantDecaissements: 0,
-      montantTransferts: 0,
-      soldeNet: 0,
-      operationsNonRapprochees: 0,
-    };
-
-    data?.forEach((op) => {
-      if (op.type_operation === 'encaissement') {
-        stats.nombreEncaissements++;
-        stats.montantEncaissements += op.montant;
-        stats.soldeNet += op.montant;
-      } else if (op.type_operation === 'decaissement') {
-        stats.nombreDecaissements++;
-        stats.montantDecaissements += op.montant;
-        stats.soldeNet -= op.montant;
-      } else if (op.type_operation === 'transfert') {
-        stats.nombreTransferts++;
-        stats.montantTransferts += op.montant;
-      }
-
-      if (!op.rapproche) {
-        stats.operationsNonRapprochees++;
-      }
-    });
-
-    return stats;
-  },
+  async getStats(_clientId: string, exerciceId: string): Promise<OperationsTresorerieStats> {
+    return requestJson<OperationsTresorerieStats>(
+      `/operations-tresorerie/stats?exerciceId=${encodeURIComponent(exerciceId)}`,
+      { method: 'GET' },
+      'Erreur lors de la récupération des statistiques de trésorerie'
+    );
+  }
 };

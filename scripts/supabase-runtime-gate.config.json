@@ -1,0 +1,37 @@
+{
+  "legacy_mode": {
+    "feature_flag": "LEGACY_SUPABASE_RUNTIME",
+    "expires_on": "2026-04-30",
+    "reason": "Lots metier legacy non encore migres vers endpoints NestJS equivalentes."
+  },
+  "active_surface_paths": [
+    "src",
+    "backend/src",
+    "tests",
+    "scripts"
+  ],
+  "exclude_paths": [
+    "_bmad",
+    "_bmad-output",
+    ".cursor",
+    ".windsurf",
+    ".claude",
+    "dist",
+    "node_modules",
+    "src/docs",
+    "src/AGENTS-"
+  ],
+  "file_extensions": [
+    ".ts",
+    ".tsx",
+    ".js",
+    ".mjs",
+    ".cjs"
+  ],
+  "forbidden_runtime_patterns": [
+    "@supabase/supabase-js",
+    "@/integrations/supabase/client",
+    "integrations/supabase/client",
+    "supabase.functions.invoke("
+  ]
+}
