@@ -79,7 +79,7 @@ development_status:
   epic-m3: in-progress
   m3-1-produire-le-runbook-de-cutover-production: done
   m3-2-tester-le-plan-de-rollback-operationnel: done
-  m3-3-decommissionner-supabase-de-facon-controlee: in-progress
+  m3-3-decommissionner-supabase-de-facon-controlee: done
   m3-4-organiser-lhypercare-post-bascule: in-progress
   epic-m3-retrospective: optional
   epic-m4: backlog
