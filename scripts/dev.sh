@@ -51,7 +51,7 @@ wait_for_postgres_ready() {
   local attempt
 
   for attempt in $(seq 1 "${max_attempts}"); do
-    if docker compose exec -T postgres pg_isready -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" >/dev/null 2>&1; then
+    if docker_compose_postgres exec -T postgres pg_isready -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" >/dev/null 2>&1; then
       return 0
     fi
     sleep 1
@@ -87,6 +87,14 @@ fi
 
 cd "${ROOT_DIR}"
 
+docker_compose_postgres() {
+  POSTGRES_DB="${POSTGRES_DB}" \
+  POSTGRES_USER="${POSTGRES_USER}" \
+  POSTGRES_PASSWORD="${POSTGRES_PASSWORD}" \
+  POSTGRES_PORT="${DB_PORT}" \
+    docker compose "$@"
+}
+
 cleanup() {
   local exit_code=$?
 
@@ -105,11 +113,7 @@ cleanup() {
 trap cleanup INT TERM EXIT
 
 echo "[dev] Demarrage PostgreSQL (DB_PORT=${DB_PORT})..."
-POSTGRES_DB="${POSTGRES_DB}" \
-POSTGRES_USER="${POSTGRES_USER}" \
-POSTGRES_PASSWORD="${POSTGRES_PASSWORD}" \
-POSTGRES_PORT="${DB_PORT}" \
-  docker compose up -d postgres >/dev/null
+docker_compose_postgres up -d postgres >/dev/null
 
 wait_for_postgres_ready
 
