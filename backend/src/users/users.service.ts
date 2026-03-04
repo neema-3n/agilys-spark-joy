@@ -12,6 +12,12 @@ export interface UserRecord {
   roles: string[];
 }
 
+export interface SeededUserSummary {
+  email: string;
+  tenantId: string;
+  roles: string[];
+}
+
 @Injectable()
 export class UsersService implements OnModuleInit {
   private readonly storageMode = resolveAuthStorageMode();
@@ -63,6 +69,18 @@ export class UsersService implements OnModuleInit {
     if (this.storageMode === 'postgres') {
       await this.ensurePostgresReady();
     }
+  }
+
+  async ensureSeedUsers(): Promise<SeededUserSummary[]> {
+    if (this.storageMode === 'postgres') {
+      await this.ensurePostgresReady();
+    }
+
+    return this.users.map((user) => ({
+      email: user.email,
+      tenantId: user.tenantId,
+      roles: [...user.roles]
+    }));
   }
 
   private async ensurePostgresReady(): Promise<void> {

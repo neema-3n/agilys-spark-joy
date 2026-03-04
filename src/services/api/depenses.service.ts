@@ -1,258 +1,193 @@
-import { supabase } from '@/integrations/supabase/client';
+import { requestJson } from '@/services/api/api-utils';
 import type { Depense, DepenseFormData } from '@/types/depense.types';
 
-// Conversion helpers
-const toCamelCase = (obj: any): any => {
-  if (Array.isArray(obj)) {
-    return obj.map(v => toCamelCase(v));
-  } else if (obj !== null && obj.constructor === Object) {
-    return Object.keys(obj).reduce((result, key) => {
-      const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-      result[camelKey] = toCamelCase(obj[key]);
-      return result;
-    }, {} as any);
-  }
-  return obj;
-};
+interface DepenseApiModel {
+  id: string;
+  clientId: string;
+  exerciceId: string;
+  numero: string;
+  dateDepense: string;
+  objet: string;
+  montant: number;
+  montantPaye: number;
+  engagementId?: string;
+  reservationCreditId?: string;
+  ligneBudgetaireId?: string;
+  factureId?: string;
+  fournisseurId?: string;
+  beneficiaire?: string;
+  projetId?: string;
+  statut: 'brouillon' | 'validee' | 'ordonnancee' | 'payee' | 'annulee';
+  dateValidation?: string;
+  dateOrdonnancement?: string;
+  datePaiement?: string;
+  modePaiement?: 'virement' | 'cheque' | 'especes' | 'carte' | 'autre';
+  referencePaiement?: string;
+  observations?: string;
+  motifAnnulation?: string;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+  ecrituresCount?: number;
+  engagement?: {
+    id: string;
+    numero: string;
+    montant: number;
+    solde?: number;
+  };
+  reservationCredit?: {
+    id: string;
+    numero: string;
+    montant: number;
+    statut: string;
+  };
+  ligneBudgetaire?: {
+    id: string;
+    libelle: string;
+    disponible: number;
+  };
+  facture?: {
+    id: string;
+    numero: string;
+    montantTTC: number;
+    statut: string;
+  };
+  fournisseur?: {
+    id: string;
+    nom: string;
+    code: string;
+  };
+  projet?: {
+    id: string;
+    code: string;
+    nom: string;
+  };
+}
 
-const toSnakeCase = (obj: any): any => {
-  if (Array.isArray(obj)) {
-    return obj.map(v => toSnakeCase(v));
-  } else if (obj != null && typeof obj === 'object' && obj.constructor === Object) {
-    return Object.keys(obj).reduce((result, key) => {
-      const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-      result[snakeKey] = toSnakeCase(obj[key]);
-      return result;
-    }, {} as any);
-  }
-  return obj;
-};
+const mapFromApi = (row: DepenseApiModel): Depense => ({
+  id: row.id,
+  clientId: row.clientId,
+  exerciceId: row.exerciceId,
+  numero: row.numero,
+  dateDepense: row.dateDepense,
+  objet: row.objet,
+  montant: Number(row.montant || 0),
+  montantPaye: Number(row.montantPaye || 0),
+  engagementId: row.engagementId,
+  reservationCreditId: row.reservationCreditId,
+  ligneBudgetaireId: row.ligneBudgetaireId,
+  factureId: row.factureId,
+  fournisseurId: row.fournisseurId,
+  beneficiaire: row.beneficiaire,
+  projetId: row.projetId,
+  statut: row.statut,
+  dateValidation: row.dateValidation,
+  dateOrdonnancement: row.dateOrdonnancement,
+  datePaiement: row.datePaiement,
+  modePaiement: row.modePaiement,
+  referencePaiement: row.referencePaiement,
+  observations: row.observations,
+  motifAnnulation: row.motifAnnulation,
+  createdBy: row.createdBy,
+  createdAt: row.createdAt,
+  updatedAt: row.updatedAt,
+  ecrituresCount: Number(row.ecrituresCount || 0),
+  engagement: row.engagement,
+  reservationCredit: row.reservationCredit,
+  ligneBudgetaire: row.ligneBudgetaire,
+  facture: row.facture,
+  fournisseur: row.fournisseur,
+  projet: row.projet
+});
 
-const cleanData = (obj: any): any => {
-  const cleaned = { ...obj };
-  Object.keys(cleaned).forEach(key => {
-    if (cleaned[key] === '' || cleaned[key] === undefined) {
-      cleaned[key] = null;
-    }
-  });
-  return cleaned;
-};
+export const getDepenses = async (exerciceId: string, _clientId: string): Promise<Depense[]> => {
+  const payload = await requestJson<DepenseApiModel[]>(
+    `/depenses?exerciceId=${encodeURIComponent(exerciceId)}`,
+    { method: 'GET' },
+    'Erreur lors de la récupération des dépenses'
+  );
 
-export const getDepenses = async (exerciceId: string, clientId: string): Promise<Depense[]> => {
-  const { data, error } = await supabase
-    .from('depenses')
-    .select(`
-      *,
-      engagement:engagements(id, numero, montant),
-      reservation_credit:reservations_credits(id, numero, montant, statut),
-      ligne_budgetaire:lignes_budgetaires(id, libelle, disponible),
-      facture:factures(id, numero, montant_ttc, statut),
-      fournisseur:fournisseurs(id, nom, code),
-      projet:projets(id, code, nom),
-      ecritures_comptables!depense_id(count)
-    `)
-    .eq('exercice_id', exerciceId)
-    .eq('client_id', clientId)
-    .order('date_depense', { ascending: false });
-
-  if (error) throw error;
-  
-  const depensesWithCount = (data || []).map(dep => {
-    const ecrituresCount = dep.ecritures_comptables?.[0]?.count || 0;
-    const { ecritures_comptables, ...depenseData } = dep;
-    return { ...depenseData, ecritures_count: ecrituresCount };
-  });
-  
-  return toCamelCase(depensesWithCount) as Depense[];
+  return payload.map(mapFromApi);
 };
 
 export const createDepense = async (
   depense: DepenseFormData,
   exerciceId: string,
-  clientId: string,
-  userId: string
+  _clientId: string,
+  _userId: string
 ): Promise<Depense> => {
-  const cleanedData = cleanData(toSnakeCase(depense));
-  
-  const { data, error } = await supabase.functions.invoke('create-depense', {
-    body: {
-      ...cleanedData,
-      exercice_id: exerciceId,
-      client_id: clientId,
-      user_id: userId,
+  const payload = await requestJson<DepenseApiModel>(
+    '/depenses',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        exerciceId,
+        engagementId: depense.engagementId,
+        reservationCreditId: depense.reservationCreditId,
+        ligneBudgetaireId: depense.ligneBudgetaireId,
+        factureId: depense.factureId,
+        fournisseurId: depense.fournisseurId,
+        beneficiaire: depense.beneficiaire,
+        projetId: depense.projetId,
+        objet: depense.objet,
+        montant: depense.montant,
+        dateDepense: depense.dateDepense,
+        modePaiement: depense.modePaiement,
+        referencePaiement: depense.referencePaiement,
+        observations: depense.observations
+      })
     },
-  });
+    'Erreur lors de la création de la dépense'
+  );
 
-  if (error) {
-    let errorMessage = error.message;
-    
-    if (error.context) {
-      try {
-        const errorBody = await error.context.json();
-        if (errorBody && errorBody.error) {
-          errorMessage = errorBody.error;
-        }
-      } catch (e) {
-        console.error('Impossible de parser l\'erreur:', e);
-      }
-    }
-    
-    throw new Error(errorMessage);
-  }
-  if (!data) throw new Error('Dépense non créée');
-
-  return toCamelCase(data) as Depense;
+  return mapFromApi(payload);
 };
 
-export const updateDepense = async (
-  id: string,
-  updates: Partial<DepenseFormData>
-): Promise<Depense> => {
-  // 1. Récupérer la dépense actuelle
-  const { data: currentDepense, error: fetchError } = await supabase
-    .from('depenses')
-    .select('statut')
-    .eq('id', id)
-    .single();
+export const updateDepense = async (id: string, updates: Partial<DepenseFormData>): Promise<Depense> => {
+  const payload = await requestJson<DepenseApiModel>(
+    `/depenses/${encodeURIComponent(id)}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({
+        engagementId: updates.engagementId,
+        reservationCreditId: updates.reservationCreditId,
+        ligneBudgetaireId: updates.ligneBudgetaireId,
+        factureId: updates.factureId,
+        fournisseurId: updates.fournisseurId,
+        beneficiaire: updates.beneficiaire,
+        projetId: updates.projetId,
+        objet: updates.objet,
+        montant: updates.montant,
+        dateDepense: updates.dateDepense,
+        modePaiement: updates.modePaiement,
+        referencePaiement: updates.referencePaiement,
+        observations: updates.observations
+      })
+    },
+    'Erreur lors de la mise à jour de la dépense'
+  );
 
-  if (fetchError) throw fetchError;
-
-  // 2. Vérifier s'il existe des écritures validées
-  const { data: ecritures, error: ecrituresError } = await supabase
-    .from('ecritures_comptables')
-    .select('id')
-    .eq('depense_id', id)
-    .eq('statut_ecriture', 'validee')
-    .limit(1);
-
-  if (ecrituresError) throw ecrituresError;
-
-  // 3. Si écritures validées existent → BLOQUER (les brouillons ne génèrent jamais d'écritures)
-  if (ecritures && ecritures.length > 0) {
-    throw new Error(
-      '❌ Modification impossible : Cette opération a été comptabilisée.\n\n' +
-      '💡 Pour effectuer une correction :\n' +
-      '1. Annulez cette dépense (génère des écritures d\'annulation)\n' +
-      '2. Créez une nouvelle dépense avec les bonnes valeurs'
-    );
-  }
-
-  // 4. Procéder à la modification
-  const cleanedData = cleanData(toSnakeCase(updates));
-  
-  const { data, error } = await supabase
-    .from('depenses')
-    .update(cleanedData)
-    .eq('id', id)
-    .select(`
-      *,
-      engagement:engagements(id, numero, montant),
-      reservation_credit:reservations_credits(id, numero, montant, statut),
-      ligne_budgetaire:lignes_budgetaires(id, libelle, disponible),
-      facture:factures(id, numero, montant_ttc, statut),
-      fournisseur:fournisseurs(id, nom, code),
-      projet:projets(id, code, nom)
-    `)
-    .single();
-
-  if (error) throw error;
-  return toCamelCase(data) as Depense;
+  return mapFromApi(payload);
 };
 
 export const validerDepense = async (id: string): Promise<Depense> => {
-  // 1. Récupérer la dépense pour avoir client_id et exercice_id
-  const { data: depense, error: fetchError } = await supabase
-    .from('depenses')
-    .select('client_id, exercice_id')
-    .eq('id', id)
-    .single();
+  const payload = await requestJson<DepenseApiModel>(
+    `/depenses/${encodeURIComponent(id)}/valider`,
+    { method: 'PATCH', body: JSON.stringify({}) },
+    'Erreur lors de la validation de la dépense'
+  );
 
-  if (fetchError) throw fetchError;
-
-  // 2. Mettre à jour le statut
-  const { data, error } = await supabase
-    .from('depenses')
-    .update({
-      statut: 'validee',
-      date_validation: new Date().toISOString().split('T')[0],
-    })
-    .eq('id', id)
-    .select(`
-      *,
-      engagement:engagements(id, numero, montant),
-      reservation_credit:reservations_credits(id, numero, montant, statut),
-      ligne_budgetaire:lignes_budgetaires(id, libelle, disponible),
-      facture:factures(id, numero, montant_ttc, statut),
-      fournisseur:fournisseurs(id, nom, code),
-      projet:projets(id, code, nom)
-    `)
-    .single();
-
-  if (error) throw error;
-
-  // 3. Générer les écritures comptables automatiquement
-  try {
-    await supabase.functions.invoke('generate-ecritures-comptables', {
-      body: {
-        typeOperation: 'depense',
-        sourceId: id,
-        clientId: depense.client_id,
-        exerciceId: depense.exercice_id
-      }
-    });
-  } catch (error) {
-    console.error('Erreur lors de la génération des écritures:', error);
-  }
-
-  return toCamelCase(data) as Depense;
+  return mapFromApi(payload);
 };
 
 export const ordonnancerDepense = async (id: string): Promise<Depense> => {
-  // 1. Récupérer la dépense pour avoir client_id et exercice_id
-  const { data: depense, error: fetchError } = await supabase
-    .from('depenses')
-    .select('client_id, exercice_id')
-    .eq('id', id)
-    .single();
+  const payload = await requestJson<DepenseApiModel>(
+    `/depenses/${encodeURIComponent(id)}/ordonnancer`,
+    { method: 'PATCH', body: JSON.stringify({}) },
+    "Erreur lors de l'ordonnancement de la dépense"
+  );
 
-  if (fetchError) throw fetchError;
-
-  // 2. Mettre à jour le statut
-  const { data, error } = await supabase
-    .from('depenses')
-    .update({
-      statut: 'ordonnancee',
-      date_ordonnancement: new Date().toISOString().split('T')[0],
-    })
-    .eq('id', id)
-    .select(`
-      *,
-      engagement:engagements(id, numero, montant),
-      reservation_credit:reservations_credits(id, numero, montant, statut),
-      ligne_budgetaire:lignes_budgetaires(id, libelle, disponible),
-      facture:factures(id, numero, montant_ttc, statut),
-      fournisseur:fournisseurs(id, nom, code),
-      projet:projets(id, code, nom)
-    `)
-    .single();
-
-  if (error) throw error;
-
-  // 3. Générer les écritures comptables automatiquement
-  try {
-    await supabase.functions.invoke('generate-ecritures-comptables', {
-      body: {
-        typeOperation: 'depense',
-        sourceId: id,
-        clientId: depense.client_id,
-        exerciceId: depense.exercice_id
-      }
-    });
-  } catch (error) {
-    console.error('Erreur lors de la génération des écritures:', error);
-  }
-
-  return toCamelCase(data) as Depense;
+  return mapFromApi(payload);
 };
 
 export const marquerPayee = async (
@@ -261,388 +196,164 @@ export const marquerPayee = async (
   modePaiement: string,
   referencePaiement?: string
 ): Promise<Depense> => {
-  // 1. Récupérer la dépense
-  const { data: depense, error: fetchError } = await supabase
-    .from('depenses')
-    .select('montant, client_id, exercice_id')
-    .eq('id', id)
-    .single();
+  const payload = await requestJson<DepenseApiModel>(
+    `/depenses/${encodeURIComponent(id)}/marquer-payee`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({
+        datePaiement,
+        modePaiement,
+        referencePaiement: referencePaiement || null
+      })
+    },
+    'Erreur lors du passage de la dépense à payée'
+  );
 
-  if (fetchError) throw fetchError;
+  return mapFromApi(payload);
+};
 
-  // 2. Mettre à jour le statut
-  const { data, error } = await supabase
-    .from('depenses')
-    .update({
-      statut: 'payee',
-      date_paiement: datePaiement,
-      mode_paiement: modePaiement,
-      reference_paiement: referencePaiement || null,
-      montant_paye: depense?.montant || 0,
-    })
-    .eq('id', id)
-    .select(`
-      *,
-      engagement:engagements(id, numero, montant),
-      reservation_credit:reservations_credits(id, numero, montant, statut),
-      ligne_budgetaire:lignes_budgetaires(id, libelle, disponible),
-      facture:factures(id, numero, montant_ttc, statut),
-      fournisseur:fournisseurs(id, nom, code),
-      projet:projets(id, code, nom)
-    `)
-    .single();
+export const getPaiementsValidesDepense = async (depenseId: string) => {
+  return requestJson<Array<{
+    id: string;
+    numero: string;
+    montant: number;
+    datePaiement: string;
+    modePaiement: string;
+  }>>(
+    `/depenses/${encodeURIComponent(depenseId)}/paiements-valides`,
+    { method: 'GET' },
+    'Erreur lors de la récupération des paiements valides'
+  );
+};
 
-  if (error) throw error;
-
-  // 3. Générer les écritures comptables automatiquement
-  try {
-    await supabase.functions.invoke('generate-ecritures-comptables', {
-      body: {
-        typeOperation: 'depense',
-        sourceId: id,
-        clientId: depense.client_id,
-        exerciceId: depense.exercice_id
-      }
-    });
-  } catch (error) {
-    console.error('Erreur lors de la génération des écritures:', error);
+export const getPaiementsValidesMultipleDepenses = async (depenseIds: string[]) => {
+  if (depenseIds.length === 0) {
+    return [];
   }
 
-  return toCamelCase(data) as Depense;
+  return requestJson<Array<{
+    id: string;
+    numero: string;
+    montant: number;
+    datePaiement: string;
+    modePaiement: string;
+    depenseId: string;
+    depenses: {
+      numero: string;
+      objet: string;
+    };
+  }>>(
+    '/depenses/paiements-valides-multiple',
+    {
+      method: 'POST',
+      body: JSON.stringify({ depenseIds })
+    },
+    'Erreur lors de la récupération des paiements valides (multiple)'
+  );
 };
 
-/**
- * Récupère les paiements valides associés à une dépense
- */
-export const getPaiementsValidesDepense = async (depenseId: string) => {
-  const { data, error } = await supabase
-    .from('paiements')
-    .select('id, numero, montant, date_paiement, mode_paiement')
-    .eq('depense_id', depenseId)
-    .eq('statut', 'valide')
-    .order('date_paiement', { ascending: false });
-
-  if (error) throw error;
-  return toCamelCase(data);
-};
-
-/**
- * Récupère les paiements valides associés à plusieurs dépenses
- */
-export const getPaiementsValidesMultipleDepenses = async (depenseIds: string[]) => {
-  if (depenseIds.length === 0) return [];
-  
-  const { data, error } = await supabase
-    .from('paiements')
-    .select(`
-      id, 
-      numero, 
-      montant, 
-      date_paiement, 
-      mode_paiement,
-      depense_id,
-      depenses!inner(numero, objet)
-    `)
-    .in('depense_id', depenseIds)
-    .eq('statut', 'valide')
-    .order('date_paiement', { ascending: false });
-
-  if (error) throw error;
-  return toCamelCase(data);
-};
-
-/**
- * Annule plusieurs dépenses avec le même motif
- */
 export const annulerMultipleDepenses = async (depenseIds: string[], motif: string): Promise<void> => {
-  const promises = depenseIds.map(id => annulerDepense(id, motif));
-  await Promise.all(promises);
+  await Promise.all(depenseIds.map((id) => annulerDepense(id, motif)));
 };
 
 export const annulerDepense = async (id: string, motif: string): Promise<Depense> => {
-  // 1. Vérifier s'il existe des écritures validées
-  const { data: ecritures, error: ecrituresError } = await supabase
-    .from('ecritures_comptables')
-    .select('id')
-    .eq('depense_id', id)
-    .eq('statut_ecriture', 'validee');
+  const payload = await requestJson<DepenseApiModel>(
+    `/depenses/${encodeURIComponent(id)}/annuler`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ motif })
+    },
+    "Erreur lors de l'annulation de la dépense"
+  );
 
-  if (ecrituresError) throw ecrituresError;
-
-  // 2. Si écritures existent → Contrepasser
-  if (ecritures && ecritures.length > 0) {
-    const { error: contrepasserError } = await supabase.functions.invoke('contrepasser-ecritures', {
-      body: {
-        typeOperation: 'depense',
-        sourceId: id,
-        motifAnnulation: motif,
-      }
-    });
-
-    if (contrepasserError) throw contrepasserError;
-  }
-
-  // 3. Mettre à jour le statut
-  const { data, error } = await supabase
-    .from('depenses')
-    .update({
-      statut: 'annulee',
-      motif_annulation: motif,
-    })
-    .eq('id', id)
-    .select(`
-      *,
-      engagement:engagements(id, numero, montant),
-      reservation_credit:reservations_credits(id, numero, montant, statut),
-      ligne_budgetaire:lignes_budgetaires(id, libelle, disponible),
-      facture:factures(id, numero, montant_ttc, statut),
-      fournisseur:fournisseurs(id, nom, code),
-      projet:projets(id, code, nom)
-    `)
-    .single();
-
-  if (error) throw error;
-  return toCamelCase(data) as Depense;
+  return mapFromApi(payload);
 };
 
 export const deleteDepense = async (id: string): Promise<void> => {
-  // 1. Vérifier le statut
-  const { data: depense, error: fetchError } = await supabase
-    .from('depenses')
-    .select('statut')
-    .eq('id', id)
-    .single();
-
-  if (fetchError) throw fetchError;
-
-  // 2. Bloquer si pas brouillon (les brouillons n'ont jamais d'écritures)
-  if (depense.statut !== 'brouillon') {
-    throw new Error(
-      '❌ Suppression impossible\n\n' +
-      '💡 Utilisez l\'annulation au lieu de la suppression pour conserver l\'historique comptable'
-    );
-  }
-
-  // 4. OK pour suppression
-  const { error } = await supabase
-    .from('depenses')
-    .delete()
-    .eq('id', id);
-
-  if (error) throw error;
+  await requestJson(
+    `/depenses/${encodeURIComponent(id)}`,
+    { method: 'DELETE' },
+    'Erreur lors de la suppression de la dépense'
+  );
 };
 
-/**
- * Crée une dépense depuis une facture validée
- */
 export const createDepenseFromFacture = async (
   data: any,
   exerciceId: string,
-  clientId: string,
-  userId: string
+  _clientId: string,
+  _userId: string
 ): Promise<Depense> => {
-  console.log('📄 createDepenseFromFacture - Début', { factureId: data.factureId });
-  
-  // 1. Récupérer la facture
-  const { data: factureData, error: factureError } = await supabase
-    .from('factures')
-    .select(`
-      *,
-      fournisseur:fournisseurs!fournisseur_id(*),
-      engagement:engagements!engagement_id(*),
-      ligne_budgetaire:lignes_budgetaires!ligne_budgetaire_id(*),
-      projet:projets!projet_id(*)
-    `)
-    .eq('id', data.factureId)
-    .single();
+  const payload = await requestJson<DepenseApiModel>(
+    '/depenses/from-facture',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        exerciceId,
+        factureId: data.factureId,
+        montant: data.montant,
+        dateDepense: data.dateDepense,
+        modePaiement: data.modePaiement,
+        referencePaiement: data.referencePaiement,
+        observations: data.observations
+      })
+    },
+    'Erreur lors de la création de la dépense depuis la facture'
+  );
 
-  if (factureError || !factureData) {
-    throw new Error('Facture introuvable');
-  }
-
-  if (factureData.statut !== 'validee') {
-    throw new Error('Seules les factures validées peuvent générer une dépense');
-  }
-
-  // 2. Calculer le solde disponible
-  const { data: depensesExistantes } = await supabase
-    .from('depenses')
-    .select('montant')
-    .eq('facture_id', data.factureId)
-    .neq('statut', 'annulee');
-
-  const montantDejaPaye = (depensesExistantes || []).reduce((sum, d) => sum + Number(d.montant), 0);
-  const soldeDisponible = Number(factureData.montant_ttc) - montantDejaPaye;
-
-  if (data.montant > soldeDisponible) {
-    throw new Error(`Montant invalide. Solde disponible : ${soldeDisponible.toFixed(2)} €`);
-  }
-
-  // 3. Vérifier qu'au moins une imputation budgétaire existe
-  if (!factureData.engagement_id && !factureData.ligne_budgetaire_id) {
-    throw new Error('La facture doit être liée à un engagement ou une ligne budgétaire pour créer une dépense');
-  }
-
-  // 4. Construire les données
-  const depenseFormData = {
-    factureId: data.factureId,
-    engagementId: factureData.engagement_id || undefined,
-    reservationCreditId: undefined,
-    ligneBudgetaireId: factureData.ligne_budgetaire_id || undefined,
-    fournisseurId: factureData.fournisseur_id,
-    beneficiaire: undefined,
-    projetId: factureData.projet_id || undefined,
-    objet: `Liquidation facture ${factureData.numero} - ${factureData.objet}`,
-    montant: data.montant,
-    dateDepense: data.dateDepense,
-    modePaiement: data.modePaiement,
-    referencePaiement: data.referencePaiement,
-    observations: data.observations || `Créée depuis la facture ${factureData.numero}`,
-  };
-
-  return createDepense(depenseFormData, exerciceId, clientId, userId);
+  return mapFromApi(payload);
 };
 
-/**
- * Crée une dépense depuis un engagement validé
- */
 export const createDepenseFromEngagement = async (
   data: any,
   exerciceId: string,
-  clientId: string,
-  userId: string
+  _clientId: string,
+  _userId: string
 ): Promise<Depense> => {
-  console.log('🤝 createDepenseFromEngagement - Début', { engagementId: data.engagementId });
-  
-  // 1. Récupérer l'engagement
-  const { data: engagementData, error: engagementError } = await supabase
-    .from('engagements')
-    .select(`
-      *,
-      fournisseur:fournisseurs!fournisseur_id(*),
-      ligne_budgetaire:lignes_budgetaires!ligne_budgetaire_id(*),
-      projet:projets!projet_id(*),
-      reservation_credit:reservations_credits!reservation_credit_id(*)
-    `)
-    .eq('id', data.engagementId)
-    .single();
+  const payload = await requestJson<DepenseApiModel>(
+    '/depenses/from-engagement',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        exerciceId,
+        engagementId: data.engagementId,
+        montant: data.montant,
+        dateDepense: data.dateDepense,
+        modePaiement: data.modePaiement,
+        referencePaiement: data.referencePaiement,
+        observations: data.observations
+      })
+    },
+    "Erreur lors de la création de la dépense depuis l'engagement"
+  );
 
-  if (engagementError || !engagementData) {
-    throw new Error('Engagement introuvable');
-  }
-
-  if (engagementData.statut !== 'valide') {
-    throw new Error('Seuls les engagements validés peuvent générer une dépense');
-  }
-
-  // 2. Calculer le solde disponible
-  const { data: depensesExistantes } = await supabase
-    .from('depenses')
-    .select('montant')
-    .eq('engagement_id', data.engagementId)
-    .neq('statut', 'annulee');
-
-  const montantDejaLiquide = (depensesExistantes || []).reduce((sum, d) => sum + Number(d.montant), 0);
-  const soldeDisponible = Number(engagementData.montant) - montantDejaLiquide;
-
-  if (data.montant > soldeDisponible) {
-    throw new Error(`Montant invalide. Solde disponible : ${soldeDisponible.toFixed(2)} €`);
-  }
-
-  // 3. Construire les données
-  const depenseFormData = {
-    engagementId: data.engagementId,
-    reservationCreditId: engagementData.reservation_credit_id || undefined,
-    ligneBudgetaireId: engagementData.ligne_budgetaire_id,
-    fournisseurId: engagementData.fournisseur_id || undefined,
-    beneficiaire: engagementData.beneficiaire || undefined,
-    projetId: engagementData.projet_id || undefined,
-    objet: `Liquidation engagement ${engagementData.numero} - ${engagementData.objet}`,
-    montant: data.montant,
-    dateDepense: data.dateDepense,
-    modePaiement: data.modePaiement,
-    referencePaiement: data.referencePaiement,
-    observations: data.observations || `Créée depuis l'engagement ${engagementData.numero}`,
-  };
-
-  return createDepense(depenseFormData, exerciceId, clientId, userId);
+  return mapFromApi(payload);
 };
 
-/**
- * Crée une dépense d'urgence depuis une réservation (cas exceptionnel)
- */
 export const createDepenseFromReservation = async (
   data: any,
   exerciceId: string,
-  clientId: string,
-  userId: string
+  _clientId: string,
+  _userId: string
 ): Promise<Depense> => {
-  console.log('💳 createDepenseFromReservation - Début', { reservationId: data.reservationCreditId });
-  
-  // 1. Vérifier la justification
-  if (!data.justificationUrgence || data.justificationUrgence.trim().length < 10) {
-    throw new Error('Justification d\'urgence requise (minimum 10 caractères)');
-  }
+  const payload = await requestJson<DepenseApiModel>(
+    '/depenses/from-reservation',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        exerciceId,
+        reservationCreditId: data.reservationCreditId,
+        montant: data.montant,
+        objet: data.objet,
+        dateDepense: data.dateDepense,
+        beneficiaire: data.beneficiaire,
+        modePaiement: data.modePaiement,
+        referencePaiement: data.referencePaiement,
+        observations: data.observations,
+        justificationUrgence: data.justificationUrgence
+      })
+    },
+    "Erreur lors de la création de la dépense depuis la réservation"
+  );
 
-  // 2. Récupérer la réservation
-  const { data: reservationData, error: reservationError } = await supabase
-    .from('reservations_credits')
-    .select(`
-      *,
-      ligne_budgetaire:lignes_budgetaires!ligne_budgetaire_id(*),
-      projet:projets!projet_id(*)
-    `)
-    .eq('id', data.reservationCreditId)
-    .single();
-
-  if (reservationError || !reservationData) {
-    throw new Error('Réservation introuvable');
-  }
-
-  if (reservationData.statut !== 'active') {
-    throw new Error('Seules les réservations actives peuvent générer une dépense');
-  }
-
-  // 3. Calculer le solde disponible
-  const { data: engagementsExistants } = await supabase
-    .from('engagements')
-    .select('montant')
-    .eq('reservation_credit_id', data.reservationCreditId)
-    .neq('statut', 'annule');
-
-  const { data: depensesExistantes } = await supabase
-    .from('depenses')
-    .select('montant')
-    .eq('reservation_credit_id', data.reservationCreditId)
-    .neq('statut', 'annulee');
-
-  const montantEngage = (engagementsExistants || []).reduce((sum, e) => sum + Number(e.montant), 0);
-  const montantDepense = (depensesExistantes || []).reduce((sum, d) => sum + Number(d.montant), 0);
-  const soldeDisponible = Number(reservationData.montant) - montantEngage - montantDepense;
-
-  if (data.montant > soldeDisponible) {
-    throw new Error(`Montant invalide. Solde disponible : ${soldeDisponible.toFixed(2)} €`);
-  }
-
-  // 4. Limite métier
-  const LIMITE_URGENCE = 5000;
-  if (data.montant > LIMITE_URGENCE) {
-    throw new Error(`Pour les montants > ${LIMITE_URGENCE}€, veuillez créer un engagement puis une facture`);
-  }
-
-  // 5. Construire les données
-  const depenseFormData = {
-    reservationCreditId: data.reservationCreditId,
-    ligneBudgetaireId: reservationData.ligne_budgetaire_id,
-    beneficiaire: data.beneficiaire || reservationData.beneficiaire,
-    projetId: reservationData.projet_id || undefined,
-    objet: data.objet,
-    montant: data.montant,
-    dateDepense: data.dateDepense,
-    modePaiement: data.modePaiement,
-    referencePaiement: data.referencePaiement,
-    observations: `[URGENCE] ${data.justificationUrgence}\n\n${data.observations || ''}`,
-  };
-
-  return createDepense(depenseFormData, exerciceId, clientId, userId);
+  return mapFromApi(payload);
 };

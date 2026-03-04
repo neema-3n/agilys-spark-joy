@@ -1,133 +1,102 @@
-import { supabase } from '@/integrations/supabase/client';
-import { Structure, CreateStructureInput, UpdateStructureInput } from '@/types/structure.types';
+import { requestJson } from '@/services/api/api-utils';
+import { CreateStructureInput, Structure, UpdateStructureInput } from '@/types/structure.types';
+
+interface StructureApiModel {
+  id: string;
+  clientId: string;
+  exerciceId?: string;
+  code: string;
+  nom: string;
+  type: Structure['type'];
+  parentId?: string;
+  responsable?: string;
+  statut: Structure['statut'];
+  createdAt: string;
+  updatedAt: string;
+}
+
+const mapFromApi = (data: StructureApiModel): Structure => ({
+  id: data.id,
+  clientId: data.clientId,
+  exerciceId: data.exerciceId,
+  code: data.code,
+  nom: data.nom,
+  type: data.type,
+  parentId: data.parentId,
+  responsable: data.responsable,
+  statut: data.statut,
+  createdAt: data.createdAt,
+  updatedAt: data.updatedAt
+});
 
 export const structuresService = {
-  async getAll(clientId: string, exerciceId?: string): Promise<Structure[]> {
-    let query = supabase
-      .from('structures')
-      .select('*')
-      .eq('client_id', clientId)
-      .order('code', { ascending: true });
+  async getAll(_clientId: string, exerciceId?: string): Promise<Structure[]> {
+    const query = exerciceId ? `?exerciceId=${encodeURIComponent(exerciceId)}` : '';
+    const payload = await requestJson<StructureApiModel[]>(
+      `/structures${query}`,
+      { method: 'GET' },
+      'Erreur lors de la récupération des structures'
+    );
 
-    if (exerciceId) {
-      query = query.eq('exercice_id', exerciceId);
-    }
-
-    const { data, error } = await query;
-
-    if (error) throw error;
-
-    return (data || []).map(s => ({
-      id: s.id,
-      clientId: s.client_id,
-      exerciceId: s.exercice_id || undefined,
-      code: s.code,
-      nom: s.nom,
-      type: s.type as Structure['type'],
-      parentId: s.parent_id || undefined,
-      responsable: s.responsable || undefined,
-      statut: s.statut as Structure['statut'],
-      createdAt: s.created_at,
-      updatedAt: s.updated_at
-    }));
+    return payload.map(mapFromApi);
   },
 
   async getById(id: string): Promise<Structure> {
-    const { data, error } = await supabase
-      .from('structures')
-      .select('*')
-      .eq('id', id)
-      .single();
+    const payload = await requestJson<StructureApiModel>(
+      `/structures/${encodeURIComponent(id)}`,
+      { method: 'GET' },
+      'Erreur lors de la récupération de la structure'
+    );
 
-    if (error) throw error;
-
-    return {
-      id: data.id,
-      clientId: data.client_id,
-      exerciceId: data.exercice_id || undefined,
-      code: data.code,
-      nom: data.nom,
-      type: data.type as Structure['type'],
-      parentId: data.parent_id || undefined,
-      responsable: data.responsable || undefined,
-      statut: data.statut as Structure['statut'],
-      createdAt: data.created_at,
-      updatedAt: data.updated_at
-    };
+    return mapFromApi(payload);
   },
 
   async create(input: CreateStructureInput): Promise<Structure> {
-    const { data, error } = await supabase
-      .from('structures')
-      .insert({
-        client_id: input.clientId,
-        exercice_id: input.exerciceId || null,
-        code: input.code,
-        nom: input.nom,
-        type: input.type,
-        parent_id: input.parentId || null,
-        responsable: input.responsable || null,
-        statut: input.statut || 'actif'
-      })
-      .select()
-      .single();
+    const payload = await requestJson<StructureApiModel>(
+      '/structures',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          exerciceId: input.exerciceId,
+          code: input.code,
+          nom: input.nom,
+          type: input.type,
+          parentId: input.parentId,
+          responsable: input.responsable,
+          statut: input.statut
+        })
+      },
+      'Erreur lors de la création de la structure'
+    );
 
-    if (error) throw error;
-
-    return {
-      id: data.id,
-      clientId: data.client_id,
-      exerciceId: data.exercice_id || undefined,
-      code: data.code,
-      nom: data.nom,
-      type: data.type as Structure['type'],
-      parentId: data.parent_id || undefined,
-      responsable: data.responsable || undefined,
-      statut: data.statut as Structure['statut'],
-      createdAt: data.created_at,
-      updatedAt: data.updated_at
-    };
+    return mapFromApi(payload);
   },
 
   async update(id: string, input: UpdateStructureInput): Promise<Structure> {
-    const updateData: any = {};
-    if (input.code) updateData.code = input.code;
-    if (input.nom) updateData.nom = input.nom;
-    if (input.type) updateData.type = input.type;
-    if (input.parentId !== undefined) updateData.parent_id = input.parentId || null;
-    if (input.responsable !== undefined) updateData.responsable = input.responsable || null;
-    if (input.statut) updateData.statut = input.statut;
+    const payload = await requestJson<StructureApiModel>(
+      `/structures/${encodeURIComponent(id)}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({
+          code: input.code,
+          nom: input.nom,
+          type: input.type,
+          parentId: input.parentId,
+          responsable: input.responsable,
+          statut: input.statut
+        })
+      },
+      'Erreur lors de la mise à jour de la structure'
+    );
 
-    const { data, error } = await supabase
-      .from('structures')
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    return {
-      id: data.id,
-      clientId: data.client_id,
-      exerciceId: data.exercice_id || undefined,
-      code: data.code,
-      nom: data.nom,
-      type: data.type as Structure['type'],
-      parentId: data.parent_id || undefined,
-      responsable: data.responsable || undefined,
-      statut: data.statut as Structure['statut'],
-      createdAt: data.created_at,
-      updatedAt: data.updated_at
-    };
+    return mapFromApi(payload);
   },
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('structures')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
+    await requestJson(
+      `/structures/${encodeURIComponent(id)}`,
+      { method: 'DELETE' },
+      'Erreur lors de la suppression de la structure'
+    );
   }
 };

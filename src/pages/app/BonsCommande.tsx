@@ -21,8 +21,6 @@ import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
 import { useEngagements } from '@/hooks/useEngagements';
 import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { useSnapshotState } from '@/hooks/useSnapshotState';
 import { ListLayout } from '@/components/lists/ListLayout';
@@ -90,28 +88,10 @@ const BonsCommande = () => {
     [bonsCommande, annulationBonCommandeId]
   );
 
-  const { data: bonsCommandeReceptionnes = [] } = useQuery({
-    queryKey: ['bons-commande-receptionnes', currentClient?.id, currentExercice?.id],
-    queryFn: async () => {
-      if (!currentClient) return [];
-
-      let query = supabase
-        .from('bons_commande')
-        .select('id, numero, statut, fournisseur_id, engagement_id, ligne_budgetaire_id, projet_id, objet, montant')
-        .eq('client_id', currentClient.id)
-        .eq('statut', 'receptionne')
-        .order('numero', { ascending: false });
-
-      if (currentExercice) {
-        query = query.eq('exercice_id', currentExercice.id);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!currentClient,
-  });
+  const bonsCommandeReceptionnes = useMemo(
+    () => bonsCommande.filter((bc) => bc.statut === 'receptionne'),
+    [bonsCommande]
+  );
 
   const {
     snapshotId: snapshotBonCommandeId,

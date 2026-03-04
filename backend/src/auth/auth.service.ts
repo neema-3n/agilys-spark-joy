@@ -123,6 +123,23 @@ export class AuthService {
     };
   }
 
+  async initTestUsers(): Promise<{
+    message: string;
+    results: Array<{ email: string; role: string; status: 'success'; message: string }>;
+  }> {
+    const seededUsers = await this.usersService.ensureSeedUsers();
+
+    return {
+      message: 'Initialisation des utilisateurs de test terminee.',
+      results: seededUsers.map((user) => ({
+        email: user.email,
+        role: user.roles[0] ?? 'n/a',
+        status: 'success',
+        message: 'Utilisateur de test present/active.'
+      }))
+    };
+  }
+
   private async issueTokenPair(claims: AccessTokenClaims, rotateFromJti?: string): Promise<AuthResponse> {
     const accessToken = await this.jwtService.signAsync(claims, {
       secret: this.accessTokenSecret,

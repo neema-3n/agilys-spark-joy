@@ -29,9 +29,9 @@ import {
 } from '@/components/ui/select';
 import { Facture, CreateFactureInput } from '@/types/facture.types';
 import { format } from 'date-fns';
-import { supabase } from '@/integrations/supabase/client';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { facturesService } from '@/services/api/factures.service';
 
 const factureSchema = z.object({
   numero: z.string().min(1, 'Le numéro est requis'),
@@ -241,26 +241,25 @@ export const FactureDialog = ({
     }
 
     const fetchMontantDejaFacture = async () => {
-      const { data, error } = await supabase
-        .from('factures')
-        .select('id, montant_ttc, statut')
-        .eq('bon_commande_id', bonCommandeId)
-        .neq('statut', 'annulee');
+      try {
+        const factures = await facturesService.getAll(currentClientId, currentExerciceId);
+        if (!isActive) return;
 
-      if (error) {
+        const dejaFacture = factures
+          .filter(
+            (entry) =>
+              entry.bonCommandeId === bonCommandeId &&
+              entry.statut !== 'annulee' &&
+              entry.id !== (facture?.id || '00000000-0000-0000-0000-000000000000')
+          )
+          .reduce((sum, entry) => sum + Number(entry.montantTTC), 0);
+
+        setMontantBC(bc.montant);
+        setMontantDejaFacture(dejaFacture);
+        setMontantDisponibleBC(bc.montant - dejaFacture);
+      } catch (error) {
         console.error('Erreur récupération factures BC:', error);
-        return;
       }
-
-      const dejaFacture = (data || [])
-        .filter((f) => f.id !== (facture?.id || '00000000-0000-0000-0000-000000000000'))
-        .reduce((sum, f) => sum + parseFloat(f.montant_ttc.toString()), 0);
-
-      if (!isActive) return;
-
-      setMontantBC(bc.montant);
-      setMontantDejaFacture(dejaFacture);
-      setMontantDisponibleBC(bc.montant - dejaFacture);
     };
 
     fetchMontantDejaFacture();
@@ -268,7 +267,7 @@ export const FactureDialog = ({
     return () => {
       isActive = false;
     };
-  }, [bonCommandeId, bonsCommande, facture?.id]);
+  }, [bonCommandeId, bonsCommande, currentClientId, currentExerciceId, facture?.id]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

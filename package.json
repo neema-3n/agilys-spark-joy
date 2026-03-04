@@ -29,7 +29,8 @@
     "db:snapshot:local": "bash ./scripts/db-snapshot-local.sh",
     "test:e2e:migration": "pnpm exec playwright test --config playwright.migration.config.ts --grep @migration-",
     "test:e2e:migration:gate": "node ./scripts/migration-e2e-gate.mjs",
-    "test:rollback:gate": "node ./scripts/rollback-drill-gate.mjs"
+    "test:rollback:gate": "node ./scripts/rollback-drill-gate.mjs",
+    "test:supabase:runtime-gate": "node ./scripts/supabase-runtime-gate.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

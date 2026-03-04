@@ -1,141 +1,125 @@
-import { supabase } from '@/integrations/supabase/client';
-import type { EcritureComptable, EcrituresStats, EcrituresFilters } from '@/types/ecriture-comptable.types';
+import { requestJson } from '@/services/api/api-utils';
+import type { EcritureComptable, EcrituresFilters, EcrituresStats } from '@/types/ecriture-comptable.types';
 import type { TypeOperation } from '@/types/regle-comptable.types';
 
-const mapDbToEcriture = (data: any): EcritureComptable => ({
-  id: data.id,
-  clientId: data.client_id,
-  exerciceId: data.exercice_id,
-  numeroPiece: data.numero_piece,
-  numeroLigne: data.numero_ligne,
-  dateEcriture: data.date_ecriture,
-  compteDebitId: data.compte_debit_id,
-  compteCreditId: data.compte_credit_id,
-  montant: data.montant,
-  libelle: data.libelle,
-  typeOperation: data.type_operation,
-  sourceId: data.source_id,
-  regleComptableId: data.regle_comptable_id,
-  statutEcriture: data.statut_ecriture || 'validee',
-  ecritureOrigineId: data.ecriture_origine_id,
-  createdAt: data.created_at,
-  createdBy: data.created_by,
-  updatedAt: data.updated_at,
-  compteDebit: data.compte_debit ? {
-    numero: data.compte_debit.numero,
-    libelle: data.compte_debit.libelle
-  } : undefined,
-  compteCredit: data.compte_credit ? {
-    numero: data.compte_credit.numero,
-    libelle: data.compte_credit.libelle
-  } : undefined,
-  regleComptable: data.regle_comptable ? {
-    code: data.regle_comptable.code,
-    nom: data.regle_comptable.nom
-  } : undefined
+interface EcritureComptableApiModel {
+  id: string;
+  clientId: string;
+  exerciceId: string;
+  numeroPiece: string;
+  numeroLigne: number;
+  dateEcriture: string;
+  compteDebitId: string;
+  compteCreditId: string;
+  montant: number;
+  libelle: string;
+  typeOperation: TypeOperation;
+  sourceId: string;
+  regleComptableId?: string;
+  statutEcriture?: 'validee' | 'contrepassation';
+  ecritureOrigineId?: string;
+  createdAt: string;
+  createdBy?: string;
+  updatedAt: string;
+  compteDebit?: {
+    numero: string;
+    libelle: string;
+  };
+  compteCredit?: {
+    numero: string;
+    libelle: string;
+  };
+  regleComptable?: {
+    code: string;
+    nom: string;
+  };
+}
+
+const mapFromApi = (row: EcritureComptableApiModel): EcritureComptable => ({
+  id: row.id,
+  clientId: row.clientId,
+  exerciceId: row.exerciceId,
+  numeroPiece: row.numeroPiece,
+  numeroLigne: Number(row.numeroLigne || 0),
+  dateEcriture: row.dateEcriture,
+  compteDebitId: row.compteDebitId,
+  compteCreditId: row.compteCreditId,
+  montant: Number(row.montant || 0),
+  libelle: row.libelle,
+  typeOperation: row.typeOperation,
+  sourceId: row.sourceId,
+  regleComptableId: row.regleComptableId,
+  statutEcriture: row.statutEcriture || 'validee',
+  ecritureOrigineId: row.ecritureOrigineId,
+  createdAt: row.createdAt,
+  createdBy: row.createdBy,
+  updatedAt: row.updatedAt,
+  compteDebit: row.compteDebit,
+  compteCredit: row.compteCredit,
+  regleComptable: row.regleComptable
 });
 
+const buildFilters = (exerciceId?: string, filters?: EcrituresFilters): string => {
+  const query = new URLSearchParams();
+
+  if (exerciceId) {
+    query.set('exerciceId', exerciceId);
+  }
+
+  if (filters?.dateDebut) {
+    query.set('dateDebut', filters.dateDebut);
+  }
+
+  if (filters?.dateFin) {
+    query.set('dateFin', filters.dateFin);
+  }
+
+  if (filters?.typeOperation) {
+    query.set('typeOperation', filters.typeOperation);
+  }
+
+  if (filters?.numeroPiece?.trim()) {
+    query.set('numeroPiece', filters.numeroPiece.trim());
+  }
+
+  if (filters?.compteId) {
+    query.set('compteId', filters.compteId);
+  }
+
+  return query.toString();
+};
+
 export const ecrituresComptablesService = {
-  async getAll(clientId: string, exerciceId?: string, filters?: EcrituresFilters): Promise<EcritureComptable[]> {
-    let query = supabase
-      .from('ecritures_comptables')
-      .select(`
-        *,
-        compte_debit:comptes!compte_debit_id(numero, libelle),
-        compte_credit:comptes!compte_credit_id(numero, libelle),
-        regle_comptable:regles_comptables(code, nom)
-      `)
-      .eq('client_id', clientId)
-      .order('date_ecriture', { ascending: false })
-      .order('numero_piece', { ascending: false })
-      .order('numero_ligne', { ascending: true });
+  async getAll(_clientId: string, exerciceId?: string, filters?: EcrituresFilters): Promise<EcritureComptable[]> {
+    const query = buildFilters(exerciceId, filters);
 
-    if (exerciceId) {
-      query = query.eq('exercice_id', exerciceId);
-    }
+    const payload = await requestJson<EcritureComptableApiModel[]>(
+      `/ecritures-comptables${query ? `?${query}` : ''}`,
+      { method: 'GET' },
+      'Erreur lors de la récupération des écritures comptables'
+    );
 
-    if (filters?.dateDebut) {
-      query = query.gte('date_ecriture', filters.dateDebut);
-    }
-
-    if (filters?.dateFin) {
-      query = query.lte('date_ecriture', filters.dateFin);
-    }
-
-    if (filters?.typeOperation) {
-      query = query.eq('type_operation', filters.typeOperation);
-    }
-
-    if (filters?.numeroPiece) {
-      query = query.ilike('numero_piece', `%${filters.numeroPiece}%`);
-    }
-
-    if (filters?.compteId) {
-      query = query.or(`compte_debit_id.eq.${filters.compteId},compte_credit_id.eq.${filters.compteId}`);
-    }
-
-    const { data, error } = await query;
-
-    if (error) throw error;
-    return (data || []).map(mapDbToEcriture);
+    return payload.map(mapFromApi);
   },
 
   async getBySource(typeOperation: TypeOperation, sourceId: string): Promise<EcritureComptable[]> {
-    const { data, error } = await supabase
-      .from('ecritures_comptables')
-      .select(`
-        *,
-        compte_debit:comptes!compte_debit_id(numero, libelle),
-        compte_credit:comptes!compte_credit_id(numero, libelle),
-        regle_comptable:regles_comptables(code, nom)
-      `)
-      .eq('type_operation', typeOperation)
-      .eq('source_id', sourceId)
-      .order('numero_ligne', { ascending: true });
+    const payload = await requestJson<EcritureComptableApiModel[]>(
+      `/ecritures-comptables/source?typeOperation=${encodeURIComponent(typeOperation)}&sourceId=${encodeURIComponent(sourceId)}`,
+      { method: 'GET' },
+      'Erreur lors de la récupération des écritures comptables de la source'
+    );
 
-    if (error) throw error;
-    return (data || []).map(mapDbToEcriture);
+    return payload.map(mapFromApi);
   },
 
-  async getStats(clientId: string, exerciceId?: string): Promise<EcrituresStats> {
-    let query = supabase
-      .from('ecritures_comptables')
-      .select('montant, type_operation')
-      .eq('client_id', clientId);
+  async getStats(_clientId: string, exerciceId?: string): Promise<EcrituresStats> {
+    const query = exerciceId ? `?exerciceId=${encodeURIComponent(exerciceId)}` : '';
 
-    if (exerciceId) {
-      query = query.eq('exercice_id', exerciceId);
-    }
-
-    const { data, error } = await query;
-
-    if (error) throw error;
-
-    const stats: EcrituresStats = {
-      nombreTotal: data?.length || 0,
-      montantTotalDebit: 0,
-      montantTotalCredit: 0,
-      parTypeOperation: {
-        reservation: { nombre: 0, montant: 0 },
-        engagement: { nombre: 0, montant: 0 },
-        bon_commande: { nombre: 0, montant: 0 },
-        facture: { nombre: 0, montant: 0 },
-        depense: { nombre: 0, montant: 0 },
-        paiement: { nombre: 0, montant: 0 }
-      }
-    };
-
-    data?.forEach(item => {
-      stats.montantTotalDebit += item.montant;
-      stats.montantTotalCredit += item.montant;
-      
-      if (item.type_operation) {
-        stats.parTypeOperation[item.type_operation].nombre++;
-        stats.parTypeOperation[item.type_operation].montant += item.montant;
-      }
-    });
-
-    return stats;
+    return requestJson<EcrituresStats>(
+      `/ecritures-comptables/stats${query}`,
+      { method: 'GET' },
+      'Erreur lors de la récupération des statistiques des écritures comptables'
+    );
   },
 
   async generateForOperation(
@@ -143,17 +127,19 @@ export const ecrituresComptablesService = {
     sourceId: string,
     clientId: string,
     exerciceId: string
-  ): Promise<any> {
-    const { data, error } = await supabase.functions.invoke('generate-ecritures-comptables', {
-      body: {
-        typeOperation,
-        sourceId,
-        clientId,
-        exerciceId
-      }
-    });
-
-    if (error) throw error;
-    return data;
+  ): Promise<{ success?: boolean; ecritures_count?: number; error?: string }> {
+    return requestJson<{ success?: boolean; ecritures_count?: number; error?: string }>(
+      '/ecritures-comptables/generate',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          typeOperation,
+          sourceId,
+          clientId,
+          exerciceId
+        })
+      },
+      'Erreur lors de la génération des écritures comptables'
+    );
   }
 };

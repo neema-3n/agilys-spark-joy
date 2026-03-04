@@ -1,441 +1,200 @@
-import { supabase } from '@/integrations/supabase/client';
+import { requestJson } from '@/services/api/api-utils';
 import type { Engagement, EngagementFormData } from '@/types/engagement.types';
 
-// Helper functions
-const toCamelCase = (obj: any): any => {
-  if (Array.isArray(obj)) {
-    return obj.map(toCamelCase);
-  }
-  if (obj !== null && typeof obj === 'object') {
-    return Object.keys(obj).reduce((acc, key) => {
-      const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-      acc[camelKey] = toCamelCase(obj[key]);
-      return acc;
-    }, {} as any);
-  }
-  return obj;
+interface EngagementApiModel {
+  id: string;
+  numero: string;
+  exerciceId: string;
+  clientId: string;
+  reservationCreditId?: string;
+  ligneBudgetaireId: string;
+  objet: string;
+  montant: number;
+  fournisseurId?: string;
+  beneficiaire?: string;
+  projetId?: string;
+  statut: 'brouillon' | 'valide' | 'annule';
+  dateCreation: string;
+  dateValidation?: string;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+  motifAnnulation?: string;
+  observations?: string;
+  solde?: number;
+  ecrituresCount?: number;
+  ligneBudgetaire?: {
+    libelle: string;
+    disponible: number;
+  };
+  fournisseur?: {
+    nom: string;
+    code: string;
+  };
+  projet?: {
+    code: string;
+    nom: string;
+  };
+  reservationCredit?: {
+    numero: string;
+    statut: string;
+  };
+}
+
+const mapFromApi = (row: EngagementApiModel): Engagement => ({
+  id: row.id,
+  numero: row.numero,
+  exerciceId: row.exerciceId,
+  clientId: row.clientId,
+  reservationCreditId: row.reservationCreditId,
+  ligneBudgetaireId: row.ligneBudgetaireId,
+  objet: row.objet,
+  montant: Number(row.montant || 0),
+  fournisseurId: row.fournisseurId,
+  beneficiaire: row.beneficiaire,
+  projetId: row.projetId,
+  statut: row.statut,
+  dateCreation: row.dateCreation,
+  dateValidation: row.dateValidation,
+  createdBy: row.createdBy,
+  createdAt: row.createdAt,
+  updatedAt: row.updatedAt,
+  motifAnnulation: row.motifAnnulation,
+  observations: row.observations,
+  solde: Number(row.solde || 0),
+  ecrituresCount: Number(row.ecrituresCount || 0),
+  ligneBudgetaire: row.ligneBudgetaire,
+  fournisseur: row.fournisseur,
+  projet: row.projet,
+  reservationCredit: row.reservationCredit
+});
+
+export const getMontantDisponibleReservation = async (reservationId: string): Promise<number> => {
+  const payload = await requestJson<{ montantDisponible: number }>(
+    `/engagements/reservation/${encodeURIComponent(reservationId)}/montant-disponible`,
+    { method: 'GET' },
+    'Erreur lors de la récupération du montant disponible de la réservation'
+  );
+
+  return Number(payload.montantDisponible || 0);
 };
 
-const toSnakeCase = (obj: any): any => {
-  if (Array.isArray(obj)) {
-    return obj.map(toSnakeCase);
-  }
-  if (obj !== null && typeof obj === 'object') {
-    return Object.keys(obj).reduce((acc, key) => {
-      const snakeKey = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
-      acc[snakeKey] = toSnakeCase(obj[key]);
-      return acc;
-    }, {} as any);
-  }
-  return obj;
+export const getEngagements = async (exerciceId: string, _clientId: string): Promise<Engagement[]> => {
+  const payload = await requestJson<EngagementApiModel[]>(
+    `/engagements?exerciceId=${encodeURIComponent(exerciceId)}`,
+    { method: 'GET' },
+    'Erreur lors de la récupération des engagements'
+  );
+
+  return payload.map(mapFromApi);
 };
 
-const cleanData = (obj: any): any => {
-  if (obj === null || obj === undefined) return null;
-  if (typeof obj !== 'object') return obj;
-  
-  return Object.keys(obj).reduce((acc, key) => {
-    const value = obj[key];
-    acc[key] = value === '' || value === undefined ? null : cleanData(value);
-    return acc;
-  }, {} as any);
-};
-
-// Calculer le montant disponible d'une réservation
-export const getMontantDisponibleReservation = async (
-  reservationId: string
-): Promise<number> => {
-  // 1. Récupérer la réservation
-  const { data: reservation, error: resError } = await supabase
-    .from('reservations_credits')
-    .select('montant')
-    .eq('id', reservationId)
-    .single();
-  
-  if (resError) throw resError;
-  
-  // 2. Récupérer tous les engagements liés (sauf ceux annulés)
-  const { data: engagements, error: engError } = await supabase
-    .from('engagements')
-    .select('montant')
-    .eq('reservation_credit_id', reservationId)
-    .neq('statut', 'annule');
-  
-  if (engError) throw engError;
-  
-  // 3. Calculer le montant déjà engagé
-  const montantEngage = engagements?.reduce((sum, eng) => sum + Number(eng.montant), 0) || 0;
-  
-  // 4. Retourner le disponible
-  return Number(reservation.montant) - montantEngage;
-};
-
-// Note: La génération du numéro est désormais gérée par l'Edge Function create-engagement
-
-export const getEngagements = async (
-  exerciceId: string,
-  clientId: string
-): Promise<Engagement[]> => {
-  const { data, error } = await supabase
-    .from('engagements')
-    .select(`
-      *,
-      ligne_budgetaire:lignes_budgetaires!engagements_ligne_budgetaire_id_fkey (
-        libelle,
-        disponible
-      ),
-      fournisseur:fournisseurs!engagements_fournisseur_id_fkey (
-        nom,
-        code
-      ),
-      projet:projets!engagements_projet_id_fkey (
-        code,
-        nom
-      ),
-      reservation_credit:reservations_credits!engagements_reservation_credit_id_fkey (
-        numero,
-        statut
-      ),
-      bons_commande:bons_commande!bons_commande_engagement_id_fkey (
-        montant
-      ),
-      ecritures_comptables!engagement_id(count)
-    `)
-    .eq('exercice_id', exerciceId)
-    .eq('client_id', clientId)
-    .order('created_at', { ascending: false });
-
-  if (error) throw error;
-  
-  // Calculer le solde pour chaque engagement
-  const engagementsAvecSolde = (data || []).map(eng => {
-    const montantBonsCommande = eng.bons_commande?.reduce((sum: number, bc: any) => sum + Number(bc.montant || 0), 0) || 0;
-    const solde = Number(eng.montant) - montantBonsCommande;
-    const ecrituresCount = eng.ecritures_comptables?.[0]?.count || 0;
-    
-    // Retirer bons_commande et ecritures_comptables du résultat final pour garder la structure propre
-    const { bons_commande, ecritures_comptables, ...engagementData } = eng;
-    
-    return {
-      ...engagementData,
-      solde,
-      ecrituresCount
-    };
-  });
-  
-  return toCamelCase(engagementsAvecSolde);
-};
-
-// Créer un engagement
 export const createEngagement = async (
   engagement: EngagementFormData,
   exerciceId: string,
-  clientId: string,
-  userId: string
+  _clientId: string,
+  _userId: string
 ): Promise<Engagement> => {
-  // Appeler l'Edge Function pour créer l'engagement avec numéro atomique
-  const { data, error } = await supabase.functions.invoke('create-engagement', {
-    body: {
-      exerciceId,
-      clientId,
-      ligneBudgetaireId: engagement.ligneBudgetaireId,
-      objet: engagement.objet,
-      montant: engagement.montant,
-      fournisseurId: engagement.fournisseurId,
-      beneficiaire: engagement.beneficiaire,
-      projetId: engagement.projetId,
-      observations: engagement.observations,
-      reservationCreditId: engagement.reservationCreditId,
+  const payload = await requestJson<EngagementApiModel>(
+    '/engagements',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        exerciceId,
+        reservationCreditId: engagement.reservationCreditId,
+        ligneBudgetaireId: engagement.ligneBudgetaireId,
+        objet: engagement.objet,
+        montant: engagement.montant,
+        fournisseurId: engagement.fournisseurId,
+        beneficiaire: engagement.beneficiaire,
+        projetId: engagement.projetId,
+        observations: engagement.observations
+      })
     },
-  });
+    "Erreur lors de la création de l'engagement"
+  );
 
-  if (error) throw new Error(error.message || 'Erreur lors de la création de l\'engagement');
-  return data;
+  return mapFromApi(payload);
 };
 
-// Créer un engagement depuis une réservation
 export const createEngagementFromReservation = async (
   reservationId: string,
   additionalData: Partial<EngagementFormData>,
   exerciceId: string,
-  clientId: string,
-  userId: string
+  _clientId: string,
+  _userId: string
 ): Promise<Engagement> => {
-  // Récupérer les données de la réservation
-  const { data: reservation, error: resError } = await supabase
-    .from('reservations_credits')
-    .select('*')
-    .eq('id', reservationId)
-    .single();
+  const payload = await requestJson<EngagementApiModel>(
+    '/engagements/from-reservation',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        reservationId,
+        exerciceId,
+        montant: additionalData.montant,
+        ligneBudgetaireId: additionalData.ligneBudgetaireId,
+        objet: additionalData.objet,
+        fournisseurId: additionalData.fournisseurId,
+        beneficiaire: additionalData.beneficiaire,
+        projetId: additionalData.projetId,
+        observations: additionalData.observations
+      })
+    },
+    "Erreur lors de la création de l'engagement depuis la réservation"
+  );
 
-  if (resError) throw resError;
-
-  // Calculer le montant de l'engagement
-  const montant = additionalData.montant !== undefined ? additionalData.montant : Number(reservation.montant);
-  
-  // Valider que le montant ne dépasse pas le disponible de la réservation
-  const montantDisponible = await getMontantDisponibleReservation(reservationId);
-  
-  if (montant > montantDisponible) {
-    throw new Error(
-      `Le montant de l'engagement (${montant.toLocaleString()} FCFA) dépasse le montant disponible de la réservation (${montantDisponible.toLocaleString()} FCFA)`
-    );
-  }
-
-  // Utiliser les données du formulaire en priorité, avec fallback sur la réservation
-  const engagementData: EngagementFormData = {
-    ligneBudgetaireId: additionalData.ligneBudgetaireId || reservation.ligne_budgetaire_id,
-    objet: additionalData.objet || reservation.objet,
-    montant,
-    reservationCreditId: reservationId,
-    fournisseurId: additionalData.fournisseurId,
-    beneficiaire: additionalData.beneficiaire !== undefined ? additionalData.beneficiaire : reservation.beneficiaire,
-    projetId: additionalData.projetId !== undefined ? additionalData.projetId : reservation.projet_id,
-    observations: additionalData.observations,
-  };
-
-  return createEngagement(engagementData, exerciceId, clientId, userId);
+  return mapFromApi(payload);
 };
 
-// Mettre à jour un engagement
-export const updateEngagement = async (
-  id: string,
-  updates: Partial<EngagementFormData>
-): Promise<Engagement> => {
-  // 1. Récupérer l'engagement actuel
-  const { data: currentEngagement, error: fetchError } = await supabase
-    .from('engagements')
-    .select('statut')
-    .eq('id', id)
-    .single();
+export const updateEngagement = async (id: string, updates: Partial<EngagementFormData>): Promise<Engagement> => {
+  const payload = await requestJson<EngagementApiModel>(
+    `/engagements/${encodeURIComponent(id)}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({
+        reservationCreditId: updates.reservationCreditId,
+        ligneBudgetaireId: updates.ligneBudgetaireId,
+        objet: updates.objet,
+        montant: updates.montant,
+        fournisseurId: updates.fournisseurId,
+        beneficiaire: updates.beneficiaire,
+        projetId: updates.projetId,
+        observations: updates.observations
+      })
+    },
+    "Erreur lors de la mise à jour de l'engagement"
+  );
 
-  if (fetchError) throw fetchError;
-
-  // 2. Vérifier s'il existe des écritures validées
-  const { data: ecritures, error: ecrituresError } = await supabase
-    .from('ecritures_comptables')
-    .select('id')
-    .eq('engagement_id', id)
-    .eq('statut_ecriture', 'validee')
-    .limit(1);
-
-  if (ecrituresError) throw ecrituresError;
-
-  // 3. Si écritures validées existent → BLOQUER (les brouillons ne génèrent jamais d'écritures)
-  if (ecritures && ecritures.length > 0) {
-    throw new Error(
-      '❌ Modification impossible : Cette opération a été comptabilisée.\n\n' +
-      '💡 Pour effectuer une correction :\n' +
-      '1. Annulez cet engagement (génère des écritures d\'annulation)\n' +
-      '2. Créez un nouvel engagement avec les bonnes valeurs'
-    );
-  }
-
-  // 4. Procéder à la modification
-  const cleanedUpdates = cleanData(toSnakeCase(updates));
-
-  const { data, error } = await supabase
-    .from('engagements')
-    .update(cleanedUpdates)
-    .eq('id', id)
-    .select(`
-      *,
-      ligne_budgetaire:lignes_budgetaires!engagements_ligne_budgetaire_id_fkey (
-        libelle,
-        disponible
-      ),
-      fournisseur:fournisseurs!engagements_fournisseur_id_fkey (
-        nom,
-        code
-      ),
-      projet:projets!engagements_projet_id_fkey (
-        code,
-        nom
-      ),
-      reservation_credit:reservations_credits!engagements_reservation_credit_id_fkey (
-        numero,
-        statut
-      )
-    `)
-    .single();
-
-  if (error) throw error;
-  return toCamelCase(data);
+  return mapFromApi(payload);
 };
 
-// Valider un engagement
 export const validerEngagement = async (id: string): Promise<Engagement> => {
-  // 1. Récupérer l'engagement pour avoir client_id et exercice_id
-  const { data: engagement, error: fetchError } = await supabase
-    .from('engagements')
-    .select('client_id, exercice_id')
-    .eq('id', id)
-    .single();
+  const payload = await requestJson<EngagementApiModel>(
+    `/engagements/${encodeURIComponent(id)}/valider`,
+    { method: 'PATCH', body: JSON.stringify({}) },
+    "Erreur lors de la validation de l'engagement"
+  );
 
-  if (fetchError) throw fetchError;
-
-  // 2. Mettre à jour le statut
-  const { data, error } = await supabase
-    .from('engagements')
-    .update({
-      statut: 'valide',
-      date_validation: new Date().toISOString().split('T')[0],
-    })
-    .eq('id', id)
-    .select(`
-      *,
-      ligne_budgetaire:lignes_budgetaires!engagements_ligne_budgetaire_id_fkey (
-        libelle,
-        disponible
-      ),
-      fournisseur:fournisseurs!engagements_fournisseur_id_fkey (
-        nom,
-        code
-      ),
-      projet:projets!engagements_projet_id_fkey (
-        code,
-        nom
-      ),
-      reservation_credit:reservations_credits!engagements_reservation_credit_id_fkey (
-        numero,
-        statut
-      )
-    `)
-    .single();
-
-  if (error) throw error;
-
-  // 3. Générer les écritures comptables automatiquement (en arrière-plan)
-  try {
-    await supabase.functions.invoke('generate-ecritures-comptables', {
-      body: {
-        typeOperation: 'engagement',
-        sourceId: id,
-        clientId: engagement.client_id,
-        exerciceId: engagement.exercice_id
-      }
-    });
-  } catch (error) {
-    console.error('Erreur lors de la génération des écritures:', error);
-  }
-
-  return toCamelCase(data);
+  return mapFromApi(payload);
 };
 
-// Annuler un engagement
-export const annulerEngagement = async (
-  id: string,
-  motifAnnulation: string
-): Promise<Engagement> => {
-  // Vérifier s'il existe des bons de commande liés
-  const { data: bonsCommande, error: checkError } = await supabase
-    .from('bons_commande')
-    .select('id, numero')
-    .eq('engagement_id', id);
-  
-  if (checkError) throw checkError;
-  
-  if (bonsCommande && bonsCommande.length > 0) {
-    throw new Error(
-      `Impossible d'annuler cet engagement : ${bonsCommande.length} bon(s) de commande y sont liés. ` +
-      `Veuillez d'abord supprimer ou dissocier les BC suivants : ${bonsCommande.map(bc => bc.numero).join(', ')}`
-    );
-  }
+export const annulerEngagement = async (id: string, motifAnnulation: string): Promise<Engagement> => {
+  const payload = await requestJson<EngagementApiModel>(
+    `/engagements/${encodeURIComponent(id)}/annuler`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ motifAnnulation })
+    },
+    "Erreur lors de l'annulation de l'engagement"
+  );
 
-  // 1. Vérifier s'il existe des écritures validées
-  const { data: ecritures, error: ecrituresError } = await supabase
-    .from('ecritures_comptables')
-    .select('id')
-    .eq('engagement_id', id)
-    .eq('statut_ecriture', 'validee');
-
-  if (ecrituresError) throw ecrituresError;
-
-  // 2. Si écritures existent → Contrepasser
-  if (ecritures && ecritures.length > 0) {
-    const { error: contrepasserError } = await supabase.functions.invoke('contrepasser-ecritures', {
-      body: {
-        typeOperation: 'engagement',
-        sourceId: id,
-        motifAnnulation,
-      }
-    });
-
-    if (contrepasserError) throw contrepasserError;
-  }
-  
-  // 3. Mettre à jour le statut
-  const { data, error } = await supabase
-    .from('engagements')
-    .update({
-      statut: 'annule',
-      motif_annulation: motifAnnulation,
-    })
-    .eq('id', id)
-    .select(`
-      *,
-      ligne_budgetaire:lignes_budgetaires!engagements_ligne_budgetaire_id_fkey (
-        libelle,
-        disponible
-      ),
-      fournisseur:fournisseurs!engagements_fournisseur_id_fkey (
-        nom,
-        code
-      ),
-      projet:projets!engagements_projet_id_fkey (
-        code,
-        nom
-      ),
-      reservation_credit:reservations_credits!engagements_reservation_credit_id_fkey (
-        numero,
-        statut
-      )
-    `)
-    .single();
-
-  if (error) throw error;
-  return toCamelCase(data);
+  return mapFromApi(payload);
 };
 
-// Supprimer un engagement
 export const deleteEngagement = async (id: string): Promise<void> => {
-  // Vérifier s'il existe des bons de commande liés
-  const { data: bonsCommande, error: checkError } = await supabase
-    .from('bons_commande')
-    .select('id, numero')
-    .eq('engagement_id', id);
-  
-  if (checkError) throw checkError;
-  
-  if (bonsCommande && bonsCommande.length > 0) {
-    throw new Error(
-      `Impossible de supprimer cet engagement : ${bonsCommande.length} bon(s) de commande y sont liés. ` +
-      `Veuillez d'abord supprimer ou dissocier les BC suivants : ${bonsCommande.map(bc => bc.numero).join(', ')}`
-    );
-  }
-
-  // 1. Vérifier le statut
-  const { data: engagement, error: fetchError } = await supabase
-    .from('engagements')
-    .select('statut')
-    .eq('id', id)
-    .single();
-
-  if (fetchError) throw fetchError;
-
-  // 2. Bloquer si pas brouillon (les brouillons n'ont jamais d'écritures)
-  if (engagement.statut !== 'brouillon') {
-    throw new Error(
-      '❌ Suppression impossible\n\n' +
-      '💡 Utilisez l\'annulation au lieu de la suppression pour conserver l\'historique comptable'
-    );
-  }
-  
-  // 4. OK pour suppression
-  const { error } = await supabase
-    .from('engagements')
-    .delete()
-    .eq('id', id);
-
-  if (error) throw error;
+  await requestJson(
+    `/engagements/${encodeURIComponent(id)}`,
+    { method: 'DELETE' },
+    "Erreur lors de la suppression de l'engagement"
+  );
 };
