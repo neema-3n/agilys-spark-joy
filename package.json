@@ -31,7 +31,9 @@
     "test:e2e:migration:gate": "node ./scripts/migration-e2e-gate.mjs",
     "test:rollback:gate": "node ./scripts/rollback-drill-gate.mjs",
     "test:supabase:runtime-gate": "node ./scripts/supabase-runtime-gate.mjs",
-    "test:hypercare:gate": "node ./scripts/hypercare-gate.mjs"
+    "test:hypercare:gate": "node ./scripts/hypercare-gate.mjs",
+    "build:migration:audit": "node ./scripts/build-migration-audit-dossier.mjs",
+    "test:migration:audit": "node --test ./tests/migration-audit-dossier.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

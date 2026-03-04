@@ -17,6 +17,7 @@ Source de verite: `epics.md` + `sprint-status.yaml` + routes `src/App.tsx` + con
 | M2.3 - Reconciler avant/apres sur donnees critiques | `done` | 2026-03-03 | Synchronise avec `/_bmad-output/implementation-artifacts/sprint-status.yaml` |
 | M3.1 - Produire le runbook de cutover production | `done` | 2026-03-03 | Runbook cutover, rapport tabletop, procedure rollback M3.2 et corrections review synchronises avec `/_bmad-output/implementation-artifacts/sprint-status.yaml` |
 | M3.2 - Tester le plan de rollback operationnel | `done` | 2026-03-03 | Drill rollback staging, preuves d'audit, gate automatisee et updates runbook synchronises avec `/_bmad-output/implementation-artifacts/sprint-status.yaml` |
+| M4.2 - Produire le dossier d'audit de migration | `done` | 2026-03-04 | Dossier d'audit M4.2 genere (index, matrice de preuves, sign-off, manifest SHA-256, package ZIP) et synchronise avec `/_bmad-output/implementation-artifacts/sprint-status.yaml` |
 
 ## Matrice de parite (flux critiques)
 

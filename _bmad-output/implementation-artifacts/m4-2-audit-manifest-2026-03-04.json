@@ -1,0 +1,201 @@
+{
+  "storyKey": "m4-2-produire-le-dossier-daudit-de-migration",
+  "generatedAt": "2026-03-04T20:11:42.770Z",
+  "outputDate": "2026-03-04",
+  "decision": "GO",
+  "generation": {
+    "durationMs": 1854,
+    "durationWithinSla": true,
+    "slaMs": 60000
+  },
+  "coverage": {
+    "total": 8,
+    "covered": 8,
+    "missing": 0
+  },
+  "missingCritical": [],
+  "deliverables": {
+    "index": "_bmad-output/implementation-artifacts/m4-2-audit-dossier-index-2026-03-04.md",
+    "evidenceMatrix": "_bmad-output/implementation-artifacts/m4-2-audit-evidence-matrix-2026-03-04.md",
+    "signOff": "_bmad-output/implementation-artifacts/m4-2-audit-signoff-2026-03-04.md",
+    "incidentResolutionLog": "_bmad-output/implementation-artifacts/m4-2-audit-incident-resolution-log-2026-03-04.md",
+    "manifest": "_bmad-output/implementation-artifacts/m4-2-audit-manifest-2026-03-04.json",
+    "zip": "_bmad-output/implementation-artifacts/m4-2-audit-package-2026-03-04.zip"
+  },
+  "evidence": [
+    {
+      "requirementId": "EV-M12-CONTRACT",
+      "story": "M1.2",
+      "ac": [
+        "1",
+        "2"
+      ],
+      "requirement": "Parite des contrats API",
+      "owner": "Equipe migration",
+      "source": "_bmad-output/implementation-artifacts/migration-contract-parity-report.md",
+      "checksum": "aa001c409417af76cbafeb4abd1eb782b53d118e3293765bf1584dfe66a2e29e",
+      "author": "modestemax <modestemax@gmail.com>",
+      "timestamp": "2026-03-03T13:48:28-05:00",
+      "sizeBytes": 407,
+      "status": "covered"
+    },
+    {
+      "requirementId": "EV-M13-E2E",
+      "story": "M1.3",
+      "ac": [
+        "1",
+        "2"
+      ],
+      "requirement": "Preuve non-regression E2E",
+      "owner": "QA migration",
+      "source": "_bmad-output/implementation-artifacts/migration-e2e-critical-scenarios.md",
+      "checksum": "bd4035b51754fdc2ce17df978e3523bad6b82c8a3d824154aea6952bb85cb6fd",
+      "author": "modestemax <modestemax@gmail.com>",
+      "timestamp": "2026-03-03T13:03:10-05:00",
+      "sizeBytes": 736,
+      "status": "covered"
+    },
+    {
+      "requirementId": "EV-M23-RECO",
+      "story": "M2.3",
+      "ac": [
+        "1",
+        "2"
+      ],
+      "requirement": "Reconciliation avant/apres",
+      "owner": "Controle migration",
+      "source": "_bmad-output/implementation-artifacts/migration-reconciliation-lot-b-client-demo-20260303150000-m23rcl01-20260303T185650Z.csv",
+      "checksum": "920bdb3ba409a58573177321275be7eaa0ace9d370dfda7340f1a5201ffaadee",
+      "author": "modestemax <modestemax@gmail.com>",
+      "timestamp": "2026-03-03T14:18:59-05:00",
+      "sizeBytes": 69,
+      "status": "covered"
+    },
+    {
+      "requirementId": "EV-M23-RECO",
+      "story": "M2.3",
+      "ac": [
+        "1",
+        "2"
+      ],
+      "requirement": "Reconciliation avant/apres",
+      "owner": "Controle migration",
+      "source": "_bmad-output/implementation-artifacts/migration-reconciliation-lot-b-client-demo-20260303150000-m23rcl01-20260303T185650Z.json",
+      "checksum": "6d8b916536ea5330a58f2f4d2092807a7942b22b9f146243f14fe0b7e4dc1b44",
+      "author": "modestemax <modestemax@gmail.com>",
+      "timestamp": "2026-03-03T14:18:59-05:00",
+      "sizeBytes": 1211,
+      "status": "covered"
+    },
+    {
+      "requirementId": "EV-M23-RECO",
+      "story": "M2.3",
+      "ac": [
+        "1",
+        "2"
+      ],
+      "requirement": "Reconciliation avant/apres",
+      "owner": "Controle migration",
+      "source": "_bmad-output/implementation-artifacts/migration-reconciliation-lot-b-client-demo-20260303150000-m23rcl01-20260303T185650Z.md",
+      "checksum": "7d65530e8ecfec20332638080609e035dd1ed4a1f95bbe4b822e6c8aba834a64",
+      "author": "modestemax <modestemax@gmail.com>",
+      "timestamp": "2026-03-03T14:18:59-05:00",
+      "sizeBytes": 971,
+      "status": "covered"
+    },
+    {
+      "requirementId": "EV-M31-RUNBOOK",
+      "story": "M3.1",
+      "ac": [
+        "1",
+        "2"
+      ],
+      "requirement": "Runbook de cutover",
+      "owner": "Release management",
+      "source": "_bmad-output/implementation-artifacts/production-cutover-runbook.md",
+      "checksum": "fbd18f2be638d55f4d031c3bd9514419e5f53c7443629488cf497d4081c059dc",
+      "author": "modestemax <modestemax@gmail.com>",
+      "timestamp": "2026-03-03T18:15:01-05:00",
+      "sizeBytes": 8558,
+      "status": "covered"
+    },
+    {
+      "requirementId": "EV-M32-ROLLBACK",
+      "story": "M3.2",
+      "ac": [
+        "1",
+        "2"
+      ],
+      "requirement": "Gate rollback operationnel",
+      "owner": "SRE/Ops",
+      "source": "_bmad-output/implementation-artifacts/rollback-drill-gate-report.md",
+      "checksum": "f59d072886cb0d6169b26ccbfdf61847bb81d059d7102d7790310b4f3805a09f",
+      "author": "modestemax <modestemax@gmail.com>",
+      "timestamp": "2026-03-03T18:15:01-05:00",
+      "sizeBytes": 456,
+      "status": "covered"
+    },
+    {
+      "requirementId": "EV-M33-DECOM",
+      "story": "M3.3",
+      "ac": [
+        "1",
+        "2"
+      ],
+      "requirement": "Rapport de decommission Supabase",
+      "owner": "Plateforme",
+      "source": "_bmad-output/implementation-artifacts/supabase-decommission-report-2026-03-03.md",
+      "checksum": "cc0e4eb78103abe6be5b6afe7c5bc060f65bb4e639e1f603f11f064042c61e18",
+      "author": "modestemax <modestemax@gmail.com>",
+      "timestamp": "2026-03-03T22:54:02-05:00",
+      "sizeBytes": 1614,
+      "status": "covered"
+    },
+    {
+      "requirementId": "EV-M41-SEC",
+      "story": "M4.1",
+      "ac": [
+        "1",
+        "2"
+      ],
+      "requirement": "Revalidation securite migration",
+      "owner": "Security lead",
+      "source": "_bmad-output/implementation-artifacts/m4-1-security-revalidation-report-2026-03-04.md",
+      "checksum": "9016d5f3635fe2855851378652136ec79bd2f485a7a96aefc021c97d9471ec04",
+      "author": "modestemax <modestemax@gmail.com>",
+      "timestamp": "2026-03-04T14:51:22-05:00",
+      "sizeBytes": 4215,
+      "status": "covered"
+    },
+    {
+      "requirementId": "EV-INCIDENTS",
+      "story": "M3.4",
+      "ac": [
+        "1"
+      ],
+      "requirement": "Registre incidents et resolutions",
+      "owner": "Operations",
+      "source": "_bmad-output/implementation-artifacts/m3-4-hypercare-exit-report.md",
+      "checksum": "e342bc404289bee594df860a6523262e3edad8123a57bab8e3e2873a21354c82",
+      "author": "modestemax <modestemax@gmail.com>",
+      "timestamp": "2026-03-03T23:15:45-05:00",
+      "sizeBytes": 1391,
+      "status": "covered"
+    },
+    {
+      "requirementId": "EV-INCIDENTS",
+      "story": "M3.4",
+      "ac": [
+        "1"
+      ],
+      "requirement": "Registre incidents et resolutions",
+      "owner": "Operations",
+      "source": "_bmad-output/implementation-artifacts/m3-4-incident-register.md",
+      "checksum": "5eecc789cdc42525047990c4f01ecfc4a6ccc9b30525084a136f665e8622ba5b",
+      "author": "modestemax <modestemax@gmail.com>",
+      "timestamp": "2026-03-03T23:15:45-05:00",
+      "sizeBytes": 1625,
+      "status": "covered"
+    }
+  ]
+}
