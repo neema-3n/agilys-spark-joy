@@ -16,11 +16,11 @@
 
 | Role | Nom | Responsabilite |
 | --- | --- | --- |
-| Incident Commander | A designer | Pilotage incident, triage, priorisation |
-| owner backend | A designer | API/NestJS, mitigation backend |
-| owner frontend | A designer | parcours critiques, erreurs frontend |
-| owner data | A designer | data quality, reconciliation |
-| PM | A designer | communication interne, suivi risques |
+| Incident Commander | Maxime Ambrosi (primaire), Lea Tchana (backup) | Pilotage incident, triage, priorisation |
+| owner backend | Jean Mbarga (primaire), Alain Ewane (backup) | API/NestJS, mitigation backend |
+| owner frontend | Sarah Ndzi (primaire), Myriam Eba (backup) | parcours critiques, erreurs frontend |
+| owner data | Paul Nkoa (primaire), Diane Mvondo (backup) | data quality, reconciliation |
+| PM | Max (primaire), Nadia Obam (backup) | communication interne, suivi risques |
 
 ## 3) Criteres d entree et de sortie
 

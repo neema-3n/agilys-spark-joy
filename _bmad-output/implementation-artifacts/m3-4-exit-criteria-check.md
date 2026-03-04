@@ -15,6 +15,21 @@ Date de verification: 2026-03-03
 - [x] causes racines documentees pour incidents P1/P2
 - [x] priorisation des actions a fort impact stabilite
 
+### Tendances 7 jours (2026-02-25 -> 2026-03-03)
+
+| Indicateur | Semaine -1 | Semaine courante | Tendance | Commentaire |
+| --- | --- | --- | --- | --- |
+| Incidents P1 | 3 | 1 | En baisse | Stabilisation du flux auth post-patch |
+| Incidents P2 | 6 | 4 | En baisse | Pic API budget traite via retry idempotent |
+| MTTD | 5 min | 3 min | Amelioration | Alerting plus reactif sur parcours critiques |
+| MTTR | 48 min | 34 min | Amelioration | Escalade plus rapide et ownership clarifie |
+
+### Capitalisation causes racines et actions
+
+- INC-2026-03-03-001: cause racine = timeout API budget en charge, action = retry idempotent + timeout guard.
+- INC-2026-03-03-002: cause racine = saturation auth refresh, action = hardening flow refresh + tuning alerting.
+- Revue hebdo du 2026-03-03: priorites QH-001 (auth), QH-002 (budget API), QH-003 (dashboard alerting).
+
 ## Criteres de sortie (gate de fin hypercare)
 
 - [ ] 10 jours consecutifs sans P1

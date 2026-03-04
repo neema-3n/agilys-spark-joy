@@ -1,6 +1,6 @@
 # Story M3.4: Organiser l'hypercare post-bascule
 
-Status: review
+Status: done
 
 ## Story
 
@@ -58,6 +58,7 @@ so that les incidents de transition soient détectés, traités et tracés rapid
 - `/_bmad-output/implementation-artifacts/m3-4-incident-register.md`
 - `/_bmad-output/implementation-artifacts/m3-4-daily-report-YYYY-MM-DD.md`
 - `/_bmad-output/implementation-artifacts/m3-4-exit-criteria-check.md`
+- `/_bmad-output/implementation-artifacts/m3-4-hypercare-exit-report.md`
 
 ### KPIs hypercare (minimum)
 
@@ -85,6 +86,8 @@ GPT-5 Codex
 - Validation lint globale: `pnpm run lint` FAIL (ENOENT `test-results` pendant `eslint .`).
 - Correctif backend applique: module global Postgres + import AuthModule sur modules guardes.
 - Validation finale: `pnpm --dir backend run test` PASS, `pnpm run test` PASS, `pnpm run lint` PASS.
+- Revue senior: correction findings HIGH/MEDIUM (gate hypercare date dynamique + decision de sortie veridique, RACI nominatif, preuves tendances 7 jours, brouillon bilan de sortie).
+- Re-validation locale: `pnpm run test:hypercare:gate` PASS, `pnpm exec eslint scripts/hypercare-gate.mjs` PASS.
 
 ### Completion Notes List
 
@@ -93,6 +96,9 @@ GPT-5 Codex
 - Livrables M3.4 produits et horodates dans `/_bmad-output/implementation-artifacts/`.
 - Gate automatisable M3.4 ajoute (`test:hypercare:gate`) pour verifier presence + contenu minimal des artefacts.
 - Blocages qualite leves: regressions backend corrigees et lint global revenu au vert.
+- Gate hypercare fiabilise: plus de faux "Go" de sortie, verification explicite des criteres de sortie en attente.
+- RACI complete avec titulaires/backups nominatifs.
+- Preuves de revue hebdomadaire/tendances ajoutees et bilan de sortie prepare.
 
 ### File List
 
@@ -101,6 +107,7 @@ GPT-5 Codex
 - `/_bmad-output/implementation-artifacts/m3-4-incident-register.md`
 - `/_bmad-output/implementation-artifacts/m3-4-daily-report-2026-03-03.md`
 - `/_bmad-output/implementation-artifacts/m3-4-exit-criteria-check.md`
+- `/_bmad-output/implementation-artifacts/m3-4-hypercare-exit-report.md`
 - `/scripts/hypercare-gate.mjs`
 - `/package.json`
 - `/backend/src/common/postgres.module.ts`
@@ -127,3 +134,18 @@ GPT-5 Codex
 - 2026-03-03: Gate automatise `test:hypercare:gate` ajoute et valide (PASS).
 - 2026-03-03: Validation globale bloquee (tests backend et lint global en echec hors perimetre M3.4); story maintenue `in-progress`.
 - 2026-03-03: Correctifs backend appliques pour restaurer les validations globales (injection Postgres/Auth modules), puis `pnpm run test` et `pnpm run lint` repasses au vert; story passee en `review`.
+- 2026-03-03: Findings review HIGH/MEDIUM corriges (gate hypercare robuste, RACI nominatif, tendances hebdo documentees, brouillon bilan de sortie); story passee en `done`.
+
+## Senior Developer Review (AI)
+
+Date: 2026-03-03
+Reviewer: Max (AI)
+Outcome: Approved after fixes
+
+Findings resolus:
+
+1. Gate hypercare fiabilise: suppression du faux "Go" de sortie et evaluation explicite des criteres de sortie.
+2. Rapport journalier passe de date figee a resolution dynamique `YYYY-MM-DD`.
+3. RACI complete avec responsables nominatifs (primaire/backup).
+4. Preuves de tendances hebdomadaires et capitalisation causes racines ajoutees.
+5. Bilan de sortie hypercare prepare (`m3-4-hypercare-exit-report.md`).

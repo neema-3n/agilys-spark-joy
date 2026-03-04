@@ -23,8 +23,8 @@
 
 | ID | Severite | Service | Date/Heure detection | Temps de detection | Temps de mitigation | Temps de resolution | Statut | Action corrective | Proprietaire | ETA | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| INC-2026-03-03-001 | P2 | API budget | 2026-03-03 09:12 | 4 min | 18 min | 42 min | Ferme | Retry idempotent + guard timeout | owner backend | 2026-03-05 | Incident post-cutover |
-| INC-2026-03-03-002 | P1 | Auth | 2026-03-03 14:08 | 2 min | 9 min | 26 min | Ferme | Hardening refresh flow | owner backend | 2026-03-04 | Escalade exec faite |
+| INC-2026-03-03-001 | P2 | API budget | 2026-03-03 09:12 | 4 min | 18 min | 42 min | Ferme | Retry idempotent + guard timeout | Jean Mbarga | 2026-03-05 | Incident post-cutover |
+| INC-2026-03-03-002 | P1 | Auth | 2026-03-03 14:08 | 2 min | 9 min | 26 min | Ferme | Hardening refresh flow | Jean Mbarga | 2026-03-04 | Escalade exec faite |
 
 ## Regle de communication interne
 
