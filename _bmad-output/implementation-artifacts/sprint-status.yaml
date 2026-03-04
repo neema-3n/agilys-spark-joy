@@ -84,7 +84,7 @@ development_status:
   epic-m3-retrospective: optional
   epic-m4: backlog
   m4-1-revalider-rbac-abac-et-separation-des-responsabilites: done
-  m4-2-produire-le-dossier-daudit-de-migration: backlog
+  m4-2-produire-le-dossier-daudit-de-migration: done
   epic-m4-retrospective: optional
   epic-cc-01: in-progress
   cc-01-02-postgresql-local-docker: done
