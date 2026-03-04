@@ -83,7 +83,7 @@ development_status:
   m3-4-organiser-lhypercare-post-bascule: done
   epic-m3-retrospective: optional
   epic-m4: backlog
-  m4-1-revalider-rbac-abac-et-separation-des-responsabilites: backlog
+  m4-1-revalider-rbac-abac-et-separation-des-responsabilites: ready-for-dev
   m4-2-produire-le-dossier-daudit-de-migration: backlog
   epic-m4-retrospective: optional
   epic-cc-01: in-progress
