@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Mail } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const CTA = () => {
   return (
@@ -18,20 +19,26 @@ const CTA = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button 
-              size="lg" 
+            <Button
+              asChild
+              size="lg"
               className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 shadow-glow group"
             >
-              Demander une démo
-              <ArrowRight className="transition-transform group-hover:translate-x-1" />
+              <Link to="/auth/login">
+                Demander une démo
+                <ArrowRight className="transition-transform group-hover:translate-x-1" />
+              </Link>
             </Button>
-            <Button 
-              variant="outline-hero" 
+            <Button
+              asChild
+              variant="outline-hero"
               size="lg"
               className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
             >
-              <Mail className="w-4 h-4" />
-              Contactez-nous
+              <Link to="/contact">
+                <Mail className="w-4 h-4" />
+                Contactez-nous
+              </Link>
             </Button>
           </div>
 

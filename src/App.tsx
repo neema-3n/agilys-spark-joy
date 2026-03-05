@@ -10,6 +10,12 @@ import { ExerciceProvider } from "@/contexts/ExerciceContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 const Index = lazy(() => import("./pages/Index"));
+const Fonctionnalites = lazy(() => import("./pages/public/Fonctionnalites"));
+const CasClients = lazy(() => import("./pages/public/CasClients"));
+const Contact = lazy(() => import("./pages/public/Contact"));
+const MentionsLegales = lazy(() => import("./pages/public/MentionsLegales"));
+const PolitiqueConfidentialite = lazy(() => import("./pages/public/PolitiqueConfidentialite"));
+const ConditionsUtilisation = lazy(() => import("./pages/public/ConditionsUtilisation"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Login = lazy(() => import("./pages/auth/Login"));
 const InitTestUsers = lazy(() => import("./pages/auth/InitTestUsers"));
@@ -56,9 +62,12 @@ const App = () => (
               >
                 <Routes>
                   <Route path="/" element={<Index />} />
-                  <Route path="/fonctionnalites" element={<Index />} />
-                  <Route path="/cas-clients" element={<Index />} />
-                  <Route path="/contact" element={<Index />} />
+                  <Route path="/fonctionnalites" element={<Fonctionnalites />} />
+                  <Route path="/cas-clients" element={<CasClients />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/mentions-legales" element={<MentionsLegales />} />
+                  <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
+                  <Route path="/conditions-utilisation" element={<ConditionsUtilisation />} />
                   <Route path="/auth/login" element={<Login />} />
                   <Route path="/auth/init-test-users" element={<InitTestUsers />} />
                   <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>

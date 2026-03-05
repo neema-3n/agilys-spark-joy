@@ -1,32 +1,29 @@
-import Header from "@/components/Header";
+import PublicLayout from "@/components/public/PublicLayout";
 import Hero from "@/components/Hero";
 import Features from "@/components/Features";
 import Modules from "@/components/Modules";
 import Dashboard from "@/components/Dashboard";
 import CTA from "@/components/CTA";
-import Footer from "@/components/Footer";
 
 const Index = () => {
   return (
-    <div className="min-h-screen">
-      <Header />
+    <PublicLayout>
       <main>
         <Hero />
-        <div id="features">
+        <div>
           <Features />
         </div>
-        <div id="modules">
+        <div>
           <Modules />
         </div>
-        <div id="dashboard">
+        <div>
           <Dashboard />
         </div>
-        <div id="contact">
+        <div>
           <CTA />
         </div>
       </main>
-      <Footer />
-    </div>
+    </PublicLayout>
   );
 };
 
