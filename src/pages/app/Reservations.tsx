@@ -40,6 +40,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import type { ReservationCreditFormData } from '@/types/reservation.types';
+import type { EngagementFormData } from '@/types/engagement.types';
 
 const Reservations = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -190,7 +191,7 @@ const Reservations = () => {
   );
 
   const handleSaveEngagement = useCallback(
-    async (data: any) => {
+    async (data: Partial<EngagementFormData>) => {
       try {
         const reservation = reservations.find((r) => r.id === reservationSourceId);
 
@@ -212,9 +213,10 @@ const Reservations = () => {
           navigate,
         });
       } catch (error) {
+        const message = error instanceof Error ? error.message : 'Une erreur est survenue lors de la création.';
         toast({
           title: 'Erreur',
-          description: 'Une erreur est survenue lors de la création.',
+          description: message,
           variant: 'destructive',
         });
         throw error;

@@ -6,6 +6,12 @@ import type {
   CreateEngagementFromReservationDto,
   UpdateEngagementDto
 } from './dto/engagements.dto';
+import {
+  EngagementStatus,
+  ReservationStatus,
+  assertEngagementTransitionAllowed,
+  assertReservationTransitionAllowed
+} from '../common/domain/reservation-engagement-rules';
 
 interface EngagementRow {
   id: string;
@@ -19,7 +25,7 @@ interface EngagementRow {
   fournisseur_id: string | null;
   beneficiaire: string | null;
   projet_id: string | null;
-  statut: 'brouillon' | 'valide' | 'annule';
+  statut: EngagementStatus;
   date_creation: Date | string;
   date_validation: Date | string | null;
   created_by: string | null;
@@ -72,7 +78,7 @@ interface EngagementView {
   fournisseurId?: string;
   beneficiaire?: string;
   projetId?: string;
-  statut: 'brouillon' | 'valide' | 'annule';
+  statut: EngagementStatus;
   dateCreation: string;
   dateValidation?: string;
   createdBy?: string;
@@ -159,9 +165,10 @@ export class EngagementsService {
         SELECT montant
         FROM public.engagements
         WHERE reservation_credit_id = $1
+          AND client_id = $2
           AND statut != 'annule'
       `,
-      [reservationId]
+      [reservationId, actor.tenantId]
     );
 
     const montantEngage = engagementsResult.rows.reduce((sum, row) => sum + Number(row.montant ?? 0), 0);
@@ -169,6 +176,10 @@ export class EngagementsService {
   }
 
   async create(actor: AuthenticatedUser, payload: CreateEngagementDto): Promise<EngagementView> {
+    await this.assertLigneBudgetaireInScope(actor.tenantId, payload.exerciceId, payload.ligneBudgetaireId);
+    if (payload.projetId) {
+      await this.assertProjetInScope(actor.tenantId, payload.exerciceId, payload.projetId);
+    }
     return this.createInternal(actor, payload);
   }
 
@@ -182,6 +193,7 @@ export class EngagementsService {
       objet: string;
       beneficiaire: string | null;
       projet_id: string | null;
+      statut: ReservationStatus;
     }>(
       `
         SELECT
@@ -192,7 +204,8 @@ export class EngagementsService {
           montant,
           objet,
           beneficiaire,
-          projet_id
+          projet_id,
+          statut
         FROM public.reservations_credits
         WHERE id = $1
           AND client_id = $2
@@ -206,8 +219,24 @@ export class EngagementsService {
       throw new NotFoundException('Réservation introuvable');
     }
 
-    const montant = payload.montant !== undefined ? payload.montant : Number(reservation.montant ?? 0);
+    if (reservation.exercice_id !== payload.exerciceId) {
+      throw new BadRequestException('La réservation ne correspond pas à l’exercice demandé.');
+    }
+
+    assertReservationTransitionAllowed('create-engagement', reservation.statut);
+
+    if (payload.ligneBudgetaireId && payload.ligneBudgetaireId !== reservation.ligne_budgetaire_id) {
+      throw new BadRequestException(
+        "La ligne budgétaire d'un engagement issu d'une réservation doit correspondre à la ligne de la réservation."
+      );
+    }
+
     const montantDisponible = await this.getMontantDisponibleReservation(actor, payload.reservationId);
+    const montant = payload.montant !== undefined ? payload.montant : montantDisponible;
+
+    if (montantDisponible <= 0) {
+      throw new BadRequestException('La réservation est entièrement consommée: aucun montant disponible pour un engagement.');
+    }
 
     if (montant > montantDisponible) {
       throw new BadRequestException(
@@ -215,7 +244,7 @@ export class EngagementsService {
       );
     }
 
-    return this.createInternal(actor, {
+    const created = await this.createInternal(actor, {
       exerciceId: payload.exerciceId,
       reservationCreditId: payload.reservationId,
       ligneBudgetaireId: payload.ligneBudgetaireId || reservation.ligne_budgetaire_id,
@@ -226,10 +255,15 @@ export class EngagementsService {
       projetId: payload.projetId !== undefined ? payload.projetId : reservation.projet_id || undefined,
       observations: payload.observations
     });
+
+    await this.syncReservationStatusFromEngagement(actor, payload.reservationId);
+
+    return created;
   }
 
   async update(actor: AuthenticatedUser, id: string, payload: UpdateEngagementDto): Promise<EngagementView> {
-    await this.getById(actor, id);
+    const engagement = await this.getById(actor, id);
+    assertEngagementTransitionAllowed('update', engagement.statut);
 
     const ecritures = await this.postgresService.query<{ id: string }>(
       `
@@ -275,6 +309,14 @@ export class EngagementsService {
       return this.getById(actor, id);
     }
 
+    if (payload.ligneBudgetaireId) {
+      await this.assertLigneBudgetaireInScope(actor.tenantId, engagement.exerciceId, payload.ligneBudgetaireId);
+    }
+
+    if (payload.projetId !== undefined && payload.projetId !== null) {
+      await this.assertProjetInScope(actor.tenantId, engagement.exerciceId, payload.projetId);
+    }
+
     setClauses.push('updated_at = now()');
     values.push(id, actor.tenantId);
 
@@ -292,11 +334,13 @@ export class EngagementsService {
       throw new NotFoundException('Engagement introuvable');
     }
 
+    await this.syncReservationStatusFromEngagement(actor, engagement.reservationCreditId);
     return this.getById(actor, id);
   }
 
   async valider(actor: AuthenticatedUser, id: string): Promise<EngagementView> {
-    await this.getById(actor, id);
+    const engagement = await this.getById(actor, id);
+    assertEngagementTransitionAllowed('valider', engagement.statut);
 
     const result = await this.postgresService.query(
       `
@@ -315,13 +359,14 @@ export class EngagementsService {
       throw new NotFoundException('Engagement introuvable');
     }
 
-    const engagement = await this.getById(actor, id);
-    await this.generateEcrituresForEngagement(actor, engagement);
-    return engagement;
+    const validatedEngagement = await this.getById(actor, id);
+    await this.generateEcrituresForEngagement(actor, validatedEngagement);
+    return validatedEngagement;
   }
 
   async annuler(actor: AuthenticatedUser, id: string, motifAnnulation: string): Promise<EngagementView> {
-    await this.getById(actor, id);
+    const engagement = await this.getById(actor, id);
+    assertEngagementTransitionAllowed('annuler', engagement.statut);
 
     const bonsCommande = await this.postgresService.query<{ numero: string }>(
       `
@@ -388,6 +433,7 @@ export class EngagementsService {
       throw new NotFoundException('Engagement introuvable');
     }
 
+    await this.syncReservationStatusFromEngagement(actor, engagement.reservationCreditId);
     return this.getById(actor, id);
   }
 
@@ -428,6 +474,46 @@ export class EngagementsService {
     if ((result.rowCount ?? 0) === 0) {
       throw new NotFoundException('Engagement introuvable');
     }
+
+    await this.syncReservationStatusFromEngagement(actor, engagement.reservationCreditId);
+  }
+
+  private async syncReservationStatusFromEngagement(
+    actor: AuthenticatedUser,
+    reservationId: string | undefined
+  ): Promise<void> {
+    if (!reservationId) {
+      return;
+    }
+
+    const reservationResult = await this.postgresService.query<{ statut: ReservationStatus }>(
+      `
+        SELECT statut
+        FROM public.reservations_credits
+        WHERE id = $1
+          AND client_id = $2
+        LIMIT 1
+      `,
+      [reservationId, actor.tenantId]
+    );
+
+    const reservation = reservationResult.rows[0];
+    if (!reservation || reservation.statut === 'annulee' || reservation.statut === 'expiree') {
+      return;
+    }
+
+    const montantRestant = await this.getMontantDisponibleReservation(actor, reservationId);
+    await this.postgresService.query(
+      `
+        UPDATE public.reservations_credits
+        SET
+          statut = $1,
+          updated_at = now()
+        WHERE id = $2
+          AND client_id = $3
+      `,
+      [montantRestant <= 0 ? 'utilisee' : 'active', reservationId, actor.tenantId]
+    );
   }
 
   private async createInternal(actor: AuthenticatedUser, payload: CreateEngagementDto): Promise<EngagementView> {
@@ -444,6 +530,10 @@ export class EngagementsService {
     const exerciceCode = exerciceResult.rows[0]?.code;
     if (!exerciceCode) {
       throw new NotFoundException('Exercice introuvable');
+    }
+
+    if (payload.projetId) {
+      await this.assertProjetInScope(actor.tenantId, payload.exerciceId, payload.projetId);
     }
 
     const numero = await this.generateNextNumero(actor.tenantId, payload.exerciceId, exerciceCode);
@@ -667,6 +757,45 @@ export class EngagementsService {
     };
 
     return map[key];
+  }
+
+  private async assertLigneBudgetaireInScope(tenantId: string, exerciceId: string, ligneBudgetaireId: string): Promise<void> {
+    const result = await this.postgresService.query<{ id: string }>(
+      `
+        SELECT id
+        FROM public.lignes_budgetaires
+        WHERE id = $1
+          AND client_id = $2
+          AND exercice_id = $3
+          AND statut = 'actif'
+        LIMIT 1
+      `,
+      [ligneBudgetaireId, tenantId, exerciceId]
+    );
+
+    if (!result.rows[0]) {
+      throw new BadRequestException(
+        "Ligne budgétaire invalide pour le tenant/exercice actif ou non disponible (statut attendu: 'actif')."
+      );
+    }
+  }
+
+  private async assertProjetInScope(tenantId: string, exerciceId: string, projetId: string): Promise<void> {
+    const result = await this.postgresService.query<{ id: string }>(
+      `
+        SELECT id
+        FROM public.projets
+        WHERE id = $1
+          AND client_id = $2
+          AND exercice_id = $3
+        LIMIT 1
+      `,
+      [projetId, tenantId, exerciceId]
+    );
+
+    if (!result.rows[0]) {
+      throw new BadRequestException('Projet invalide pour le tenant/exercice actif.');
+    }
   }
 
   private baseSelect(): string {

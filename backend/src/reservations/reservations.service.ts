@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PostgresService } from '../common/postgres.service';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import type { CreateReservationDto, UpdateReservationDto } from './dto/reservations.dto';
+import { ReservationStatus, assertReservationTransitionAllowed } from '../common/domain/reservation-engagement-rules';
 
 interface ReservationRow {
   id: string;
@@ -66,7 +67,7 @@ interface ReservationView {
   projetId?: string;
   dateReservation: string;
   dateExpiration?: string;
-  statut: 'active' | 'utilisee' | 'annulee' | 'expiree';
+  statut: ReservationStatus;
   motifAnnulation?: string;
   createdBy?: string;
   createdAt: string;
@@ -144,6 +145,11 @@ export class ReservationsService {
       throw new NotFoundException('Exercice introuvable');
     }
 
+    await this.assertLigneBudgetaireInScope(actor.tenantId, payload.exerciceId, payload.ligneBudgetaireId);
+    if (payload.projetId) {
+      await this.assertProjetInScope(actor.tenantId, payload.exerciceId, payload.projetId);
+    }
+
     const numero = await this.generateNextNumero(actor.tenantId, payload.exerciceId);
 
     const inserted = await this.postgresService.query<{ id: string }>(
@@ -203,7 +209,8 @@ export class ReservationsService {
   }
 
   async update(actor: AuthenticatedUser, id: string, payload: UpdateReservationDto): Promise<ReservationView> {
-    await this.getById(actor, id);
+    const reservation = await this.getById(actor, id);
+    assertReservationTransitionAllowed('update', reservation.statut);
 
     const ecritures = await this.postgresService.query<{ id: string }>(
       `
@@ -249,6 +256,14 @@ export class ReservationsService {
       return this.getById(actor, id);
     }
 
+    if (payload.ligneBudgetaireId) {
+      await this.assertLigneBudgetaireInScope(actor.tenantId, reservation.exerciceId, payload.ligneBudgetaireId);
+    }
+
+    if (payload.projetId !== undefined && payload.projetId !== null) {
+      await this.assertProjetInScope(actor.tenantId, reservation.exerciceId, payload.projetId);
+    }
+
     setClauses.push('updated_at = now()');
     values.push(id, actor.tenantId);
 
@@ -270,7 +285,8 @@ export class ReservationsService {
   }
 
   async utiliser(actor: AuthenticatedUser, id: string): Promise<ReservationView> {
-    await this.getById(actor, id);
+    const reservation = await this.getById(actor, id);
+    assertReservationTransitionAllowed('utiliser', reservation.statut);
 
     const result = await this.postgresService.query(
       `
@@ -292,7 +308,8 @@ export class ReservationsService {
   }
 
   async annuler(actor: AuthenticatedUser, id: string, motifAnnulation: string): Promise<ReservationView> {
-    await this.getById(actor, id);
+    const reservation = await this.getById(actor, id);
+    assertReservationTransitionAllowed('annuler', reservation.statut);
 
     const ecritures = await this.postgresService.query<EcritureRow>(
       `
@@ -366,6 +383,45 @@ export class ReservationsService {
 
     if ((result.rowCount ?? 0) === 0) {
       throw new NotFoundException('Réservation introuvable');
+    }
+  }
+
+  private async assertLigneBudgetaireInScope(tenantId: string, exerciceId: string, ligneBudgetaireId: string): Promise<void> {
+    const result = await this.postgresService.query<{ id: string }>(
+      `
+        SELECT id
+        FROM public.lignes_budgetaires
+        WHERE id = $1
+          AND client_id = $2
+          AND exercice_id = $3
+          AND statut = 'actif'
+        LIMIT 1
+      `,
+      [ligneBudgetaireId, tenantId, exerciceId]
+    );
+
+    if (!result.rows[0]) {
+      throw new BadRequestException(
+        "Ligne budgétaire invalide pour le tenant/exercice actif ou non disponible (statut attendu: 'actif')."
+      );
+    }
+  }
+
+  private async assertProjetInScope(tenantId: string, exerciceId: string, projetId: string): Promise<void> {
+    const result = await this.postgresService.query<{ id: string }>(
+      `
+        SELECT id
+        FROM public.projets
+        WHERE id = $1
+          AND client_id = $2
+          AND exercice_id = $3
+        LIMIT 1
+      `,
+      [projetId, tenantId, exerciceId]
+    );
+
+    if (!result.rows[0]) {
+      throw new BadRequestException('Projet invalide pour le tenant/exercice actif.');
     }
   }
 

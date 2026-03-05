@@ -26,7 +26,7 @@ export const MOCK_ENGAGEMENTS: Engagement[] = [
     objet: 'Entretien véhicules',
     montant: 4800000,
     beneficiaire: 'GARAGE CENTRAL',
-    statut: 'en_attente',
+    statut: 'brouillon',
     dateCreation: '2024-01-18'
   },
   {
@@ -44,7 +44,7 @@ export const MOCK_ENGAGEMENTS: Engagement[] = [
     objet: 'Travaux de rénovation',
     montant: 15000000,
     beneficiaire: 'BATIMENT PRO',
-    statut: 'engage',
+    statut: 'valide',
     dateCreation: '2024-01-22'
   },
   {

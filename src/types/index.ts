@@ -9,10 +9,8 @@ export type AppRole =
 
 export type StatutEngagement = 
   | 'brouillon' 
-  | 'en_attente' 
   | 'valide' 
-  | 'rejete' 
-  | 'engage';
+  | 'annule';
 
 export type StatutFacture = 
   | 'brouillon' 
