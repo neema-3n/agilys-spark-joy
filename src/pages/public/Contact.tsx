@@ -1,6 +1,5 @@
 import PublicLayout from "@/components/public/PublicLayout";
-import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import PublicCtaGroup from "@/components/public/PublicCtaGroup";
 
 const Contact = () => {
   return (
@@ -24,11 +23,12 @@ const Contact = () => {
             <p className="mt-2 text-sm text-muted-foreground">Lundi à vendredi, 8h-18h</p>
           </article>
         </div>
-        <div className="mt-10">
-          <Button asChild>
-            <Link to="/auth/login">Se connecter</Link>
-          </Button>
-        </div>
+        <PublicCtaGroup
+          surface="page-contact"
+          className="mt-10 flex-col sm:flex-row items-start"
+          primary={{ label: "Se connecter", size: "default" }}
+          secondary={{ label: "Découvrir AGILYS", to: "/fonctionnalites", variant: "outline", size: "default" }}
+        />
       </section>
     </PublicLayout>
   );

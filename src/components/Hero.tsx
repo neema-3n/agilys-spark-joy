@@ -1,7 +1,6 @@
-import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
-import { Link } from "react-router-dom";
 import heroBackground from "@/assets/hero-background.jpg";
+import PublicCtaGroup from "@/components/public/PublicCtaGroup";
 
 const Hero = () => {
   return (
@@ -47,17 +46,20 @@ const Hero = () => {
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button asChild variant="hero" size="lg" className="group">
-              <Link to="/auth/login">
-                Démarrer une démo
-                <ArrowRight className="transition-transform group-hover:translate-x-1" />
-              </Link>
-            </Button>
-            <Button asChild variant="outline-hero" size="lg">
-              <Link to="/fonctionnalites">Découvrir les fonctionnalités</Link>
-            </Button>
-          </div>
+          <PublicCtaGroup
+            surface="hero"
+            className="flex-col sm:flex-row justify-center"
+            primary={{
+              label: "Se connecter",
+              variant: "hero",
+              className: "group",
+              icon: <ArrowRight className="transition-transform group-hover:translate-x-1" />,
+            }}
+            secondary={{
+              label: "Nous contacter",
+              variant: "outline-hero",
+            }}
+          />
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-8 mt-16 pt-16 border-t border-primary-foreground/20">

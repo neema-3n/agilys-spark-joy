@@ -1,6 +1,5 @@
 import PublicLayout from "@/components/public/PublicLayout";
-import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import PublicCtaGroup from "@/components/public/PublicCtaGroup";
 
 const Fonctionnalites = () => {
   return (
@@ -31,11 +30,12 @@ const Fonctionnalites = () => {
             </p>
           </article>
         </div>
-        <div className="mt-10">
-          <Button asChild>
-            <Link to="/auth/login">Accéder à la démo</Link>
-          </Button>
-        </div>
+        <PublicCtaGroup
+          surface="page-fonctionnalites"
+          className="mt-10 flex-col sm:flex-row items-start"
+          primary={{ label: "Se connecter", size: "default" }}
+          secondary={{ label: "Nous contacter", variant: "outline", size: "default" }}
+        />
       </section>
     </PublicLayout>
   );
