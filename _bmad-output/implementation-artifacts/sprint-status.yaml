@@ -25,7 +25,7 @@ development_status:
   3-4-produire-previsions-et-ecarts-prevision-execution: done
   epic-3-retrospective: optional
   epic-4: backlog
-  4-1-gerer-reservations-et-engagements: backlog
+  4-1-gerer-reservations-et-engagements: ready-for-dev
   4-2-gerer-bons-de-commande-et-factures: backlog
   4-3-constituer-et-liquider-une-depense: backlog
   4-4-executer-paiement-et-gestion-des-cas-partiels-rejets: backlog
