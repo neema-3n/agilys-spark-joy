@@ -282,6 +282,63 @@ test.describe('auth ui routing flows', () => {
     await expect(page.getByLabel('Montant')).toBeVisible();
     await expect(page.getByLabel('Motif')).toBeVisible();
   });
+
+  test('@story-1-1 @vitrine public navigation uses page routes and keeps login accessible', async ({ page }) => {
+    await page.goto(`${UI_BASE_URL}/`);
+    await expect(page.getByRole('navigation').getByRole('link', { name: 'Fonctionnalités' })).toBeVisible();
+
+    await page.getByRole('link', { name: 'Fonctionnalités' }).first().click();
+    await expect(page).toHaveURL(/\/fonctionnalites$/);
+    await expect(page.getByRole('heading', { name: 'Fonctionnalités AGILYS' })).toBeVisible();
+
+    await page.getByRole('link', { name: 'Cas clients' }).first().click();
+    await expect(page).toHaveURL(/\/cas-clients$/);
+    await expect(page.getByRole('heading', { name: 'Cas clients AGILYS' })).toBeVisible();
+
+    await page.getByRole('link', { name: 'Contact' }).first().click();
+    await expect(page).toHaveURL(/\/contact$/);
+    await expect(page.getByRole('heading', { name: 'Contact AGILYS' })).toBeVisible();
+
+    await page.getByRole('link', { name: 'Connexion' }).first().click();
+    await expect(page).toHaveURL(/\/auth\/login$/);
+  });
+
+  test('@story-1-1 @vitrine protected app routes still redirect anonymous users to login', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.clear();
+    });
+
+    await page.goto(`${UI_BASE_URL}/app/dashboard`);
+    await page.waitForURL('**/auth/login', { timeout: 20_000 });
+    await expect(page).toHaveURL(/\/auth\/login$/);
+  });
+
+  test('@story-1-1 @vitrine mobile menu navigation works with public routes', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${UI_BASE_URL}/`);
+
+    await page.getByRole('button', { name: 'Ouvrir le menu' }).click();
+    await page.getByRole('link', { name: 'Fonctionnalités' }).click();
+    await expect(page).toHaveURL(/\/fonctionnalites$/);
+  });
+
+  test('@story-1-1 @vitrine footer exposes legal links', async ({ page }) => {
+    await page.goto(`${UI_BASE_URL}/`);
+
+    await page.getByRole('link', { name: 'Mentions légales' }).first().click();
+    await expect(page).toHaveURL(/\/mentions-legales$/);
+    await expect(page.getByRole('heading', { name: 'Mentions légales' })).toBeVisible();
+
+    await page.goto(`${UI_BASE_URL}/`);
+    await page.getByRole('link', { name: 'Politique de confidentialité' }).first().click();
+    await expect(page).toHaveURL(/\/politique-confidentialite$/);
+    await expect(page.getByRole('heading', { name: 'Politique de confidentialité' })).toBeVisible();
+
+    await page.goto(`${UI_BASE_URL}/`);
+    await page.getByRole('link', { name: "Conditions d'utilisation" }).first().click();
+    await expect(page).toHaveURL(/\/conditions-utilisation$/);
+    await expect(page.getByRole('heading', { name: "Conditions d'utilisation" })).toBeVisible();
+  });
 });
 
 test('token storage write/read/clear', async () => {

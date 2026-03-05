@@ -5,6 +5,13 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Building2, Menu, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 
+const publicNavLinks = [
+  { to: "/", label: "Accueil" },
+  { to: "/fonctionnalites", label: "Fonctionnalités" },
+  { to: "/cas-clients", label: "Cas clients" },
+  { to: "/contact", label: "Contact" },
+];
+
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { theme, setTheme } = useTheme();
@@ -14,25 +21,24 @@ const Header = () => {
       <div className="container px-4 mx-auto">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-lg bg-gradient-primary flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-foreground">AGILYS</span>
+            <Link to="/" className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-lg bg-gradient-primary flex items-center justify-center">
+                <Building2 className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <span className="text-xl font-bold text-foreground">AGILYS</span>
+            </Link>
           </div>
 
           <nav className="hidden md:flex items-center gap-6">
-            <a href="#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              Fonctionnalités
-            </a>
-            <a href="#modules" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              Modules
-            </a>
-            <a href="#dashboard" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              Dashboard
-            </a>
-            <a href="#contact" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              Contact
-            </a>
+            {publicNavLinks.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {item.label}
+              </Link>
+            ))}
           </nav>
 
           <div className="flex items-center gap-4">
@@ -49,46 +55,33 @@ const Header = () => {
                 Connexion
               </Button>
             </Link>
-            <Button size="sm" className="shadow-primary">
-              Essai Gratuit
+            <Button asChild size="sm" className="shadow-primary">
+              <Link to="/auth/login">Essai Gratuit</Link>
             </Button>
             
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="md:hidden"
+                  aria-label="Ouvrir le menu"
+                >
                   <Menu className="w-5 h-5" />
                 </Button>
               </SheetTrigger>
               <SheetContent side="right">
                 <nav className="flex flex-col gap-4 mt-8">
-                  <a 
-                    href="#features" 
-                    onClick={() => setMobileMenuOpen(false)} 
-                    className="text-lg font-medium text-foreground hover:text-primary transition-colors"
-                  >
-                    Fonctionnalités
-                  </a>
-                  <a 
-                    href="#modules" 
-                    onClick={() => setMobileMenuOpen(false)} 
-                    className="text-lg font-medium text-foreground hover:text-primary transition-colors"
-                  >
-                    Modules
-                  </a>
-                  <a 
-                    href="#dashboard" 
-                    onClick={() => setMobileMenuOpen(false)} 
-                    className="text-lg font-medium text-foreground hover:text-primary transition-colors"
-                  >
-                    Dashboard
-                  </a>
-                  <a 
-                    href="#contact" 
-                    onClick={() => setMobileMenuOpen(false)} 
-                    className="text-lg font-medium text-foreground hover:text-primary transition-colors"
-                  >
-                    Contact
-                  </a>
+                  {publicNavLinks.map((item) => (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="text-lg font-medium text-foreground transition-colors hover:text-primary"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
                   <Link to="/auth/login" onClick={() => setMobileMenuOpen(false)}>
                     <Button className="w-full mt-4">Connexion</Button>
                   </Link>

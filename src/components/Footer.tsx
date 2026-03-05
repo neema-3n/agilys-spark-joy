@@ -1,4 +1,18 @@
 import { Building2 } from "lucide-react";
+import { Link } from "react-router-dom";
+
+const publicLinks = [
+  { to: "/", label: "Accueil" },
+  { to: "/fonctionnalites", label: "Fonctionnalités" },
+  { to: "/cas-clients", label: "Cas clients" },
+  { to: "/contact", label: "Contact" },
+];
+
+const legalLinks = [
+  { to: "/mentions-legales", label: "Mentions légales" },
+  { to: "/politique-confidentialite", label: "Politique de confidentialité" },
+  { to: "/conditions-utilisation", label: "Conditions d'utilisation" },
+];
 
 const Footer = () => {
   return (
@@ -19,22 +33,28 @@ const Footer = () => {
           </div>
 
           <div>
-            <h4 className="font-semibold text-foreground mb-4">Solution</h4>
+            <h4 className="font-semibold text-foreground mb-4">Navigation</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>Fonctionnalités</li>
-              <li>Modules</li>
-              <li>Conformité</li>
-              <li>Tarifs</li>
+              {publicLinks.map((item) => (
+                <li key={item.to}>
+                  <Link className="transition-colors hover:text-foreground" to={item.to}>
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
           <div>
-            <h4 className="font-semibold text-foreground mb-4">Entreprise</h4>
+            <h4 className="font-semibold text-foreground mb-4">Légal</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>À propos</li>
-              <li>Contact</li>
-              <li>Support</li>
-              <li>Documentation</li>
+              {legalLinks.map((item) => (
+                <li key={item.to}>
+                  <Link className="transition-colors hover:text-foreground" to={item.to}>
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
