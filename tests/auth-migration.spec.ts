@@ -62,6 +62,62 @@ const setupMigrationBudgetApiStubs = async (page: Page) => {
   });
 };
 
+const setupAuthenticatedAppApiFallback = async (page: Page, accessToken: string) => {
+  await page.route('**://127.0.0.1:3001/**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const { pathname } = url;
+
+    if (pathname === '/auth/login') {
+      await route.fallback();
+      return;
+    }
+
+    if (pathname === '/auth/refresh') {
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          accessToken,
+          refreshToken: 'refresh-token-stub',
+        }),
+      });
+      return;
+    }
+
+    if (pathname === '/auth/logout') {
+      await route.fulfill({ status: 204 });
+      return;
+    }
+
+    if (request.method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([]),
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({}),
+    });
+  });
+};
+
+const readAnalyticsEvents = async (page: Page) =>
+  page.evaluate(() => {
+    const maybeWindow = window as Window & {
+      __agilysAnalyticsEvents?: Array<Record<string, unknown>>;
+    };
+
+    return Array.isArray(maybeWindow.__agilysAnalyticsEvents)
+      ? maybeWindow.__agilysAnalyticsEvents
+      : [];
+  });
+
 const waitForUiServer = async (timeoutMs: number): Promise<void> => {
   const startedAt = Date.now();
 
@@ -210,6 +266,8 @@ test.describe('auth ui routing flows', () => {
       exp: Math.floor(Date.now() / 1000) + 600
     });
 
+    await setupAuthenticatedAppApiFallback(page, accessToken);
+
     await page.route('**/auth/login', async (route) => {
       await route.fulfill({
         status: 201,
@@ -251,6 +309,8 @@ test.describe('auth ui routing flows', () => {
       prenom: 'User',
       exp: Math.floor(Date.now() / 1000) + 600
     });
+
+    await setupAuthenticatedAppApiFallback(page, accessToken);
 
     await page.route('**/auth/login', async (route) => {
       await route.fulfill({
@@ -385,6 +445,230 @@ test.describe('auth ui routing flows', () => {
       primaryTarget: '/auth/login',
       secondaryTarget: '/fonctionnalites',
     });
+  });
+
+  test('@story-1-3 @vitrine emits funnel analytics with auth and lead conversion dimensions', async ({ page }) => {
+    const accessToken = makeJwt({
+      sub: 'user-11',
+      tenantId: 'tenant-1',
+      roles: ['admin_client'],
+      email: 'funnel@agilys.local',
+      nom: 'Funnel',
+      prenom: 'User',
+      exp: Math.floor(Date.now() / 1000) + 600,
+    });
+
+    await page.route('**/auth/login', async (route) => {
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          accessToken,
+          refreshToken: 'refresh-token-funnel',
+        }),
+      });
+    });
+
+    await page.addInitScript(() => {
+      window.localStorage.clear();
+      window.sessionStorage.clear();
+      const analyticsWindow = window as Window & { __agilysAnalyticsEvents?: Array<Record<string, unknown>> };
+      analyticsWindow.__agilysAnalyticsEvents = analyticsWindow.__agilysAnalyticsEvents ?? [];
+    });
+
+    const collectedEvents: Array<Record<string, unknown>> = [];
+    const drainAnalyticsEvents = async () => {
+      const snapshot = await readAnalyticsEvents(page);
+      collectedEvents.push(...snapshot);
+      await page.evaluate(() => {
+        (window as Window & { __agilysAnalyticsEvents?: Array<Record<string, unknown>> }).__agilysAnalyticsEvents = [];
+      });
+    };
+
+    const triggerPrimaryCta = async ({
+      routePath,
+      surface,
+      mobile,
+    }: {
+      routePath: string;
+      surface: string;
+      mobile?: boolean;
+    }) => {
+      if (mobile) {
+        await page.setViewportSize({ width: 390, height: 844 });
+      } else {
+        await page.setViewportSize({ width: 1280, height: 720 });
+      }
+
+      await page.goto(`${UI_BASE_URL}${routePath}`);
+
+      if (mobile) {
+        await page.getByRole('button', { name: 'Ouvrir le menu' }).click();
+      }
+
+      await page.locator(`[data-cta-surface="${surface}"][data-cta-role="primary"]`).first().click();
+      await expect(page).toHaveURL(/\/auth\/login$/);
+      await drainAnalyticsEvents();
+    };
+
+    await page.goto(`${UI_BASE_URL}/`);
+    await drainAnalyticsEvents();
+
+    await page.locator('[data-cta-surface="home-cta"][data-cta-role="secondary"]').first().click();
+    await expect(page).toHaveURL(/\/contact$/);
+    await drainAnalyticsEvents();
+
+    await page.goto(`${UI_BASE_URL}/fonctionnalites`);
+    await expect(page).toHaveURL(/\/fonctionnalites$/);
+    await drainAnalyticsEvents();
+    await page.goto(`${UI_BASE_URL}/cas-clients`);
+    await expect(page).toHaveURL(/\/cas-clients$/);
+    await drainAnalyticsEvents();
+    await page.goto(`${UI_BASE_URL}/contact`);
+    await expect(page).toHaveURL(/\/contact$/);
+    await drainAnalyticsEvents();
+
+    await triggerPrimaryCta({ routePath: '/', surface: 'header-desktop' });
+    await triggerPrimaryCta({ routePath: '/', surface: 'hero' });
+    await triggerPrimaryCta({ routePath: '/', surface: 'home-cta' });
+    await triggerPrimaryCta({ routePath: '/', surface: 'header-mobile', mobile: true });
+    await triggerPrimaryCta({ routePath: '/fonctionnalites', surface: 'page-fonctionnalites' });
+    await triggerPrimaryCta({ routePath: '/cas-clients', surface: 'page-cas-clients' });
+    await triggerPrimaryCta({ routePath: '/contact', surface: 'page-contact' });
+
+    await page.getByLabel('Email').fill('funnel@agilys.local');
+    await page.getByLabel('Mot de passe').fill('ChangeMe123!');
+    await page.getByRole('button', { name: 'Se connecter' }).click();
+    await expect(page).toHaveURL(/\/app\/dashboard$/);
+
+    await expect
+      .poll(async () => {
+        const events = await readAnalyticsEvents(page);
+        return events.some((event) => event.event === 'app_landing_view');
+      })
+      .toBeTruthy();
+
+    await drainAnalyticsEvents();
+    const events = collectedEvents;
+    const eventNames = events.map((event) => String(event.event));
+
+    expect(eventNames).toContain('vitrine_vue');
+    expect(eventNames).toContain('cta_secondaire_click');
+    expect(eventNames).toContain('cta_principal_click');
+    expect(eventNames).toContain('auth_page_view');
+    expect(eventNames).toContain('auth_success');
+    expect(eventNames).toContain('app_landing_view');
+
+    const leadEvent = events.find((event) => event.event === 'cta_secondaire_click');
+    expect(leadEvent?.conversionType).toBe('lead');
+
+    const authClickEvent = events.find((event) => event.event === 'cta_principal_click');
+    expect(authClickEvent?.conversionType).toBe('auth');
+
+    const vitrinePaths = new Set(
+      events
+        .filter((event) => event.event === 'vitrine_vue')
+        .map((event) => String(event.path))
+    );
+    expect([...vitrinePaths]).toEqual(
+      expect.arrayContaining(['/', '/fonctionnalites', '/cas-clients', '/contact'])
+    );
+
+    const primarySurfaces = new Set(
+      events
+        .filter((event) => event.event === 'cta_principal_click')
+        .map((event) => String(event.surface))
+    );
+    expect([...primarySurfaces]).toEqual(
+      expect.arrayContaining([
+        'header-desktop',
+        'header-mobile',
+        'hero',
+        'home-cta',
+        'page-fonctionnalites',
+        'page-cas-clients',
+        'page-contact',
+      ])
+    );
+
+    const authSuccessIndex = eventNames.indexOf('auth_success');
+    const appLandingIndex = eventNames.indexOf('app_landing_view');
+    expect(authSuccessIndex).toBeGreaterThanOrEqual(0);
+    expect(appLandingIndex).toBeGreaterThan(authSuccessIndex);
+  });
+
+  test('@story-1-4 @vitrine enforces seo metadata and emits seo plus web-vitals telemetry', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.clear();
+      window.sessionStorage.clear();
+      const analyticsWindow = window as Window & { __agilysAnalyticsEvents?: Array<Record<string, unknown>> };
+      analyticsWindow.__agilysAnalyticsEvents = analyticsWindow.__agilysAnalyticsEvents ?? [];
+    });
+
+    const vitrinePages = [
+      { path: '/', title: 'AGILYS | Pilotage budgetaire public' },
+      { path: '/fonctionnalites', title: 'Fonctionnalites AGILYS | Vitrine' },
+      { path: '/cas-clients', title: 'Cas clients AGILYS | Vitrine' },
+      { path: '/contact', title: 'Contact AGILYS | Vitrine' },
+    ];
+    const collectedEvents: Array<Record<string, unknown>> = [];
+
+    for (const vitrinePage of vitrinePages) {
+      await page.goto(`${UI_BASE_URL}${vitrinePage.path}`);
+      await expect(page).toHaveTitle(vitrinePage.title);
+
+      const seoSnapshot = await page.evaluate(() => ({
+        description:
+          document.head.querySelector<HTMLMetaElement>('meta[name="description"]')?.getAttribute('content') ?? '',
+        robots: document.head.querySelector<HTMLMetaElement>('meta[name="robots"]')?.getAttribute('content') ?? '',
+        canonical: document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.getAttribute('href') ?? '',
+        h1Count: document.querySelectorAll('h1').length,
+      }));
+
+      expect(seoSnapshot.description.trim().length).toBeGreaterThan(0);
+      expect(seoSnapshot.robots).toContain('index');
+      expect(seoSnapshot.canonical).toBe(`${UI_BASE_URL}${vitrinePage.path}`);
+      expect(seoSnapshot.h1Count).toBeGreaterThanOrEqual(1);
+
+      await expect
+        .poll(async () => {
+          const events = await readAnalyticsEvents(page);
+          const seoEvents = events.filter((event) => event.event === 'seo_audit').length;
+          const webVitalEvents = events.filter((event) => event.event === 'web_vital_metric').length;
+          return { seoEvents, webVitalEvents };
+        })
+        .toMatchObject({ seoEvents: 1, webVitalEvents: 3 });
+
+      const pageEvents = await readAnalyticsEvents(page);
+      collectedEvents.push(...pageEvents);
+      await page.evaluate(() => {
+        (window as Window & { __agilysAnalyticsEvents?: Array<Record<string, unknown>> }).__agilysAnalyticsEvents = [];
+      });
+    }
+
+    const seoAuditPaths = new Set(
+      collectedEvents
+        .filter((event) => event.event === 'seo_audit')
+        .map((event) => String(event.path))
+    );
+    expect([...seoAuditPaths]).toEqual(expect.arrayContaining(vitrinePages.map((vitrinePage) => vitrinePage.path)));
+
+    const measuredVitalNames = new Set(
+      collectedEvents
+        .filter((event) => event.event === 'web_vital_metric')
+        .map((event) => String(event.webVitalName))
+    );
+    expect([...measuredVitalNames]).toEqual(expect.arrayContaining(['lcp', 'cls', 'inp']));
+
+    await page.goto(`${UI_BASE_URL}/robots.txt`);
+    await expect(page.locator('body')).toContainText('User-agent: *');
+    await expect(page.locator('body')).toContainText('Sitemap: /sitemap.xml');
+
+    await page.goto(`${UI_BASE_URL}/sitemap.xml`);
+    await expect(page.locator('body')).toContainText('<loc>/</loc>');
+    await expect(page.locator('body')).toContainText('<loc>/fonctionnalites</loc>');
+    await expect(page.locator('body')).toContainText('<loc>/cas-clients</loc>');
+    await expect(page.locator('body')).toContainText('<loc>/contact</loc>');
   });
 
   test('@story-1-1 @vitrine protected app routes still redirect anonymous users to login', async ({ page }) => {

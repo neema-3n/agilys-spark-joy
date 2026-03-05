@@ -9,6 +9,7 @@ import {
   type PublicCtaRole,
   type PublicCtaSurface,
 } from "@/config/public-cta";
+import { trackCtaClick } from "@/services/analytics/tracker";
 
 type PublicCtaAction = {
   label?: string;
@@ -48,8 +49,17 @@ const PublicCtaGroup = ({ surface, className, primary, secondary }: PublicCtaGro
       {actions.map(({ role, config }) => (
         <Button key={role} asChild variant={config.variant} size={config.size} className={config.className}>
           <Link
+            id={getPublicCtaId(surface, role)}
             to={config.to}
-            onClick={config.onClick}
+            onClick={(event) => {
+              trackCtaClick({
+                role,
+                surface,
+                ctaId: getPublicCtaId(surface, role),
+                targetPath: config.to,
+              });
+              config.onClick?.(event);
+            }}
             aria-label={config.label}
             data-cta-id={getPublicCtaId(surface, role)}
             data-cta-role={role}

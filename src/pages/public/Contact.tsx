@@ -1,7 +1,17 @@
 import PublicLayout from "@/components/public/PublicLayout";
 import PublicCtaGroup from "@/components/public/PublicCtaGroup";
+import { useTrackPublicPageView } from "@/hooks/useTrackPublicPageView";
+import { usePublicSeo } from "@/hooks/usePublicSeo";
 
 const Contact = () => {
+  useTrackPublicPageView("/contact");
+  usePublicSeo({
+    title: "Contact AGILYS | Vitrine",
+    description:
+      "Contactez l'equipe AGILYS pour cadrer vos besoins de pilotage budgetaire et votre feuille de route de transformation.",
+    path: "/contact",
+  });
+
   return (
     <PublicLayout>
       <section className="container mx-auto px-4 py-20">

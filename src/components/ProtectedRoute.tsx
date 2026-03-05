@@ -1,7 +1,8 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { buildRequestedPath } from '@/services/auth/auth-routing';
+import { trackAppLandingViewIfPending } from '@/services/analytics/tracker';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -10,6 +11,14 @@ interface ProtectedRouteProps {
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    trackAppLandingViewIfPending(`${location.pathname}${location.search}`);
+  }, [isAuthenticated, location.pathname, location.search]);
 
   if (isLoading) {
     return (

@@ -1,7 +1,17 @@
 import PublicLayout from "@/components/public/PublicLayout";
 import PublicCtaGroup from "@/components/public/PublicCtaGroup";
+import { useTrackPublicPageView } from "@/hooks/useTrackPublicPageView";
+import { usePublicSeo } from "@/hooks/usePublicSeo";
 
 const Fonctionnalites = () => {
+  useTrackPublicPageView("/fonctionnalites");
+  usePublicSeo({
+    title: "Fonctionnalites AGILYS | Vitrine",
+    description:
+      "Explorez les fonctionnalites AGILYS pour piloter budgets, engagements, factures et paiements avec tracabilite complete.",
+    path: "/fonctionnalites",
+  });
+
   return (
     <PublicLayout>
       <section className="container mx-auto px-4 py-20">

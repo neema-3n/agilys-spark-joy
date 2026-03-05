@@ -8,8 +8,8 @@ development_status:
   epic-1: in-progress
   1-1-structurer-la-vitrine-multi-pages: done
   1-2-optimiser-la-conversion-vers-lauth-et-le-lead: done
-  1-3-instrumenter-le-funnel-vitrine-app: backlog
-  1-4-garantir-performances-et-seo-de-la-vitrine: backlog
+  1-3-instrumenter-le-funnel-vitrine-app: done
+  1-4-garantir-performances-et-seo-de-la-vitrine: done
   epic-1-retrospective: optional
   epic-2: in-progress
   2-1-mettre-en-place-lauth-nestjs-jwt-refresh: done
