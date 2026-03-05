@@ -1,8 +1,23 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { previsionsService } from '@/services/api/previsions.service';
 import { useClient } from '@/contexts/ClientContext';
-import { Scenario, LignePrevision, GenerationParams } from '@/types/prevision.types';
+import { useExercice } from '@/contexts/ExerciceContext';
+import {
+  EcartsPrevisionExecution,
+  EcartsPrevisionFilters,
+  GenerationParams,
+  LignePrevision,
+  Scenario
+} from '@/types/prevision.types';
 import { toast } from 'sonner';
+
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  return fallback;
+};
 
 export function usePrevisions() {
   const { currentClient } = useClient();
@@ -23,8 +38,8 @@ export function usePrevisions() {
       queryClient.invalidateQueries({ queryKey: ['scenarios'] });
       toast.success('Scénario créé avec succès');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la création du scénario');
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Erreur lors de la création du scénario'));
     },
   });
 
@@ -36,8 +51,8 @@ export function usePrevisions() {
       queryClient.invalidateQueries({ queryKey: ['scenarios'] });
       toast.success('Scénario mis à jour');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la mise à jour');
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Erreur lors de la mise à jour'));
     },
   });
 
@@ -48,8 +63,8 @@ export function usePrevisions() {
       queryClient.invalidateQueries({ queryKey: ['scenarios'] });
       toast.success('Scénario supprimé');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la suppression');
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Erreur lors de la suppression'));
     },
   });
 
@@ -60,8 +75,8 @@ export function usePrevisions() {
       queryClient.invalidateQueries({ queryKey: ['scenarios'] });
       toast.success('Scénario validé');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la validation');
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Erreur lors de la validation'));
     },
   });
 
@@ -72,8 +87,8 @@ export function usePrevisions() {
       queryClient.invalidateQueries({ queryKey: ['scenarios'] });
       toast.success('Scénario archivé');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de l\'archivage');
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, "Erreur lors de l'archivage"));
     },
   });
 
@@ -85,8 +100,8 @@ export function usePrevisions() {
       queryClient.invalidateQueries({ queryKey: ['scenarios'] });
       toast.success('Scénario dupliqué avec succès');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la duplication');
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Erreur lors de la duplication'));
     },
   });
 
@@ -97,8 +112,8 @@ export function usePrevisions() {
       queryClient.invalidateQueries({ queryKey: ['lignes-prevision'] });
       toast.success('Prévisions générées avec succès');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la génération');
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Erreur lors de la génération'));
     },
   });
 
@@ -113,6 +128,53 @@ export function usePrevisions() {
     archiverScenario,
     dupliquerScenario,
     genererPrevisions,
+  };
+}
+
+export const buildEcartsPrevisionQueryKey = (
+  clientId: string | undefined,
+  exerciceId: string | undefined,
+  filters?: Omit<EcartsPrevisionFilters, 'exerciceId'>
+) => ['ecarts-prevision-execution', clientId, exerciceId, filters?.periode, filters?.sectionCode, filters?.programmeCode, filters?.actionCode, filters?.enveloppeId];
+
+export function useEcartsPrevisionExecution(
+  filters?: Omit<EcartsPrevisionFilters, 'exerciceId'>
+): {
+  ecarts: EcartsPrevisionExecution[];
+  totaux: {
+    montantPrevu: number;
+    montantExecute: number;
+    ecartMontant: number;
+    ecartTaux?: number;
+    nombreAxes: number;
+  } | null;
+  isLoading: boolean;
+  error: Error | null;
+  refetch: () => Promise<unknown>;
+} {
+  const { currentClient } = useClient();
+  const { currentExercice } = useExercice();
+
+  const query = useQuery({
+    queryKey: buildEcartsPrevisionQueryKey(currentClient?.id, currentExercice?.id, filters),
+    queryFn: () =>
+      previsionsService.getEcartsPrevisionExecution({
+        exerciceId: currentExercice!.id,
+        periode: filters?.periode,
+        sectionCode: filters?.sectionCode,
+        programmeCode: filters?.programmeCode,
+        actionCode: filters?.actionCode,
+        enveloppeId: filters?.enveloppeId
+      }),
+    enabled: !!currentClient?.id && !!currentExercice?.id
+  });
+
+  return {
+    ecarts: query.data?.items ?? [],
+    totaux: query.data?.totaux ?? null,
+    isLoading: query.isLoading,
+    error: (query.error as Error) ?? null,
+    refetch: query.refetch
   };
 }
 
@@ -134,8 +196,8 @@ export function useLignesPrevision(scenarioId?: string, annee?: number) {
       queryClient.invalidateQueries({ queryKey: ['lignes-prevision'] });
       toast.success('Ligne ajoutée');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de l\'ajout');
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, "Erreur lors de l'ajout"));
     },
   });
 
@@ -147,8 +209,8 @@ export function useLignesPrevision(scenarioId?: string, annee?: number) {
       queryClient.invalidateQueries({ queryKey: ['lignes-prevision'] });
       toast.success('Ligne mise à jour');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la mise à jour');
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Erreur lors de la mise à jour'));
     },
   });
 
@@ -159,8 +221,8 @@ export function useLignesPrevision(scenarioId?: string, annee?: number) {
       queryClient.invalidateQueries({ queryKey: ['lignes-prevision'] });
       toast.success('Ligne supprimée');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la suppression');
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Erreur lors de la suppression'));
     },
   });
 

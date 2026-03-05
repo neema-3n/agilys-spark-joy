@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { PostgresService } from '../common/postgres.service';
 import type {
   CreateLignePrevisionDto,
   CreateScenarioDto,
   DupliquerScenarioDto,
+  EcartsPrevisionQueryDto,
   GenererPrevisionsDto,
   LignesPrevisionQueryDto,
   UpdateLignePrevisionDto,
@@ -51,8 +52,24 @@ interface LigneBudgetaireRow {
   montant_modifie: string | number;
 }
 
+interface ExerciceExistsRow {
+  id: string;
+}
+
+interface EcartRow {
+  periode: string;
+  section_code: string | null;
+  programme_code: string | null;
+  action_code: string | null;
+  enveloppe_id: string | null;
+  montant_prevu: string | number;
+  montant_execute: string | number;
+}
+
 @Injectable()
 export class PrevisionsService {
+  private readonly logger = new Logger(PrevisionsService.name);
+
   constructor(private readonly postgresService: PostgresService) {}
 
   async getScenarios(actor: AuthenticatedUser): Promise<ReturnType<PrevisionsService['mapScenarioRowToView']>[]> {
@@ -280,6 +297,159 @@ export class PrevisionsService {
     );
 
     return result.rows.map((row) => this.mapLigneRowToView(row));
+  }
+
+  async getEcartsPrevisionExecution(actor: AuthenticatedUser, query: EcartsPrevisionQueryDto): Promise<{
+    items: Array<{
+      periode: string;
+      axe: {
+        sectionCode?: string;
+        programmeCode?: string;
+        actionCode?: string;
+        enveloppeId?: string;
+      };
+      montantPrevu: number;
+      montantExecute: number;
+      ecartMontant: number;
+      ecartTaux?: number;
+    }>;
+    filtres: EcartsPrevisionQueryDto;
+    totaux: {
+      montantPrevu: number;
+      montantExecute: number;
+      ecartMontant: number;
+      ecartTaux?: number;
+      nombreAxes: number;
+    };
+  }> {
+    await this.assertExerciceExists(actor.tenantId, query.exerciceId, actor.sub);
+
+    const periodFilter = query.periode?.trim();
+    if (periodFilter !== undefined && periodFilter.length > 0 && !/^\d{4}$/.test(periodFilter)) {
+      throw new BadRequestException('Periode invalide: format attendu AAAA (ex: 2026)');
+    }
+
+    const values: unknown[] = [actor.tenantId, query.exerciceId];
+    const previsionConditions: string[] = [];
+    const executionConditions: string[] = [];
+    let index = values.length + 1;
+
+    if (periodFilter) {
+      previsionConditions.push(`lp.annee = $${index}::int`);
+      executionConditions.push(`EXTRACT(YEAR FROM d.date_depense)::int = $${index}::int`);
+      values.push(Number(periodFilter));
+      index += 1;
+    }
+
+    if (query.sectionCode) {
+      previsionConditions.push(`lp.section_code = $${index}`);
+      executionConditions.push(`sec.code = $${index}`);
+      values.push(query.sectionCode.trim());
+      index += 1;
+    }
+
+    if (query.programmeCode) {
+      previsionConditions.push(`lp.programme_code = $${index}`);
+      executionConditions.push(`prg.code = $${index}`);
+      values.push(query.programmeCode.trim());
+      index += 1;
+    }
+
+    if (query.actionCode) {
+      previsionConditions.push(`lp.action_code = $${index}`);
+      executionConditions.push(`act.code = $${index}`);
+      values.push(query.actionCode.trim());
+      index += 1;
+    }
+
+    if (query.enveloppeId) {
+      previsionConditions.push(`lp.enveloppe_id = $${index}`);
+      executionConditions.push(`lb.enveloppe_id = $${index}`);
+      values.push(query.enveloppeId);
+      index += 1;
+    }
+
+    const previsionWhere = previsionConditions.length > 0 ? `AND ${previsionConditions.join(' AND ')}` : '';
+    const executionWhere = executionConditions.length > 0 ? `AND ${executionConditions.join(' AND ')}` : '';
+
+    const result = await this.postgresService.query<EcartRow>(
+      `
+        WITH previsions_agg AS (
+          SELECT
+            lp.annee::text AS periode,
+            lp.section_code,
+            lp.programme_code,
+            lp.action_code,
+            lp.enveloppe_id,
+            SUM(lp.montant_prevu) AS montant_prevu
+          FROM public.lignes_prevision lp
+          INNER JOIN public.scenarios_prevision sp ON sp.id = lp.scenario_id
+          WHERE lp.client_id = $1
+            AND sp.client_id = $1
+            AND sp.exercice_reference_id = $2
+            ${previsionWhere}
+          GROUP BY lp.annee, lp.section_code, lp.programme_code, lp.action_code, lp.enveloppe_id
+        ),
+        execution_agg AS (
+          SELECT
+            EXTRACT(YEAR FROM d.date_depense)::int::text AS periode,
+            sec.code AS section_code,
+            prg.code AS programme_code,
+            act.code AS action_code,
+            lb.enveloppe_id,
+            SUM(d.montant) AS montant_execute
+          FROM public.depenses d
+          INNER JOIN public.lignes_budgetaires lb ON lb.id = d.ligne_budgetaire_id AND lb.client_id = d.client_id
+          INNER JOIN public.actions act ON act.id = lb.action_id
+          INNER JOIN public.programmes prg ON prg.id = act.programme_id
+          INNER JOIN public.sections sec ON sec.id = prg.section_id
+          WHERE d.client_id = $1
+            AND d.exercice_id = $2
+            AND d.statut != 'annulee'
+            ${executionWhere}
+          GROUP BY EXTRACT(YEAR FROM d.date_depense), sec.code, prg.code, act.code, lb.enveloppe_id
+        )
+        SELECT
+          COALESCE(p.periode, e.periode) AS periode,
+          COALESCE(p.section_code, e.section_code) AS section_code,
+          COALESCE(p.programme_code, e.programme_code) AS programme_code,
+          COALESCE(p.action_code, e.action_code) AS action_code,
+          COALESCE(p.enveloppe_id, e.enveloppe_id) AS enveloppe_id,
+          COALESCE(p.montant_prevu, 0) AS montant_prevu,
+          COALESCE(e.montant_execute, 0) AS montant_execute
+        FROM previsions_agg p
+        FULL OUTER JOIN execution_agg e ON e.periode = p.periode
+          AND e.section_code IS NOT DISTINCT FROM p.section_code
+          AND e.programme_code IS NOT DISTINCT FROM p.programme_code
+          AND e.action_code IS NOT DISTINCT FROM p.action_code
+          AND e.enveloppe_id IS NOT DISTINCT FROM p.enveloppe_id
+        ORDER BY periode ASC, section_code ASC NULLS LAST, programme_code ASC NULLS LAST, action_code ASC NULLS LAST
+      `,
+      values
+    );
+
+    if (result.rows.length === 0) {
+      throw new BadRequestException(
+        "Aucune donnee disponible pour calculer les ecarts sur le scope demande. Verifiez l'exercice et les filtres."
+      );
+    }
+
+    const items = result.rows.map((row) => this.mapEcartRowToView(row));
+    const montantPrevuTotal = items.reduce((sum, item) => sum + item.montantPrevu, 0);
+    const montantExecuteTotal = items.reduce((sum, item) => sum + item.montantExecute, 0);
+    const ecartMontantTotal = montantExecuteTotal - montantPrevuTotal;
+
+    return {
+      items,
+      filtres: query,
+      totaux: {
+        montantPrevu: montantPrevuTotal,
+        montantExecute: montantExecuteTotal,
+        ecartMontant: ecartMontantTotal,
+        ecartTaux: montantPrevuTotal === 0 ? undefined : (ecartMontantTotal / montantPrevuTotal) * 100,
+        nombreAxes: items.length
+      }
+    };
   }
 
   async createLignePrevision(
@@ -516,6 +686,26 @@ export class PrevisionsService {
     return row;
   }
 
+  private async assertExerciceExists(clientId: string, exerciceId: string, actorSub?: string): Promise<void> {
+    const result = await this.postgresService.query<ExerciceExistsRow>(
+      `
+        SELECT id
+        FROM public.exercices
+        WHERE id = $1
+          AND client_id = $2
+        LIMIT 1
+      `,
+      [exerciceId, clientId]
+    );
+
+    if (!result.rows[0]) {
+      this.logger.warn(
+        `Tentative d'acces hors scope sur exercice. tenantId=${clientId}, exerciceId=${exerciceId}, actor=${actorSub ?? 'unknown'}`
+      );
+      throw new NotFoundException('Exercice introuvable pour ce tenant');
+    }
+  }
+
   private mapScenarioUpdateKeyToColumn(key: keyof UpdateScenarioDto): string {
     const map: Record<keyof UpdateScenarioDto, string> = {
       code: 'code',
@@ -590,6 +780,26 @@ export class PrevisionsService {
       hypotheses: row.hypotheses ?? undefined,
       createdAt: new Date(row.created_at).toISOString(),
       updatedAt: new Date(row.updated_at).toISOString()
+    };
+  }
+
+  private mapEcartRowToView(row: EcartRow) {
+    const montantPrevu = Number(row.montant_prevu ?? 0);
+    const montantExecute = Number(row.montant_execute ?? 0);
+    const ecartMontant = montantExecute - montantPrevu;
+
+    return {
+      periode: row.periode,
+      axe: {
+        sectionCode: row.section_code ?? undefined,
+        programmeCode: row.programme_code ?? undefined,
+        actionCode: row.action_code ?? undefined,
+        enveloppeId: row.enveloppe_id ?? undefined
+      },
+      montantPrevu,
+      montantExecute,
+      ecartMontant,
+      ecartTaux: montantPrevu === 0 ? undefined : (ecartMontant / montantPrevu) * 100
     };
   }
 }

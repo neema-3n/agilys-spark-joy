@@ -8,6 +8,7 @@ import {
   CreateLignePrevisionDto,
   CreateScenarioDto,
   DupliquerScenarioDto,
+  EcartsPrevisionQueryDto,
   GenererPrevisionsDto,
   LignesPrevisionQueryDto,
   UpdateLignePrevisionDto,
@@ -72,6 +73,12 @@ export class PrevisionsController {
   @RequirePermissions('referentiels:read')
   getLignes(@CurrentUser() user: AuthenticatedUser, @Query() query: LignesPrevisionQueryDto) {
     return this.previsionsService.getLignesPrevision(user, query);
+  }
+
+  @Get('ecarts')
+  @RequirePermissions('referentiels:read')
+  getEcartsPrevisionExecution(@CurrentUser() user: AuthenticatedUser, @Query() query: EcartsPrevisionQueryDto) {
+    return this.previsionsService.getEcartsPrevisionExecution(user, query);
   }
 
   @Post('lignes')

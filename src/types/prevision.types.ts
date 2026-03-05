@@ -51,3 +51,40 @@ export interface PrevisionStats {
   montantParAnnee: Record<number, number>;
   tauxCroissanceMoyen: number;
 }
+
+export interface EcartPrevisionAxe {
+  sectionCode?: string;
+  programmeCode?: string;
+  actionCode?: string;
+  enveloppeId?: string;
+}
+
+export interface EcartPrevisionExecution {
+  periode: string;
+  axe: EcartPrevisionAxe;
+  montantPrevu: number;
+  montantExecute: number;
+  ecartMontant: number;
+  ecartTaux?: number;
+}
+
+export interface EcartsPrevisionFilters {
+  exerciceId: string;
+  periode?: string;
+  sectionCode?: string;
+  programmeCode?: string;
+  actionCode?: string;
+  enveloppeId?: string;
+}
+
+export interface EcartsPrevisionResponse {
+  items: EcartPrevisionExecution[];
+  filtres: EcartsPrevisionFilters;
+  totaux: {
+    montantPrevu: number;
+    montantExecute: number;
+    ecartMontant: number;
+    ecartTaux?: number;
+    nombreAxes: number;
+  };
+}
