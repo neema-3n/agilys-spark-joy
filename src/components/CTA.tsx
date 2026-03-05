@@ -1,6 +1,5 @@
-import { Button } from "@/components/ui/button";
 import { ArrowRight, Mail } from "lucide-react";
-import { Link } from "react-router-dom";
+import PublicCtaGroup from "@/components/public/PublicCtaGroup";
 
 const CTA = () => {
   return (
@@ -18,29 +17,21 @@ const CTA = () => {
             leur gestion budgétaire publique.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button
-              asChild
-              size="lg"
-              className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 shadow-glow group"
-            >
-              <Link to="/auth/login">
-                Demander une démo
-                <ArrowRight className="transition-transform group-hover:translate-x-1" />
-              </Link>
-            </Button>
-            <Button
-              asChild
-              variant="outline-hero"
-              size="lg"
-              className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
-            >
-              <Link to="/contact">
-                <Mail className="w-4 h-4" />
-                Contactez-nous
-              </Link>
-            </Button>
-          </div>
+          <PublicCtaGroup
+            surface="home-cta"
+            className="flex-col sm:flex-row justify-center"
+            primary={{
+              label: "Se connecter",
+              className: "bg-primary-foreground text-primary hover:bg-primary-foreground/90 shadow-glow group",
+              icon: <ArrowRight className="transition-transform group-hover:translate-x-1" />,
+            }}
+            secondary={{
+              label: "Nous contacter",
+              variant: "outline-hero",
+              className: "border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10",
+              icon: <Mail className="w-4 h-4" />,
+            }}
+          />
 
           <p className="mt-8 text-sm text-primary-foreground/70">
             Essai gratuit de 30 jours • Aucune carte bancaire requise • Support dédié

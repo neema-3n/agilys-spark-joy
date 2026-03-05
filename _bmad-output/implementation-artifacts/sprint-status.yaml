@@ -7,7 +7,7 @@ story_location: "/Volumes/mySD1.5/projects/agilys-spark-joy/_bmad-output/impleme
 development_status:
   epic-1: in-progress
   1-1-structurer-la-vitrine-multi-pages: done
-  1-2-optimiser-la-conversion-vers-lauth-et-le-lead: backlog
+  1-2-optimiser-la-conversion-vers-lauth-et-le-lead: done
   1-3-instrumenter-le-funnel-vitrine-app: backlog
   1-4-garantir-performances-et-seo-de-la-vitrine: backlog
   epic-1-retrospective: optional

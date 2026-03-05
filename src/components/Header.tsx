@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Building2, Menu, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
+import PublicCtaGroup from "@/components/public/PublicCtaGroup";
 
 const publicNavLinks = [
   { to: "/", label: "Accueil" },
@@ -50,14 +51,20 @@ const Header = () => {
             >
               {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
-            <Link to="/auth/login">
-              <Button variant="ghost" size="sm" className="hidden md:inline-flex">
-                Connexion
-              </Button>
-            </Link>
-            <Button asChild size="sm" className="shadow-primary">
-              <Link to="/auth/login">Essai Gratuit</Link>
-            </Button>
+            <PublicCtaGroup
+              surface="header-desktop"
+              className="hidden md:flex items-center gap-2"
+              primary={{
+                label: "Se connecter",
+                size: "sm",
+                className: "shadow-primary",
+              }}
+              secondary={{
+                label: "Nous contacter",
+                variant: "ghost",
+                size: "sm",
+              }}
+            />
             
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
@@ -82,9 +89,23 @@ const Header = () => {
                       {item.label}
                     </Link>
                   ))}
-                  <Link to="/auth/login" onClick={() => setMobileMenuOpen(false)}>
-                    <Button className="w-full mt-4">Connexion</Button>
-                  </Link>
+                  <PublicCtaGroup
+                    surface="header-mobile"
+                    className="mt-4 flex-col items-stretch gap-2"
+                    primary={{
+                      label: "Se connecter",
+                      size: "sm",
+                      className: "w-full",
+                      onClick: () => setMobileMenuOpen(false),
+                    }}
+                    secondary={{
+                      label: "Nous contacter",
+                      variant: "outline",
+                      size: "sm",
+                      className: "w-full",
+                      onClick: () => setMobileMenuOpen(false),
+                    }}
+                  />
                   <Button
                     variant="outline"
                     size="sm"

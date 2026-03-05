@@ -299,8 +299,92 @@ test.describe('auth ui routing flows', () => {
     await expect(page).toHaveURL(/\/contact$/);
     await expect(page.getByRole('heading', { name: 'Contact AGILYS' })).toBeVisible();
 
-    await page.getByRole('link', { name: 'Connexion' }).first().click();
+    await page.getByRole('link', { name: /Connexion|Se connecter/i }).first().click();
     await expect(page).toHaveURL(/\/auth\/login$/);
+  });
+
+  test('@story-1-2 @vitrine public cta hierarchy keeps auth primary and lead secondary across pages', async ({ page }) => {
+    const expectCtaNavigation = async ({
+      routePath,
+      surface,
+      primaryTarget,
+      secondaryTarget,
+      openMobileMenu,
+    }: {
+      routePath: string;
+      surface: string;
+      primaryTarget: string;
+      secondaryTarget: string;
+      openMobileMenu?: boolean;
+    }) => {
+      await page.goto(`${UI_BASE_URL}${routePath}`);
+      if (openMobileMenu) {
+        await page.getByRole('button', { name: 'Ouvrir le menu' }).click();
+      }
+
+      const primary = page.locator(`[data-cta-surface="${surface}"][data-cta-role="primary"]`).first();
+      await expect(primary).toHaveAttribute('href', primaryTarget);
+      await primary.click();
+      await expect(page).toHaveURL(`${UI_BASE_URL}${primaryTarget}`);
+
+      await page.goto(`${UI_BASE_URL}${routePath}`);
+      if (openMobileMenu) {
+        await page.getByRole('button', { name: 'Ouvrir le menu' }).click();
+      }
+
+      const secondary = page.locator(`[data-cta-surface="${surface}"][data-cta-role="secondary"]`).first();
+      await expect(secondary).toHaveAttribute('href', secondaryTarget);
+      await secondary.click();
+      await expect(page).toHaveURL(`${UI_BASE_URL}${secondaryTarget}`);
+    };
+
+    await expectCtaNavigation({
+      routePath: '/',
+      surface: 'header-desktop',
+      primaryTarget: '/auth/login',
+      secondaryTarget: '/contact',
+    });
+    await expectCtaNavigation({
+      routePath: '/',
+      surface: 'hero',
+      primaryTarget: '/auth/login',
+      secondaryTarget: '/contact',
+    });
+    await expectCtaNavigation({
+      routePath: '/',
+      surface: 'home-cta',
+      primaryTarget: '/auth/login',
+      secondaryTarget: '/contact',
+    });
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expectCtaNavigation({
+      routePath: '/',
+      surface: 'header-mobile',
+      primaryTarget: '/auth/login',
+      secondaryTarget: '/contact',
+      openMobileMenu: true,
+    });
+    await page.setViewportSize({ width: 1280, height: 720 });
+
+    await expectCtaNavigation({
+      routePath: '/fonctionnalites',
+      surface: 'page-fonctionnalites',
+      primaryTarget: '/auth/login',
+      secondaryTarget: '/contact',
+    });
+    await expectCtaNavigation({
+      routePath: '/cas-clients',
+      surface: 'page-cas-clients',
+      primaryTarget: '/auth/login',
+      secondaryTarget: '/contact',
+    });
+    await expectCtaNavigation({
+      routePath: '/contact',
+      surface: 'page-contact',
+      primaryTarget: '/auth/login',
+      secondaryTarget: '/fonctionnalites',
+    });
   });
 
   test('@story-1-1 @vitrine protected app routes still redirect anonymous users to login', async ({ page }) => {
