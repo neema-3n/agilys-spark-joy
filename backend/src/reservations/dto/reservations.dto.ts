@@ -1,15 +1,13 @@
 import { Type } from 'class-transformer';
-import { IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { IsDateString, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 
 export class ReservationsQueryDto {
-  @IsString()
-  @IsNotEmpty()
+  @IsUUID()
   exerciceId!: string;
 }
 
 export class CreateReservationDto {
-  @IsString()
-  @IsNotEmpty()
+  @IsUUID()
   exerciceId!: string;
 
   @IsUUID()
@@ -17,7 +15,7 @@ export class CreateReservationDto {
 
   @Type(() => Number)
   @IsNumber()
-  @Min(0)
+  @Min(0.01)
   montant!: number;
 
   @IsString()
@@ -33,7 +31,7 @@ export class CreateReservationDto {
   projetId?: string;
 
   @IsOptional()
-  @IsString()
+  @IsDateString()
   dateExpiration?: string;
 }
 
@@ -45,7 +43,7 @@ export class UpdateReservationDto {
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
-  @Min(0)
+  @Min(0.01)
   montant?: number;
 
   @IsOptional()
@@ -62,7 +60,7 @@ export class UpdateReservationDto {
   projetId?: string | null;
 
   @IsOptional()
-  @IsString()
+  @IsDateString()
   dateExpiration?: string | null;
 }
 

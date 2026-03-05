@@ -58,6 +58,7 @@ export const useEngagements = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['engagements'] });
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
     },
   });
 

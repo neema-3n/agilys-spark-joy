@@ -1,6 +1,6 @@
 # Story 4.1: Gerer reservations et engagements
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -38,16 +38,16 @@ so that je transforme un besoin en obligation juridique controlee.
 
 ## Tasks / Subtasks
 
-- [ ] Verifier et aligner le contrat de statuts reservation/engagement entre PRD, types front et backend (AC: 1, 2, 3)
-- [ ] Completer/ajuster les DTO backend `reservations` et `engagements` pour couvrir les validations metier attendues (AC: 1, 2, 3)
-- [ ] Renforcer `ReservationsService.create/update/utiliser/annuler` avec controles explicites de transition et messages metier actionnables (AC: 1, 3)
-- [ ] Renforcer `EngagementsService.createFromReservation` pour imposer toutes les contraintes de conversion (montant disponible, reservation valide, scope exercice) (AC: 2, 3)
-- [ ] Centraliser les regles de transition reservation/engagement dans des utilitaires/references partages backend pour eviter la duplication (AC: 3)
-- [ ] Verifier la coherence front `reservations.service.ts` / `engagements.service.ts` et hooks React Query (cles cache + invalidations) avec le contrat backend (AC: 1, 2, 3)
-- [ ] Mettre a jour les composants d'operations (`ReservationDialog`, `EngagementDialog`, pages `Reservations`/`Engagements`) pour afficher des erreurs metier actionnables sans regression UX (AC: 3, 4)
-- [ ] Ajouter/adapter les tests backend (unit + e2e) pour nominal, depassement de montant, transitions interdites, et acces hors tenant (AC: 1, 2, 3, 4)
-- [ ] Ajouter/adapter des tests front cibleds pour le flux conversion reservation->engagement et les etats d'erreur principaux (AC: 2, 3)
-- [ ] Verifier explicitement l'absence de nouvelle dependance runtime Supabase dans le flux story (AC: 4)
+- [x] Verifier et aligner le contrat de statuts reservation/engagement entre PRD, types front et backend (AC: 1, 2, 3)
+- [x] Completer/ajuster les DTO backend `reservations` et `engagements` pour couvrir les validations metier attendues (AC: 1, 2, 3)
+- [x] Renforcer `ReservationsService.create/update/utiliser/annuler` avec controles explicites de transition et messages metier actionnables (AC: 1, 3)
+- [x] Renforcer `EngagementsService.createFromReservation` pour imposer toutes les contraintes de conversion (montant disponible, reservation valide, scope exercice) (AC: 2, 3)
+- [x] Centraliser les regles de transition reservation/engagement dans des utilitaires/references partages backend pour eviter la duplication (AC: 3)
+- [x] Verifier la coherence front `reservations.service.ts` / `engagements.service.ts` et hooks React Query (cles cache + invalidations) avec le contrat backend (AC: 1, 2, 3)
+- [x] Mettre a jour les composants d'operations (`ReservationDialog`, `EngagementDialog`, pages `Reservations`/`Engagements`) pour afficher des erreurs metier actionnables sans regression UX (AC: 3, 4)
+- [x] Ajouter/adapter les tests backend (unit + e2e) pour nominal, depassement de montant, transitions interdites, et acces hors tenant (AC: 1, 2, 3, 4)
+- [x] Ajouter/adapter des tests front cibleds pour le flux conversion reservation->engagement et les etats d'erreur principaux (AC: 2, 3)
+- [x] Verifier explicitement l'absence de nouvelle dependance runtime Supabase dans le flux story (AC: 4)
 
 ## Dev Notes
 
@@ -189,18 +189,45 @@ GPT-5 Codex
 
 ### Debug Log References
 
-- Workflow: `/_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml`
-- Instructions: `/_bmad/bmm/workflows/4-implementation/create-story/instructions.xml`
+- Workflow: `/_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml`
+- Instructions: `/_bmad/bmm/workflows/4-implementation/dev-story/instructions.xml`
 - Engine: `/_bmad/core/tasks/workflow.xml`
 
 ### Completion Notes List
 
-- Story context file cree pour `4-1-gerer-reservations-et-engagements` avec statut `ready-for-dev`.
-- Exigences Epic 4.1 traduites en AC actionnables et checklist de taches orientee implementation.
-- Guardrails architecture/front/back alignes avec les patterns reels du repository.
-- Statut sprint mis a jour de `backlog` vers `ready-for-dev` pour la story `4-1`.
+- Transitions reservation/engagement centralisees dans un utilitaire backend unique avec messages d'erreur metier explicites.
+- `ReservationsService` et `EngagementsService` renforces: checks scope tenant/exercice, verifications de preconditions, verrouillage des transitions interdites.
+- Conversion reservation -> engagement durcie: controle exercice, statut reservation, depassement montant, et mise a jour automatique du statut reservation (`active`/`utilisee`).
+- Contrat front aligne sur les statuts backend (`brouillon`/`valide`/`annule`) et invalidation cache `ecritures-comptables` ajoutee sur conversion.
+- Erreurs metier backend maintenant affichees telles quelles dans la page `Reservations` pour le flux de conversion.
+- Tests ajoutes backend + frontend ciblant conversion nominale, erreur de depassement, transitions interdites et isolation tenant.
+- Validations executees: lint frontend, lint backend, tests Jest backend, tests Playwright frontend cibles.
+- Correctif review: conversion sans montant explicite alignee sur le montant disponible restant (plus le montant initial de reservation).
+- Correctif review: isolation tenant renforcee dans le calcul de disponible et resynchronisation du statut reservation apres annulation/suppression d'engagement.
+- Couverture review: ajout d'un test e2e backend cible sur `POST /engagements/from-reservation` (nominal + validation DTO).
 
 ### File List
 
+- `backend/src/common/domain/reservation-engagement-rules.ts`
+- `backend/src/reservations/dto/reservations.dto.ts`
+- `backend/src/engagements/dto/engagements.dto.ts`
+- `backend/src/reservations/reservations.service.ts`
+- `backend/src/engagements/engagements.service.ts`
+- `backend/src/reservations/reservations.service.spec.ts`
+- `backend/src/engagements/engagements.service.spec.ts`
+- `backend/test/engagements-conversion.e2e.spec.ts`
+- `src/types/engagement.types.ts`
+- `src/types/index.ts`
+- `src/components/engagements/EngagementSnapshot.tsx`
+- `src/components/engagements/EngagementTable.tsx`
+- `src/hooks/useEngagements.ts`
+- `src/pages/app/Reservations.tsx`
+- `src/services/mockData/engagements.mock.ts`
+- `tests/engagement-conversion.spec.ts`
 - `_bmad-output/implementation-artifacts/4-1-gerer-reservations-et-engagements.md`
 - `_bmad-output/implementation-artifacts/sprint-status.yaml`
+
+## Change Log
+
+- 2026-03-04: Implementation story 4.1 completee (durcissement workflow reservation/engagement, alignement front/back, tests et validations qualite).
+- 2026-03-04: Review fix applique (fallback montant disponible, scoping tenant strict sur disponible, sync statut reservation apres annulation/suppression, ajout test e2e backend conversion).

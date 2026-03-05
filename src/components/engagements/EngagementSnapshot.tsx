@@ -65,16 +65,12 @@ export const EngagementSnapshot = ({
     const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'> = {
       brouillon: 'outline',
       valide: 'success',
-      engage: 'success',
-      liquide: 'success',
       annule: 'destructive',
     };
 
     const labels: Record<string, string> = {
       brouillon: 'Brouillon',
       valide: 'Validé',
-      engage: 'Engagé',
-      liquide: 'Liquidé',
       annule: 'Annulé',
     };
 
@@ -112,12 +108,12 @@ export const EngagementSnapshot = ({
           Valider
         </Button>
       )}
-      {(engagement.statut === 'valide' || engagement.statut === 'engage') && onCreerBonCommande && (
+      {engagement.statut === 'valide' && onCreerBonCommande && (
         <Button variant="outline" size="sm" onClick={onCreerBonCommande}>
           Créer un bon de commande
         </Button>
       )}
-      {(engagement.statut === 'valide' || engagement.statut === 'engage') && onCreerDepense && (
+      {engagement.statut === 'valide' && onCreerDepense && (
         <Button variant="outline" size="sm" onClick={onCreerDepense}>
           Créer une dépense
         </Button>

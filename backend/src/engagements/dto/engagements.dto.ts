@@ -2,14 +2,12 @@ import { Type } from 'class-transformer';
 import { IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 
 export class EngagementsQueryDto {
-  @IsString()
-  @IsNotEmpty()
+  @IsUUID()
   exerciceId!: string;
 }
 
 export class CreateEngagementDto {
-  @IsString()
-  @IsNotEmpty()
+  @IsUUID()
   exerciceId!: string;
 
   @IsOptional()
@@ -25,7 +23,7 @@ export class CreateEngagementDto {
 
   @Type(() => Number)
   @IsNumber()
-  @Min(0)
+  @Min(0.01)
   montant!: number;
 
   @IsOptional()
@@ -62,7 +60,7 @@ export class UpdateEngagementDto {
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
-  @Min(0)
+  @Min(0.01)
   montant?: number;
 
   @IsOptional()
@@ -89,8 +87,7 @@ export class AnnulerEngagementDto {
 }
 
 export class CreateEngagementFromReservationDto {
-  @IsString()
-  @IsNotEmpty()
+  @IsUUID()
   exerciceId!: string;
 
   @IsUUID()
@@ -99,7 +96,7 @@ export class CreateEngagementFromReservationDto {
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
-  @Min(0)
+  @Min(0.01)
   montant?: number;
 
   @IsOptional()
