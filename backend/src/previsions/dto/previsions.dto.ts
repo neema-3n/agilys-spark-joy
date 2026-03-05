@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
   IsBoolean,
   IsIn,
   IsInt,
@@ -7,6 +8,7 @@ import {
   IsNumber,
   IsObject,
   IsOptional,
+  Matches,
   IsString,
   IsUUID,
   Max,
@@ -225,4 +227,91 @@ export class GenererPrevisionsDto {
   @Type(() => Number)
   @IsNumber()
   tauxInflation?: number;
+}
+
+export class EcartsPrevisionQueryDto {
+  @IsUUID()
+  exerciceId!: string;
+
+  @IsOptional()
+  @Matches(/^\d{4}$/, {
+    message: 'La periode doit respecter le format AAAA (ex: 2026)'
+  })
+  periode?: string;
+
+  @IsOptional()
+  @IsString()
+  sectionCode?: string;
+
+  @IsOptional()
+  @IsString()
+  programmeCode?: string;
+
+  @IsOptional()
+  @IsString()
+  actionCode?: string;
+
+  @IsOptional()
+  @IsUUID()
+  enveloppeId?: string;
+}
+
+export class EcartAxeDto {
+  @IsOptional()
+  @IsString()
+  sectionCode?: string;
+
+  @IsOptional()
+  @IsString()
+  programmeCode?: string;
+
+  @IsOptional()
+  @IsString()
+  actionCode?: string;
+
+  @IsOptional()
+  @IsUUID()
+  enveloppeId?: string;
+}
+
+export class EcartPrevisionExecutionDto {
+  @IsString()
+  periode!: string;
+
+  @IsObject()
+  axe!: EcartAxeDto;
+
+  @Type(() => Number)
+  @IsNumber()
+  montantPrevu!: number;
+
+  @Type(() => Number)
+  @IsNumber()
+  montantExecute!: number;
+
+  @Type(() => Number)
+  @IsNumber()
+  ecartMontant!: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  ecartTaux?: number;
+}
+
+export class EcartsPrevisionResponseDto {
+  @ArrayMaxSize(5000)
+  items!: EcartPrevisionExecutionDto[];
+
+  @IsObject()
+  filtres!: EcartsPrevisionQueryDto;
+
+  @IsObject()
+  totaux!: {
+    montantPrevu: number;
+    montantExecute: number;
+    ecartMontant: number;
+    ecartTaux?: number;
+    nombreAxes: number;
+  };
 }

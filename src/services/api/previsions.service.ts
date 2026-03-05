@@ -1,5 +1,11 @@
 import { requestJson } from '@/services/api/api-utils';
-import { GenerationParams, LignePrevision, Scenario } from '@/types/prevision.types';
+import {
+  EcartsPrevisionFilters,
+  EcartsPrevisionResponse,
+  GenerationParams,
+  LignePrevision,
+  Scenario
+} from '@/types/prevision.types';
 
 interface ScenarioApiModel {
   id: string;
@@ -34,6 +40,26 @@ interface LignePrevisionApiModel {
   updatedAt: string;
 }
 
+interface EcartPrevisionExecutionApiModel {
+  periode: string;
+  axe: {
+    sectionCode?: string;
+    programmeCode?: string;
+    actionCode?: string;
+    enveloppeId?: string;
+  };
+  montantPrevu: number;
+  montantExecute: number;
+  ecartMontant: number;
+  ecartTaux?: number;
+}
+
+interface EcartsPrevisionResponseApiModel {
+  items: EcartPrevisionExecutionApiModel[];
+  filtres: EcartsPrevisionFilters;
+  totaux: EcartsPrevisionResponse['totaux'];
+}
+
 const mapScenarioFromApi = (row: ScenarioApiModel): Scenario => ({
   id: row.id,
   clientId: row.clientId,
@@ -65,6 +91,30 @@ const mapLigneFromApi = (row: LignePrevisionApiModel): LignePrevision => ({
   hypotheses: row.hypotheses,
   createdAt: row.createdAt,
   updatedAt: row.updatedAt
+});
+
+const mapEcartsFromApi = (payload: EcartsPrevisionResponseApiModel): EcartsPrevisionResponse => ({
+  items: payload.items.map((item) => ({
+    periode: item.periode,
+    axe: {
+      sectionCode: item.axe.sectionCode,
+      programmeCode: item.axe.programmeCode,
+      actionCode: item.axe.actionCode,
+      enveloppeId: item.axe.enveloppeId
+    },
+    montantPrevu: Number(item.montantPrevu || 0),
+    montantExecute: Number(item.montantExecute || 0),
+    ecartMontant: Number(item.ecartMontant || 0),
+    ecartTaux: item.ecartTaux === undefined ? undefined : Number(item.ecartTaux)
+  })),
+  filtres: payload.filtres,
+  totaux: {
+    montantPrevu: Number(payload.totaux.montantPrevu || 0),
+    montantExecute: Number(payload.totaux.montantExecute || 0),
+    ecartMontant: Number(payload.totaux.ecartMontant || 0),
+    ecartTaux: payload.totaux.ecartTaux === undefined ? undefined : Number(payload.totaux.ecartTaux),
+    nombreAxes: Number(payload.totaux.nombreAxes || 0)
+  }
 });
 
 export const previsionsService = {
@@ -173,6 +223,34 @@ export const previsionsService = {
     );
 
     return payload.map(mapLigneFromApi);
+  },
+
+  async getEcartsPrevisionExecution(filters: EcartsPrevisionFilters): Promise<EcartsPrevisionResponse> {
+    const search = new URLSearchParams();
+    search.set('exerciceId', filters.exerciceId);
+    if (filters.periode) {
+      search.set('periode', filters.periode);
+    }
+    if (filters.sectionCode) {
+      search.set('sectionCode', filters.sectionCode);
+    }
+    if (filters.programmeCode) {
+      search.set('programmeCode', filters.programmeCode);
+    }
+    if (filters.actionCode) {
+      search.set('actionCode', filters.actionCode);
+    }
+    if (filters.enveloppeId) {
+      search.set('enveloppeId', filters.enveloppeId);
+    }
+
+    const payload = await requestJson<EcartsPrevisionResponseApiModel>(
+      `/previsions/ecarts?${search.toString()}`,
+      { method: 'GET' },
+      'Erreur lors de la récupération des écarts prévision/exécution'
+    );
+
+    return mapEcartsFromApi(payload);
   },
 
   async createLignePrevision(ligne: Omit<LignePrevision, 'id' | 'createdAt' | 'updatedAt'>): Promise<LignePrevision> {

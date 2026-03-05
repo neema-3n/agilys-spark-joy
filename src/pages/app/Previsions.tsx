@@ -2,13 +2,16 @@ import { useState } from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Wand2 } from 'lucide-react';
-import { usePrevisions } from '@/hooks/usePrevisions';
+import { Plus } from 'lucide-react';
+import { useEcartsPrevisionExecution, usePrevisions } from '@/hooks/usePrevisions';
 import { ScenarioDialog } from '@/components/previsions/ScenarioDialog';
 import { ScenarioCard } from '@/components/previsions/ScenarioCard';
 import { GenerateurPrevisions } from '@/components/previsions/GenerateurPrevisions';
-import { Scenario } from '@/types/prevision.types';
+import { EcartsPrevisionTable } from '@/components/previsions/EcartsPrevisionTable';
+import { EcartsPrevisionFilters, GenerationParams, Scenario } from '@/types/prevision.types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +29,8 @@ const Previsions = () => {
   const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [scenarioToDelete, setScenarioToDelete] = useState<string | null>(null);
+  const [pendingFilters, setPendingFilters] = useState<Omit<EcartsPrevisionFilters, 'exerciceId'>>({});
+  const [appliedFilters, setAppliedFilters] = useState<Omit<EcartsPrevisionFilters, 'exerciceId'>>({});
 
   const {
     scenarios,
@@ -38,8 +43,11 @@ const Previsions = () => {
     dupliquerScenario,
     genererPrevisions,
   } = usePrevisions();
+  const { ecarts, totaux, isLoading: loadingEcarts, error: errorEcarts } = useEcartsPrevisionExecution(appliedFilters);
 
-  const handleCreateEdit = (data: any) => {
+  type ScenarioSubmitPayload = Omit<Scenario, 'id' | 'createdAt' | 'updatedAt'>;
+
+  const handleCreateEdit = (data: ScenarioSubmitPayload) => {
     if (selectedScenario) {
       updateScenario.mutate({ id: selectedScenario.id, updates: data });
     } else {
@@ -77,13 +85,30 @@ const Previsions = () => {
     setGenerateurOpen(true);
   };
 
-  const handleGenerate = (params: any) => {
+  const handleGenerate = (params: GenerationParams) => {
     genererPrevisions.mutate(params, {
       onSuccess: () => {
         setGenerateurOpen(false);
         setSelectedScenario(null);
       },
     });
+  };
+
+  const updatePendingFilter = (key: keyof Omit<EcartsPrevisionFilters, 'exerciceId'>, rawValue: string) => {
+    setPendingFilters((current) => {
+      const next = { ...current };
+      const value = rawValue.trim();
+      if (value.length === 0) {
+        delete next[key];
+      } else {
+        next[key] = value;
+      }
+      return next;
+    });
+  };
+
+  const applyFilters = () => {
+    setAppliedFilters({ ...pendingFilters });
   };
 
   const scenariosBrouillon = scenarios?.filter(s => s.statut === 'brouillon') || [];
@@ -215,6 +240,109 @@ const Previsions = () => {
           )}
         </TabsContent>
         </Tabs>
+
+        <div className="mt-8 space-y-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Filtres des écarts</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-6">
+                <div className="space-y-2">
+                  <Label htmlFor="ecarts-periode">Période</Label>
+                  <Input
+                    id="ecarts-periode"
+                    placeholder="AAAA"
+                    value={pendingFilters.periode ?? ''}
+                    onChange={(event) => updatePendingFilter('periode', event.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ecarts-section">Section</Label>
+                  <Input
+                    id="ecarts-section"
+                    placeholder="SEC-..."
+                    value={pendingFilters.sectionCode ?? ''}
+                    onChange={(event) => updatePendingFilter('sectionCode', event.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ecarts-programme">Programme</Label>
+                  <Input
+                    id="ecarts-programme"
+                    placeholder="PRG-..."
+                    value={pendingFilters.programmeCode ?? ''}
+                    onChange={(event) => updatePendingFilter('programmeCode', event.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ecarts-action">Action</Label>
+                  <Input
+                    id="ecarts-action"
+                    placeholder="ACT-..."
+                    value={pendingFilters.actionCode ?? ''}
+                    onChange={(event) => updatePendingFilter('actionCode', event.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ecarts-enveloppe">Enveloppe</Label>
+                  <Input
+                    id="ecarts-enveloppe"
+                    placeholder="UUID enveloppe"
+                    value={pendingFilters.enveloppeId ?? ''}
+                    onChange={(event) => updatePendingFilter('enveloppeId', event.target.value)}
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button onClick={applyFilters} className="w-full">
+                    Appliquer les filtres
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-4 md:grid-cols-3">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-muted-foreground">Montant prévu total</CardTitle>
+            </CardHeader>
+            <CardContent className="text-2xl font-semibold">
+              {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 }).format(
+                totaux?.montantPrevu ?? 0
+              )}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-muted-foreground">Montant exécuté total</CardTitle>
+            </CardHeader>
+            <CardContent className="text-2xl font-semibold">
+              {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 }).format(
+                totaux?.montantExecute ?? 0
+              )}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-muted-foreground">Écart global</CardTitle>
+            </CardHeader>
+            <CardContent className="text-2xl font-semibold">
+              {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 }).format(
+                totaux?.ecartMontant ?? 0
+              )}
+            </CardContent>
+          </Card>
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <EcartsPrevisionTable
+            ecarts={ecarts}
+            isLoading={loadingEcarts}
+            errorMessage={errorEcarts?.message}
+          />
+        </div>
       </div>
 
       <ScenarioDialog

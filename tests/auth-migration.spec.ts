@@ -8,6 +8,7 @@ import { authService } from '../src/services/api/auth.service';
 import { httpClient } from '../src/services/api/http-client';
 import { tokenStorage } from '../src/services/auth/token-storage';
 import { applyModificationsToLignes, computeDecisionVersionDiff } from '../src/services/api/budget-modifications.service';
+import { buildEcartsPrevisionQueryKey } from '../src/hooks/usePrevisions';
 
 class MockStorage implements StorageLike {
   private readonly store = new Map<string, string>();
@@ -1367,4 +1368,25 @@ test('computeDecisionVersionDiff exposes business-relevant decision changes', as
   expect(diff.statutDecision).toEqual({ from: 'validated', to: 'rejected' });
   expect(diff.motif).toEqual({ from: 'Validation initiale', to: 'Rejet pour controle' });
   expect(diff.auteur).toEqual({ from: 'user-1', to: 'user-2' });
+});
+
+test('buildEcartsPrevisionQueryKey scopes cache by client/exercice/filtres', async () => {
+  const key = buildEcartsPrevisionQueryKey('client-1', 'ex-2026', {
+    periode: '2026',
+    sectionCode: 'SEC-OPS',
+    programmeCode: 'PRG-INV',
+    actionCode: 'ACT-01',
+    enveloppeId: '8f36cbf4-9658-49e5-a311-731f1764892a'
+  });
+
+  expect(key).toEqual([
+    'ecarts-prevision-execution',
+    'client-1',
+    'ex-2026',
+    '2026',
+    'SEC-OPS',
+    'PRG-INV',
+    'ACT-01',
+    '8f36cbf4-9658-49e5-a311-731f1764892a'
+  ]);
 });
