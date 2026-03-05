@@ -9,6 +9,9 @@ import { httpClient } from '../src/services/api/http-client';
 import { tokenStorage } from '../src/services/auth/token-storage';
 import { applyModificationsToLignes, computeDecisionVersionDiff } from '../src/services/api/budget-modifications.service';
 import { buildEcartsPrevisionQueryKey } from '../src/hooks/usePrevisions';
+import { bonsCommandeService } from '../src/services/api/bonsCommande.service';
+import { facturesService } from '../src/services/api/factures.service';
+import { createDepenseFromFacture } from '../src/services/api/depenses.service';
 
 class MockStorage implements StorageLike {
   private readonly store = new Map<string, string>();
@@ -342,6 +345,213 @@ test.describe('auth ui routing flows', () => {
     await expect(page.getByText('Ligne budgétaire')).toBeVisible();
     await expect(page.getByLabel('Montant')).toBeVisible();
     await expect(page.getByLabel('Motif')).toBeVisible();
+  });
+
+  test('@story-4-3 @depenses-from-facture invalidates depenses and factures queries after creation', async ({ page }) => {
+    const accessToken = makeJwt({
+      sub: 'user-43',
+      tenantId: 'tenant-1',
+      roles: ['super_admin'],
+      email: 'story43@agilys.local',
+      nom: 'Story',
+      prenom: 'FourThree',
+      exp: Math.floor(Date.now() / 1000) + 600,
+    });
+
+    const factureFixture = {
+      id: 'fac-43-1',
+      clientId: 'tenant-1',
+      exerciceId: 'ex-2026',
+      numero: 'FAC/EX2026/0001',
+      dateFacture: '2026-03-05',
+      fournisseurId: 'fr-1',
+      objet: 'Facture eligible liquidation',
+      montantHT: 100,
+      montantTVA: 20,
+      montantTTC: 120,
+      montantLiquide: 0,
+      statut: 'validee',
+      createdAt: '2026-03-05T10:00:00.000Z',
+      updatedAt: '2026-03-05T10:00:00.000Z',
+    };
+
+    let depensesGetCount = 0;
+    let facturesGetCount = 0;
+    let createFromFactureCount = 0;
+    let createFromFacturePayload: Record<string, unknown> | null = null;
+
+    await page.route('**://127.0.0.1:3001/**', async (route) => {
+      const request = route.request();
+      const requestUrl = new URL(request.url());
+      const { pathname } = requestUrl;
+
+      if (pathname === '/auth/login') {
+        await route.fallback();
+        return;
+      }
+
+      if (pathname === '/auth/refresh') {
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            accessToken,
+            refreshToken: 'refresh-token-story43',
+          }),
+        });
+        return;
+      }
+
+      if (pathname === '/auth/logout') {
+        await route.fulfill({ status: 204 });
+        return;
+      }
+
+      if (pathname === '/factures/paginated' && request.method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            data: [factureFixture],
+            totalCount: 1,
+            page: 1,
+            pageSize: 25,
+            totalPages: 1,
+          }),
+        });
+        return;
+      }
+
+      if (pathname === '/factures/stats' && request.method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            nombreTotal: 1,
+            nombreBrouillon: 0,
+            nombreValidee: 1,
+            nombrePayee: 0,
+            montantTotal: 120,
+            montantBrouillon: 0,
+            montantValidee: 120,
+            montantLiquide: 0,
+          }),
+        });
+        return;
+      }
+
+      if (pathname === '/factures' && request.method() === 'GET') {
+        facturesGetCount += 1;
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([factureFixture]),
+        });
+        return;
+      }
+
+      if (pathname === '/depenses' && request.method() === 'GET') {
+        depensesGetCount += 1;
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([]),
+        });
+        return;
+      }
+
+      if (pathname === '/depenses/from-facture' && request.method() === 'POST') {
+        createFromFactureCount += 1;
+        createFromFacturePayload = JSON.parse(request.postData() || '{}') as Record<string, unknown>;
+
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            id: 'dep-43-1',
+            clientId: 'tenant-1',
+            exerciceId: 'ex-2026',
+            numero: 'DEP/EX2026/0001',
+            dateDepense: '2026-03-05',
+            objet: 'Liquidation 1 facture',
+            montant: 120,
+            montantPaye: 0,
+            factureId: 'fac-43-1',
+            factureIds: ['fac-43-1'],
+            statut: 'brouillon',
+            createdAt: '2026-03-05T10:10:00.000Z',
+            updatedAt: '2026-03-05T10:10:00.000Z',
+          }),
+        });
+        return;
+      }
+
+      if (request.method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([]),
+        });
+        return;
+      }
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({}),
+      });
+    });
+
+    await page.route('**/auth/login', async (route) => {
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          accessToken,
+          refreshToken: 'refresh-token-story43-login',
+        }),
+      });
+    });
+
+    await setupMigrationBudgetApiStubs(page);
+    await page.addInitScript(() => {
+      window.localStorage.clear();
+    });
+
+    await page.goto(`${UI_BASE_URL}/auth/login?from=%2Fapp%2Ffactures`);
+    await page.getByLabel('Email').fill('story43@agilys.local');
+    await page.getByLabel('Mot de passe').fill('ChangeMe123!');
+    await page.getByRole('button', { name: 'Se connecter' }).click();
+
+    await expect(page).toHaveURL(/\/app\/factures$/);
+    await expect(page.getByText('FAC/EX2026/0001')).toBeVisible();
+
+    const factureRow = page.locator('tr', { hasText: 'FAC/EX2026/0001' }).first();
+    await factureRow.getByRole('button').last().click();
+    await page.getByRole('menuitem', { name: 'Créer une dépense' }).click();
+
+    const createDepenseDialog = page.getByRole('dialog', { name: 'Créer une dépense depuis facture(s)' });
+    await expect(createDepenseDialog).toBeVisible();
+    await createDepenseDialog.locator('form').evaluate((form) => {
+      (form as HTMLFormElement).requestSubmit();
+    });
+
+    await expect
+      .poll(() => createFromFactureCount)
+      .toBe(1);
+    expect(createFromFacturePayload).toMatchObject({
+      exerciceId: 'ex-2026',
+      factureIds: ['fac-43-1'],
+      dateDepense: '2026-03-05',
+    });
+
+    await expect
+      .poll(() => depensesGetCount)
+      .toBeGreaterThan(1);
+
+    await expect
+      .poll(() => facturesGetCount)
+      .toBeGreaterThan(1);
   });
 
   test('@story-1-1 @vitrine public navigation uses page routes and keeps login accessible', async ({ page }) => {
@@ -1389,4 +1599,251 @@ test('buildEcartsPrevisionQueryKey scopes cache by client/exercice/filtres', asy
     'ACT-01',
     '8f36cbf4-9658-49e5-a311-731f1764892a'
   ]);
+});
+
+test('bonsCommandeService.create remonte un message metier actionnable du backend', async () => {
+  const originalRequest = httpClient.request;
+
+  httpClient.request = (async () =>
+    new Response(JSON.stringify({ message: "Incohérence de chaînage: l'engagement est hors scope." }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    })) as typeof httpClient.request;
+
+  try {
+    await expect(
+      bonsCommandeService.create({
+        id: 'bc-temp',
+        clientId: 'client-1',
+        exerciceId: 'ex-2026',
+        numero: 'BC/EX2026/0001',
+        dateCommande: '2026-03-01',
+        fournisseurId: 'f-1',
+        objet: 'Commande test',
+        montant: 1000,
+        statut: 'brouillon'
+      })
+    ).rejects.toThrow("Incohérence de chaînage");
+  } finally {
+    httpClient.request = originalRequest;
+  }
+});
+
+test('bonsCommandeService.create reussit en creation nominale', async () => {
+  const originalRequest = httpClient.request;
+
+  httpClient.request = (async () =>
+    new Response(
+      JSON.stringify({
+        id: 'bc-1',
+        clientId: 'client-1',
+        exerciceId: 'ex-2026',
+        numero: 'BC/EX2026/0001',
+        dateCommande: '2026-03-01',
+        fournisseurId: 'f-1',
+        objet: 'Commande nominale',
+        montant: 1000,
+        statut: 'brouillon',
+        createdAt: '2026-03-01T10:00:00.000Z',
+        updatedAt: '2026-03-01T10:00:00.000Z'
+      }),
+      {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    )) as typeof httpClient.request;
+
+  try {
+    const created = await bonsCommandeService.create({
+      id: 'bc-temp',
+      clientId: 'client-1',
+      exerciceId: 'ex-2026',
+      numero: 'BC/EX2026/0001',
+      dateCommande: '2026-03-01',
+      fournisseurId: 'f-1',
+      objet: 'Commande nominale',
+      montant: 1000,
+      statut: 'brouillon'
+    });
+
+    expect(created.id).toBe('bc-1');
+    expect(created.numero).toBe('BC/EX2026/0001');
+  } finally {
+    httpClient.request = originalRequest;
+  }
+});
+
+test('facturesService.create remonte un message metier actionnable du backend', async () => {
+  const originalRequest = httpClient.request;
+
+  httpClient.request = (async () =>
+    new Response(JSON.stringify({ message: 'Le numero de facture fournisseur est obligatoire.' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    })) as typeof httpClient.request;
+
+  try {
+    await expect(
+      facturesService.create({
+        id: 'fac-temp',
+        clientId: 'client-1',
+        exerciceId: 'ex-2026',
+        numero: 'FAC/EX2026/0001',
+        dateFacture: '2026-03-01',
+        fournisseurId: 'f-1',
+        objet: 'Facture test',
+        montantHT: 100,
+        montantTVA: 20,
+        montantTTC: 120,
+        montantLiquide: 0,
+        statut: 'brouillon',
+        numeroFactureFournisseur: '',
+        referencePiece: ''
+      })
+    ).rejects.toThrow('numero de facture fournisseur');
+  } finally {
+    httpClient.request = originalRequest;
+  }
+});
+
+test('facturesService.create reussit en creation nominale', async () => {
+  const originalRequest = httpClient.request;
+
+  httpClient.request = (async () =>
+    new Response(
+      JSON.stringify({
+        id: 'fac-1',
+        clientId: 'client-1',
+        exerciceId: 'ex-2026',
+        numero: 'FAC/EX2026/0001',
+        dateFacture: '2026-03-01',
+        fournisseurId: 'f-1',
+        objet: 'Facture nominale',
+        montantHT: 100,
+        montantTVA: 20,
+        montantTTC: 120,
+        montantLiquide: 0,
+        statut: 'brouillon',
+        numeroFactureFournisseur: 'F-2026-001',
+        referencePiece: 'PJ-2026-001',
+        createdAt: '2026-03-01T10:00:00.000Z',
+        updatedAt: '2026-03-01T10:00:00.000Z'
+      }),
+      {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    )) as typeof httpClient.request;
+
+  try {
+    const created = await facturesService.create({
+      id: 'fac-temp',
+      clientId: 'client-1',
+      exerciceId: 'ex-2026',
+      numero: 'FAC/EX2026/0001',
+      dateFacture: '2026-03-01',
+      fournisseurId: 'f-1',
+      objet: 'Facture nominale',
+      montantHT: 100,
+      montantTVA: 20,
+      montantTTC: 120,
+      montantLiquide: 0,
+      statut: 'brouillon',
+      numeroFactureFournisseur: 'F-2026-001',
+      referencePiece: 'PJ-2026-001'
+    });
+
+    expect(created.id).toBe('fac-1');
+    expect(created.referencePiece).toBe('PJ-2026-001');
+  } finally {
+    httpClient.request = originalRequest;
+  }
+});
+
+test('depensesService.createDepenseFromFacture envoie factureIds (1..20) et mappe la reponse', async () => {
+  const originalRequest = httpClient.request;
+  let requestBody: Record<string, unknown> | null = null;
+
+  httpClient.request = (async (_path: string, options?: RequestInit) => {
+    if (typeof options?.body === 'string') {
+      requestBody = JSON.parse(options.body) as Record<string, unknown>;
+    }
+
+    return new Response(
+      JSON.stringify({
+        id: 'dep-1',
+        clientId: 'client-1',
+        exerciceId: 'ex-2026',
+        numero: 'DEP/EX2026/0001',
+        dateDepense: '2026-03-05',
+        objet: 'Liquidation 2 factures',
+        montant: 150,
+        montantPaye: 0,
+        factureId: 'f-1',
+        factureIds: ['f-1', 'f-2'],
+        statut: 'brouillon',
+        createdAt: '2026-03-05T10:00:00.000Z',
+        updatedAt: '2026-03-05T10:00:00.000Z',
+      }),
+      {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }) as typeof httpClient.request;
+
+  try {
+    const created = await createDepenseFromFacture(
+      {
+        factureIds: ['f-1', 'f-2'],
+        montantTotal: 150,
+        dateDepense: '2026-03-05',
+      },
+      'ex-2026',
+      'client-1',
+      'user-1'
+    );
+
+    expect(requestBody).toMatchObject({
+      exerciceId: 'ex-2026',
+      factureIds: ['f-1', 'f-2'],
+      montant: 150,
+      dateDepense: '2026-03-05',
+    });
+    expect(created.factureIds).toEqual(['f-1', 'f-2']);
+    expect(created.montant).toBe(150);
+  } finally {
+    httpClient.request = originalRequest;
+  }
+});
+
+test('depensesService.createDepenseFromFacture remonte le message metier actionnable', async () => {
+  const originalRequest = httpClient.request;
+
+  httpClient.request = (async () =>
+    new Response(
+      JSON.stringify({
+        message: 'Sélection invalide: maximum 20 factures par dépense. Action: réduisez la sélection à 20.',
+      }),
+      {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    )) as typeof httpClient.request;
+
+  try {
+    await expect(
+      createDepenseFromFacture(
+        {
+          factureIds: Array.from({ length: 21 }, (_, index) => `f-${index}`),
+          dateDepense: '2026-03-05',
+        },
+        'ex-2026',
+        'client-1',
+        'user-1'
+      )
+    ).rejects.toThrow('maximum 20 factures');
+  } finally {
+    httpClient.request = originalRequest;
+  }
 });

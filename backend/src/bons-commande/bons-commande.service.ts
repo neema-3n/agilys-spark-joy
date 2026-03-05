@@ -75,6 +75,14 @@ interface BonCommandeView {
   };
 }
 
+interface BonCommandeReferences {
+  fournisseurId: string;
+  engagementId?: string;
+  ligneBudgetaireId?: string;
+  projetId?: string;
+  exerciceId: string;
+}
+
 @Injectable()
 export class BonsCommandeService {
   constructor(private readonly postgresService: PostgresService) {}
@@ -122,20 +130,15 @@ ORDER BY bc.date_commande DESC, bc.created_at DESC
   }
 
   async create(actor: AuthenticatedUser, payload: CreateBonCommandeDto): Promise<BonCommandeView> {
-    const exercice = await this.postgresService.query<{ code: string }>(
-      `
-        SELECT code
-        FROM public.exercices
-        WHERE id = $1
-        LIMIT 1
-      `,
-      [payload.exerciceId]
-    );
+    await this.validateReferences(actor, {
+      exerciceId: payload.exerciceId,
+      fournisseurId: payload.fournisseurId,
+      engagementId: payload.engagementId ?? undefined,
+      ligneBudgetaireId: payload.ligneBudgetaireId ?? undefined,
+      projetId: payload.projetId ?? undefined
+    });
 
-    const exerciceCode = exercice.rows[0]?.code;
-    if (!exerciceCode) {
-      throw new NotFoundException('Exercice introuvable');
-    }
+    const exerciceCode = await this.resolveExerciceCode(actor.tenantId, payload.exerciceId);
 
     const numero = await this.generateNextNumero(actor.tenantId, payload.exerciceId, exerciceCode);
 
@@ -217,6 +220,15 @@ ORDER BY bc.date_commande DESC, bc.created_at DESC
       return current;
     }
 
+    await this.validateReferences(actor, {
+      exerciceId: current.exerciceId,
+      fournisseurId: payload.fournisseurId ?? current.fournisseurId,
+      engagementId: payload.engagementId !== undefined ? payload.engagementId ?? undefined : current.engagementId,
+      ligneBudgetaireId:
+        payload.ligneBudgetaireId !== undefined ? payload.ligneBudgetaireId ?? undefined : current.ligneBudgetaireId,
+      projetId: payload.projetId !== undefined ? payload.projetId ?? undefined : current.projetId
+    });
+
     const setClauses: string[] = [];
     const values: unknown[] = [];
     let index = 1;
@@ -272,20 +284,7 @@ ORDER BY bc.date_commande DESC, bc.created_at DESC
   }
 
   async genererNumero(actor: AuthenticatedUser, exerciceId: string): Promise<{ numero: string }> {
-    const exercice = await this.postgresService.query<{ code: string }>(
-      `
-        SELECT code
-        FROM public.exercices
-        WHERE id = $1
-        LIMIT 1
-      `,
-      [exerciceId]
-    );
-
-    const exerciceCode = exercice.rows[0]?.code;
-    if (!exerciceCode) {
-      throw new NotFoundException('Exercice introuvable');
-    }
+    const exerciceCode = await this.resolveExerciceCode(actor.tenantId, exerciceId);
 
     const numero = await this.generateNextNumero(actor.tenantId, exerciceId, exerciceCode);
     return { numero };
@@ -304,12 +303,18 @@ ORDER BY bc.date_commande DESC, bc.created_at DESC
           SELECT numero, montant
           FROM public.engagements
           WHERE id = $1
+            AND client_id = $2
+            AND exercice_id = $3
+            AND statut = 'valide'
           LIMIT 1
         `,
-        [bc.engagementId]
+        [bc.engagementId, actor.tenantId, bc.exerciceId]
       );
 
       const engagement = engagementResult.rows[0];
+      if (!engagement) {
+        throw new BadRequestException("L'engagement lié au bon de commande est introuvable ou n'est plus valide");
+      }
       if (engagement && bc.montant > Number(engagement.montant ?? 0)) {
         throw new BadRequestException(
           `Le montant du BC (${bc.montant}) dépasse le montant de l'engagement ${engagement.numero} (${Number(engagement.montant ?? 0)})`
@@ -477,6 +482,127 @@ ORDER BY bc.date_commande DESC, bc.created_at DESC
         actor.sub
       ]
     );
+  }
+
+  private async resolveExerciceCode(tenantId: string, exerciceId: string): Promise<string> {
+    const exercice = await this.postgresService.query<{ code: string }>(
+      `
+        SELECT code
+        FROM public.exercices
+        WHERE id = $1
+          AND client_id = $2
+        LIMIT 1
+      `,
+      [exerciceId, tenantId]
+    );
+
+    const exerciceCode = exercice.rows[0]?.code;
+    if (!exerciceCode) {
+      throw new NotFoundException('Exercice introuvable pour ce tenant');
+    }
+
+    return exerciceCode;
+  }
+
+  private async validateReferences(actor: AuthenticatedUser, refs: BonCommandeReferences): Promise<void> {
+    const { exerciceId, fournisseurId, engagementId, ligneBudgetaireId, projetId } = refs;
+
+    await this.resolveExerciceCode(actor.tenantId, exerciceId);
+
+    const fournisseur = await this.postgresService.query<{ id: string }>(
+      `
+        SELECT id
+        FROM public.fournisseurs
+        WHERE id = $1
+          AND client_id = $2
+        LIMIT 1
+      `,
+      [fournisseurId, actor.tenantId]
+    );
+    if (!fournisseur.rows[0]) {
+      throw new BadRequestException('Fournisseur introuvable pour ce tenant');
+    }
+
+    let engagementScope:
+      | {
+          id: string;
+          ligne_budgetaire_id: string | null;
+          projet_id: string | null;
+        }
+      | undefined;
+    if (engagementId) {
+      const engagement = await this.postgresService.query<{
+        id: string;
+        ligne_budgetaire_id: string | null;
+        projet_id: string | null;
+        statut: string;
+      }>(
+        `
+          SELECT id, ligne_budgetaire_id, projet_id, statut
+          FROM public.engagements
+          WHERE id = $1
+            AND client_id = $2
+            AND exercice_id = $3
+          LIMIT 1
+        `,
+        [engagementId, actor.tenantId, exerciceId]
+      );
+
+      const engagementRow = engagement.rows[0];
+      if (!engagementRow) {
+        throw new BadRequestException("L'engagement fourni est introuvable pour le tenant/exercice");
+      }
+      if (engagementRow.statut !== 'valide') {
+        throw new BadRequestException('Le bon de commande doit être rattaché à un engagement actif (statut valide)');
+      }
+      engagementScope = engagementRow;
+    }
+
+    if (ligneBudgetaireId) {
+      const ligne = await this.postgresService.query<{ id: string }>(
+        `
+          SELECT id
+          FROM public.lignes_budgetaires
+          WHERE id = $1
+            AND client_id = $2
+            AND exercice_id = $3
+          LIMIT 1
+        `,
+        [ligneBudgetaireId, actor.tenantId, exerciceId]
+      );
+      if (!ligne.rows[0]) {
+        throw new BadRequestException('La ligne budgétaire est hors scope tenant/exercice');
+      }
+    }
+
+    if (projetId) {
+      const projet = await this.postgresService.query<{ id: string }>(
+        `
+          SELECT id
+          FROM public.projets
+          WHERE id = $1
+            AND client_id = $2
+            AND exercice_id = $3
+          LIMIT 1
+        `,
+        [projetId, actor.tenantId, exerciceId]
+      );
+      if (!projet.rows[0]) {
+        throw new BadRequestException('Le projet est hors scope tenant/exercice');
+      }
+    }
+
+    if (engagementScope) {
+      if (ligneBudgetaireId && engagementScope.ligne_budgetaire_id && ligneBudgetaireId !== engagementScope.ligne_budgetaire_id) {
+        throw new BadRequestException(
+          "Incohérence de chaînage: la ligne budgétaire du bon de commande ne correspond pas à celle de l'engagement"
+        );
+      }
+
+      if (projetId && engagementScope.projet_id && projetId !== engagementScope.projet_id) {
+        throw new BadRequestException("Incohérence de chaînage: le projet du bon de commande ne correspond pas à l'engagement");
+      }
+    }
   }
 
   private mapUpdateKeyToColumn(key: keyof UpdateBonCommandeDto): string {

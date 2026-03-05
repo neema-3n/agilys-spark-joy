@@ -67,7 +67,7 @@ const BonsCommande = () => {
     annulerBonCommande,
   } = useBonsCommande();
 
-  const { createFacture, genererNumero: genererNumeroFacture } = useFactures();
+  const { factures, createFacture, genererNumero: genererNumeroFacture } = useFactures();
   const { fournisseurs } = useFournisseurs();
   const { projets } = useProjets();
   const { lignes: lignesBudgetaires } = useLignesBudgetaires();
@@ -411,8 +411,7 @@ const BonsCommande = () => {
         lignesBudgetaires={lignesBudgetaires}
         projets={projets}
         engagements={engagements.filter((e) => e.statut === 'valide')}
-        currentClientId={currentClient?.id || ''}
-        currentExerciceId={currentExercice?.id || ''}
+        factures={factures}
         onGenererNumero={handleGenererNumeroFacture}
         initialBonCommandeId={factureBonCommandeId}
       />

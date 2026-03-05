@@ -4,6 +4,7 @@ import { CreateBonCommandeInput, UpdateBonCommandeInput } from '@/types/bonComma
 import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { toast } from 'sonner';
+import { showMutationErrorToast } from './useMutationErrorToast';
 
 export const useBonsCommande = () => {
   const queryClient = useQueryClient();
@@ -22,8 +23,8 @@ export const useBonsCommande = () => {
       queryClient.invalidateQueries({ queryKey: ['bons-commande'] });
       toast.success('Bon de commande créé avec succès');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la création du bon de commande');
+    onError: (error: unknown) => {
+      showMutationErrorToast(error, 'Erreur lors de la création du bon de commande');
     },
   });
 
@@ -34,8 +35,8 @@ export const useBonsCommande = () => {
       queryClient.invalidateQueries({ queryKey: ['bons-commande'] });
       toast.success('Bon de commande mis à jour avec succès');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la mise à jour du bon de commande');
+    onError: (error: unknown) => {
+      showMutationErrorToast(error, 'Erreur lors de la mise à jour du bon de commande');
     },
   });
 
@@ -45,8 +46,8 @@ export const useBonsCommande = () => {
       queryClient.invalidateQueries({ queryKey: ['bons-commande'] });
       toast.success('Bon de commande supprimé avec succès');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la suppression du bon de commande');
+    onError: (error: unknown) => {
+      showMutationErrorToast(error, 'Erreur lors de la suppression du bon de commande');
     },
   });
 
@@ -61,8 +62,8 @@ export const useBonsCommande = () => {
       queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       toast.success('Bon de commande validé avec succès');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la validation du bon de commande');
+    onError: (error: unknown) => {
+      showMutationErrorToast(error, 'Erreur lors de la validation du bon de commande');
     },
   });
 
@@ -73,8 +74,8 @@ export const useBonsCommande = () => {
       queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       toast.success('Bon de commande mis en cours');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la mise en cours du bon de commande');
+    onError: (error: unknown) => {
+      showMutationErrorToast(error, 'Erreur lors de la mise en cours du bon de commande');
     },
   });
 
@@ -87,8 +88,8 @@ export const useBonsCommande = () => {
       queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       toast.success('Bon de commande réceptionné avec succès');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la réception du bon de commande');
+    onError: (error: unknown) => {
+      showMutationErrorToast(error, 'Erreur lors de la réception du bon de commande');
     },
   });
 
@@ -100,8 +101,8 @@ export const useBonsCommande = () => {
       queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       toast.success('Bon de commande annulé avec succès');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de l\'annulation du bon de commande');
+    onError: (error: unknown) => {
+      showMutationErrorToast(error, "Erreur lors de l'annulation du bon de commande");
     },
   });
 

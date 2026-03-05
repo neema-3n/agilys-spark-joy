@@ -120,9 +120,13 @@ export class CreateFactureDto {
   @Min(0)
   montantLiquide?: number;
 
-  @IsOptional()
   @IsString()
-  numeroFactureFournisseur?: string;
+  @IsNotEmpty()
+  numeroFactureFournisseur!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  referencePiece!: string;
 
   @IsOptional()
   @IsString()
@@ -171,6 +175,10 @@ export class UpdateFactureDto {
   @IsOptional()
   @IsString()
   numeroFactureFournisseur?: string | null;
+
+  @IsOptional()
+  @IsString()
+  referencePiece?: string | null;
 
   @IsOptional()
   @Type(() => Number)

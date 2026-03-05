@@ -17,6 +17,7 @@ interface FactureRow {
   projet_id: string | null;
   objet: string;
   numero_facture_fournisseur: string | null;
+  reference_piece: string | null;
   montant_ht: string | number;
   montant_tva: string | number;
   montant_ttc: string | number;
@@ -89,6 +90,7 @@ interface FactureView {
   projetId?: string;
   objet: string;
   numeroFactureFournisseur?: string;
+  referencePiece?: string;
   montantHT: number;
   montantTVA: number;
   montantTTC: number;
@@ -130,6 +132,24 @@ interface PaginatedFacturesView {
   page: number;
   pageSize: number;
   totalPages: number;
+}
+
+interface FactureReferences {
+  exerciceId: string;
+  fournisseurId: string;
+  bonCommandeId?: string;
+  engagementId?: string;
+  ligneBudgetaireId?: string;
+  projetId?: string;
+}
+
+interface BonCommandeScope {
+  id: string;
+  fournisseur_id: string;
+  engagement_id: string | null;
+  ligne_budgetaire_id: string | null;
+  projet_id: string | null;
+  statut: 'brouillon' | 'valide' | 'en_cours' | 'receptionne' | 'facture' | 'annule';
 }
 
 @Injectable()
@@ -262,22 +282,19 @@ LIMIT $${index} OFFSET $${index + 1}
   }
 
   async create(actor: AuthenticatedUser, payload: CreateFactureDto): Promise<FactureView> {
+    this.ensureRequiredFactureMetadata(payload);
+    const references = await this.resolveFactureReferences(actor, {
+      exerciceId: payload.exerciceId,
+      fournisseurId: payload.fournisseurId,
+      bonCommandeId: payload.bonCommandeId,
+      engagementId: payload.engagementId,
+      ligneBudgetaireId: payload.ligneBudgetaireId,
+      projetId: payload.projetId
+    });
+
     await this.ensureBonCommandeAmountConstraint(payload.bonCommandeId, payload.montantTTC);
 
-    const exerciceResult = await this.postgresService.query<{ code: string }>(
-      `
-        SELECT code
-        FROM public.exercices
-        WHERE id = $1
-        LIMIT 1
-      `,
-      [payload.exerciceId]
-    );
-
-    const exerciceCode = exerciceResult.rows[0]?.code;
-    if (!exerciceCode) {
-      throw new NotFoundException('Exercice introuvable');
-    }
+    const exerciceCode = await this.resolveExerciceCode(actor.tenantId, payload.exerciceId);
 
     const numero = await this.generateNextNumero(actor.tenantId, payload.exerciceId, exerciceCode);
 
@@ -296,6 +313,7 @@ LIMIT $${index} OFFSET $${index + 1}
           projet_id,
           objet,
           numero_facture_fournisseur,
+          reference_piece,
           montant_ht,
           montant_tva,
           montant_ttc,
@@ -323,7 +341,8 @@ LIMIT $${index} OFFSET $${index + 1}
           $16,
           'brouillon',
           $17,
-          $18
+          $18,
+          $19
         )
         RETURNING id
       `,
@@ -333,13 +352,14 @@ LIMIT $${index} OFFSET $${index + 1}
         numero,
         payload.dateFacture,
         payload.dateEcheance?.trim() || null,
-        payload.fournisseurId,
-        payload.bonCommandeId ?? null,
-        payload.engagementId ?? null,
-        payload.ligneBudgetaireId ?? null,
-        payload.projetId ?? null,
+        references.fournisseurId,
+        references.bonCommandeId ?? null,
+        references.engagementId ?? null,
+        references.ligneBudgetaireId ?? null,
+        references.projetId ?? null,
         payload.objet,
-        payload.numeroFactureFournisseur?.trim() || null,
+        payload.numeroFactureFournisseur?.trim(),
+        payload.referencePiece?.trim(),
         payload.montantHT,
         payload.montantTVA,
         payload.montantTTC,
@@ -405,8 +425,47 @@ LIMIT $${index} OFFSET $${index + 1}
       throw new BadRequestException('Seules les factures en brouillon ou validées peuvent être modifiées');
     }
 
+    if (payload.statut !== undefined || payload.dateValidation !== undefined) {
+      throw new BadRequestException(
+        'Transition interdite via mise a jour generique: utilisez /factures/:id/valider, /factures/:id/marquer-payee ou /factures/:id/annuler'
+      );
+    }
+
     const nextBonCommandeId = payload.bonCommandeId !== undefined ? payload.bonCommandeId : facture.bon_commande_id;
     const nextMontantTTC = payload.montantTTC !== undefined ? payload.montantTTC : Number(facture.montant_ttc ?? 0);
+    const nextExerciceIdResult = await this.postgresService.query<{ exercice_id: string; fournisseur_id: string; engagement_id: string | null; ligne_budgetaire_id: string | null; projet_id: string | null }>(
+      `
+        SELECT exercice_id, fournisseur_id, engagement_id, ligne_budgetaire_id, projet_id
+        FROM public.factures
+        WHERE id = $1
+          AND client_id = $2
+        LIMIT 1
+      `,
+      [id, actor.tenantId]
+    );
+    const currentScope = nextExerciceIdResult.rows[0];
+    if (!currentScope) {
+      throw new NotFoundException('Facture introuvable');
+    }
+
+    const resolvedReferences = await this.resolveFactureReferences(actor, {
+      exerciceId: currentScope.exercice_id,
+      fournisseurId: payload.fournisseurId ?? currentScope.fournisseur_id,
+      bonCommandeId: payload.bonCommandeId !== undefined ? payload.bonCommandeId ?? undefined : facture.bon_commande_id ?? undefined,
+      engagementId: payload.engagementId !== undefined ? payload.engagementId ?? undefined : currentScope.engagement_id ?? undefined,
+      ligneBudgetaireId:
+        payload.ligneBudgetaireId !== undefined ? payload.ligneBudgetaireId ?? undefined : currentScope.ligne_budgetaire_id ?? undefined,
+      projetId: payload.projetId !== undefined ? payload.projetId ?? undefined : currentScope.projet_id ?? undefined
+    });
+
+    if (payload.numeroFactureFournisseur !== undefined && !payload.numeroFactureFournisseur?.trim()) {
+      throw new BadRequestException(
+        "Le numero de facture fournisseur est obligatoire pour garantir la traçabilité documentaire"
+      );
+    }
+    if (payload.referencePiece !== undefined && !payload.referencePiece?.trim()) {
+      throw new BadRequestException('La reference de piece justificative est obligatoire pour la tracabilite facture');
+    }
 
     await this.ensureBonCommandeAmountConstraint(nextBonCommandeId ?? undefined, nextMontantTTC, id);
 
@@ -422,6 +481,36 @@ LIMIT $${index} OFFSET $${index + 1}
     for (const key of keys) {
       const value = payload[key];
       if (value === undefined) {
+        continue;
+      }
+      if (key === 'fournisseurId') {
+        setClauses.push(`fournisseur_id = $${index}`);
+        values.push(resolvedReferences.fournisseurId);
+        index += 1;
+        continue;
+      }
+      if (key === 'bonCommandeId') {
+        setClauses.push(`bon_commande_id = $${index}`);
+        values.push(resolvedReferences.bonCommandeId ?? null);
+        index += 1;
+        continue;
+      }
+      if (key === 'engagementId') {
+        setClauses.push(`engagement_id = $${index}`);
+        values.push(resolvedReferences.engagementId ?? null);
+        index += 1;
+        continue;
+      }
+      if (key === 'ligneBudgetaireId') {
+        setClauses.push(`ligne_budgetaire_id = $${index}`);
+        values.push(resolvedReferences.ligneBudgetaireId ?? null);
+        index += 1;
+        continue;
+      }
+      if (key === 'projetId') {
+        setClauses.push(`projet_id = $${index}`);
+        values.push(resolvedReferences.projetId ?? null);
+        index += 1;
         continue;
       }
 
@@ -458,7 +547,7 @@ LIMIT $${index} OFFSET $${index + 1}
     const facture = await this.getById(actor, id);
 
     if (facture.statut !== 'brouillon') {
-      throw new BadRequestException('Seules les factures en brouillon peuvent être validées');
+      throw new BadRequestException('Transition interdite: seule une facture en brouillon peut être validée');
     }
 
     const result = await this.postgresService.query(
@@ -487,7 +576,7 @@ LIMIT $${index} OFFSET $${index + 1}
     const facture = await this.getById(actor, id);
 
     if (facture.statut !== 'validee') {
-      throw new BadRequestException('Seules les factures validées peuvent être marquées comme payées');
+      throw new BadRequestException('Transition interdite: seule une facture validée peut être marquée comme payée');
     }
 
     const result = await this.postgresService.query(
@@ -548,10 +637,24 @@ LIMIT $${index} OFFSET $${index + 1}
       await this.createContrepassations(actor, ecritures.rows, motif);
     }
 
-    return this.update(actor, id, {
-      statut: 'annulee',
-      observations: motif
-    });
+    const result = await this.postgresService.query(
+      `
+        UPDATE public.factures
+        SET
+          statut = 'annulee',
+          observations = $1,
+          updated_at = now()
+        WHERE id = $2
+          AND client_id = $3
+      `,
+      [motif, id, actor.tenantId]
+    );
+
+    if ((result.rowCount ?? 0) === 0) {
+      throw new NotFoundException('Facture introuvable');
+    }
+
+    return this.getById(actor, id);
   }
 
   async delete(actor: AuthenticatedUser, id: string): Promise<void> {
@@ -844,6 +947,177 @@ LIMIT $${index} OFFSET $${index + 1}
     }
   }
 
+  private async resolveExerciceCode(tenantId: string, exerciceId: string): Promise<string> {
+    const exerciceResult = await this.postgresService.query<{ code: string }>(
+      `
+        SELECT code
+        FROM public.exercices
+        WHERE id = $1
+          AND client_id = $2
+        LIMIT 1
+      `,
+      [exerciceId, tenantId]
+    );
+
+    const exerciceCode = exerciceResult.rows[0]?.code;
+    if (!exerciceCode) {
+      throw new NotFoundException('Exercice introuvable pour ce tenant');
+    }
+
+    return exerciceCode;
+  }
+
+  private async resolveFactureReferences(actor: AuthenticatedUser, refs: FactureReferences): Promise<FactureReferences> {
+    const { exerciceId } = refs;
+    await this.resolveExerciceCode(actor.tenantId, exerciceId);
+
+    const fournisseur = await this.postgresService.query<{ id: string }>(
+      `
+        SELECT id
+        FROM public.fournisseurs
+        WHERE id = $1
+          AND client_id = $2
+        LIMIT 1
+      `,
+      [refs.fournisseurId, actor.tenantId]
+    );
+    if (!fournisseur.rows[0]) {
+      throw new BadRequestException('Fournisseur introuvable pour ce tenant');
+    }
+
+    const resolved: FactureReferences = { ...refs };
+    let bc: BonCommandeScope | undefined;
+    if (refs.bonCommandeId) {
+      const bcResult = await this.postgresService.query<BonCommandeScope>(
+        `
+          SELECT id, fournisseur_id, engagement_id, ligne_budgetaire_id, projet_id, statut
+          FROM public.bons_commande
+          WHERE id = $1
+            AND client_id = $2
+            AND exercice_id = $3
+          LIMIT 1
+        `,
+        [refs.bonCommandeId, actor.tenantId, exerciceId]
+      );
+      bc = bcResult.rows[0];
+      if (!bc) {
+        throw new BadRequestException('Le bon de commande est introuvable pour ce tenant/exercice');
+      }
+      if (!['valide', 'en_cours', 'receptionne', 'facture'].includes(bc.statut)) {
+        throw new BadRequestException(
+          'Le bon de commande doit etre valide, en cours ou receptionne pour accepter une facture'
+        );
+      }
+
+      if (refs.fournisseurId !== bc.fournisseur_id) {
+        throw new BadRequestException('Incoherence fournisseur: la facture doit utiliser le fournisseur du bon de commande');
+      }
+
+      resolved.engagementId = bc.engagement_id ?? undefined;
+      resolved.ligneBudgetaireId = bc.ligne_budgetaire_id ?? undefined;
+      resolved.projetId = bc.projet_id ?? undefined;
+    }
+
+    if (resolved.engagementId) {
+      const engagement = await this.postgresService.query<{ id: string; ligne_budgetaire_id: string | null; projet_id: string | null }>(
+        `
+          SELECT id, ligne_budgetaire_id, projet_id
+          FROM public.engagements
+          WHERE id = $1
+            AND client_id = $2
+            AND exercice_id = $3
+          LIMIT 1
+        `,
+        [resolved.engagementId, actor.tenantId, exerciceId]
+      );
+      const engagementScope = engagement.rows[0];
+      if (!engagementScope) {
+        throw new BadRequestException("L'engagement de la facture est hors scope tenant/exercice");
+      }
+      if (resolved.ligneBudgetaireId && engagementScope.ligne_budgetaire_id && resolved.ligneBudgetaireId !== engagementScope.ligne_budgetaire_id) {
+        throw new BadRequestException(
+          "Incoherence de chainage: la ligne budgetaire facture ne correspond pas a l'engagement"
+        );
+      }
+      if (resolved.projetId && engagementScope.projet_id && resolved.projetId !== engagementScope.projet_id) {
+        throw new BadRequestException("Incoherence de chainage: le projet facture ne correspond pas a l'engagement");
+      }
+    }
+
+    if (resolved.ligneBudgetaireId) {
+      const ligne = await this.postgresService.query<{ id: string }>(
+        `
+          SELECT id
+          FROM public.lignes_budgetaires
+          WHERE id = $1
+            AND client_id = $2
+            AND exercice_id = $3
+          LIMIT 1
+        `,
+        [resolved.ligneBudgetaireId, actor.tenantId, exerciceId]
+      );
+      if (!ligne.rows[0]) {
+        throw new BadRequestException('La ligne budgetaire est hors scope tenant/exercice');
+      }
+    }
+
+    if (resolved.projetId) {
+      const projet = await this.postgresService.query<{ id: string }>(
+        `
+          SELECT id
+          FROM public.projets
+          WHERE id = $1
+            AND client_id = $2
+            AND exercice_id = $3
+          LIMIT 1
+        `,
+        [resolved.projetId, actor.tenantId, exerciceId]
+      );
+      if (!projet.rows[0]) {
+        throw new BadRequestException('Le projet est hors scope tenant/exercice');
+      }
+    }
+
+    if (bc && bc.engagement_id && resolved.engagementId && bc.engagement_id !== resolved.engagementId) {
+      throw new BadRequestException("Incoherence de chainage: l'engagement doit correspondre a celui du bon de commande");
+    }
+
+    return resolved;
+  }
+
+  private ensureRequiredFactureMetadata(payload: CreateFactureDto): void {
+    if (!payload.numeroFactureFournisseur?.trim()) {
+      throw new BadRequestException(
+        "Le numero de facture fournisseur est obligatoire pour garantir la tracabilite documentaire"
+      );
+    }
+    if (!payload.referencePiece?.trim()) {
+      throw new BadRequestException('La reference de piece justificative est obligatoire pour la tracabilite facture');
+    }
+  }
+
+  private assertAllowedStatusTransition(
+    current: 'brouillon' | 'validee' | 'payee' | 'annulee',
+    next: 'brouillon' | 'validee' | 'payee' | 'annulee'
+  ): void {
+    if (current === next) {
+      return;
+    }
+
+    const allowedTransitions: Record<'brouillon' | 'validee' | 'payee' | 'annulee', ReadonlyArray<string>> = {
+      brouillon: ['validee', 'annulee'],
+      validee: ['payee', 'annulee'],
+      payee: [],
+      annulee: []
+    };
+
+    if (!allowedTransitions[current].includes(next)) {
+      throw new BadRequestException(
+        `Transition facture interdite: ${current} -> ${next}. Transitions autorisees: ${allowedTransitions[current].join(', ') || 'aucune'}`
+      );
+    }
+  }
+
   private async generateNextNumero(clientId: string, exerciceId: string, exerciceCode: string): Promise<string> {
     const pattern = `FAC/${exerciceCode}/%`;
 
@@ -1050,6 +1324,7 @@ LIMIT $${index} OFFSET $${index + 1}
       projetId: 'projet_id',
       objet: 'objet',
       numeroFactureFournisseur: 'numero_facture_fournisseur',
+      referencePiece: 'reference_piece',
       montantHT: 'montant_ht',
       montantTVA: 'montant_tva',
       montantTTC: 'montant_ttc',
@@ -1072,7 +1347,7 @@ LIMIT $${index} OFFSET $${index + 1}
         return value.trim() ? value.trim() : null;
       }
 
-      if (['numeroFactureFournisseur', 'observations'].includes(key)) {
+      if (['numeroFactureFournisseur', 'referencePiece', 'observations'].includes(key)) {
         return value.trim() ? value.trim() : null;
       }
 
@@ -1123,6 +1398,7 @@ LIMIT $${index} OFFSET $${index + 1}
       projetId: row.projet_id ?? undefined,
       objet: row.objet,
       numeroFactureFournisseur: row.numero_facture_fournisseur ?? undefined,
+      referencePiece: row.reference_piece ?? undefined,
       montantHT: Number(row.montant_ht ?? 0),
       montantTVA: Number(row.montant_tva ?? 0),
       montantTTC: Number(row.montant_ttc ?? 0),

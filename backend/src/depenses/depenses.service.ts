@@ -23,6 +23,7 @@ interface DepenseRow {
   reservation_credit_id: string | null;
   ligne_budgetaire_id: string | null;
   facture_id: string | null;
+  facture_ids: string[] | null;
   fournisseur_id: string | null;
   beneficiaire: string | null;
   projet_id: string | null;
@@ -99,6 +100,7 @@ interface DepenseView {
   reservationCreditId?: string;
   ligneBudgetaireId?: string;
   factureId?: string;
+  factureIds?: string[];
   fournisseurId?: string;
   beneficiaire?: string;
   projetId?: string;
@@ -148,6 +150,25 @@ interface DepenseView {
   };
 }
 
+interface FactureForDepenseRow {
+  id: string;
+  client_id: string;
+  exercice_id: string;
+  numero: string;
+  objet: string;
+  montant_ttc: string | number;
+  statut: string;
+  fournisseur_id: string | null;
+  engagement_id: string | null;
+  ligne_budgetaire_id: string | null;
+  projet_id: string | null;
+}
+
+interface FactureAllocation {
+  factureId: string;
+  montant: number;
+}
+
 @Injectable()
 export class DepensesService {
   constructor(private readonly postgresService: PostgresService) {}
@@ -190,19 +211,22 @@ export class DepensesService {
   }
 
   async createFromFacture(actor: AuthenticatedUser, payload: CreateDepenseFromFactureDto): Promise<DepenseView> {
-    const factureResult = await this.postgresService.query<{
-      id: string;
-      client_id: string;
-      exercice_id: string;
-      numero: string;
-      objet: string;
-      montant_ttc: string | number;
-      statut: string;
-      fournisseur_id: string | null;
-      engagement_id: string | null;
-      ligne_budgetaire_id: string | null;
-      projet_id: string | null;
-    }>(
+    const inputFactureIds = payload.factureIds?.length ? payload.factureIds : payload.factureId ? [payload.factureId] : [];
+    const factureIds = [...new Set(inputFactureIds)];
+
+    if (factureIds.length < 1) {
+      throw new BadRequestException(
+        "Sélection invalide: au moins 1 facture validée est requise. Action: sélectionnez une facture puis relancez."
+      );
+    }
+
+    if (factureIds.length > 20) {
+      throw new BadRequestException(
+        `Sélection invalide: maximum 20 factures par dépense. Action: réduisez la sélection à 20 (reçu: ${factureIds.length}).`
+      );
+    }
+
+    const factureResult = await this.postgresService.query<FactureForDepenseRow>(
       `
         SELECT
           id,
@@ -217,59 +241,113 @@ export class DepensesService {
           ligne_budgetaire_id,
           projet_id
         FROM public.factures
-        WHERE id = $1
+        WHERE id = ANY($1::uuid[])
           AND client_id = $2
-        LIMIT 1
+          AND exercice_id = $3
       `,
-      [payload.factureId, actor.tenantId]
+      [factureIds, actor.tenantId, payload.exerciceId]
     );
 
-    const facture = factureResult.rows[0];
-    if (!facture) {
-      throw new NotFoundException('Facture introuvable');
-    }
-
-    if (facture.statut !== 'validee') {
-      throw new BadRequestException('Seules les factures validées peuvent générer une dépense');
-    }
-
-    const existing = await this.postgresService.query<{ montant: string | number }>(
-      `
-        SELECT montant
-        FROM public.depenses
-        WHERE facture_id = $1
-          AND statut != 'annulee'
-      `,
-      [payload.factureId]
-    );
-
-    const montantDejaLiquide = existing.rows.reduce((sum, row) => sum + Number(row.montant ?? 0), 0);
-    const soldeDisponible = Number(facture.montant_ttc ?? 0) - montantDejaLiquide;
-
-    if (payload.montant > soldeDisponible) {
-      throw new BadRequestException(`Montant invalide. Solde disponible : ${soldeDisponible.toFixed(2)} €`);
-    }
-
-    if (!facture.engagement_id && !facture.ligne_budgetaire_id) {
+    if (factureResult.rows.length !== factureIds.length) {
       throw new BadRequestException(
-        'La facture doit être liée à un engagement ou une ligne budgétaire pour créer une dépense'
+        "Sélection invalide: certaines factures sont introuvables ou hors périmètre tenant/exercice. Action: actualisez la liste et resélectionnez."
       );
     }
 
-    return this.createInternal(actor, {
-      exerciceId: payload.exerciceId,
-      factureId: payload.factureId,
-      engagementId: facture.engagement_id ?? undefined,
-      ligneBudgetaireId: facture.ligne_budgetaire_id ?? undefined,
-      fournisseurId: facture.fournisseur_id ?? undefined,
-      projetId: facture.projet_id ?? undefined,
-      objet: `Liquidation facture ${facture.numero} - ${facture.objet}`,
-      montant: payload.montant,
-      dateDepense: payload.dateDepense,
-      modePaiement: payload.modePaiement,
-      referencePaiement: payload.referencePaiement,
-      observations: payload.observations || `Créée depuis la facture ${facture.numero}`
+    const facturesById = new Map(factureResult.rows.map((facture) => [facture.id, facture]));
+    const orderedFactures = factureIds.map((factureId) => {
+      const facture = facturesById.get(factureId);
+      if (!facture) {
+        throw new BadRequestException(`Facture introuvable: ${factureId}`);
+      }
+
+      return facture;
     });
+
+    const invalidStatut = orderedFactures.find((facture) => facture.statut !== 'validee');
+    if (invalidStatut) {
+      throw new BadRequestException(
+        `Facture ${invalidStatut.numero} non éligible: statut attendu "validee". Action: validez cette facture avant liquidation.`
+      );
+    }
+
+    const referenceFacture = orderedFactures[0];
+
+    if (!referenceFacture.engagement_id && !referenceFacture.ligne_budgetaire_id) {
+      throw new BadRequestException(
+        'La facture doit être liée à un engagement ou une ligne budgétaire pour créer une dépense.'
+      );
+    }
+
+    for (const facture of orderedFactures) {
+      const hasSameEngagement = facture.engagement_id === referenceFacture.engagement_id;
+      const hasSameLigne = facture.ligne_budgetaire_id === referenceFacture.ligne_budgetaire_id;
+      const hasSameProjet = facture.projet_id === referenceFacture.projet_id;
+
+      if (!hasSameEngagement || !hasSameLigne || !hasSameProjet) {
+        throw new BadRequestException(
+          `Sélection incohérente: les factures doivent partager les mêmes références engagement/ligne/projet. Action: regroupez uniquement des factures cohérentes.`
+        );
+      }
+    }
+
+    const liquidationsResult = await this.postgresService.query<{ facture_id: string; montant_liquide: string | number }>(
+      `
+        SELECT
+          df.facture_id,
+          COALESCE(SUM(df.montant), 0) AS montant_liquide
+        FROM public.depense_factures df
+        INNER JOIN public.depenses d ON d.id = df.depense_id
+        WHERE df.facture_id = ANY($1::uuid[])
+          AND d.client_id = $2
+          AND d.statut != 'annulee'
+        GROUP BY df.facture_id
+      `,
+      [factureIds, actor.tenantId]
+    );
+
+    const liquideParFacture = new Map(liquidationsResult.rows.map((row) => [row.facture_id, Number(row.montant_liquide ?? 0)]));
+    const allocations: FactureAllocation[] = orderedFactures.map((facture) => {
+      const montantTtc = Number(facture.montant_ttc ?? 0);
+      const montantDejaLiquide = liquideParFacture.get(facture.id) ?? 0;
+      const soldeDisponible = Number((montantTtc - montantDejaLiquide).toFixed(2));
+
+      if (soldeDisponible <= 0) {
+        throw new BadRequestException(
+          `Facture ${facture.numero} déjà liquidée. Action: retirez-la de la sélection pour continuer.`
+        );
+      }
+
+      return {
+        factureId: facture.id,
+        montant: soldeDisponible
+      };
+    });
+
+    const montantTotal = allocations.reduce((sum, allocation) => sum + allocation.montant, 0);
+    const prefix = orderedFactures.length > 1 ? `${orderedFactures.length} factures` : `facture ${referenceFacture.numero}`;
+
+    return this.createInternal(
+      actor,
+      {
+        exerciceId: payload.exerciceId,
+        factureId: referenceFacture.id,
+        factureIds: allocations.map((allocation) => allocation.factureId),
+        engagementId: referenceFacture.engagement_id ?? undefined,
+        ligneBudgetaireId: referenceFacture.ligne_budgetaire_id ?? undefined,
+        fournisseurId: referenceFacture.fournisseur_id ?? undefined,
+        projetId: referenceFacture.projet_id ?? undefined,
+        objet: `Liquidation ${prefix}`,
+        montant: Number(montantTotal.toFixed(2)),
+        dateDepense: payload.dateDepense,
+        modePaiement: payload.modePaiement,
+        referencePaiement: payload.referencePaiement,
+        observations:
+          payload.observations ||
+          `Créée depuis ${orderedFactures.length} facture(s): ${orderedFactures.map((facture) => facture.numero).join(', ')}`
+      },
+      allocations
+    );
   }
 
   async createFromEngagement(actor: AuthenticatedUser, payload: CreateDepenseFromEngagementDto): Promise<DepenseView> {
@@ -323,9 +401,10 @@ export class DepensesService {
         SELECT montant
         FROM public.depenses
         WHERE engagement_id = $1
+          AND client_id = $2
           AND statut != 'annulee'
       `,
-      [payload.engagementId]
+      [payload.engagementId, actor.tenantId]
     );
 
     const montantDejaLiquide = existing.rows.reduce((sum, row) => sum + Number(row.montant ?? 0), 0);
@@ -399,9 +478,10 @@ export class DepensesService {
         SELECT montant
         FROM public.engagements
         WHERE reservation_credit_id = $1
+          AND client_id = $2
           AND statut != 'annule'
       `,
-      [payload.reservationCreditId]
+      [payload.reservationCreditId, actor.tenantId]
     );
 
     const depensesResult = await this.postgresService.query<{ montant: string | number }>(
@@ -409,9 +489,10 @@ export class DepensesService {
         SELECT montant
         FROM public.depenses
         WHERE reservation_credit_id = $1
+          AND client_id = $2
           AND statut != 'annulee'
       `,
-      [payload.reservationCreditId]
+      [payload.reservationCreditId, actor.tenantId]
     );
 
     const montantEngage = engagementsResult.rows.reduce((sum, row) => sum + Number(row.montant ?? 0), 0);
@@ -513,7 +594,13 @@ export class DepensesService {
   }
 
   async valider(actor: AuthenticatedUser, id: string): Promise<DepenseView> {
-    await this.getById(actor, id);
+    const current = await this.getById(actor, id);
+
+    if (current.statut !== 'brouillon') {
+      throw new BadRequestException(
+        `Transition invalide: impossible de valider une dépense en statut "${current.statut}". Action: remettez-la en brouillon ou créez une nouvelle dépense.`
+      );
+    }
 
     const result = await this.postgresService.query(
       `
@@ -538,7 +625,13 @@ export class DepensesService {
   }
 
   async ordonnancer(actor: AuthenticatedUser, id: string): Promise<DepenseView> {
-    await this.getById(actor, id);
+    const current = await this.getById(actor, id);
+
+    if (current.statut !== 'validee') {
+      throw new BadRequestException(
+        `Transition invalide: impossible d'ordonnancer une dépense en statut "${current.statut}". Action: validez la dépense avant ordonnancement.`
+      );
+    }
 
     const result = await this.postgresService.query(
       `
@@ -564,6 +657,12 @@ export class DepensesService {
 
   async marquerPayee(actor: AuthenticatedUser, id: string, payload: MarquerPayeeDto): Promise<DepenseView> {
     const depense = await this.getById(actor, id);
+
+    if (depense.statut !== 'ordonnancee') {
+      throw new BadRequestException(
+        `Transition invalide: impossible de payer une dépense en statut "${depense.statut}". Action: ordonnancez la dépense avant paiement.`
+      );
+    }
 
     const result = await this.postgresService.query(
       `
@@ -591,7 +690,17 @@ export class DepensesService {
   }
 
   async annuler(actor: AuthenticatedUser, id: string, motif: string): Promise<DepenseView> {
-    await this.getById(actor, id);
+    const current = await this.getById(actor, id);
+
+    if (current.statut === 'annulee') {
+      throw new BadRequestException("Transition invalide: cette dépense est déjà annulée.");
+    }
+
+    if (current.statut === 'payee') {
+      throw new BadRequestException(
+        "Transition invalide: une dépense payée ne peut pas être annulée directement. Action: annulez d'abord le paiement lié."
+      );
+    }
 
     const ecritures = await this.postgresService.query<EcritureRow>(
       `
@@ -642,7 +751,9 @@ export class DepensesService {
       throw new NotFoundException('Dépense introuvable');
     }
 
-    return this.getById(actor, id);
+    const updated = await this.getById(actor, id);
+    await this.recalculateFacturesMontantLiquide(actor.tenantId, updated.factureIds ?? []);
+    return updated;
   }
 
   async delete(actor: AuthenticatedUser, id: string): Promise<void> {
@@ -747,7 +858,11 @@ export class DepensesService {
     }));
   }
 
-  private async createInternal(actor: AuthenticatedUser, payload: CreateDepenseDto): Promise<DepenseView> {
+  private async createInternal(
+    actor: AuthenticatedUser,
+    payload: CreateDepenseDto,
+    factureAllocations: FactureAllocation[] = []
+  ): Promise<DepenseView> {
     if (!payload.engagementId && !payload.reservationCreditId && !payload.ligneBudgetaireId) {
       throw new BadRequestException(
         'Au moins une imputation budgétaire est requise (engagement, réservation ou ligne budgétaire)'
@@ -827,7 +942,7 @@ export class DepensesService {
         payload.engagementId ?? null,
         payload.reservationCreditId ?? null,
         payload.ligneBudgetaireId ?? null,
-        payload.factureId ?? null,
+        payload.factureId ?? factureAllocations[0]?.factureId ?? null,
         payload.fournisseurId ?? null,
         payload.beneficiaire?.trim() || null,
         payload.projetId ?? null,
@@ -843,7 +958,32 @@ export class DepensesService {
       throw new NotFoundException('Dépense non créée');
     }
 
+    if (factureAllocations.length > 0) {
+      const factureIds = factureAllocations.map((allocation) => allocation.factureId);
+      const montants = factureAllocations.map((allocation) => allocation.montant);
+
+      await this.postgresService.query(
+        `
+          INSERT INTO public.depense_factures (depense_id, facture_id, montant)
+          SELECT $1::uuid, facture_id::uuid, montant::numeric
+          FROM unnest($2::uuid[], $3::numeric[]) AS source(facture_id, montant)
+          ON CONFLICT (depense_id, facture_id) DO UPDATE SET montant = EXCLUDED.montant
+        `,
+        [id, factureIds, montants]
+      );
+    } else if (payload.factureId) {
+      await this.postgresService.query(
+        `
+          INSERT INTO public.depense_factures (depense_id, facture_id, montant)
+          VALUES ($1, $2, $3)
+          ON CONFLICT (depense_id, facture_id) DO NOTHING
+        `,
+        [id, payload.factureId, payload.montant]
+      );
+    }
+
     const created = await this.getById(actor, id);
+    await this.recalculateFacturesMontantLiquide(actor.tenantId, created.factureIds ?? []);
     await this.generateEcrituresForDepense(actor, created);
     return created;
   }
@@ -992,6 +1132,44 @@ export class DepensesService {
     );
   }
 
+  private async recalculateFacturesMontantLiquide(clientId: string, factureIds: string[]): Promise<void> {
+    if (factureIds.length === 0) {
+      return;
+    }
+
+    await this.postgresService.query(
+      `
+        WITH totals AS (
+          SELECT
+            df.facture_id,
+            COALESCE(SUM(df.montant), 0) AS montant_liquide
+          FROM public.depense_factures df
+          INNER JOIN public.depenses d ON d.id = df.depense_id
+          WHERE df.facture_id = ANY($1::uuid[])
+            AND d.client_id = $2
+            AND d.statut != 'annulee'
+          GROUP BY df.facture_id
+        )
+        UPDATE public.factures f
+        SET
+          montant_liquide = COALESCE(t.montant_liquide, 0),
+          updated_at = now()
+        FROM (
+          SELECT facture_id, montant_liquide
+          FROM totals
+          UNION ALL
+          SELECT id AS facture_id, 0::numeric AS montant_liquide
+          FROM public.factures
+          WHERE id = ANY($1::uuid[])
+            AND id NOT IN (SELECT facture_id FROM totals)
+        ) t
+        WHERE f.id = t.facture_id
+          AND f.client_id = $2
+      `,
+      [factureIds, clientId]
+    );
+  }
+
   private mapUpdateKeyToColumn(key: keyof UpdateDepenseDto): string {
     const map: Record<keyof UpdateDepenseDto, string> = {
       engagementId: 'engagement_id',
@@ -1016,6 +1194,11 @@ export class DepensesService {
     return `
       SELECT
         d.*,
+        CASE
+          WHEN df.facture_ids IS NOT NULL AND array_length(df.facture_ids, 1) > 0 THEN df.facture_ids
+          WHEN d.facture_id IS NOT NULL THEN ARRAY[d.facture_id]::uuid[]
+          ELSE ARRAY[]::uuid[]
+        END AS facture_ids,
         e.numero AS engagement_numero,
         e.montant AS engagement_montant,
         rc.numero AS reservation_numero,
@@ -1043,6 +1226,13 @@ export class DepensesService {
         FROM public.ecritures_comptables
         GROUP BY depense_id
       ) ec ON ec.depense_id = d.id
+      LEFT JOIN (
+        SELECT
+          depense_id,
+          array_agg(facture_id ORDER BY facture_id) AS facture_ids
+        FROM public.depense_factures
+        GROUP BY depense_id
+      ) df ON df.depense_id = d.id
     `;
   }
 
@@ -1060,6 +1250,7 @@ export class DepensesService {
       reservationCreditId: row.reservation_credit_id ?? undefined,
       ligneBudgetaireId: row.ligne_budgetaire_id ?? undefined,
       factureId: row.facture_id ?? undefined,
+      factureIds: row.facture_ids ?? (row.facture_id ? [row.facture_id] : []),
       fournisseurId: row.fournisseur_id ?? undefined,
       beneficiaire: row.beneficiaire ?? undefined,
       projetId: row.projet_id ?? undefined,

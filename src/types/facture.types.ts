@@ -14,6 +14,7 @@ export interface Facture {
   projetId?: string;
   objet: string;
   numeroFactureFournisseur?: string;
+  referencePiece?: string;
   montantHT: number;
   montantTVA: number;
   montantTTC: number;

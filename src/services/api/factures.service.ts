@@ -21,6 +21,7 @@ interface FactureApiModel {
   projetId?: string;
   objet: string;
   numeroFactureFournisseur?: string;
+  referencePiece?: string;
   montantHT: number;
   montantTVA: number;
   montantTTC: number;
@@ -81,6 +82,7 @@ const mapFromApi = (row: FactureApiModel): Facture => ({
   projetId: row.projetId,
   objet: row.objet,
   numeroFactureFournisseur: row.numeroFactureFournisseur,
+  referencePiece: row.referencePiece,
   montantHT: Number(row.montantHT || 0),
   montantTVA: Number(row.montantTVA || 0),
   montantTTC: Number(row.montantTTC || 0),
@@ -211,6 +213,7 @@ export const facturesService = {
           montantTTC: facture.montantTTC,
           montantLiquide: facture.montantLiquide,
           numeroFactureFournisseur: facture.numeroFactureFournisseur,
+          referencePiece: facture.referencePiece,
           observations: facture.observations,
           numero: facture.numero
         })
@@ -236,12 +239,11 @@ export const facturesService = {
           projetId: facture.projetId,
           objet: facture.objet,
           numeroFactureFournisseur: facture.numeroFactureFournisseur,
+          referencePiece: facture.referencePiece,
           montantHT: facture.montantHT,
           montantTVA: facture.montantTVA,
           montantTTC: facture.montantTTC,
           montantLiquide: facture.montantLiquide,
-          statut: facture.statut,
-          dateValidation: facture.dateValidation,
           observations: facture.observations
         })
       },
