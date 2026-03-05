@@ -26,8 +26,8 @@ development_status:
   epic-3-retrospective: optional
   epic-4: backlog
   4-1-gerer-reservations-et-engagements: done
-  4-2-gerer-bons-de-commande-et-factures: backlog
-  4-3-constituer-et-liquider-une-depense: backlog
+  4-2-gerer-bons-de-commande-et-factures: done
+  4-3-constituer-et-liquider-une-depense: done
   4-4-executer-paiement-et-gestion-des-cas-partiels-rejets: backlog
   epic-4-retrospective: optional
   epic-5: backlog

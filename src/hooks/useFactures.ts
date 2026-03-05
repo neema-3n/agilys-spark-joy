@@ -6,6 +6,7 @@ import { useExercice } from '@/contexts/ExerciceContext';
 import { toast } from 'sonner';
 import { useServerPagination } from './useServerPagination';
 import type { Facture } from '@/types/facture.types';
+import { showMutationErrorToast } from './useMutationErrorToast';
 
 export const useFactures = () => {
   const queryClient = useQueryClient();
@@ -28,18 +29,8 @@ export const useFactures = () => {
         toast.success('Facture créée avec succès');
       }
     },
-    onError: (error: Error) => {
-      let message = error.message;
-      
-      // Fallback pour messages non transformés
-      if (message.startsWith('P0001:')) {
-        message = '❌ Une erreur s\'est produite lors de la création de la facture.\nVeuillez vérifier les montants et réessayer.';
-      }
-      
-      toast.error(message, {
-        duration: 8000,
-        style: { whiteSpace: 'pre-line', maxWidth: '500px' }
-      });
+    onError: (error: unknown) => {
+      showMutationErrorToast(error, "Erreur lors de la création de la facture");
     },
   });
 
@@ -50,17 +41,8 @@ export const useFactures = () => {
       queryClient.invalidateQueries({ queryKey: ['factures'] });
       toast.success('Facture mise à jour avec succès');
     },
-    onError: (error: Error) => {
-      let message = error.message;
-      
-      if (message.startsWith('P0001:')) {
-        message = '❌ Une erreur s\'est produite lors de la mise à jour.\nVeuillez vérifier les montants et réessayer.';
-      }
-      
-      toast.error(message, {
-        duration: 8000,
-        style: { whiteSpace: 'pre-line', maxWidth: '500px' }
-      });
+    onError: (error: unknown) => {
+      showMutationErrorToast(error, 'Erreur lors de la mise à jour de la facture');
     },
   });
 
@@ -70,8 +52,8 @@ export const useFactures = () => {
       queryClient.invalidateQueries({ queryKey: ['factures'] });
       toast.success('Facture supprimée avec succès');
     },
-    onError: (error: Error) => {
-      toast.error(`Erreur: ${error.message}`);
+    onError: (error: unknown) => {
+      showMutationErrorToast(error, 'Erreur lors de la suppression de la facture');
     },
   });
 
@@ -87,8 +69,8 @@ export const useFactures = () => {
       queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       toast.success('Facture validée avec succès');
     },
-    onError: (error: Error) => {
-      toast.error(`Erreur: ${error.message}`);
+    onError: (error: unknown) => {
+      showMutationErrorToast(error, 'Erreur lors de la validation de la facture');
     },
   });
 
@@ -99,8 +81,8 @@ export const useFactures = () => {
       queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       toast.success('Facture marquée comme payée');
     },
-    onError: (error: Error) => {
-      toast.error(`Erreur: ${error.message}`);
+    onError: (error: unknown) => {
+      showMutationErrorToast(error, 'Erreur lors du passage au statut payée');
     },
   });
 
@@ -112,8 +94,8 @@ export const useFactures = () => {
       queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       toast.success('Facture annulée avec succès');
     },
-    onError: (error: Error) => {
-      toast.error(`Erreur: ${error.message}`);
+    onError: (error: unknown) => {
+      showMutationErrorToast(error, "Erreur lors de l'annulation de la facture");
     },
   });
 
@@ -156,15 +138,8 @@ export const useFacturesPaginated = () => {
         toast.success('Facture créée avec succès');
       }
     },
-    onError: (error: Error) => {
-      let message = error.message;
-      if (message.startsWith('P0001:')) {
-        message = '❌ Une erreur s\'est produite lors de la création de la facture.\nVeuillez vérifier les montants et réessayer.';
-      }
-      toast.error(message, {
-        duration: 8000,
-        style: { whiteSpace: 'pre-line', maxWidth: '500px' }
-      });
+    onError: (error: unknown) => {
+      showMutationErrorToast(error, "Erreur lors de la création de la facture");
     },
   });
 
@@ -176,15 +151,8 @@ export const useFacturesPaginated = () => {
       queryClient.invalidateQueries({ queryKey: ['factures'] });
       toast.success('Facture mise à jour avec succès');
     },
-    onError: (error: Error) => {
-      let message = error.message;
-      if (message.startsWith('P0001:')) {
-        message = '❌ Une erreur s\'est produite lors de la mise à jour.\nVeuillez vérifier les montants et réessayer.';
-      }
-      toast.error(message, {
-        duration: 8000,
-        style: { whiteSpace: 'pre-line', maxWidth: '500px' }
-      });
+    onError: (error: unknown) => {
+      showMutationErrorToast(error, 'Erreur lors de la mise à jour de la facture');
     },
   });
 
@@ -195,8 +163,8 @@ export const useFacturesPaginated = () => {
       queryClient.invalidateQueries({ queryKey: ['factures'] });
       toast.success('Facture supprimée avec succès');
     },
-    onError: (error: Error) => {
-      toast.error(`Erreur: ${error.message}`);
+    onError: (error: unknown) => {
+      showMutationErrorToast(error, 'Erreur lors de la suppression de la facture');
     },
   });
 
@@ -207,8 +175,8 @@ export const useFacturesPaginated = () => {
       queryClient.invalidateQueries({ queryKey: ['factures'] });
       toast.success('Facture validée avec succès');
     },
-    onError: (error: Error) => {
-      toast.error(`Erreur: ${error.message}`);
+    onError: (error: unknown) => {
+      showMutationErrorToast(error, 'Erreur lors de la validation de la facture');
     },
   });
 
@@ -219,8 +187,8 @@ export const useFacturesPaginated = () => {
       queryClient.invalidateQueries({ queryKey: ['factures'] });
       toast.success('Facture marquée comme payée');
     },
-    onError: (error: Error) => {
-      toast.error(`Erreur: ${error.message}`);
+    onError: (error: unknown) => {
+      showMutationErrorToast(error, 'Erreur lors du passage au statut payée');
     },
   });
 
@@ -232,8 +200,8 @@ export const useFacturesPaginated = () => {
       queryClient.invalidateQueries({ queryKey: ['factures'] });
       toast.success('Facture annulée avec succès');
     },
-    onError: (error: Error) => {
-      toast.error(`Erreur: ${error.message}`);
+    onError: (error: unknown) => {
+      showMutationErrorToast(error, "Erreur lors de l'annulation de la facture");
     },
   });
 

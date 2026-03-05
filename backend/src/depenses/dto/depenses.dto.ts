@@ -1,5 +1,18 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  ArrayUnique,
+  IsArray,
+  IsIn,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min
+} from 'class-validator';
 
 export class DepensesQueryDto {
   @IsString()
@@ -27,6 +40,14 @@ export class CreateDepenseDto {
   @IsOptional()
   @IsUUID()
   factureId?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(20)
+  @ArrayUnique()
+  @IsUUID('4', { each: true })
+  factureIds?: string[];
 
   @IsOptional()
   @IsUUID()
@@ -154,12 +175,22 @@ export class CreateDepenseFromFactureDto {
   exerciceId!: string;
 
   @IsUUID()
-  factureId!: string;
+  @IsOptional()
+  factureId?: string;
 
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(20)
+  @ArrayUnique()
+  @IsUUID('4', { each: true })
+  factureIds!: string[];
+
+  @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(0)
-  montant!: number;
+  @Max(999999999999)
+  montant?: number;
 
   @IsString()
   @IsNotEmpty()

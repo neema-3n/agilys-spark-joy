@@ -16,6 +16,7 @@ export interface Depense {
   reservationCreditId?: string;
   ligneBudgetaireId?: string;
   factureId?: string;
+  factureIds?: string[];
   fournisseurId?: string;
   beneficiaire?: string;
   projetId?: string;
@@ -105,8 +106,8 @@ export interface DepenseStats {
 
 // Création de dépense depuis une facture
 export interface CreateDepenseFromFactureData {
-  factureId: string;
-  montant: number;
+  factureIds: string[];
+  montantTotal?: number;
   dateDepense: string;
   modePaiement?: ModePaiement;
   referencePaiement?: string;

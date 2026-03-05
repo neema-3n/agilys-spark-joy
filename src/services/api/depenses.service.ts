@@ -1,5 +1,12 @@
 import { requestJson } from '@/services/api/api-utils';
-import type { Depense, DepenseFormData } from '@/types/depense.types';
+import type {
+  CreateDepenseFromEngagementData,
+  CreateDepenseFromFactureData,
+  CreateDepenseFromReservationData,
+  Depense,
+  DepenseFormData,
+  ModePaiement
+} from '@/types/depense.types';
 
 interface DepenseApiModel {
   id: string;
@@ -14,6 +21,7 @@ interface DepenseApiModel {
   reservationCreditId?: string;
   ligneBudgetaireId?: string;
   factureId?: string;
+  factureIds?: string[];
   fournisseurId?: string;
   beneficiaire?: string;
   projetId?: string;
@@ -77,6 +85,7 @@ const mapFromApi = (row: DepenseApiModel): Depense => ({
   reservationCreditId: row.reservationCreditId,
   ligneBudgetaireId: row.ligneBudgetaireId,
   factureId: row.factureId,
+  factureIds: row.factureIds,
   fournisseurId: row.fournisseurId,
   beneficiaire: row.beneficiaire,
   projetId: row.projetId,
@@ -193,7 +202,7 @@ export const ordonnancerDepense = async (id: string): Promise<Depense> => {
 export const marquerPayee = async (
   id: string,
   datePaiement: string,
-  modePaiement: string,
+  modePaiement: ModePaiement,
   referencePaiement?: string
 ): Promise<Depense> => {
   const payload = await requestJson<DepenseApiModel>(
@@ -278,7 +287,7 @@ export const deleteDepense = async (id: string): Promise<void> => {
 };
 
 export const createDepenseFromFacture = async (
-  data: any,
+  data: CreateDepenseFromFactureData,
   exerciceId: string,
   _clientId: string,
   _userId: string
@@ -289,8 +298,8 @@ export const createDepenseFromFacture = async (
       method: 'POST',
       body: JSON.stringify({
         exerciceId,
-        factureId: data.factureId,
-        montant: data.montant,
+        factureIds: data.factureIds,
+        montant: data.montantTotal,
         dateDepense: data.dateDepense,
         modePaiement: data.modePaiement,
         referencePaiement: data.referencePaiement,
@@ -304,7 +313,7 @@ export const createDepenseFromFacture = async (
 };
 
 export const createDepenseFromEngagement = async (
-  data: any,
+  data: CreateDepenseFromEngagementData,
   exerciceId: string,
   _clientId: string,
   _userId: string
@@ -330,7 +339,7 @@ export const createDepenseFromEngagement = async (
 };
 
 export const createDepenseFromReservation = async (
-  data: any,
+  data: CreateDepenseFromReservationData,
   exerciceId: string,
   _clientId: string,
   _userId: string

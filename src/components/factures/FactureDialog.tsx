@@ -19,7 +19,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -31,7 +30,8 @@ import { Facture, CreateFactureInput } from '@/types/facture.types';
 import { format } from 'date-fns';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { facturesService } from '@/services/api/factures.service';
+import { useClient } from '@/contexts/ClientContext';
+import { useExercice } from '@/contexts/ExerciceContext';
 
 const factureSchema = z.object({
   numero: z.string().min(1, 'Le numéro est requis'),
@@ -43,7 +43,8 @@ const factureSchema = z.object({
   ligneBudgetaireId: z.string().optional(),
   projetId: z.string().optional(),
   objet: z.string().min(1, 'L\'objet est requis'),
-  numeroFactureFournisseur: z.string().optional(),
+  numeroFactureFournisseur: z.string().min(1, 'Le numero fournisseur est requis'),
+  referencePiece: z.string().min(1, 'La reference de piece est requise'),
   montantHT: z.string().min(1, 'Le montant HT est requis'),
   montantTVA: z.string().min(1, 'Le montant TVA est requis'),
   montantTTC: z.string().min(1, 'Le montant TTC est requis'),
@@ -70,8 +71,7 @@ interface FactureDialogProps {
   engagements: Array<{ id: string; numero: string }>;
   lignesBudgetaires: Array<{ id: string; libelle: string }>;
   projets: Array<{ id: string; nom: string; code: string }>;
-  currentClientId: string;
-  currentExerciceId: string;
+  factures: Facture[];
   onGenererNumero: () => Promise<string>;
   initialBonCommandeId?: string;
 }
@@ -86,12 +86,13 @@ export const FactureDialog = ({
   engagements,
   lignesBudgetaires,
   projets,
-  currentClientId,
-  currentExerciceId,
+  factures,
   onGenererNumero,
   initialBonCommandeId,
 }: FactureDialogProps) => {
   const isReadOnly = facture && (facture.statut === 'payee' || facture.statut === 'annulee');
+  const { currentClient } = useClient();
+  const { currentExercice } = useExercice();
 
   const [montantDisponibleBC, setMontantDisponibleBC] = useState<number | null>(null);
   const [montantBC, setMontantBC] = useState<number | null>(null);
@@ -109,6 +110,7 @@ export const FactureDialog = ({
       projetId: 'none',
       objet: '',
       numeroFactureFournisseur: '',
+      referencePiece: '',
       montantHT: '',
       montantTVA: '',
       montantTTC: '',
@@ -140,6 +142,7 @@ export const FactureDialog = ({
           projetId: selectedBC?.projet_id || 'none',
           objet: selectedBC?.objet || '',
           numeroFactureFournisseur: '',
+          referencePiece: '',
         montantHT,
         montantTVA,
         montantTTC,
@@ -159,6 +162,7 @@ export const FactureDialog = ({
         projetId: facture.projetId || 'none',
         objet: facture.objet,
         numeroFactureFournisseur: facture.numeroFactureFournisseur || '',
+        referencePiece: facture.referencePiece || '',
         montantHT: facture.montantHT.toString(),
         montantTVA: facture.montantTVA.toString(),
         montantTTC: facture.montantTTC.toString(),
@@ -169,9 +173,16 @@ export const FactureDialog = ({
 
   const handleSubmit = async (values: z.infer<typeof factureSchema>) => {
     try {
+      const resolvedClientId = facture?.clientId ?? currentClient?.id;
+      const resolvedExerciceId = facture?.exerciceId ?? currentExercice?.id;
+
+      if (!resolvedClientId || !resolvedExerciceId) {
+        throw new Error('Client ou exercice indisponible pour la création/modification de facture');
+      }
+
       const factureData: CreateFactureInput = {
-        clientId: currentClientId,
-        exerciceId: currentExerciceId,
+        clientId: resolvedClientId,
+        exerciceId: resolvedExerciceId,
         numero: values.numero,
         dateFacture: values.dateFacture,
         dateEcheance: values.dateEcheance || undefined,
@@ -182,6 +193,7 @@ export const FactureDialog = ({
         projetId: values.projetId && values.projetId !== 'none' ? values.projetId : undefined,
         objet: values.objet,
         numeroFactureFournisseur: values.numeroFactureFournisseur || undefined,
+        referencePiece: values.referencePiece || undefined,
         montantHT: parseFloat(values.montantHT),
         montantTVA: parseFloat(values.montantTVA),
         montantTTC: parseFloat(values.montantTTC),
@@ -242,9 +254,6 @@ export const FactureDialog = ({
 
     const fetchMontantDejaFacture = async () => {
       try {
-        const factures = await facturesService.getAll(currentClientId, currentExerciceId);
-        if (!isActive) return;
-
         const dejaFacture = factures
           .filter(
             (entry) =>
@@ -253,6 +262,7 @@ export const FactureDialog = ({
               entry.id !== (facture?.id || '00000000-0000-0000-0000-000000000000')
           )
           .reduce((sum, entry) => sum + Number(entry.montantTTC), 0);
+        if (!isActive) return;
 
         setMontantBC(bc.montant);
         setMontantDejaFacture(dejaFacture);
@@ -267,7 +277,7 @@ export const FactureDialog = ({
     return () => {
       isActive = false;
     };
-  }, [bonCommandeId, bonsCommande, currentClientId, currentExerciceId, facture?.id]);
+  }, [bonCommandeId, bonsCommande, facture?.id, factures]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -340,9 +350,22 @@ export const FactureDialog = ({
                 name="numeroFactureFournisseur"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>N° facture fournisseur</FormLabel>
+                    <FormLabel>N° facture fournisseur *</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="Ex: F-2025-001" disabled={isReadOnly} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="referencePiece"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Référence pièce *</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Ex: PJ-2026-001" disabled={isReadOnly} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -507,8 +507,7 @@ export default function Factures() {
         engagements={engagements.filter(e => e.statut === 'valide')}
         lignesBudgetaires={lignesBudgetaires.filter(lb => lb.statut === 'actif')}
         projets={projets}
-        currentClientId={currentClient?.id || ''}
-        currentExerciceId={currentExercice?.id || ''}
+        factures={factures}
         onGenererNumero={handleGenererNumero}
         initialBonCommandeId={selectedBonCommandeId}
       />

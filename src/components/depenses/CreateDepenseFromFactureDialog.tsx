@@ -1,26 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { format } from 'date-fns';
+import { InfoIcon } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { InfoIcon } from 'lucide-react';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useFactures } from '@/hooks/useFactures';
+import type { CreateDepenseFromFactureData } from '@/types/depense.types';
 import type { Facture } from '@/types/facture.types';
-import { format } from 'date-fns';
-import { getDepenses } from '@/services/api/depenses.service';
+
+const MAX_FACTURES = 20;
 
 const schema = z.object({
-  montant: z.coerce.number().positive('Le montant doit être positif'),
+  factureIds: z.array(z.string()).min(1, 'Sélectionnez au moins une facture').max(MAX_FACTURES, 'Maximum 20 factures'),
   dateDepense: z.string().min(1, 'La date est requise'),
   modePaiement: z.string().optional(),
   referencePaiement: z.string().optional(),
@@ -33,24 +37,41 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   facture: Facture | null;
-  onSave: (data: any) => Promise<void>;
+  onSave: (data: CreateDepenseFromFactureData) => Promise<void>;
 }
 
-export const CreateDepenseFromFactureDialog = ({
-  open,
-  onOpenChange,
-  facture,
-  onSave,
-}: Props) => {
+export const CreateDepenseFromFactureDialog = ({ open, onOpenChange, facture, onSave }: Props) => {
+  const { factures } = useFactures();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [montantDejaLiquide, setMontantDejaLiquide] = useState<number>(0);
-  const [soldeDisponible, setSoldeDisponible] = useState<number>(0);
-  const [isLoadingSolde, setIsLoadingSolde] = useState(false);
+
+  const facturesEligibles = useMemo(() => {
+    if (!facture) {
+      return [];
+    }
+
+    return factures
+      .filter(
+        (item) =>
+          item.clientId === facture.clientId &&
+          item.exerciceId === facture.exerciceId &&
+          item.statut === 'validee' &&
+          item.montantTTC - item.montantLiquide > 0
+      )
+      .sort((a, b) => a.numero.localeCompare(b.numero));
+  }, [facture, factures]);
+
+  const remainingByFactureId = useMemo(() => {
+    const remaining = new Map<string, number>();
+    for (const item of facturesEligibles) {
+      remaining.set(item.id, Number((item.montantTTC - item.montantLiquide).toFixed(2)));
+    }
+    return remaining;
+  }, [facturesEligibles]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
-      montant: soldeDisponible,
+      factureIds: [],
       dateDepense: format(new Date(), 'yyyy-MM-dd'),
       modePaiement: '',
       referencePaiement: '',
@@ -59,89 +80,86 @@ export const CreateDepenseFromFactureDialog = ({
   });
 
   useEffect(() => {
-    if (facture && open) {
-      let isActive = true;
-
-      const fetchSolde = async () => {
-        setIsLoadingSolde(true);
-        try {
-          const depenses = await getDepenses(facture.exerciceId, facture.clientId);
-          if (!isActive) return;
-
-          const dejaLiquide = depenses
-            .filter((depense) => depense.factureId === facture.id && depense.statut !== 'annulee')
-            .reduce((sum, depense) => sum + Number(depense.montant), 0);
-          const solde = Number(facture.montantTTC) - dejaLiquide;
-
-          setMontantDejaLiquide(dejaLiquide);
-          setSoldeDisponible(solde);
-          form.reset({
-            montant: solde,
-            dateDepense: format(new Date(), 'yyyy-MM-dd'),
-            modePaiement: '',
-            referencePaiement: '',
-            observations: '',
-          });
-          setIsLoadingSolde(false);
-        } catch (error) {
-          if (!isActive) return;
-
-          console.error('Erreur récupération dépenses facture:', error);
-          setMontantDejaLiquide(Number(facture.montantLiquide || 0));
-          setSoldeDisponible(Number(facture.montantTTC) - Number(facture.montantLiquide || 0));
-          setIsLoadingSolde(false);
-        }
-      };
-
-      fetchSolde();
-
-      return () => {
-        isActive = false;
-      };
-    }
-  }, [facture, open, form]);
-
-  const handleSubmit = async (data: FormData) => {
-    if (!facture) return;
-    if (data.montant > soldeDisponible) {
-      form.setError('montant', { message: `Montant supérieur au solde disponible (${soldeDisponible.toFixed(2)} €)` });
+    if (!open || !facture) {
       return;
     }
-    
+
+    form.reset({
+      factureIds: [facture.id],
+      dateDepense: format(new Date(), 'yyyy-MM-dd'),
+      modePaiement: '',
+      referencePaiement: '',
+      observations: '',
+    });
+  }, [facture, form, open]);
+
+  const selectedFactureIds = form.watch('factureIds');
+  const selectedCount = selectedFactureIds.length;
+  const montantTotal = selectedFactureIds.reduce((sum, id) => sum + (remainingByFactureId.get(id) ?? 0), 0);
+
+  const handleToggleFacture = (factureId: string, checked: boolean) => {
+    const current = form.getValues('factureIds');
+
+    if (checked) {
+      if (current.length >= MAX_FACTURES) {
+        form.setError('factureIds', { message: `Maximum ${MAX_FACTURES} factures par dépense` });
+        return;
+      }
+      form.setValue('factureIds', [...current, factureId], { shouldValidate: true });
+      return;
+    }
+
+    form.setValue(
+      'factureIds',
+      current.filter((id) => id !== factureId),
+      { shouldValidate: true }
+    );
+  };
+
+  const handleSubmit = async (data: FormData) => {
+    if (!facture) {
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await onSave({
-        ...data,
-        factureId: facture.id,
+        factureIds: data.factureIds,
+        montantTotal: Number(montantTotal.toFixed(2)),
+        dateDepense: data.dateDepense,
+        modePaiement: data.modePaiement as CreateDepenseFromFactureData['modePaiement'],
+        referencePaiement: data.referencePaiement,
+        observations: data.observations,
       });
-      form.reset();
       onOpenChange(false);
-    } catch (error) {
-      console.error('Erreur création dépense:', error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (!facture) return null;
+  if (!facture) {
+    return null;
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Créer une dépense depuis la facture {facture.numero}</DialogTitle>
+          <DialogTitle>Créer une dépense depuis facture(s)</DialogTitle>
         </DialogHeader>
 
         <Alert>
           <InfoIcon className="h-4 w-4" />
           <AlertDescription>
             <div className="space-y-1 text-sm">
-              <div><strong>Fournisseur :</strong> {facture.fournisseur?.nom}</div>
-              <div><strong>Montant TTC :</strong> {facture.montantTTC.toFixed(2)} €</div>
-              <div><strong>Déjà liquidé :</strong> {(montantDejaLiquide || 0).toFixed(2)} €</div>
               <div>
-                <strong>Solde disponible :</strong>{' '}
-                {isLoadingSolde ? 'Calcul en cours...' : `${soldeDisponible.toFixed(2)} €`}
+                <strong>Sélection:</strong> {selectedCount} / {MAX_FACTURES} facture(s)
+              </div>
+              <div>
+                <strong>Montant total liquidé:</strong> {montantTotal.toFixed(2)} €
+              </div>
+              <div className="text-muted-foreground">
+                Les factures doivent être cohérentes sur engagement, ligne budgétaire et projet.
               </div>
             </div>
           </AlertDescription>
@@ -151,17 +169,40 @@ export const CreateDepenseFromFactureDialog = ({
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="montant"
-              render={({ field }) => (
+              name="factureIds"
+              render={() => (
                 <FormItem>
-                  <FormLabel>Montant à liquider *</FormLabel>
+                  <FormLabel>Factures validées (1 à 20)</FormLabel>
                   <FormControl>
-                    <Input 
-                      type="number" 
-                      step="0.01" 
-                      {...field} 
-                      max={soldeDisponible}
-                    />
+                    <ScrollArea className="h-56 rounded-md border p-3">
+                      <div className="space-y-2">
+                        {facturesEligibles.map((item) => {
+                          const isChecked = selectedFactureIds.includes(item.id);
+                          const remaining = remainingByFactureId.get(item.id) ?? 0;
+
+                          return (
+                            <label
+                              key={item.id}
+                              className="flex items-center justify-between gap-3 rounded-md border p-2 hover:bg-accent/40"
+                            >
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={(event) => handleToggleFacture(item.id, event.target.checked)}
+                                  className="h-4 w-4"
+                                />
+                                <div className="text-sm">
+                                  <div className="font-medium">{item.numero}</div>
+                                  <div className="text-muted-foreground">{item.objet}</div>
+                                </div>
+                              </div>
+                              <div className="text-sm font-medium">{remaining.toFixed(2)} €</div>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </ScrollArea>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -189,7 +230,7 @@ export const CreateDepenseFromFactureDialog = ({
                 <FormItem>
                   <FormLabel>Mode de paiement</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Ex: Virement, Chèque..." />
+                    <Input {...field} placeholder="Ex: virement, chèque..." />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -203,7 +244,7 @@ export const CreateDepenseFromFactureDialog = ({
                 <FormItem>
                   <FormLabel>Référence de paiement</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Ex: CHQ123456, VIR789..." />
+                    <Input {...field} placeholder="Ex: VIR-2026-001" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -225,15 +266,10 @@ export const CreateDepenseFromFactureDialog = ({
             />
 
             <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={isSubmitting}
-              >
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
                 Annuler
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || selectedCount < 1}>
                 {isSubmitting ? 'Création...' : 'Créer la dépense'}
               </Button>
             </DialogFooter>

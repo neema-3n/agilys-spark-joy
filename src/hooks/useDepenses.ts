@@ -4,7 +4,13 @@ import { useClient } from '@/contexts/ClientContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import * as depensesService from '@/services/api/depenses.service';
-import type { DepenseFormData } from '@/types/depense.types';
+import type {
+  CreateDepenseFromEngagementData,
+  CreateDepenseFromFactureData,
+  CreateDepenseFromReservationData,
+  DepenseFormData,
+  ModePaiement
+} from '@/types/depense.types';
 
 export const useDepenses = () => {
   const { currentExercice } = useExercice();
@@ -117,7 +123,7 @@ export const useDepenses = () => {
     }: { 
       id: string; 
       datePaiement: string; 
-      modePaiement: string; 
+      modePaiement: ModePaiement; 
       referencePaiement?: string 
     }) => depensesService.marquerPayee(id, datePaiement, modePaiement, referencePaiement),
     onSuccess: () => {
@@ -202,7 +208,7 @@ export const useDepenses = () => {
   });
 
   const createFromFactureMutation = useMutation({
-    mutationFn: (data: any) => {
+    mutationFn: (data: CreateDepenseFromFactureData) => {
       if (!currentExercice?.id || !currentClient?.id || !user?.id) {
         return Promise.reject(new Error('Données requises manquantes'));
       }
@@ -216,6 +222,7 @@ export const useDepenses = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depenses'] });
       queryClient.invalidateQueries({ queryKey: ['factures'] });
+      queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
     },
     onError: (error: Error) => {
       toast({
@@ -227,7 +234,7 @@ export const useDepenses = () => {
   });
 
   const createFromEngagementMutation = useMutation({
-    mutationFn: (data: any) => {
+    mutationFn: (data: CreateDepenseFromEngagementData) => {
       if (!currentExercice?.id || !currentClient?.id || !user?.id) {
         return Promise.reject(new Error('Données requises manquantes'));
       }
@@ -252,7 +259,7 @@ export const useDepenses = () => {
   });
 
   const createFromReservationMutation = useMutation({
-    mutationFn: (data: any) => {
+    mutationFn: (data: CreateDepenseFromReservationData) => {
       if (!currentExercice?.id || !currentClient?.id || !user?.id) {
         return Promise.reject(new Error('Données requises manquantes'));
       }
