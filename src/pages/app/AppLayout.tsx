@@ -8,6 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AppHeader } from '@/components/app/AppHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { trackAppLandingViewIfPending } from '@/services/analytics/tracker';
 
 const AppLayout = () => {
   const { isLoading: clientLoading, hasLoaded: clientLoaded, currentClient } = useClient();
@@ -223,6 +224,11 @@ const AppLayout = () => {
       setSidebarOpen(false);
     }
   }, [isMobile]);
+
+  useEffect(() => {
+    const currentPath = `${location.pathname}${location.search}`;
+    trackAppLandingViewIfPending(currentPath);
+  }, [location.pathname, location.search]);
 
   // Sauvegarde la position de scroll pour chaque route
   useEffect(() => {

@@ -10,6 +10,11 @@ import { useToast } from '@/hooks/use-toast';
 import { Lock, Mail, User } from 'lucide-react';
 import { z } from 'zod';
 import { resolveLoginRedirect } from '@/services/auth/auth-routing';
+import {
+  markPendingAppLandingView,
+  trackAuthPageView,
+  trackAuthSuccess,
+} from '@/services/analytics/tracker';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Email invalide" }),
@@ -54,6 +59,10 @@ const Login = () => {
     }
   }, [isAuthenticated, navigate, from]);
 
+  useEffect(() => {
+    trackAuthPageView();
+  }, []);
+
   if (isAuthenticated) {
     return null;
   }
@@ -77,6 +86,8 @@ const Login = () => {
     setIsLoading(false);
 
     if (result.success) {
+      trackAuthSuccess(from);
+      markPendingAppLandingView(from);
       toast({
         title: 'Connexion réussie',
         description: 'Bienvenue sur AGILYS',
