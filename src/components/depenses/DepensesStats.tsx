@@ -13,12 +13,16 @@ export const DepenseStatsCards = ({ depenses }: DepenseStatsCardsProps) => {
     const brouillon = depenses.filter(d => d.statut === 'brouillon').length;
     const validee = depenses.filter(d => d.statut === 'validee').length;
     const ordonnancee = depenses.filter(d => d.statut === 'ordonnancee').length;
+    const partiellementPayee = depenses.filter(d => d.statut === 'partiellement_payee').length;
     const payee = depenses.filter(d => d.statut === 'payee').length;
     
     const montantTotal = depenses.reduce((sum, d) => sum + d.montant, 0);
     const montantBrouillon = depenses.filter(d => d.statut === 'brouillon').reduce((sum, d) => sum + d.montant, 0);
     const montantValidee = depenses.filter(d => d.statut === 'validee').reduce((sum, d) => sum + d.montant, 0);
     const montantOrdonnancee = depenses.filter(d => d.statut === 'ordonnancee').reduce((sum, d) => sum + d.montant, 0);
+    const montantPartiellementPayee = depenses
+      .filter(d => d.statut === 'partiellement_payee')
+      .reduce((sum, d) => sum + d.montantPaye, 0);
     const montantPayee = depenses.filter(d => d.statut === 'payee').reduce((sum, d) => sum + d.montant, 0);
 
     return {
@@ -26,13 +30,15 @@ export const DepenseStatsCards = ({ depenses }: DepenseStatsCardsProps) => {
       brouillon,
       validee,
       ordonnancee,
+      partiellementPayee,
       payee,
       montantTotal,
       montantBrouillon,
       montantValidee,
       montantOrdonnancee,
+      montantPartiellementPayee,
       montantPayee,
-      tauxExecution: montantTotal > 0 ? (montantPayee / montantTotal) * 100 : 0,
+      tauxExecution: montantTotal > 0 ? ((montantPartiellementPayee + montantPayee) / montantTotal) * 100 : 0,
     };
   }, [depenses]);
 

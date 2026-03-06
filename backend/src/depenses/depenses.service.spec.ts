@@ -203,4 +203,32 @@ describe('DepensesService', () => {
     await expect(service.ordonnancer(actor, 'dep-1')).rejects.toBeInstanceOf(BadRequestException);
     expect(query).toHaveBeenCalledTimes(0);
   });
+
+  it("bloque l'ancien endpoint marquerPayee et redirige vers le workflow paiements", async () => {
+    await expect(
+      service.marquerPayee(actor, 'dep-1', {
+        datePaiement: '2026-03-05',
+        modePaiement: 'virement',
+      })
+    ).rejects.toThrow('workflow /paiements');
+  });
+
+  it('bloque l’annulation directe d’une dépense partiellement payée', async () => {
+    jest.spyOn(service, 'getById').mockResolvedValue({
+      id: 'dep-1',
+      clientId: actor.tenantId,
+      exerciceId: 'ex-1',
+      numero: 'DEP/EX/0001',
+      dateDepense: '2026-03-05',
+      objet: 'Test',
+      montant: 100,
+      montantPaye: 25,
+      statut: 'partiellement_payee',
+      createdAt: '2026-03-05T00:00:00.000Z',
+      updatedAt: '2026-03-05T00:00:00.000Z',
+    } as any);
+
+    await expect(service.annuler(actor, 'dep-1', 'Erreur de saisie')).rejects.toThrow('paiements liés');
+    expect(query).toHaveBeenCalledTimes(0);
+  });
 });

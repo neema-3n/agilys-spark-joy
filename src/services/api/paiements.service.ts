@@ -1,5 +1,5 @@
 import { requestJson } from '@/services/api/api-utils';
-import type { Paiement, PaiementFormData } from '@/types/paiement.types';
+import type { Paiement, PaiementFormData, PaiementMotifPayload, ReprendrePaiementPayload } from '@/types/paiement.types';
 
 interface PaiementApiModel {
   id: string;
@@ -12,10 +12,18 @@ interface PaiementApiModel {
   modePaiement: 'virement' | 'cheque' | 'especes' | 'carte' | 'autre';
   referencePaiement?: string;
   observations?: string;
-  statut: 'valide' | 'annule';
+  statut: 'brouillon' | 'transmis' | 'accepte' | 'execute' | 'reconcilie' | 'rejete' | 'annule';
   motifAnnulation?: string;
   dateAnnulation?: string;
+  motifRejet?: string;
+  dateRejet?: string;
+  dateRetour?: string;
+  referenceRetour?: string;
+  tentativeNumero: number;
+  paiementOrigineId?: string;
+  paiementReprisDeId?: string;
   createdBy?: string;
+  updatedBy?: string;
   createdAt: string;
   updatedAt: string;
   ecrituresCount?: number;
@@ -24,6 +32,9 @@ interface PaiementApiModel {
     numero: string;
     objet: string;
     montant: number;
+    montantPaye: number;
+    resteAPayer: number;
+    statut: 'brouillon' | 'validee' | 'ordonnancee' | 'partiellement_payee' | 'payee' | 'annulee';
     fournisseur?: {
       id: string;
       nom: string;
@@ -46,7 +57,15 @@ const mapFromApi = (row: PaiementApiModel): Paiement => ({
   statut: row.statut,
   motifAnnulation: row.motifAnnulation,
   dateAnnulation: row.dateAnnulation,
+  motifRejet: row.motifRejet,
+  dateRejet: row.dateRejet,
+  dateRetour: row.dateRetour,
+  referenceRetour: row.referenceRetour,
+  tentativeNumero: Number(row.tentativeNumero || 1),
+  paiementOrigineId: row.paiementOrigineId,
+  paiementReprisDeId: row.paiementReprisDeId,
   createdBy: row.createdBy,
+  updatedBy: row.updatedBy,
   createdAt: row.createdAt,
   updatedAt: row.updatedAt,
   ecrituresCount: Number(row.ecrituresCount || 0),
@@ -99,17 +118,73 @@ export const createPaiement = async (
   return mapFromApi(payload);
 };
 
-export const annulerPaiement = async (id: string, motif: string): Promise<Paiement> => {
-  const payload = await requestJson<PaiementApiModel>(
+export const annulerPaiement = async (id: string, motifPayload: PaiementMotifPayload): Promise<Paiement> => {
+  const response = await requestJson<PaiementApiModel>(
     `/paiements/${encodeURIComponent(id)}/annuler`,
     {
       method: 'PATCH',
-      body: JSON.stringify({ motif })
+      body: JSON.stringify(motifPayload)
     },
     "Erreur lors de l'annulation du paiement"
   );
 
-  return mapFromApi(payload);
+  return mapFromApi(response);
+};
+
+export const accepterPaiement = async (id: string): Promise<Paiement> => {
+  const response = await requestJson<PaiementApiModel>(
+    `/paiements/${encodeURIComponent(id)}/accepter`,
+    { method: 'PATCH', body: JSON.stringify({}) },
+    "Erreur lors de l'acceptation du paiement"
+  );
+
+  return mapFromApi(response);
+};
+
+export const executerPaiement = async (id: string): Promise<Paiement> => {
+  const response = await requestJson<PaiementApiModel>(
+    `/paiements/${encodeURIComponent(id)}/executer`,
+    { method: 'PATCH', body: JSON.stringify({}) },
+    "Erreur lors de l'exécution du paiement"
+  );
+
+  return mapFromApi(response);
+};
+
+export const reconcilierPaiement = async (id: string): Promise<Paiement> => {
+  const response = await requestJson<PaiementApiModel>(
+    `/paiements/${encodeURIComponent(id)}/reconcilier`,
+    { method: 'PATCH', body: JSON.stringify({}) },
+    'Erreur lors du rapprochement du paiement'
+  );
+
+  return mapFromApi(response);
+};
+
+export const rejeterPaiement = async (id: string, motifPayload: PaiementMotifPayload): Promise<Paiement> => {
+  const response = await requestJson<PaiementApiModel>(
+    `/paiements/${encodeURIComponent(id)}/rejeter`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(motifPayload)
+    },
+    'Erreur lors du rejet du paiement'
+  );
+
+  return mapFromApi(response);
+};
+
+export const reprendrePaiement = async (id: string, reprisePayload: ReprendrePaiementPayload = {}): Promise<Paiement> => {
+  const response = await requestJson<PaiementApiModel>(
+    `/paiements/${encodeURIComponent(id)}/reprendre`,
+    {
+      method: 'POST',
+      body: JSON.stringify(reprisePayload)
+    },
+    'Erreur lors de la reprise du paiement'
+  );
+
+  return mapFromApi(response);
 };
 
 export const deletePaiement = async (id: string): Promise<void> => {

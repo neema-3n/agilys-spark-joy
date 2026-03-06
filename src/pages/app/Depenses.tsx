@@ -69,7 +69,7 @@ const Depenses = () => {
   const [isSubmittingAction, setIsSubmittingAction] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statutFilter, setStatutFilter] = useState<
-    'tous' | 'brouillon' | 'validee' | 'ordonnancee' | 'payee' | 'annulee'
+    'tous' | 'brouillon' | 'validee' | 'ordonnancee' | 'partiellement_payee' | 'payee' | 'annulee'
   >('tous');
 
   const handleCreateDepense = async (data: DepenseFormData) => {
@@ -182,7 +182,7 @@ const Depenses = () => {
     setPaiementDialogOpen(true);
   };
 
-  const handleEnregistrerPaiement = async (data: PaiementFormData) => {
+  const handleEnregistrerPaiement = async (_data: PaiementFormData) => {
     // Géré directement par PaiementDialog via usePaiements
     setPaiementDialogOpen(false);
     setActionDepenseId(null);
@@ -364,6 +364,7 @@ const Depenses = () => {
                           { value: 'brouillon', label: 'Brouillon' },
                           { value: 'validee', label: 'Validée' },
                           { value: 'ordonnancee', label: 'Ordonnancée' },
+                          { value: 'partiellement_payee', label: 'Partiellement payée' },
                           { value: 'payee', label: 'Payée' },
                           { value: 'annulee', label: 'Annulée' },
                         ].map((option) => (
@@ -479,7 +480,8 @@ const Depenses = () => {
           : null;
         
         // Vérifier que la dépense existe ET qu'elle est ordonnancée
-        return depenseForPaiement && depenseForPaiement.statut === 'ordonnancee' ? (
+        return depenseForPaiement &&
+          (depenseForPaiement.statut === 'ordonnancee' || depenseForPaiement.statut === 'partiellement_payee') ? (
           <PaiementDialog
             open={paiementDialogOpen}
             onOpenChange={setPaiementDialogOpen}

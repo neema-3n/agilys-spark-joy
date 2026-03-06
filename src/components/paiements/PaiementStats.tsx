@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { StatsCard } from '@/components/ui/stats-card';
 import { Banknote, CheckCircle, TrendingUp } from 'lucide-react';
 import { Paiement } from '@/types/paiement.types';
+import { buildPaiementStatsSummary } from '@/lib/paiement-workflow';
 
 interface PaiementStatsProps {
   paiements: Paiement[];
@@ -14,28 +15,7 @@ export const PaiementStats = ({ paiements }: PaiementStatsProps) => {
       .toISOString()
       .split('T')[0];
 
-    const nombreTotal = paiements.length;
-    const nombreValide = paiements.filter(p => p.statut === 'valide').length;
-
-    const montantTotal = paiements
-      .filter(p => p.statut === 'valide')
-      .reduce((sum, p) => sum + p.montant, 0);
-
-    const montantAujourdHui = paiements
-      .filter(p => p.statut === 'valide' && p.datePaiement === today)
-      .reduce((sum, p) => sum + p.montant, 0);
-
-    const montantCeMois = paiements
-      .filter(p => p.statut === 'valide' && p.datePaiement >= startOfMonth)
-      .reduce((sum, p) => sum + p.montant, 0);
-
-    return {
-      nombreTotal: nombreTotal.toString(),
-      nombreValide: nombreValide.toString(),
-      montantTotal: `${montantTotal.toFixed(2)} €`,
-      montantAujourdHui: `${montantAujourdHui.toFixed(2)} €`,
-      montantCeMois: `${montantCeMois.toFixed(2)} €`,
-    };
+    return buildPaiementStatsSummary(paiements, today, startOfMonth);
   }, [paiements]);
 
   return (
@@ -46,8 +26,8 @@ export const PaiementStats = ({ paiements }: PaiementStatsProps) => {
         icon={Banknote}
       />
       <StatsCard
-        title="Paiements valides"
-        value={stats.nombreValide}
+        title="Paiements comptabilisés"
+        value={stats.nombreSucces}
         icon={CheckCircle}
       />
       <StatsCard

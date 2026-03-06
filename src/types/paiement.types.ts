@@ -1,4 +1,11 @@
-export type StatutPaiement = 'valide' | 'annule';
+export type StatutPaiement =
+  | 'brouillon'
+  | 'transmis'
+  | 'accepte'
+  | 'execute'
+  | 'reconcilie'
+  | 'rejete'
+  | 'annule';
 export type ModePaiement = 'virement' | 'cheque' | 'especes' | 'carte' | 'autre';
 
 export interface Paiement {
@@ -23,9 +30,17 @@ export interface Paiement {
   statut: StatutPaiement;
   motifAnnulation?: string;
   dateAnnulation?: string;
+  motifRejet?: string;
+  dateRejet?: string;
+  dateRetour?: string;
+  referenceRetour?: string;
+  tentativeNumero: number;
+  paiementOrigineId?: string;
+  paiementReprisDeId?: string;
   
   // Métadonnées
   createdBy?: string;
+  updatedBy?: string;
   createdAt: string;
   updatedAt: string;
   ecrituresCount?: number;
@@ -36,6 +51,9 @@ export interface Paiement {
     numero: string;
     objet: string;
     montant: number;
+    montantPaye: number;
+    resteAPayer: number;
+    statut: 'brouillon' | 'validee' | 'ordonnancee' | 'partiellement_payee' | 'payee' | 'annulee';
     fournisseur?: {
       id: string;
       nom: string;
@@ -53,12 +71,27 @@ export interface PaiementFormData {
   observations?: string;
 }
 
+export interface PaiementMotifPayload {
+  motif: string;
+  dateRetour?: string;
+  referenceRetour?: string;
+}
+
+export interface ReprendrePaiementPayload {
+  montant?: number;
+  datePaiement?: string;
+  modePaiement?: ModePaiement;
+  referencePaiement?: string;
+  observations?: string;
+}
+
 export interface PaiementStats {
   nombreTotal: number;
-  nombreValide: number;
+  nombreSucces: number;
   nombreAnnule: number;
+  nombreRejete: number;
   montantTotal: number;
-  montantValide: number;
+  montantSucces: number;
   montantAnnule: number;
   montantAujourdHui: number;
   montantCeMois: number;

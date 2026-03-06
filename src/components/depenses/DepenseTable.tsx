@@ -12,6 +12,7 @@ import { MoreHorizontal, CheckCircle, FileCheck, Banknote, XCircle, Trash, Eye }
 import { ListColumn, ListTable } from '@/components/lists/ListTable';
 import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/selectionColumn';
 import { formatCurrency } from '@/lib/utils';
+import { canAddPaiementToDepense, depenseStatusLabels, depenseStatusVariants } from '@/lib/depense-status';
 import type { Depense } from '@/types/depense.types';
 
 interface DepenseTableProps {
@@ -50,15 +51,10 @@ export const DepenseTable = ({
   };
 
   const getStatutBadge = (statut: string) => {
-    const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'; label: string }> = {
-      brouillon: { variant: 'outline', label: 'Brouillon' },
-      validee: { variant: 'success', label: 'Validée' },
-      ordonnancee: { variant: 'secondary', label: 'Ordonnancée' },
-      payee: { variant: 'success', label: 'Payée' },
-      annulee: { variant: 'destructive', label: 'Annulée' },
-    };
-    const config = variants[statut] || variants.brouillon;
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    const fallback = depenseStatusVariants.brouillon;
+    const variant = depenseStatusVariants[statut as keyof typeof depenseStatusVariants] || fallback;
+    const label = depenseStatusLabels[statut as keyof typeof depenseStatusLabels] || statut;
+    return <Badge variant={variant}>{label}</Badge>;
   };
 
   const { selectedIds, allSelected, toggleOne, toggleAll } = selection;
@@ -215,7 +211,7 @@ export const DepenseTable = ({
               </DropdownMenuItem>
             )}
 
-            {depense.statut === 'ordonnancee' &&
+            {canAddPaiementToDepense(depense.statut) &&
               depense.montant > depense.montantPaye &&
               onEnregistrerPaiement && (
                 <DropdownMenuItem
@@ -227,7 +223,7 @@ export const DepenseTable = ({
                 </DropdownMenuItem>
               )}
 
-            {depense.statut !== 'annulee' && depense.statut !== 'payee' && onAnnuler && (
+            {depense.statut !== 'annulee' && depense.statut !== 'payee' && depense.statut !== 'partiellement_payee' && onAnnuler && (
               <DropdownMenuItem
                 onClick={() => onAnnuler(depense.id)}
                 className="text-destructive"

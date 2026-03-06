@@ -1,7 +1,16 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PostgresService } from '../common/postgres.service';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
-import type { CreatePaiementDto } from './dto/paiements.dto';
+import type { AnnulerPaiementDto, CreatePaiementDto, RejeterPaiementDto, ReprendrePaiementDto } from './dto/paiements.dto';
+import {
+  canCreatePaiementForDepense,
+  canTransitionPaiement,
+  isAccountingReadyPaiementStatus,
+  isSuccessfulPaiementStatus,
+  type DepensePaiementStatus,
+  type PaiementMode,
+  type PaiementStatus,
+} from './paiement-workflow';
 
 interface PaiementRow {
   id: string;
@@ -11,22 +20,44 @@ interface PaiementRow {
   depense_id: string;
   montant: string | number;
   date_paiement: Date | string;
-  mode_paiement: 'virement' | 'cheque' | 'especes' | 'carte' | 'autre';
+  mode_paiement: PaiementMode;
   reference_paiement: string | null;
   observations: string | null;
-  statut: 'valide' | 'annule';
+  statut: PaiementStatus;
   motif_annulation: string | null;
   date_annulation: Date | string | null;
+  motif_rejet: string | null;
+  date_rejet: Date | string | null;
+  date_retour: Date | string | null;
+  reference_retour: string | null;
+  tentative_numero: number | null;
+  paiement_origine_id: string | null;
+  paiement_repris_de_id: string | null;
   created_by: string | null;
+  updated_by: string | null;
   created_at: Date | string;
   updated_at: Date | string;
   depense_numero: string | null;
   depense_objet: string | null;
   depense_montant: string | number | null;
+  depense_montant_paye: string | number | null;
+  depense_statut: DepensePaiementStatus | null;
   fournisseur_id: string | null;
   fournisseur_nom: string | null;
   fournisseur_code: string | null;
   ecritures_count: string | number;
+}
+
+interface DepensePaiementRow {
+  id: string;
+  client_id: string;
+  exercice_id: string;
+  numero: string;
+  objet: string;
+  montant: string | number;
+  montant_paye: string | number;
+  statut: DepensePaiementStatus;
+  fournisseur_id: string | null;
 }
 
 interface EcritureRow {
@@ -35,7 +66,6 @@ interface EcritureRow {
   exercice_id: string;
   numero_piece: string;
   numero_ligne: number;
-  date_ecriture: Date | string;
   compte_debit_id: string;
   compte_credit_id: string;
   montant: string | number;
@@ -59,13 +89,21 @@ interface PaiementView {
   depenseId: string;
   montant: number;
   datePaiement: string;
-  modePaiement: 'virement' | 'cheque' | 'especes' | 'carte' | 'autre';
+  modePaiement: PaiementMode;
   referencePaiement?: string;
   observations?: string;
-  statut: 'valide' | 'annule';
+  statut: PaiementStatus;
   motifAnnulation?: string;
   dateAnnulation?: string;
+  motifRejet?: string;
+  dateRejet?: string;
+  dateRetour?: string;
+  referenceRetour?: string;
+  tentativeNumero: number;
+  paiementOrigineId?: string;
+  paiementReprisDeId?: string;
   createdBy?: string;
+  updatedBy?: string;
   createdAt: string;
   updatedAt: string;
   ecrituresCount?: number;
@@ -74,6 +112,9 @@ interface PaiementView {
     numero: string;
     objet: string;
     montant: number;
+    montantPaye: number;
+    resteAPayer: number;
+    statut: DepensePaiementStatus;
     fournisseur?: {
       id: string;
       nom: string;
@@ -106,7 +147,7 @@ export class PaiementsService {
         `
           WHERE p.client_id = $1
             AND p.depense_id = $2
-          ORDER BY p.date_paiement DESC, p.created_at DESC
+          ORDER BY p.tentative_numero ASC, p.created_at ASC
         `,
       [actor.tenantId, depenseId]
     );
@@ -115,47 +156,22 @@ export class PaiementsService {
   }
 
   async getById(actor: AuthenticatedUser, id: string): Promise<PaiementView> {
-    const result = await this.postgresService.query<PaiementRow>(
-      this.baseSelect() +
-        `
-          WHERE p.client_id = $1
-            AND p.id = $2
-          LIMIT 1
-        `,
-      [actor.tenantId, id]
-    );
-
-    const row = result.rows[0];
-    if (!row) {
-      throw new NotFoundException('Paiement introuvable');
-    }
-
+    const row = await this.getPaiementRow(actor, id);
     return this.mapRowToView(row);
   }
 
   async create(actor: AuthenticatedUser, payload: CreatePaiementDto): Promise<PaiementView> {
-    const depense = await this.postgresService.query<{
-      id: string;
-      client_id: string;
-      exercice_id: string;
-    }>(
-      `
-        SELECT id, client_id, exercice_id
-        FROM public.depenses
-        WHERE id = $1
-          AND client_id = $2
-        LIMIT 1
-      `,
-      [payload.depenseId, actor.tenantId]
-    );
+    const depense = await this.getDepenseForPaiement(actor, payload.depenseId);
+    this.assertDepenseMatchesExercice(depense, payload.exerciceId);
+    this.assertDepenseCanReceivePaiement(depense);
 
-    const depenseRow = depense.rows[0];
-    if (!depenseRow) {
-      throw new NotFoundException('Dépense introuvable');
-    }
+    const montant = this.assertPositiveAmount(payload.montant);
+    const resteAPayer = await this.getResteAPayer(actor.tenantId, depense.id, depense.montant);
 
-    if (depenseRow.exercice_id !== payload.exerciceId) {
-      throw new BadRequestException('La dépense ne correspond pas à l\'exercice sélectionné');
+    if (montant > resteAPayer) {
+      throw new BadRequestException(
+        `Paiement impossible: le montant dépasse le reste à payer (${resteAPayer.toFixed(2)}). Action: réduisez le montant ou soldez depuis une autre tentative.`
+      );
     }
 
     const numero = await this.generateNextNumero(actor.tenantId, payload.exerciceId);
@@ -173,21 +189,10 @@ export class PaiementsService {
           reference_paiement,
           observations,
           statut,
+          tentative_numero,
           created_by
         )
-        VALUES (
-          $1,
-          $2,
-          $3,
-          $4,
-          $5,
-          $6,
-          $7,
-          $8,
-          $9,
-          'valide',
-          $10
-        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'transmis', 1, $10)
         RETURNING id
       `,
       [
@@ -195,12 +200,12 @@ export class PaiementsService {
         payload.exerciceId,
         numero,
         payload.depenseId,
-        payload.montant,
+        montant,
         payload.datePaiement,
         payload.modePaiement,
         payload.referencePaiement?.trim() || null,
         payload.observations?.trim() || null,
-        actor.sub
+        actor.sub,
       ]
     );
 
@@ -212,9 +217,384 @@ export class PaiementsService {
     return this.getById(actor, insertedId);
   }
 
-  async annuler(actor: AuthenticatedUser, id: string, motif: string): Promise<PaiementView> {
-    const paiement = await this.getById(actor, id);
+  async accepter(actor: AuthenticatedUser, id: string): Promise<PaiementView> {
+    return this.transition(actor, id, 'accepte');
+  }
 
+  async executer(actor: AuthenticatedUser, id: string): Promise<PaiementView> {
+    return this.transition(actor, id, 'execute');
+  }
+
+  async reconcilier(actor: AuthenticatedUser, id: string): Promise<PaiementView> {
+    return this.transition(actor, id, 'reconcilie');
+  }
+
+  async rejeter(actor: AuthenticatedUser, id: string, payload: RejeterPaiementDto): Promise<PaiementView> {
+    const paiement = await this.getPaiementRow(actor, id);
+    this.assertTransitionAllowed(paiement.statut, 'rejete');
+
+    if (!payload.motif.trim()) {
+      throw new BadRequestException('Le motif de rejet est requis');
+    }
+
+    const wasSuccessful = isSuccessfulPaiementStatus(paiement.statut);
+
+    await this.postgresService.query(
+      `
+        UPDATE public.paiements
+        SET
+          statut = 'rejete',
+          motif_rejet = $1,
+          date_rejet = CURRENT_DATE,
+          date_retour = COALESCE($2, date_retour),
+          reference_retour = COALESCE($3, reference_retour),
+          updated_by = $4,
+          updated_at = now()
+        WHERE id = $5
+          AND client_id = $6
+      `,
+      [
+        payload.motif.trim(),
+        payload.dateRetour?.trim() || null,
+        payload.referenceRetour?.trim() || null,
+        actor.sub,
+        id,
+        actor.tenantId,
+      ]
+    );
+
+    if (wasSuccessful) {
+      await this.revertSuccessfulArtifacts(actor, paiement, payload.motif.trim());
+    }
+
+    return this.getById(actor, id);
+  }
+
+  async annuler(actor: AuthenticatedUser, id: string, payload: AnnulerPaiementDto): Promise<PaiementView> {
+    const paiement = await this.getPaiementRow(actor, id);
+    this.assertTransitionAllowed(paiement.statut, 'annule');
+
+    if (!payload.motif.trim()) {
+      throw new BadRequestException('Le motif d\'annulation est requis');
+    }
+
+    const wasSuccessful = isSuccessfulPaiementStatus(paiement.statut);
+
+    await this.postgresService.query(
+      `
+        UPDATE public.paiements
+        SET
+          statut = 'annule',
+          motif_annulation = $1,
+          date_annulation = CURRENT_DATE,
+          date_retour = COALESCE($2, date_retour),
+          reference_retour = COALESCE($3, reference_retour),
+          updated_by = $4,
+          updated_at = now()
+        WHERE id = $5
+          AND client_id = $6
+      `,
+      [
+        payload.motif.trim(),
+        payload.dateRetour?.trim() || null,
+        payload.referenceRetour?.trim() || null,
+        actor.sub,
+        id,
+        actor.tenantId,
+      ]
+    );
+
+    if (wasSuccessful) {
+      await this.revertSuccessfulArtifacts(actor, paiement, payload.motif.trim());
+    }
+
+    return this.getById(actor, id);
+  }
+
+  async reprendre(actor: AuthenticatedUser, id: string, payload: ReprendrePaiementDto): Promise<PaiementView> {
+    const paiement = await this.getPaiementRow(actor, id);
+
+    if (!['rejete', 'annule'].includes(paiement.statut)) {
+      throw new BadRequestException(
+        `Reprise impossible: seuls les paiements rejetés ou annulés peuvent être repris. Statut actuel: "${paiement.statut}".`
+      );
+    }
+
+    const depense = await this.getDepenseForPaiement(actor, paiement.depense_id);
+    this.assertDepenseCanReceivePaiement(depense);
+
+    const montant = this.assertPositiveAmount(payload.montant ?? Number(paiement.montant ?? 0));
+    const resteAPayer = await this.getResteAPayer(actor.tenantId, depense.id, depense.montant);
+    if (montant > resteAPayer) {
+      throw new BadRequestException(
+        `Reprise impossible: le montant dépasse le reste à payer (${resteAPayer.toFixed(2)}). Action: ajustez la tentative reprise.`
+      );
+    }
+
+    const numero = await this.generateNextNumero(actor.tenantId, paiement.exercice_id);
+    const tentativeNumero = await this.getNextTentativeNumero(
+      actor.tenantId,
+      paiement.depense_id,
+      paiement.paiement_origine_id ?? paiement.id
+    );
+
+    const insertResult = await this.postgresService.query<{ id: string }>(
+      `
+        INSERT INTO public.paiements (
+          client_id,
+          exercice_id,
+          numero,
+          depense_id,
+          montant,
+          date_paiement,
+          mode_paiement,
+          reference_paiement,
+          observations,
+          statut,
+          tentative_numero,
+          paiement_origine_id,
+          paiement_repris_de_id,
+          created_by,
+          updated_by
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'transmis', $10, $11, $12, $13, $13)
+        RETURNING id
+      `,
+      [
+        actor.tenantId,
+        paiement.exercice_id,
+        numero,
+        paiement.depense_id,
+        montant,
+        payload.datePaiement ?? this.toDateOnly(paiement.date_paiement),
+        payload.modePaiement ?? paiement.mode_paiement,
+        payload.referencePaiement?.trim() ?? paiement.reference_paiement,
+        payload.observations?.trim() ?? paiement.observations,
+        tentativeNumero,
+        paiement.paiement_origine_id ?? paiement.id,
+        paiement.id,
+        actor.sub,
+      ]
+    );
+
+    const insertedId = insertResult.rows[0]?.id;
+    if (!insertedId) {
+      throw new NotFoundException('Impossible de créer la tentative de reprise');
+    }
+
+    return this.getById(actor, insertedId);
+  }
+
+  async delete(actor: AuthenticatedUser, id: string): Promise<void> {
+    const paiement = await this.getPaiementRow(actor, id);
+
+    if (!['annule', 'rejete'].includes(paiement.statut)) {
+      throw new BadRequestException(
+        'Suppression impossible: seules les tentatives annulées ou rejetées peuvent être supprimées. Action: utilisez les transitions du workflow.'
+      );
+    }
+
+    const result = await this.postgresService.query(
+      `
+        DELETE FROM public.paiements
+        WHERE id = $1
+          AND client_id = $2
+      `,
+      [id, actor.tenantId]
+    );
+
+    if ((result.rowCount ?? 0) === 0) {
+      throw new NotFoundException('Paiement introuvable');
+    }
+  }
+
+  private async transition(actor: AuthenticatedUser, id: string, nextStatus: PaiementStatus): Promise<PaiementView> {
+    const paiement = await this.getPaiementRow(actor, id);
+    this.assertTransitionAllowed(paiement.statut, nextStatus);
+
+    await this.postgresService.query(
+      `
+        UPDATE public.paiements
+        SET
+          statut = $1,
+          updated_by = $2,
+          updated_at = now()
+        WHERE id = $3
+          AND client_id = $4
+      `,
+      [nextStatus, actor.sub, id, actor.tenantId]
+    );
+
+    if (isAccountingReadyPaiementStatus(nextStatus) && !isAccountingReadyPaiementStatus(paiement.statut)) {
+      await this.ensureSuccessfulArtifacts(actor, paiement);
+    }
+
+    return this.getById(actor, id);
+  }
+
+  private assertTransitionAllowed(current: PaiementStatus, next: PaiementStatus): void {
+    if (!canTransitionPaiement(current, next)) {
+      throw new BadRequestException(
+        `Transition invalide: impossible de passer un paiement de "${current}" à "${next}".`
+      );
+    }
+  }
+
+  private async getPaiementRow(actor: AuthenticatedUser, id: string): Promise<PaiementRow> {
+    const result = await this.postgresService.query<PaiementRow>(
+      this.baseSelect() +
+        `
+          WHERE p.client_id = $1
+            AND p.id = $2
+          LIMIT 1
+        `,
+      [actor.tenantId, id]
+    );
+
+    const row = result.rows[0];
+    if (!row) {
+      throw new NotFoundException('Paiement introuvable');
+    }
+
+    return row;
+  }
+
+  private async getDepenseForPaiement(actor: AuthenticatedUser, depenseId: string): Promise<DepensePaiementRow> {
+    const result = await this.postgresService.query<DepensePaiementRow>(
+      `
+        SELECT id, client_id, exercice_id, numero, objet, montant, montant_paye, statut, fournisseur_id
+        FROM public.depenses
+        WHERE id = $1
+          AND client_id = $2
+        LIMIT 1
+      `,
+      [depenseId, actor.tenantId]
+    );
+
+    const row = result.rows[0];
+    if (!row) {
+      throw new NotFoundException('Dépense introuvable');
+    }
+
+    return row;
+  }
+
+  private assertDepenseMatchesExercice(depense: DepensePaiementRow, exerciceId: string): void {
+    if (depense.exercice_id !== exerciceId) {
+      throw new BadRequestException('La dépense ne correspond pas à l\'exercice sélectionné');
+    }
+  }
+
+  private assertDepenseCanReceivePaiement(depense: DepensePaiementRow): void {
+    if (!canCreatePaiementForDepense(depense.statut)) {
+      throw new BadRequestException(
+        `Paiement impossible: la dépense ${depense.numero} est en statut "${depense.statut}". Action: ordonnancez-la avant de lancer le workflow de paiement.`
+      );
+    }
+  }
+
+  private assertPositiveAmount(rawAmount: number): number {
+    const amount = Number(rawAmount ?? 0);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('Le montant du paiement doit être strictement positif');
+    }
+
+    return amount;
+  }
+
+  private async getResteAPayer(
+    tenantId: string,
+    depenseId: string,
+    depenseMontant: string | number
+  ): Promise<number> {
+    const result = await this.postgresService.query<{ total: string | number }>(
+      `
+        SELECT COALESCE(SUM(montant), 0) AS total
+        FROM public.paiements
+        WHERE client_id = $1
+          AND depense_id = $2
+          AND statut IN ('execute', 'reconcilie')
+      `,
+      [tenantId, depenseId]
+    );
+
+    return Math.max(Number(depenseMontant ?? 0) - Number(result.rows[0]?.total ?? 0), 0);
+  }
+
+  private async getNextTentativeNumero(tenantId: string, depenseId: string, rootPaiementId: string): Promise<number> {
+    const result = await this.postgresService.query<{ max_attempt: number | null }>(
+      `
+        SELECT MAX(tentative_numero) AS max_attempt
+        FROM public.paiements
+        WHERE client_id = $1
+          AND depense_id = $2
+          AND (paiement_origine_id = $3 OR id = $3)
+      `,
+      [tenantId, depenseId, rootPaiementId]
+    );
+
+    return Number(result.rows[0]?.max_attempt ?? 1) + 1;
+  }
+
+  private async ensureSuccessfulArtifacts(actor: AuthenticatedUser, paiement: PaiementRow): Promise<void> {
+    await this.ensureEcritures(actor, paiement);
+  }
+
+  private async ensureEcritures(actor: AuthenticatedUser, paiement: PaiementRow): Promise<void> {
+    const existing = await this.postgresService.query<{ count: string | number }>(
+      `
+        SELECT COUNT(*) AS count
+        FROM public.ecritures_comptables
+        WHERE client_id = $1
+          AND paiement_id = $2
+          AND statut_ecriture = 'validee'
+      `,
+      [actor.tenantId, paiement.id]
+    );
+
+    if (Number(existing.rows[0]?.count ?? 0) > 0) {
+      return;
+    }
+
+    const sourcePayload = {
+      id: paiement.id,
+      numero: paiement.numero,
+      montant: Number(paiement.montant ?? 0),
+      date_paiement: this.toDateOnly(paiement.date_paiement),
+      mode_paiement: paiement.mode_paiement,
+      reference_paiement: paiement.reference_paiement,
+      depense_id: paiement.depense_id,
+    };
+
+    await this.postgresService.query(
+      `
+        SELECT public.generate_ecritures_comptables(
+          $1,
+          $2::uuid,
+          $3,
+          $4::uuid,
+          $5,
+          $6::date,
+          $7,
+          $8::jsonb,
+          $9::uuid
+        )
+      `,
+      [
+        'paiement',
+        paiement.id,
+        paiement.numero,
+        paiement.exercice_id,
+        Number(paiement.montant ?? 0),
+        this.toDateOnly(paiement.date_paiement),
+        `Paiement ${paiement.numero}`,
+        JSON.stringify(sourcePayload),
+        actor.sub,
+      ]
+    );
+  }
+
+  private async revertSuccessfulArtifacts(actor: AuthenticatedUser, paiement: PaiementRow, motif: string): Promise<void> {
     const validatedEntries = await this.postgresService.query<EcritureRow>(
       `
         SELECT
@@ -223,7 +603,6 @@ export class PaiementsService {
           exercice_id,
           numero_piece,
           numero_ligne,
-          date_ecriture,
           compte_debit_id,
           compte_credit_id,
           montant,
@@ -241,55 +620,13 @@ export class PaiementsService {
         WHERE paiement_id = $1
           AND statut_ecriture = 'validee'
       `,
-      [id]
+      [paiement.id]
     );
 
     if (validatedEntries.rows.length > 0) {
       await this.createContrepassations(actor, validatedEntries.rows, motif);
     }
 
-    const updateResult = await this.postgresService.query(
-      `
-        UPDATE public.paiements
-        SET
-          statut = 'annule',
-          motif_annulation = $1,
-          date_annulation = CURRENT_DATE,
-          updated_at = now()
-        WHERE id = $2
-          AND client_id = $3
-      `,
-      [motif, id, actor.tenantId]
-    );
-
-    if ((updateResult.rowCount ?? 0) === 0) {
-      throw new NotFoundException('Paiement introuvable');
-    }
-
-    return this.getById(actor, id);
-  }
-
-  async delete(actor: AuthenticatedUser, id: string): Promise<void> {
-    const paiement = await this.getById(actor, id);
-
-    if (paiement.statut === 'valide') {
-      throw new BadRequestException(
-        '❌ Suppression impossible\n\n💡 Utilisez l\'annulation au lieu de la suppression pour conserver l\'historique comptable'
-      );
-    }
-
-    const result = await this.postgresService.query(
-      `
-        DELETE FROM public.paiements
-        WHERE id = $1
-          AND client_id = $2
-      `,
-      [id, actor.tenantId]
-    );
-
-    if ((result.rowCount ?? 0) === 0) {
-      throw new NotFoundException('Paiement introuvable');
-    }
   }
 
   private async createContrepassations(actor: AuthenticatedUser, entries: EcritureRow[], motif: string): Promise<void> {
@@ -320,27 +657,7 @@ export class PaiementsService {
             paiement_id
           )
           VALUES (
-            $1,
-            $2,
-            $3,
-            $4,
-            CURRENT_DATE,
-            $5,
-            $6,
-            $7,
-            $8,
-            $9,
-            $10,
-            $11,
-            'contrepassation',
-            $12,
-            $13,
-            $14,
-            $15,
-            $16,
-            $17,
-            $18,
-            $19
+            $1, $2, $3, $4, CURRENT_DATE, $5, $6, $7, $8, $9, $10, $11, 'contrepassation', $12, $13, $14, $15, $16, $17, $18, $19
           )
         `,
         [
@@ -351,7 +668,7 @@ export class PaiementsService {
           entry.compte_credit_id,
           entry.compte_debit_id,
           entry.montant,
-          `Annulation: ${entry.libelle} - ${motif}`,
+          `Workflow paiement inversé: ${entry.libelle} - ${motif}`,
           entry.type_operation,
           entry.source_id,
           entry.regle_comptable_id,
@@ -362,7 +679,7 @@ export class PaiementsService {
           entry.bon_commande_id,
           entry.facture_id,
           entry.depense_id,
-          entry.paiement_id
+          entry.paiement_id,
         ]
       );
     }
@@ -396,6 +713,8 @@ export class PaiementsService {
         d.numero AS depense_numero,
         d.objet AS depense_objet,
         d.montant AS depense_montant,
+        d.montant_paye AS depense_montant_paye,
+        d.statut AS depense_statut,
         f.id AS fournisseur_id,
         f.nom AS fournisseur_nom,
         f.code AS fournisseur_code,
@@ -412,6 +731,9 @@ export class PaiementsService {
   }
 
   private mapRowToView(row: PaiementRow): PaiementView {
+    const montantDepense = Number(row.depense_montant ?? 0);
+    const montantPaye = Number(row.depense_montant_paye ?? 0);
+
     return {
       id: row.id,
       clientId: row.client_id,
@@ -426,27 +748,38 @@ export class PaiementsService {
       statut: row.statut,
       motifAnnulation: row.motif_annulation ?? undefined,
       dateAnnulation: row.date_annulation ? this.toDateOnly(row.date_annulation) : undefined,
+      motifRejet: row.motif_rejet ?? undefined,
+      dateRejet: row.date_rejet ? this.toDateOnly(row.date_rejet) : undefined,
+      dateRetour: row.date_retour ? this.toDateOnly(row.date_retour) : undefined,
+      referenceRetour: row.reference_retour ?? undefined,
+      tentativeNumero: Number(row.tentative_numero ?? 1),
+      paiementOrigineId: row.paiement_origine_id ?? undefined,
+      paiementReprisDeId: row.paiement_repris_de_id ?? undefined,
       createdBy: row.created_by ?? undefined,
+      updatedBy: row.updated_by ?? undefined,
       createdAt: new Date(row.created_at).toISOString(),
       updatedAt: new Date(row.updated_at).toISOString(),
       ecrituresCount: Number(row.ecritures_count ?? 0),
       depense:
-        row.depense_numero && row.depense_objet && row.depense_montant !== null
+        row.depense_numero && row.depense_objet && row.depense_statut
           ? {
               id: row.depense_id,
               numero: row.depense_numero,
               objet: row.depense_objet,
-              montant: Number(row.depense_montant),
+              montant: montantDepense,
+              montantPaye,
+              resteAPayer: Math.max(montantDepense - montantPaye, 0),
+              statut: row.depense_statut,
               fournisseur:
                 row.fournisseur_id && row.fournisseur_nom && row.fournisseur_code
                   ? {
                       id: row.fournisseur_id,
                       nom: row.fournisseur_nom,
-                      code: row.fournisseur_code
+                      code: row.fournisseur_code,
                     }
-                  : undefined
+                  : undefined,
             }
-          : undefined
+          : undefined,
     };
   }
 

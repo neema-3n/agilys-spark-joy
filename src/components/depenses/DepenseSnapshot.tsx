@@ -12,6 +12,8 @@ import { useGenerateEcritures } from '@/hooks/useGenerateEcritures';
 import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { EcrituresSection } from '@/components/ecritures/EcrituresSection';
+import { canAddPaiementToDepense, depenseStatusLabels, depenseStatusVariants } from '@/lib/depense-status';
+import { paiementStatusLabels, paiementStatusVariants } from '@/lib/paiement-workflow';
 
 interface DepenseSnapshotProps {
   depense: Depense;
@@ -71,23 +73,11 @@ export const DepenseSnapshot = ({
   const montantRestant = depense.montant - depense.montantPaye;
   const pourcentagePaye = depense.montant > 0 ? (depense.montantPaye / depense.montant) * 100 : 0;
   const getStatutBadge = (statut: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'> = {
-      brouillon: 'outline',
-      validee: 'success',
-      ordonnancee: 'secondary',
-      payee: 'success',
-      annulee: 'destructive',
-    };
-
-    const labels: Record<string, string> = {
-      brouillon: 'Brouillon',
-      validee: 'Validée',
-      ordonnancee: 'Ordonnancée',
-      payee: 'Payée',
-      annulee: 'Annulée',
-    };
-
-    return <Badge variant={variants[statut] || 'default'}>{labels[statut] || statut}</Badge>;
+    return (
+      <Badge variant={depenseStatusVariants[statut as keyof typeof depenseStatusVariants] || 'default'}>
+        {depenseStatusLabels[statut as keyof typeof depenseStatusLabels] || statut}
+      </Badge>
+    );
   };
 
   const handleEntityClick = (type: string, id?: string) => {
@@ -128,7 +118,7 @@ export const DepenseSnapshot = ({
       );
     }
 
-    if (onEnregistrerPaiement && depense.statut === 'ordonnancee' && montantRestant > 0) {
+    if (onEnregistrerPaiement && canAddPaiementToDepense(depense.statut) && montantRestant > 0) {
       buttons.push(
         <Button
           key="paiement"
@@ -141,7 +131,7 @@ export const DepenseSnapshot = ({
       );
     }
 
-    if (onAnnuler && depense.statut !== 'annulee' && depense.statut !== 'payee') {
+    if (onAnnuler && depense.statut !== 'annulee' && depense.statut !== 'payee' && depense.statut !== 'partiellement_payee') {
       buttons.push(
         <Button
           key="annuler"
@@ -375,7 +365,7 @@ export const DepenseSnapshot = ({
         </Card>
       )}
 
-{paiements && paiements.length > 0 && (
+      {paiements && paiements.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -387,9 +377,7 @@ export const DepenseSnapshot = ({
             {isLoadingPaiements ? (
               <p className="text-sm text-muted-foreground">Chargement...</p>
             ) : (
-              paiements
-                .filter((p) => p.statut === 'valide')
-                .map((paiement) => (
+              paiements.map((paiement) => (
                   <div
                     key={paiement.id}
                     className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
@@ -397,13 +385,18 @@ export const DepenseSnapshot = ({
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium">{paiement.numero}</p>
+                        <Badge variant={paiementStatusVariants[paiement.statut]} className="text-xs">
+                          {paiementStatusLabels[paiement.statut]}
+                        </Badge>
                         <Badge variant="outline" className="text-xs">
-                          {paiement.modePaiement}
+                          {paiement.modePaiement} • Tentative {paiement.tentativeNumero}
                         </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
                         {formatDate(paiement.datePaiement)}
                         {paiement.referencePaiement && ` • Réf: ${paiement.referencePaiement}`}
+                        {paiement.motifRejet && ` • Rejet: ${paiement.motifRejet}`}
+                        {paiement.motifAnnulation && ` • Annulation: ${paiement.motifAnnulation}`}
                       </p>
                     </div>
                     <p className="text-sm font-semibold">{formatMontant(paiement.montant)}</p>

@@ -1,4 +1,4 @@
-export type StatutDepense = 'brouillon' | 'validee' | 'ordonnancee' | 'payee' | 'annulee';
+export type StatutDepense = 'brouillon' | 'validee' | 'ordonnancee' | 'partiellement_payee' | 'payee' | 'annulee';
 export type ModePaiement = 'virement' | 'cheque' | 'especes' | 'carte' | 'autre';
 
 export interface Depense {
@@ -34,6 +34,8 @@ export interface Depense {
   // Métadonnées
   observations?: string;
   motifAnnulation?: string;
+  motifRejet?: string;
+  dateRejet?: string;
   createdBy?: string;
   createdAt: string;
   updatedAt: string;

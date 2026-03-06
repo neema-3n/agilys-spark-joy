@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -28,15 +29,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { PaiementFormData } from '@/types/paiement.types';
-
-const formSchema = z.object({
-  depenseId: z.string(),
-  montant: z.coerce.number().positive('Le montant doit être positif'),
-  datePaiement: z.string().min(1, 'La date est requise'),
-  modePaiement: z.enum(['virement', 'cheque', 'especes', 'carte', 'autre']),
-  referencePaiement: z.string().optional(),
-  observations: z.string().optional(),
-});
+import { getMontantRestantDepense } from '@/lib/paiement-workflow';
 
 interface PaiementDialogProps {
   open: boolean;
@@ -56,6 +49,18 @@ export const PaiementDialog = ({
   depenseNumero,
 }: PaiementDialogProps) => {
   const { createPaiement } = usePaiements();
+  const safeMontantRestant = getMontantRestantDepense({ montant: montantRestant, montantPaye: 0 });
+  const formSchema = z.object({
+    depenseId: z.string(),
+    montant: z.coerce
+      .number()
+      .positive('Le montant doit être positif')
+      .max(safeMontantRestant, `Le montant ne peut pas dépasser le reste à payer (${safeMontantRestant.toFixed(2)}).`),
+    datePaiement: z.string().min(1, 'La date est requise'),
+    modePaiement: z.enum(['virement', 'cheque', 'especes', 'carte', 'autre']),
+    referencePaiement: z.string().optional(),
+    observations: z.string().optional(),
+  });
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -68,6 +73,17 @@ export const PaiementDialog = ({
       observations: '',
     },
   });
+
+  useEffect(() => {
+    form.reset({
+      depenseId,
+      montant: safeMontantRestant,
+      datePaiement: new Date().toISOString().split('T')[0],
+      modePaiement: 'virement',
+      referencePaiement: '',
+      observations: '',
+    });
+  }, [depenseId, form, safeMontantRestant]);
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     await createPaiement(values as PaiementFormData);
@@ -84,7 +100,7 @@ export const PaiementDialog = ({
         <DialogHeader>
           <DialogTitle>Enregistrer un paiement</DialogTitle>
           <p className="text-sm text-muted-foreground">
-            Dépense {depenseNumero} - Reste à payer : {montantRestant.toFixed(2)} €
+            Dépense {depenseNumero} - Reste à payer : {safeMontantRestant.toFixed(2)} €
           </p>
         </DialogHeader>
 
