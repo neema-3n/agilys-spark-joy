@@ -28,7 +28,7 @@ development_status:
   4-1-gerer-reservations-et-engagements: done
   4-2-gerer-bons-de-commande-et-factures: done
   4-3-constituer-et-liquider-une-depense: done
-  4-4-executer-paiement-et-gestion-des-cas-partiels-rejets: backlog
+  4-4-executer-paiement-et-gestion-des-cas-partiels-rejets: done
   epic-4-retrospective: optional
   epic-5: backlog
   5-1-evaluer-le-risque-cash-sur-transitions-critiques: backlog

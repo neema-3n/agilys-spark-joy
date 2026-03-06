@@ -25,7 +25,7 @@ interface DepenseApiModel {
   fournisseurId?: string;
   beneficiaire?: string;
   projetId?: string;
-  statut: 'brouillon' | 'validee' | 'ordonnancee' | 'payee' | 'annulee';
+  statut: 'brouillon' | 'validee' | 'ordonnancee' | 'partiellement_payee' | 'payee' | 'annulee';
   dateValidation?: string;
   dateOrdonnancement?: string;
   datePaiement?: string;
@@ -33,6 +33,8 @@ interface DepenseApiModel {
   referencePaiement?: string;
   observations?: string;
   motifAnnulation?: string;
+  motifRejet?: string;
+  dateRejet?: string;
   createdBy?: string;
   createdAt: string;
   updatedAt: string;
@@ -97,6 +99,8 @@ const mapFromApi = (row: DepenseApiModel): Depense => ({
   referencePaiement: row.referencePaiement,
   observations: row.observations,
   motifAnnulation: row.motifAnnulation,
+  motifRejet: row.motifRejet,
+  dateRejet: row.dateRejet,
   createdBy: row.createdBy,
   createdAt: row.createdAt,
   updatedAt: row.updatedAt,

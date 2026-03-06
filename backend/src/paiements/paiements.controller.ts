@@ -4,7 +4,13 @@ import { AuthorizationPolicyGuard } from '../auth/authorization-policy.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RequirePermissions } from '../auth/permissions.decorator';
-import { AnnulerPaiementDto, CreatePaiementDto, PaiementsQueryDto } from './dto/paiements.dto';
+import {
+  AnnulerPaiementDto,
+  CreatePaiementDto,
+  PaiementsQueryDto,
+  RejeterPaiementDto,
+  ReprendrePaiementDto,
+} from './dto/paiements.dto';
 import { PaiementsService } from './paiements.service';
 
 @Controller('paiements')
@@ -36,10 +42,40 @@ export class PaiementsController {
     return this.paiementsService.create(user, body);
   }
 
+  @Patch(':id/accepter')
+  @RequirePermissions('referentiels:write')
+  accepter(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    return this.paiementsService.accepter(user, id);
+  }
+
+  @Patch(':id/executer')
+  @RequirePermissions('referentiels:write')
+  executer(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    return this.paiementsService.executer(user, id);
+  }
+
+  @Patch(':id/reconcilier')
+  @RequirePermissions('referentiels:write')
+  reconcilier(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    return this.paiementsService.reconcilier(user, id);
+  }
+
+  @Patch(':id/rejeter')
+  @RequirePermissions('referentiels:write')
+  rejeter(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string, @Body() body: RejeterPaiementDto) {
+    return this.paiementsService.rejeter(user, id, body);
+  }
+
   @Patch(':id/annuler')
   @RequirePermissions('referentiels:write')
   annuler(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string, @Body() body: AnnulerPaiementDto) {
-    return this.paiementsService.annuler(user, id, body.motif);
+    return this.paiementsService.annuler(user, id, body);
+  }
+
+  @Post(':id/reprendre')
+  @RequirePermissions('referentiels:write')
+  reprendre(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string, @Body() body: ReprendrePaiementDto) {
+    return this.paiementsService.reprendre(user, id, body);
   }
 
   @Delete(':id')

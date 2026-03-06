@@ -19,6 +19,8 @@
     "test": "pnpm run test:frontend && pnpm run test:backend",
     "test:dev-command": "bash ./tests/dev-command.test.sh",
     "test:frontend": "pnpm exec playwright test tests/auth-migration.spec.ts",
+    "test:frontend:depenses": "pnpm exec playwright test --config playwright.depenses.config.ts",
+    "test:frontend:paiements": "pnpm exec playwright test --config playwright.paiements.config.ts",
     "test:backend": "pnpm --dir backend run test",
     "preview": "vite preview",
     "db:migrate": "bash ./scripts/db-migrate.sh",

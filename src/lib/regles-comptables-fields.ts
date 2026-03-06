@@ -26,20 +26,20 @@ export const OPERATION_FIELDS: Record<TypeOperation, FieldDefinition[]> = {
     { value: 'objet', label: 'Objet', type: 'text' },
   ],
   facture: [
-    { value: 'statut', label: 'Statut', type: 'select', options: ['brouillon', 'validee', 'payee', 'annulee'] },
+    { value: 'statut', label: 'Statut', type: 'select', options: ['brouillon', 'validee', 'partiellement_payee', 'payee', 'annulee'] },
     { value: 'montant_ht', label: 'Montant HT', type: 'number' },
     { value: 'montant_ttc', label: 'Montant TTC', type: 'number' },
     { value: 'objet', label: 'Objet', type: 'text' },
   ],
   depense: [
-    { value: 'statut', label: 'Statut', type: 'select', options: ['brouillon', 'validee', 'ordonnancee', 'payee', 'annulee'] },
+    { value: 'statut', label: 'Statut', type: 'select', options: ['brouillon', 'validee', 'ordonnancee', 'partiellement_payee', 'payee', 'annulee'] },
     { value: 'montant', label: 'Montant', type: 'number' },
     { value: 'beneficiaire', label: 'Bénéficiaire', type: 'text' },
     { value: 'objet', label: 'Objet', type: 'text' },
     { value: 'mode_paiement', label: 'Mode de paiement', type: 'select', options: ['virement', 'cheque', 'especes', 'carte', 'autre'] },
   ],
   paiement: [
-    { value: 'statut', label: 'Statut', type: 'select', options: ['valide', 'annule'] },
+    { value: 'statut', label: 'Statut', type: 'select', options: ['transmis', 'accepte', 'execute', 'reconcilie', 'rejete', 'annule'] },
     { value: 'montant', label: 'Montant', type: 'number' },
     { value: 'mode_paiement', label: 'Mode de paiement', type: 'select', options: ['virement', 'cheque', 'especes', 'carte', 'autre'] },
     { value: 'reference_paiement', label: 'Référence', type: 'text' },

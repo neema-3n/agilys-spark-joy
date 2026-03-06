@@ -25,42 +25,57 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
+import type { StatutPaiement } from '@/types/paiement.types';
+import {
+  buildPaiementMotifSubmission,
+  filterPaiements,
+  getPaiementFilterOptions,
+  getPaiementMotifDialogCopy,
+  openPaiementMotifDialog,
+  resetPaiementMotifDialog,
+} from '@/lib/paiement-page';
+import { paiementStatusLabels } from '@/lib/paiement-workflow';
 
 export default function Paiements() {
-  const { paiements, isLoading, annulerPaiement } = usePaiements();
+  const {
+    paiements,
+    isLoading,
+    accepterPaiement,
+    executerPaiement,
+    reconcilierPaiement,
+    rejeterPaiement,
+    annulerPaiement,
+    reprendrePaiement,
+  } = usePaiements();
   const [search, setSearch] = useState('');
-  const [statutFilter, setStatutFilter] = useState<'tous' | 'valide' | 'annule'>('tous');
-  const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
-  const [selectedPaiementId, setSelectedPaiementId] = useState<string | null>(null);
-  const [motifAnnulation, setMotifAnnulation] = useState('');
+  const [statutFilter, setStatutFilter] = useState<'tous' | StatutPaiement>('tous');
+  const [motifDialogState, setMotifDialogState] = useState(resetPaiementMotifDialog);
 
-  const filteredPaiements = useMemo(() => {
-    const searchLower = search.toLowerCase();
-    return paiements
-      .filter((p) => (statutFilter === 'tous' ? true : p.statut === statutFilter))
-      .filter(
-        (p) =>
-          !search ||
-          p.numero.toLowerCase().includes(searchLower) ||
-          p.depense?.numero.toLowerCase().includes(searchLower) ||
-          p.referencePaiement?.toLowerCase().includes(searchLower) ||
-          p.depense?.fournisseur?.nom?.toLowerCase().includes(searchLower)
-      )
-      .sort((a, b) => new Date(b.datePaiement).getTime() - new Date(a.datePaiement).getTime());
-  }, [paiements, search, statutFilter]);
+  const filteredPaiements = useMemo(
+    () => filterPaiements(paiements, search, statutFilter),
+    [paiements, search, statutFilter]
+  );
+  const motifDialogCopy = getPaiementMotifDialogCopy(motifDialogState.pendingAction);
 
-  const handleAnnuler = (id: string) => {
-    setSelectedPaiementId(id);
-    setAnnulerDialogOpen(true);
+  const openMotifDialog = (id: string, action: 'annuler' | 'rejeter') => {
+    setMotifDialogState(openPaiementMotifDialog(id, action));
   };
 
-  const handleConfirmAnnuler = async () => {
-    if (!selectedPaiementId || !motifAnnulation.trim()) return;
-    
-    await annulerPaiement({ id: selectedPaiementId, motif: motifAnnulation });
-    setAnnulerDialogOpen(false);
-    setSelectedPaiementId(null);
-    setMotifAnnulation('');
+  const resetMotifDialog = () => {
+    setMotifDialogState(resetPaiementMotifDialog());
+  };
+
+  const handleConfirmMotif = async () => {
+    const submission = buildPaiementMotifSubmission(motifDialogState);
+    if (!submission) return;
+
+    if (submission.action === 'annuler') {
+      await annulerPaiement({ id: submission.id, payload: submission.payload });
+    } else {
+      await rejeterPaiement({ id: submission.id, payload: submission.payload });
+    }
+
+    resetMotifDialog();
   };
 
   const handleView = (id: string) => {
@@ -95,15 +110,16 @@ export default function Paiements() {
               filters={[
                 <DropdownMenu key="statut">
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline">Statut: {statutFilter === 'tous' ? 'Tous' : statutFilter}</Button>
+                    <Button variant="outline">
+                      Statut: {statutFilter === 'tous' ? 'Tous' : paiementStatusLabels[statutFilter]}
+                    </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    {[
-                      { value: 'tous', label: 'Tous' },
-                      { value: 'valide', label: 'Validé' },
-                      { value: 'annule', label: 'Annulé' },
-                    ].map((option) => (
-                      <DropdownMenuItem key={option.value} onClick={() => setStatutFilter(option.value as any)}>
+                    {getPaiementFilterOptions().map((option) => (
+                      <DropdownMenuItem
+                        key={option.value}
+                        onClick={() => setStatutFilter(option.value as 'tous' | StatutPaiement)}
+                      >
                         {option.label}
                       </DropdownMenuItem>
                     ))}
@@ -118,7 +134,12 @@ export default function Paiements() {
           <PaiementTable
             paiements={filteredPaiements}
             onView={handleView}
-            onAnnuler={handleAnnuler}
+            onAccepter={accepterPaiement}
+            onExecuter={executerPaiement}
+            onReconcilier={reconcilierPaiement}
+            onRejeter={(id) => openMotifDialog(id, 'rejeter')}
+            onAnnuler={(id) => openMotifDialog(id, 'annuler')}
+            onReprendre={(id) => reprendrePaiement({ id })}
             stickyHeader
             stickyHeaderOffset={0}
             scrollContainerClassName="max-h-[calc(100vh-240px)] overflow-auto"
@@ -126,30 +147,42 @@ export default function Paiements() {
         </ListLayout>
       </div>
 
-      <AlertDialog open={annulerDialogOpen} onOpenChange={setAnnulerDialogOpen}>
+      <AlertDialog
+        open={motifDialogState.open}
+        onOpenChange={(open) => {
+          if (!open) {
+            resetMotifDialog();
+            return;
+          }
+          setMotifDialogState((current) => ({ ...current, open }));
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Annuler ce paiement</AlertDialogTitle>
-            <AlertDialogDescription>
-              Cette action annulera le paiement. Le montant payé de la dépense sera recalculé automatiquement.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{motifDialogCopy.title}</AlertDialogTitle>
+            <AlertDialogDescription>{motifDialogCopy.description}</AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium">Motif d'annulation *</label>
+              <label className="text-sm font-medium">{motifDialogCopy.label}</label>
               <Textarea
-                value={motifAnnulation}
-                onChange={(e) => setMotifAnnulation(e.target.value)}
-                placeholder="Indiquez le motif de l'annulation..."
+                value={motifDialogState.motif}
+                onChange={(e) =>
+                  setMotifDialogState((current) => ({
+                    ...current,
+                    motif: e.target.value,
+                  }))
+                }
+                placeholder={motifDialogCopy.placeholder}
                 rows={3}
                 className="mt-1"
               />
             </div>
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmAnnuler} disabled={!motifAnnulation.trim()}>
-              Confirmer l'annulation
+            <AlertDialogCancel onClick={resetMotifDialog}>Fermer</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmMotif} disabled={!motifDialogState.motif.trim()}>
+              Confirmer
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

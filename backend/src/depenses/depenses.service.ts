@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PostgresService } from '../common/postgres.service';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
+import { type DepenseWorkflowStatus, type PaiementMode } from '../paiements/paiement-workflow';
 import type {
   CreateDepenseDto,
   CreateDepenseFromEngagementDto,
@@ -27,14 +28,16 @@ interface DepenseRow {
   fournisseur_id: string | null;
   beneficiaire: string | null;
   projet_id: string | null;
-  statut: 'brouillon' | 'validee' | 'ordonnancee' | 'payee' | 'annulee';
+  statut: DepenseWorkflowStatus;
   date_validation: Date | string | null;
   date_ordonnancement: Date | string | null;
   date_paiement: Date | string | null;
-  mode_paiement: 'virement' | 'cheque' | 'especes' | 'carte' | 'autre' | null;
+  mode_paiement: PaiementMode | null;
   reference_paiement: string | null;
   observations: string | null;
   motif_annulation: string | null;
+  motif_rejet: string | null;
+  date_rejet: Date | string | null;
   created_by: string | null;
   created_at: Date | string;
   updated_at: Date | string;
@@ -81,7 +84,7 @@ interface PaiementValideRow {
   numero: string;
   montant: string | number;
   date_paiement: Date | string;
-  mode_paiement: string;
+  mode_paiement: PaiementMode;
   depense_id?: string;
   depense_numero?: string;
   depense_objet?: string;
@@ -104,14 +107,16 @@ interface DepenseView {
   fournisseurId?: string;
   beneficiaire?: string;
   projetId?: string;
-  statut: 'brouillon' | 'validee' | 'ordonnancee' | 'payee' | 'annulee';
+  statut: DepenseWorkflowStatus;
   dateValidation?: string;
   dateOrdonnancement?: string;
   datePaiement?: string;
-  modePaiement?: 'virement' | 'cheque' | 'especes' | 'carte' | 'autre';
+  modePaiement?: PaiementMode;
   referencePaiement?: string;
   observations?: string;
   motifAnnulation?: string;
+  motifRejet?: string;
+  dateRejet?: string;
   createdBy?: string;
   createdAt: string;
   updatedAt: string;
@@ -656,37 +661,13 @@ export class DepensesService {
   }
 
   async marquerPayee(actor: AuthenticatedUser, id: string, payload: MarquerPayeeDto): Promise<DepenseView> {
-    const depense = await this.getById(actor, id);
+    void actor;
+    void id;
+    void payload;
 
-    if (depense.statut !== 'ordonnancee') {
-      throw new BadRequestException(
-        `Transition invalide: impossible de payer une dépense en statut "${depense.statut}". Action: ordonnancez la dépense avant paiement.`
-      );
-    }
-
-    const result = await this.postgresService.query(
-      `
-        UPDATE public.depenses
-        SET
-          statut = 'payee',
-          date_paiement = $1,
-          mode_paiement = $2,
-          reference_paiement = $3,
-          montant_paye = $4,
-          updated_at = now()
-        WHERE id = $5
-          AND client_id = $6
-      `,
-      [payload.datePaiement, payload.modePaiement, payload.referencePaiement ?? null, depense.montant, id, actor.tenantId]
+    throw new BadRequestException(
+      "Action obsolète: utilisez le workflow /paiements pour enregistrer un paiement, gérer les cas partiels, rejets et annulations."
     );
-
-    if ((result.rowCount ?? 0) === 0) {
-      throw new NotFoundException('Dépense introuvable');
-    }
-
-    const updated = await this.getById(actor, id);
-    await this.generateEcrituresForDepense(actor, updated);
-    return updated;
   }
 
   async annuler(actor: AuthenticatedUser, id: string, motif: string): Promise<DepenseView> {
@@ -696,9 +677,9 @@ export class DepensesService {
       throw new BadRequestException("Transition invalide: cette dépense est déjà annulée.");
     }
 
-    if (current.statut === 'payee') {
+    if (current.statut === 'payee' || current.statut === 'partiellement_payee') {
       throw new BadRequestException(
-        "Transition invalide: une dépense payée ne peut pas être annulée directement. Action: annulez d'abord le paiement lié."
+        "Transition invalide: une dépense avec paiement actif ne peut pas être annulée directement. Action: annulez ou rejetez d'abord les paiements liés."
       );
     }
 
@@ -792,7 +773,7 @@ export class DepensesService {
         FROM public.paiements
         WHERE client_id = $1
           AND depense_id = $2
-          AND statut = 'valide'
+          AND statut IN ('execute', 'reconcilie', 'valide')
         ORDER BY date_paiement DESC
       `,
       [actor.tenantId, depenseId]
@@ -838,7 +819,7 @@ export class DepensesService {
         INNER JOIN public.depenses d ON d.id = p.depense_id
         WHERE p.client_id = $1
           AND p.depense_id = ANY($2::uuid[])
-          AND p.statut = 'valide'
+          AND p.statut IN ('execute', 'reconcilie', 'valide')
         ORDER BY p.date_paiement DESC
       `,
       [actor.tenantId, depenseIds]
@@ -1262,6 +1243,8 @@ export class DepensesService {
       referencePaiement: row.reference_paiement ?? undefined,
       observations: row.observations ?? undefined,
       motifAnnulation: row.motif_annulation ?? undefined,
+      motifRejet: row.motif_rejet ?? undefined,
+      dateRejet: row.date_rejet ? this.toDateOnly(row.date_rejet) : undefined,
       createdBy: row.created_by ?? undefined,
       createdAt: new Date(row.created_at).toISOString(),
       updatedAt: new Date(row.updated_at).toISOString(),
