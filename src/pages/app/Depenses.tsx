@@ -45,11 +45,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useListSelection } from '@/hooks/useListSelection';
 import { CTA_REVEAL_STYLES, useHeaderCtaReveal } from '@/hooks/useHeaderCtaReveal';
+import { CashRiskBlockedPanel } from '@/components/shared/CashRiskBlockedPanel';
+import { WorkflowExceptionRequestDialog } from '@/components/workflow-exceptions/WorkflowExceptionRequestDialog';
 
 const Depenses = () => {
   const {
     depenses,
     isLoading,
+    cashRiskBlocked,
+    clearCashRiskBlocked,
     createDepense,
     validerDepense,
     ordonnancerDepense,
@@ -66,6 +70,7 @@ const Depenses = () => {
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
   const [annulerMultipleDialogOpen, setAnnulerMultipleDialogOpen] = useState(false);
   const [paiementDialogOpen, setPaiementDialogOpen] = useState(false);
+  const [exceptionDialogOpen, setExceptionDialogOpen] = useState(false);
   const [isSubmittingAction, setIsSubmittingAction] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statutFilter, setStatutFilter] = useState<
@@ -310,6 +315,13 @@ const Depenses = () => {
 
       {isSnapshotOpen && snapshotDepense ? (
         <div className="px-8 space-y-6">
+          {cashRiskBlocked ? (
+            <CashRiskBlockedPanel
+              info={cashRiskBlocked}
+              onDismiss={clearCashRiskBlocked}
+              onRequestException={() => setExceptionDialogOpen(true)}
+            />
+          ) : null}
           <DepenseSnapshot
             depense={snapshotDepense}
             paiements={paiementsDepense}
@@ -334,6 +346,13 @@ const Depenses = () => {
       ) : (
         <>
           <div className="px-8 space-y-6">
+            {cashRiskBlocked ? (
+              <CashRiskBlockedPanel
+                info={cashRiskBlocked}
+                onDismiss={clearCashRiskBlocked}
+                onRequestException={() => setExceptionDialogOpen(true)}
+              />
+            ) : null}
             <DepenseStatsCards depenses={depenses} />
             <ListLayout
               title="Liste des dépenses"
@@ -492,6 +511,12 @@ const Depenses = () => {
           />
         ) : null;
       })()}
+
+      <WorkflowExceptionRequestDialog
+        open={exceptionDialogOpen}
+        onOpenChange={setExceptionDialogOpen}
+        blockedInfo={cashRiskBlocked}
+      />
     </div>
   );
 };

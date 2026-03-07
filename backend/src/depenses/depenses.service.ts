@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PostgresService } from '../common/postgres.service';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
+import { WorkflowExceptionsService } from '../workflow-exceptions/workflow-exceptions.service';
 import { type DepenseWorkflowStatus, type PaiementMode } from '../paiements/paiement-workflow';
 import type {
   CreateDepenseDto,
@@ -176,7 +177,10 @@ interface FactureAllocation {
 
 @Injectable()
 export class DepensesService {
-  constructor(private readonly postgresService: PostgresService) {}
+  constructor(
+    private readonly postgresService: PostgresService,
+    private readonly workflowExceptionsService: WorkflowExceptionsService
+  ) {}
 
   async getAll(actor: AuthenticatedUser, exerciceId: string): Promise<DepenseView[]> {
     const result = await this.postgresService.query<DepenseRow>(
@@ -637,6 +641,15 @@ export class DepensesService {
         `Transition invalide: impossible d'ordonnancer une dépense en statut "${current.statut}". Action: validez la dépense avant ordonnancement.`
       );
     }
+
+    await this.workflowExceptionsService.assertTransitionAllowed(actor, {
+      exerciceId: current.exerciceId,
+      transition: 'depense:ordonnancer',
+      sourceType: 'depense',
+      sourceId: current.id,
+      entityId: current.id,
+      amount: current.montant,
+    });
 
     const result = await this.postgresService.query(
       `

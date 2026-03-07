@@ -42,6 +42,7 @@ import {
 import type { EngagementFormData } from '@/types/engagement.types';
 import type { CreateBonCommandeInput } from '@/types/bonCommande.types';
 import { CashRiskBlockedPanel } from '@/components/shared/CashRiskBlockedPanel';
+import { WorkflowExceptionRequestDialog } from '@/components/workflow-exceptions/WorkflowExceptionRequestDialog';
 
 const Engagements = () => {
   const { engagementId } = useParams<{ engagementId?: string }>();
@@ -57,6 +58,7 @@ const Engagements = () => {
   const [annulationEngagementId, setAnnulationEngagementId] = useState<string | null>(null);
   const [motifAnnulation, setMotifAnnulation] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [exceptionDialogOpen, setExceptionDialogOpen] = useState(false);
   const [statutFilter, setStatutFilter] = useState<'tous' | 'brouillon' | 'valide' | 'engage' | 'liquide' | 'annule'>('tous');
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -373,7 +375,11 @@ const Engagements = () => {
 
       <div className="px-8 space-y-6">
         {cashRiskBlocked ? (
-          <CashRiskBlockedPanel info={cashRiskBlocked} onDismiss={clearCashRiskBlocked} />
+          <CashRiskBlockedPanel
+            info={cashRiskBlocked}
+            onDismiss={clearCashRiskBlocked}
+            onRequestException={() => setExceptionDialogOpen(true)}
+          />
         ) : null}
 
         {isSnapshotOpen && snapshotEngagement ? (
@@ -579,6 +585,12 @@ const Engagements = () => {
             console.error('Erreur création dépense:', error);
           }
         }}
+      />
+
+      <WorkflowExceptionRequestDialog
+        open={exceptionDialogOpen}
+        onOpenChange={setExceptionDialogOpen}
+        blockedInfo={cashRiskBlocked}
       />
     </div>
   );

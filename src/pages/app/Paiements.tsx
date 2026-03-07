@@ -36,6 +36,7 @@ import {
 } from '@/lib/paiement-page';
 import { paiementStatusLabels } from '@/lib/paiement-workflow';
 import { CashRiskBlockedPanel } from '@/components/shared/CashRiskBlockedPanel';
+import { WorkflowExceptionRequestDialog } from '@/components/workflow-exceptions/WorkflowExceptionRequestDialog';
 
 export default function Paiements() {
   const {
@@ -53,6 +54,7 @@ export default function Paiements() {
   const [search, setSearch] = useState('');
   const [statutFilter, setStatutFilter] = useState<'tous' | StatutPaiement>('tous');
   const [motifDialogState, setMotifDialogState] = useState(resetPaiementMotifDialog);
+  const [exceptionDialogOpen, setExceptionDialogOpen] = useState(false);
 
   const filteredPaiements = useMemo(
     () => filterPaiements(paiements, search, statutFilter),
@@ -104,7 +106,11 @@ export default function Paiements() {
 
       <div className="px-8 space-y-6">
         {cashRiskBlocked ? (
-          <CashRiskBlockedPanel info={cashRiskBlocked} onDismiss={clearCashRiskBlocked} />
+          <CashRiskBlockedPanel
+            info={cashRiskBlocked}
+            onDismiss={clearCashRiskBlocked}
+            onRequestException={() => setExceptionDialogOpen(true)}
+          />
         ) : null}
 
         <PaiementStats paiements={paiements} />
@@ -197,6 +203,12 @@ export default function Paiements() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <WorkflowExceptionRequestDialog
+        open={exceptionDialogOpen}
+        onOpenChange={setExceptionDialogOpen}
+        blockedInfo={cashRiskBlocked}
+      />
     </div>
   );
 }

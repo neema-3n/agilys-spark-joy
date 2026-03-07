@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PostgresService } from '../common/postgres.service';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { CashRiskService } from '../cash-risk/cash-risk.service';
+import { WorkflowExceptionsService } from '../workflow-exceptions/workflow-exceptions.service';
 import type {
   CreateEngagementDto,
   CreateEngagementFromReservationDto,
@@ -111,7 +112,8 @@ interface EngagementView {
 export class EngagementsService {
   constructor(
     private readonly postgresService: PostgresService,
-    private readonly cashRiskService: CashRiskService
+    private readonly cashRiskService: CashRiskService,
+    private readonly workflowExceptionsService: WorkflowExceptionsService
   ) {}
 
   async getAll(actor: AuthenticatedUser, exerciceId: string): Promise<EngagementView[]> {
@@ -345,7 +347,7 @@ export class EngagementsService {
   async valider(actor: AuthenticatedUser, id: string): Promise<EngagementView> {
     const engagement = await this.getById(actor, id);
     assertEngagementTransitionAllowed('valider', engagement.statut);
-    await this.cashRiskService.assertAllowed(actor, {
+    await this.workflowExceptionsService.assertTransitionAllowed(actor, {
       exerciceId: engagement.exerciceId,
       transition: 'engagement:validate',
       sourceType: 'engagement',

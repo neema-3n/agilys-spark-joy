@@ -1,8 +1,15 @@
 import { PageHeader } from '@/components/PageHeader';
-import { Card, CardContent } from '@/components/ui/card';
-import { Construction } from 'lucide-react';
+import { WorkflowExceptionsList } from '@/components/workflow-exceptions/WorkflowExceptionsList';
+import { useWorkflowExceptions } from '@/hooks/useWorkflowExceptions';
+import { useExercice } from '@/contexts/ExerciceContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ControleInterne = () => {
+  const { currentExercice } = useExercice();
+  const { hasAnyRole } = useAuth();
+  const { exceptions, isLoading, voteWorkflowException } = useWorkflowExceptions();
+  const canVote = hasAnyRole(['super_admin', 'admin_client', 'directeur_financier', 'comptable']);
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -11,19 +18,22 @@ const ControleInterne = () => {
       />
       
       <div className="px-8">
-        <Card>
-          <CardContent className="py-12">
-            <div className="text-center space-y-4">
-              <Construction className="h-16 w-16 mx-auto text-muted-foreground" />
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Module en construction</h3>
-                <p className="text-muted-foreground">
-                  Le module de contrôle interne sera développé prochainement.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <WorkflowExceptionsList
+          exceptions={exceptions}
+          isLoading={isLoading}
+          onVote={
+            currentExercice?.id && canVote
+              ? (id, decision) =>
+                  voteWorkflowException({
+                    id,
+                    payload: {
+                      exerciceId: currentExercice.id,
+                      decision,
+                    },
+                  }).then(() => undefined)
+              : undefined
+          }
+        />
       </div>
     </div>
   );
