@@ -33,12 +33,12 @@ development_status:
   epic-5: in-progress
   5-1-evaluer-le-risque-cash-sur-transitions-critiques: done
   5-2-expliquer-blocages-et-proposer-remediations: done
-  5-3-gerer-workflow-dexception-avec-quorum: ready-for-dev
+  5-3-gerer-workflow-dexception-avec-quorum: done
   5-4-offrir-supervision-tresorerie-et-audit-des-exceptions: ready-for-dev
   epic-5-retrospective: optional
-  epic-6: backlog
-  6-1-versionner-plan-comptable-et-mapping-ecritures: backlog
-  6-2-generer-ecritures-en-double-entree-idempotentes: backlog
+  epic-6: in-progress
+  6-1-versionner-plan-comptable-et-mapping-ecritures: ready-for-dev
+  6-2-generer-ecritures-en-double-entree-idempotentes: ready-for-dev
   6-3-gerer-corrections-et-contre-passations-auditables: backlog
   6-4-executer-cloture-dexercice-gouvernee: backlog
   6-5-implementer-rapprochement-bancaire-auto-manuel: backlog

@@ -1,9 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useState } from 'react';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { useClient } from '@/contexts/ClientContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import * as depensesService from '@/services/api/depenses.service';
+import type { CashRiskBlockedInfo } from '@/lib/cash-risk-ui';
+import { toCashRiskBlockedInfo } from '@/lib/cash-risk-ui';
+import { isApiError } from '@/services/api/api-utils';
 import type {
   CreateDepenseFromEngagementData,
   CreateDepenseFromFactureData,
@@ -17,6 +21,7 @@ export const useDepenses = () => {
   const { currentClient } = useClient();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [cashRiskBlocked, setCashRiskBlocked] = useState<CashRiskBlockedInfo | null>(null);
 
   const query = useQuery({
     queryKey: ['depenses', currentExercice?.id, currentClient?.id],
@@ -29,6 +34,19 @@ export const useDepenses = () => {
     enabled: !!currentExercice?.id && !!currentClient?.id,
   });
 
+  const clearCashRiskBlocked = useCallback(() => {
+    setCashRiskBlocked(null);
+  }, []);
+
+  const handleMutationError = (error: Error) => {
+    if (!isApiError(error)) {
+      setCashRiskBlocked(null);
+      return;
+    }
+
+    setCashRiskBlocked(toCashRiskBlockedInfo(error));
+  };
+
   const createMutation = useMutation({
     mutationFn: (data: DepenseFormData) => {
       if (!currentExercice?.id || !currentClient?.id || !user?.id) {
@@ -37,6 +55,7 @@ export const useDepenses = () => {
       return depensesService.createDepense(data, currentExercice.id, currentClient.id, user.id);
     },
     onSuccess: () => {
+      clearCashRiskBlocked();
       queryClient.invalidateQueries({ queryKey: ['depenses'] });
       queryClient.invalidateQueries({ queryKey: ['engagements'] });
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
@@ -49,6 +68,7 @@ export const useDepenses = () => {
       });
     },
     onError: (error: Error) => {
+      handleMutationError(error);
       toast({
         title: 'Erreur',
         description: error.message,
@@ -61,6 +81,7 @@ export const useDepenses = () => {
     mutationFn: ({ id, updates }: { id: string; updates: Partial<DepenseFormData> }) =>
       depensesService.updateDepense(id, updates),
     onSuccess: () => {
+      clearCashRiskBlocked();
       queryClient.invalidateQueries({ queryKey: ['depenses'] });
       toast({
         title: 'Succès',
@@ -68,6 +89,7 @@ export const useDepenses = () => {
       });
     },
     onError: (error: Error) => {
+      handleMutationError(error);
       toast({
         title: 'Erreur',
         description: error.message,
@@ -79,6 +101,7 @@ export const useDepenses = () => {
   const validerMutation = useMutation({
     mutationFn: (id: string) => depensesService.validerDepense(id),
     onSuccess: () => {
+      clearCashRiskBlocked();
       queryClient.invalidateQueries({ queryKey: ['depenses'] });
       queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       toast({
@@ -87,6 +110,7 @@ export const useDepenses = () => {
       });
     },
     onError: (error: Error) => {
+      handleMutationError(error);
       toast({
         title: 'Erreur',
         description: error.message,
@@ -98,6 +122,7 @@ export const useDepenses = () => {
   const ordonnancerMutation = useMutation({
     mutationFn: (id: string) => depensesService.ordonnancerDepense(id),
     onSuccess: () => {
+      clearCashRiskBlocked();
       queryClient.invalidateQueries({ queryKey: ['depenses'] });
       queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       toast({
@@ -106,6 +131,7 @@ export const useDepenses = () => {
       });
     },
     onError: (error: Error) => {
+      handleMutationError(error);
       toast({
         title: 'Erreur',
         description: error.message,
@@ -127,6 +153,7 @@ export const useDepenses = () => {
       referencePaiement?: string 
     }) => depensesService.marquerPayee(id, datePaiement, modePaiement, referencePaiement),
     onSuccess: () => {
+      clearCashRiskBlocked();
       queryClient.invalidateQueries({ queryKey: ['depenses'] });
       queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       toast({
@@ -135,6 +162,7 @@ export const useDepenses = () => {
       });
     },
     onError: (error: Error) => {
+      handleMutationError(error);
       toast({
         title: 'Erreur',
         description: error.message,
@@ -147,6 +175,7 @@ export const useDepenses = () => {
     mutationFn: ({ id, motif }: { id: string; motif: string }) =>
       depensesService.annulerDepense(id, motif),
     onSuccess: () => {
+      clearCashRiskBlocked();
       queryClient.invalidateQueries({ queryKey: ['depenses'] });
       queryClient.invalidateQueries({ queryKey: ['engagements'] });
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
@@ -158,6 +187,7 @@ export const useDepenses = () => {
       });
     },
     onError: (error: Error) => {
+      handleMutationError(error);
       toast({
         title: 'Erreur',
         description: error.message,
@@ -170,6 +200,7 @@ export const useDepenses = () => {
     mutationFn: ({ ids, motif }: { ids: string[]; motif: string }) =>
       depensesService.annulerMultipleDepenses(ids, motif),
     onSuccess: (_, variables) => {
+      clearCashRiskBlocked();
       queryClient.invalidateQueries({ queryKey: ['depenses'] });
       queryClient.invalidateQueries({ queryKey: ['engagements'] });
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
@@ -181,6 +212,7 @@ export const useDepenses = () => {
       });
     },
     onError: (error: Error) => {
+      handleMutationError(error);
       toast({
         title: 'Erreur',
         description: error.message,
@@ -192,6 +224,7 @@ export const useDepenses = () => {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => depensesService.deleteDepense(id),
     onSuccess: () => {
+      clearCashRiskBlocked();
       queryClient.invalidateQueries({ queryKey: ['depenses'] });
       toast({
         title: 'Succès',
@@ -199,6 +232,7 @@ export const useDepenses = () => {
       });
     },
     onError: (error: Error) => {
+      handleMutationError(error);
       toast({
         title: 'Erreur',
         description: error.message,
@@ -220,11 +254,13 @@ export const useDepenses = () => {
       );
     },
     onSuccess: () => {
+      clearCashRiskBlocked();
       queryClient.invalidateQueries({ queryKey: ['depenses'] });
       queryClient.invalidateQueries({ queryKey: ['factures'] });
       queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
     },
     onError: (error: Error) => {
+      handleMutationError(error);
       toast({
         title: 'Erreur',
         description: error.message,
@@ -246,10 +282,12 @@ export const useDepenses = () => {
       );
     },
     onSuccess: () => {
+      clearCashRiskBlocked();
       queryClient.invalidateQueries({ queryKey: ['depenses'] });
       queryClient.invalidateQueries({ queryKey: ['engagements'] });
     },
     onError: (error: Error) => {
+      handleMutationError(error);
       toast({
         title: 'Erreur',
         description: error.message,
@@ -298,6 +336,8 @@ export const useDepenses = () => {
     depenses: query.data || [],
     isLoading: query.isLoading,
     error: query.error,
+    cashRiskBlocked,
+    clearCashRiskBlocked,
     createDepense: createMutation.mutateAsync,
     createDepenseFromFacture: createFromFactureMutation.mutateAsync,
     createDepenseFromEngagement: createFromEngagementMutation.mutateAsync,

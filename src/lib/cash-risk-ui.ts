@@ -9,6 +9,7 @@ export interface CashRiskBlockedInfo {
   riskScoreLabel: string;
   reasons: string[];
   remediations: string[];
+  decision: CashRiskDecision;
   snapshot: {
     availableCash: string;
     projectedExposure: string;
@@ -120,6 +121,7 @@ export const buildCashRiskBlockedInfo = (decision: CashRiskDecision): CashRiskBl
     riskScoreLabel: numberFormatter.format(decision.riskScore),
     reasons,
     remediations: deriveRemediations(decision),
+    decision,
     snapshot: {
       availableCash: formatAmount(decision.snapshot.availableCash),
       projectedExposure: formatAmount(decision.snapshot.projectedExposure),

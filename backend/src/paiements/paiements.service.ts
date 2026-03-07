@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PostgresService } from '../common/postgres.service';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
-import { CashRiskService } from '../cash-risk/cash-risk.service';
+import { WorkflowExceptionsService } from '../workflow-exceptions/workflow-exceptions.service';
 import type { AnnulerPaiementDto, CreatePaiementDto, RejeterPaiementDto, ReprendrePaiementDto } from './dto/paiements.dto';
 import {
   canCreatePaiementForDepense,
@@ -128,7 +128,7 @@ interface PaiementView {
 export class PaiementsService {
   constructor(
     private readonly postgresService: PostgresService,
-    private readonly cashRiskService: CashRiskService
+    private readonly workflowExceptionsService: WorkflowExceptionsService
   ) {}
 
   async getAll(actor: AuthenticatedUser, exerciceId: string): Promise<PaiementView[]> {
@@ -227,7 +227,7 @@ export class PaiementsService {
 
   async executer(actor: AuthenticatedUser, id: string): Promise<PaiementView> {
     const paiement = await this.getPaiementRow(actor, id);
-    await this.cashRiskService.assertAllowed(actor, {
+    await this.workflowExceptionsService.assertTransitionAllowed(actor, {
       exerciceId: paiement.exercice_id,
       transition: 'paiement:execute',
       sourceType: 'paiement',
@@ -345,7 +345,7 @@ export class PaiementsService {
       );
     }
 
-    await this.cashRiskService.assertAllowed(actor, {
+    await this.workflowExceptionsService.assertTransitionAllowed(actor, {
       exerciceId: paiement.exercice_id,
       transition: 'paiement:reprendre',
       sourceType: 'paiement',

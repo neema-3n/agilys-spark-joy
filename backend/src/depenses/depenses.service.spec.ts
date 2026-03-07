@@ -2,6 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import type { QueryResult, QueryResultRow } from 'pg';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import type { PostgresService } from '../common/postgres.service';
+import type { WorkflowExceptionsService } from '../workflow-exceptions/workflow-exceptions.service';
 import { DepensesService } from './depenses.service';
 
 const actor: AuthenticatedUser = {
@@ -22,7 +23,10 @@ const makeResult = <T extends QueryResultRow>(rows: T[], rowCount = rows.length)
 describe('DepensesService', () => {
   const query = jest.fn();
   const postgresService = { query } as unknown as PostgresService;
-  const service = new DepensesService(postgresService);
+  const workflowExceptionsService = {
+    assertTransitionAllowed: jest.fn(),
+  } as unknown as WorkflowExceptionsService;
+  const service = new DepensesService(postgresService, workflowExceptionsService);
 
   beforeEach(() => {
     query.mockReset();

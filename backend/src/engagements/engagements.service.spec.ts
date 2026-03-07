@@ -3,6 +3,7 @@ import type { QueryResult, QueryResultRow } from 'pg';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import type { CashRiskService } from '../cash-risk/cash-risk.service';
 import type { PostgresService } from '../common/postgres.service';
+import type { WorkflowExceptionsService } from '../workflow-exceptions/workflow-exceptions.service';
 import { EngagementsService } from './engagements.service';
 
 const actor: AuthenticatedUser = {
@@ -72,7 +73,10 @@ describe('EngagementsService', () => {
   const cashRiskService = {
     assertAllowed: jest.fn(),
   } as unknown as CashRiskService;
-  const service = new EngagementsService(postgresService, cashRiskService);
+  const workflowExceptionsService = {
+    assertTransitionAllowed: jest.fn(),
+  } as unknown as WorkflowExceptionsService;
+  const service = new EngagementsService(postgresService, cashRiskService, workflowExceptionsService);
 
   beforeEach(() => {
     query.mockReset();
@@ -214,7 +218,7 @@ describe('EngagementsService', () => {
 
   it('bloque la validation si le moteur de risque cash refuse la transition', async () => {
     query.mockResolvedValueOnce(makeResult([makeEngagementRow({ statut: 'brouillon' })]));
-    (cashRiskService.assertAllowed as jest.Mock).mockRejectedValueOnce(new BadRequestException('blocked'));
+    (workflowExceptionsService.assertTransitionAllowed as jest.Mock).mockRejectedValueOnce(new BadRequestException('blocked'));
 
     await expect(service.valider(actor, 'eng-1')).rejects.toBeInstanceOf(BadRequestException);
     expect(query).toHaveBeenCalledTimes(1);

@@ -202,13 +202,20 @@ const setupAuthenticatedPaiementsApi = async (
                 'Des opérations bancaires restent non rapprochées.',
               ],
               snapshot: {
+                tenantId: 'client-1',
+                exerciceId: 'ex-2026',
                 transition: 'paiement:execute',
+                sourceType: 'paiement',
+                sourceId: id,
+                entityId: 'dep-1',
+                projectedAmount: 150,
                 availableCash: 800,
                 projectedExposure: 1700,
                 projectedGap: 900,
                 remainingEngagements: 4,
                 outstandingDepenses: 3,
                 nonReconciledOperations: 6,
+                correlationId: `cash-risk:client-1:ex-2026:paiement:execute:depense:dep-1:${id}:150.00`,
               },
             },
           }),
@@ -377,9 +384,59 @@ test.describe('paiements page ui', () => {
       }),
     ];
     const events = { annulations: [] as Array<{ id: string; body: unknown }>, reprises: [] as Array<{ id: string; body: unknown }> };
+    const exceptionRequests: Array<{ body: unknown }> = [];
 
     await setupAuthenticatedPaiementsApi(page, accessToken, paiements, events, {
       blockExecuterForIds: ['pay-blocked'],
+    });
+    await page.route('**://127.0.0.1:3001/workflow-exceptions', async (route) => {
+      const request = route.request();
+      if (request.method() !== 'POST') {
+        await route.continue();
+        return;
+      }
+
+      const body = request.postDataJSON();
+      exceptionRequests.push({ body });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 'exc-1',
+          tenantId: 'client-1',
+          exerciceId: 'ex-2026',
+          status: 'soumise',
+          transition: 'paiement:execute',
+          sourceType: 'paiement',
+          sourceId: 'pay-blocked',
+          entityId: 'dep-1',
+          correlationId: 'cash-risk:client-1:ex-2026:paiement:execute:depense:dep-1:pay-blocked:150.00',
+          motif: (body as { motif: string }).motif,
+          justification: (body as { justification: string }).justification,
+          urgence: (body as { urgence: string }).urgence,
+          quorumRequired: 2,
+          expiresAt: (body as { expiresAt: string }).expiresAt,
+          requestedBy: 'user-paiement-3',
+          createdAt: '2026-03-07T00:00:00.000Z',
+          updatedAt: '2026-03-07T00:00:00.000Z',
+          riskDecision: {
+            riskLevel: 'critical',
+            riskScore: 92.7,
+            decision: 'block',
+            reasons: ['blocked'],
+            snapshot: {
+              transition: 'paiement:execute',
+              availableCash: 800,
+              projectedExposure: 1700,
+              projectedGap: 900,
+              remainingEngagements: 4,
+              outstandingDepenses: 3,
+              nonReconciledOperations: 6,
+            },
+          },
+          votes: [],
+        }),
+      });
     });
 
     await page.addInitScript((token: string) => {
@@ -397,12 +454,23 @@ test.describe('paiements page ui', () => {
     await expect(page.getByText('Action bloquée par le contrôle de risque cash')).toBeVisible();
     await expect(page.getByText('Exécution de paiement: La trésorerie projetée devient insuffisante après cette action.')).toBeVisible();
     await expect(page.getByText('Remédiations proposées')).toBeVisible();
-    await expect(page.getByRole('button', { name: /Demander une exception/ })).toBeDisabled();
+    await expect(page.getByRole('button', { name: /Demander une exception/ })).toBeEnabled();
 
-    const dismissButton = page.getByRole('button', { name: 'Fermer ce message' });
-    await dismissButton.focus();
-    await expect(dismissButton).toBeFocused();
-    await page.keyboard.press('Enter');
-    await expect(page.getByText('Action bloquée par le contrôle de risque cash')).not.toBeVisible();
+    await page.getByRole('button', { name: /Demander une exception/ }).click();
+    await expect(page.getByRole('dialog', { name: /Demander une exception gouvernée/ })).toBeVisible();
+    await page.getByLabel('Motif').fill('Urgence de paiement fournisseur');
+    await page.getByLabel('Justification').fill('La reprise de règlement est nécessaire pour éviter une rupture de service.');
+    await page.getByRole('button', { name: 'Soumettre la demande' }).click();
+    await expect.poll(() => exceptionRequests.length).toBe(1);
+    expect(exceptionRequests[0]?.body).toMatchObject({
+      exerciceId: 'ex-2026',
+      transition: 'paiement:execute',
+      sourceType: 'paiement',
+      sourceId: 'pay-blocked',
+      entityId: 'dep-1',
+      correlationId: 'cash-risk:client-1:ex-2026:paiement:execute:depense:dep-1:pay-blocked:150.00',
+    });
+
+    await expect(page.getByRole('dialog', { name: /Demander une exception gouvernée/ })).not.toBeVisible();
   });
 });

@@ -23,12 +23,14 @@ import { TresorerieModule } from './tresorerie/tresorerie.module';
 import { ReservationsModule } from './reservations/reservations.module';
 import { StructuresModule } from './structures/structures.module';
 import { TenantPoliciesModule } from './tenant-policies/tenant-policies.module';
+import { WorkflowExceptionsModule } from './workflow-exceptions/workflow-exceptions.module';
 
 @Module({
   imports: [
     PostgresModule,
     AuthModule,
     CashRiskModule,
+    WorkflowExceptionsModule,
     BudgetReferentielsModule,
     BonsCommandeModule,
     ComptesModule,

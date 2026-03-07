@@ -1,8 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
 import type { QueryResult, QueryResultRow } from 'pg';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
-import type { CashRiskService } from '../cash-risk/cash-risk.service';
 import type { PostgresService } from '../common/postgres.service';
+import type { WorkflowExceptionsService } from '../workflow-exceptions/workflow-exceptions.service';
 import { PaiementsService } from './paiements.service';
 
 const actor: AuthenticatedUser = {
@@ -23,10 +23,10 @@ const makeResult = <T extends QueryResultRow>(rows: T[], rowCount = rows.length)
 describe('PaiementsService', () => {
   const query = jest.fn();
   const postgresService = { query } as unknown as PostgresService;
-  const cashRiskService = {
-    assertAllowed: jest.fn(),
-  } as unknown as CashRiskService;
-  const service = new PaiementsService(postgresService, cashRiskService);
+  const workflowExceptionsService = {
+    assertTransitionAllowed: jest.fn(),
+  } as unknown as WorkflowExceptionsService;
+  const service = new PaiementsService(postgresService, workflowExceptionsService);
   const internals = service as unknown as {
     getDepenseForPaiement: (...args: unknown[]) => Promise<unknown>;
     getResteAPayer: (...args: unknown[]) => Promise<number>;
@@ -145,7 +145,7 @@ describe('PaiementsService', () => {
       fournisseur_code: null,
       ecritures_count: 0,
     });
-    (cashRiskService.assertAllowed as jest.Mock).mockRejectedValueOnce(new BadRequestException('blocked'));
+    (workflowExceptionsService.assertTransitionAllowed as jest.Mock).mockRejectedValueOnce(new BadRequestException('blocked'));
 
     await expect(service.executer(actor, 'pay-1')).rejects.toBeInstanceOf(BadRequestException);
     expect(query).not.toHaveBeenCalled();

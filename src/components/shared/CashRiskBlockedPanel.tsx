@@ -8,10 +8,11 @@ import type { CashRiskBlockedInfo } from '@/lib/cash-risk-ui';
 interface CashRiskBlockedPanelProps {
   info: CashRiskBlockedInfo;
   onDismiss?: () => void;
+  onRequestException?: () => void;
   className?: string;
 }
 
-export const CashRiskBlockedPanel = ({ info, onDismiss, className }: CashRiskBlockedPanelProps) => {
+export const CashRiskBlockedPanel = ({ info, onDismiss, onRequestException, className }: CashRiskBlockedPanelProps) => {
   const titleId = useId();
 
   return (
@@ -65,9 +66,16 @@ export const CashRiskBlockedPanel = ({ info, onDismiss, className }: CashRiskBlo
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button type="button" variant="outline" disabled className="border-destructive/30" aria-label="Demander une exception bientôt disponible">
+          <Button
+            type="button"
+            variant="outline"
+            className="border-destructive/30"
+            onClick={onRequestException}
+            disabled={!onRequestException}
+            aria-label="Demander une exception gouvernée"
+          >
             <Lock className="h-4 w-4 mr-2" />
-            Demander une exception (bientôt disponible)
+            Demander une exception
           </Button>
           {onDismiss ? (
             <Button type="button" variant="ghost" onClick={onDismiss} aria-label="Fermer le message de blocage">

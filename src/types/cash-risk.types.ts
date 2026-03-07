@@ -14,13 +14,21 @@ export const CASH_RISK_TRANSITIONS = [
 export type CashRiskTransition = (typeof CASH_RISK_TRANSITIONS)[number];
 
 export interface CashRiskSnapshot {
+  tenantId?: string;
+  exerciceId?: string;
   transition: CashRiskTransition;
+  sourceType?: 'engagement' | 'paiement' | 'depense';
+  sourceId?: string;
+  entityId?: string;
+  projectedAmount?: number;
   availableCash: number;
   projectedExposure: number;
   projectedGap: number;
   remainingEngagements: number;
   outstandingDepenses: number;
   nonReconciledOperations: number;
+  threshold?: number;
+  correlationId?: string;
 }
 
 export interface CashRiskDecision {
