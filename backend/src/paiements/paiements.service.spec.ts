@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import type { QueryResult, QueryResultRow } from 'pg';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
+import type { CashRiskService } from '../cash-risk/cash-risk.service';
 import type { PostgresService } from '../common/postgres.service';
 import { PaiementsService } from './paiements.service';
 
@@ -22,7 +23,10 @@ const makeResult = <T extends QueryResultRow>(rows: T[], rowCount = rows.length)
 describe('PaiementsService', () => {
   const query = jest.fn();
   const postgresService = { query } as unknown as PostgresService;
-  const service = new PaiementsService(postgresService);
+  const cashRiskService = {
+    assertAllowed: jest.fn(),
+  } as unknown as CashRiskService;
+  const service = new PaiementsService(postgresService, cashRiskService);
   const internals = service as unknown as {
     getDepenseForPaiement: (...args: unknown[]) => Promise<unknown>;
     getResteAPayer: (...args: unknown[]) => Promise<number>;
@@ -36,6 +40,7 @@ describe('PaiementsService', () => {
   beforeEach(() => {
     query.mockReset();
     jest.restoreAllMocks();
+    jest.clearAllMocks();
   });
 
   it('refuse la création pour une dépense non ordonnancée', async () => {
@@ -102,6 +107,48 @@ describe('PaiementsService', () => {
 
     expect(query).toHaveBeenCalledTimes(1);
     expect(result.statut).toBe('transmis');
+  });
+
+  it("bloque l'exécution d'un paiement si le risque cash dépasse le seuil", async () => {
+    jest.spyOn(internals, 'getPaiementRow').mockResolvedValue({
+      id: 'pay-1',
+      client_id: actor.tenantId,
+      exercice_id: 'ex-1',
+      numero: 'PAY000001',
+      depense_id: 'dep-1',
+      montant: 50,
+      date_paiement: '2026-03-05',
+      mode_paiement: 'virement',
+      reference_paiement: null,
+      observations: null,
+      statut: 'accepte',
+      motif_annulation: null,
+      date_annulation: null,
+      motif_rejet: null,
+      date_rejet: null,
+      date_retour: null,
+      reference_retour: null,
+      tentative_numero: 1,
+      paiement_origine_id: null,
+      paiement_repris_de_id: null,
+      created_by: actor.sub,
+      updated_by: actor.sub,
+      created_at: '2026-03-05T00:00:00.000Z',
+      updated_at: '2026-03-05T00:00:00.000Z',
+      depense_numero: 'DEP-001',
+      depense_objet: 'Achat',
+      depense_montant: 100,
+      depense_montant_paye: 0,
+      depense_statut: 'ordonnancee',
+      fournisseur_id: null,
+      fournisseur_nom: null,
+      fournisseur_code: null,
+      ecritures_count: 0,
+    });
+    (cashRiskService.assertAllowed as jest.Mock).mockRejectedValueOnce(new BadRequestException('blocked'));
+
+    await expect(service.executer(actor, 'pay-1')).rejects.toBeInstanceOf(BadRequestException);
+    expect(query).not.toHaveBeenCalled();
   });
 
   it('accepte un paiement transmis sans déclencher les artefacts comptables', async () => {

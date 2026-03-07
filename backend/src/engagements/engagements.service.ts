@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PostgresService } from '../common/postgres.service';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
+import { CashRiskService } from '../cash-risk/cash-risk.service';
 import type {
   CreateEngagementDto,
   CreateEngagementFromReservationDto,
@@ -108,7 +109,10 @@ interface EngagementView {
 
 @Injectable()
 export class EngagementsService {
-  constructor(private readonly postgresService: PostgresService) {}
+  constructor(
+    private readonly postgresService: PostgresService,
+    private readonly cashRiskService: CashRiskService
+  ) {}
 
   async getAll(actor: AuthenticatedUser, exerciceId: string): Promise<EngagementView[]> {
     const result = await this.postgresService.query<EngagementRow>(
@@ -341,6 +345,14 @@ export class EngagementsService {
   async valider(actor: AuthenticatedUser, id: string): Promise<EngagementView> {
     const engagement = await this.getById(actor, id);
     assertEngagementTransitionAllowed('valider', engagement.statut);
+    await this.cashRiskService.assertAllowed(actor, {
+      exerciceId: engagement.exerciceId,
+      transition: 'engagement:validate',
+      sourceType: 'engagement',
+      sourceId: engagement.id,
+      entityId: engagement.ligneBudgetaireId,
+      amount: engagement.montant
+    });
 
     const result = await this.postgresService.query(
       `
@@ -517,6 +529,15 @@ export class EngagementsService {
   }
 
   private async createInternal(actor: AuthenticatedUser, payload: CreateEngagementDto): Promise<EngagementView> {
+    await this.cashRiskService.assertAllowed(actor, {
+      exerciceId: payload.exerciceId,
+      transition: 'engagement:create',
+      sourceType: 'engagement',
+      sourceId: payload.reservationCreditId,
+      entityId: payload.ligneBudgetaireId,
+      amount: payload.montant
+    });
+
     const exerciceResult = await this.postgresService.query<{ code: string }>(
       `
         SELECT code

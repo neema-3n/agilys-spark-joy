@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import type { ReservationCreditFormData } from '@/types/reservation.types';
 import type { EngagementFormData } from '@/types/engagement.types';
+import { CashRiskBlockedPanel } from '@/components/shared/CashRiskBlockedPanel';
 
 const Reservations = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -65,7 +66,8 @@ const Reservations = () => {
 
   const { reservations, isLoading, createReservation, updateReservation, annulerReservation, deleteReservation } =
     useReservations();
-  const { createEngagementFromReservation, annulerEngagement, deleteEngagement } = useEngagements();
+  const { createEngagementFromReservation, annulerEngagement, deleteEngagement, cashRiskBlocked, clearCashRiskBlocked } =
+    useEngagements();
   const { createDepenseFromReservation } = useDepenses();
 
   const {
@@ -381,6 +383,10 @@ const Reservations = () => {
 
       {isSnapshotOpen && snapshotReservation ? (
         <div className="px-8 space-y-6">
+          {cashRiskBlocked ? (
+            <CashRiskBlockedPanel info={cashRiskBlocked} onDismiss={clearCashRiskBlocked} />
+          ) : null}
+
           <ReservationSnapshot
             reservation={snapshotReservation}
             onClose={handleCloseSnapshot}
@@ -399,6 +405,10 @@ const Reservations = () => {
         <div className="px-8 py-12 text-center text-muted-foreground">Chargement du snapshot...</div>
       ) : (
         <div className="px-8 space-y-6">
+          {cashRiskBlocked ? (
+            <CashRiskBlockedPanel info={cashRiskBlocked} onDismiss={clearCashRiskBlocked} />
+          ) : null}
+
           <ReservationStats reservations={reservations} />
 
           <ListLayout
@@ -464,10 +474,15 @@ const Reservations = () => {
         open={engagementDialogOpen}
         onOpenChange={(open) => {
           setEngagementDialogOpen(open);
-          if (!open) setReservationSourceId(null);
+          if (!open) {
+            setReservationSourceId(null);
+            clearCashRiskBlocked();
+          }
         }}
         onSave={handleSaveEngagement}
         reservation={reservationSource}
+        cashRiskBlocked={cashRiskBlocked}
+        onClearCashRiskBlocked={clearCashRiskBlocked}
       />
 
       <AlertDialog

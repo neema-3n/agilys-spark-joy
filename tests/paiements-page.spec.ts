@@ -81,6 +81,9 @@ const setupAuthenticatedPaiementsApi = async (
   events: {
     annulations: Array<{ id: string; body: unknown }>;
     reprises: Array<{ id: string; body: unknown }>;
+  },
+  options?: {
+    blockExecuterForIds?: string[];
   }
 ) => {
   await page.route('**://127.0.0.1:3001/**', async (route) => {
@@ -174,6 +177,53 @@ const setupAuthenticatedPaiementsApi = async (
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(reprise),
+      });
+      return;
+    }
+
+    const executerMatch = url.pathname.match(/^\/paiements\/([^/]+)\/executer$/);
+    if (executerMatch && request.method() === 'PATCH') {
+      const id = executerMatch[1]!;
+      if (options?.blockExecuterForIds?.includes(id)) {
+        await route.fulfill({
+          status: 400,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            statusCode: 400,
+            error: 'CashRiskBlocked',
+            code: 'CASH_RISK_BLOCKED',
+            message: 'Transition bloquée: Gap de trésorerie projeté positif après transition.',
+            riskDecision: {
+              riskLevel: 'critical',
+              riskScore: 92.7,
+              decision: 'block',
+              reasons: [
+                'Gap de trésorerie projeté positif après transition.',
+                'Des opérations bancaires restent non rapprochées.',
+              ],
+              snapshot: {
+                transition: 'paiement:execute',
+                availableCash: 800,
+                projectedExposure: 1700,
+                projectedGap: 900,
+                remainingEngagements: 4,
+                outstandingDepenses: 3,
+                nonReconciledOperations: 6,
+              },
+            },
+          }),
+        });
+        return;
+      }
+
+      const paiement = paiements.find((item) => item.id === id);
+      if (paiement) {
+        paiement.statut = 'execute';
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(paiement ?? {}),
       });
       return;
     }
@@ -305,5 +355,54 @@ test.describe('paiements page ui', () => {
 
     await expect(page.getByText('PAY000003')).toBeVisible();
     await expect(page.getByText('T2')).toBeVisible();
+  });
+
+  test('affiche une explication actionnable quand une exécution est bloquée par le cash-risk', async ({ page }) => {
+    const accessToken = makeJwt({
+      sub: 'user-paiement-3',
+      tenantId: 'client-1',
+      roles: ['admin_client'],
+      email: 'blocked@agilys.local',
+      nom: 'Blocked',
+      prenom: 'Risk',
+      exp: Math.floor(Date.now() / 1000) + 600,
+    });
+
+    const paiements = [
+      makePaiementFixture({
+        id: 'pay-blocked',
+        numero: 'PAY009001',
+        statut: 'transmis',
+        referencePaiement: 'REF-BLOCK',
+      }),
+    ];
+    const events = { annulations: [] as Array<{ id: string; body: unknown }>, reprises: [] as Array<{ id: string; body: unknown }> };
+
+    await setupAuthenticatedPaiementsApi(page, accessToken, paiements, events, {
+      blockExecuterForIds: ['pay-blocked'],
+    });
+
+    await page.addInitScript((token: string) => {
+      window.localStorage.setItem('agilys.auth.accessToken', token);
+      window.localStorage.setItem('agilys.auth.refreshToken', 'refresh-token-stub');
+    }, accessToken);
+
+    await page.goto(`${UI_BASE_URL}/app/paiements`);
+    const row = page.getByRole('row', { name: /PAY009001/i });
+    await row.locator('button').first().click();
+    await page.getByRole('menuitem', { name: 'Exécuter' }).click();
+
+    const alert = page.getByRole('alert');
+    await expect(alert).toBeVisible();
+    await expect(page.getByText('Action bloquée par le contrôle de risque cash')).toBeVisible();
+    await expect(page.getByText('Exécution de paiement: La trésorerie projetée devient insuffisante après cette action.')).toBeVisible();
+    await expect(page.getByText('Remédiations proposées')).toBeVisible();
+    await expect(page.getByRole('button', { name: /Demander une exception/ })).toBeDisabled();
+
+    const dismissButton = page.getByRole('button', { name: 'Fermer ce message' });
+    await dismissButton.focus();
+    await expect(dismissButton).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.getByText('Action bloquée par le contrôle de risque cash')).not.toBeVisible();
   });
 });

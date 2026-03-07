@@ -30,6 +30,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { PaiementFormData } from '@/types/paiement.types';
 import { getMontantRestantDepense } from '@/lib/paiement-workflow';
+import { CashRiskBlockedPanel } from '@/components/shared/CashRiskBlockedPanel';
 
 interface PaiementDialogProps {
   open: boolean;
@@ -48,7 +49,7 @@ export const PaiementDialog = ({
   montantRestant,
   depenseNumero,
 }: PaiementDialogProps) => {
-  const { createPaiement } = usePaiements();
+  const { createPaiement, cashRiskBlocked, clearCashRiskBlocked } = usePaiements();
   const safeMontantRestant = getMontantRestantDepense({ montant: montantRestant, montantPaye: 0 });
   const formSchema = z.object({
     depenseId: z.string(),
@@ -85,6 +86,12 @@ export const PaiementDialog = ({
     });
   }, [depenseId, form, safeMontantRestant]);
 
+  useEffect(() => {
+    if (!open) {
+      clearCashRiskBlocked();
+    }
+  }, [clearCashRiskBlocked, open]);
+
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     await createPaiement(values as PaiementFormData);
     if (onSubmit) {
@@ -106,6 +113,10 @@ export const PaiementDialog = ({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            {cashRiskBlocked ? (
+              <CashRiskBlockedPanel info={cashRiskBlocked} onDismiss={clearCashRiskBlocked} />
+            ) : null}
+
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
