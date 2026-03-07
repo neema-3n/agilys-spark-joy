@@ -30,11 +30,11 @@ development_status:
   4-3-constituer-et-liquider-une-depense: done
   4-4-executer-paiement-et-gestion-des-cas-partiels-rejets: done
   epic-4-retrospective: optional
-  epic-5: backlog
-  5-1-evaluer-le-risque-cash-sur-transitions-critiques: backlog
-  5-2-expliquer-blocages-et-proposer-remediations: backlog
-  5-3-gerer-workflow-dexception-avec-quorum: backlog
-  5-4-offrir-supervision-tresorerie-et-audit-des-exceptions: backlog
+  epic-5: in-progress
+  5-1-evaluer-le-risque-cash-sur-transitions-critiques: done
+  5-2-expliquer-blocages-et-proposer-remediations: done
+  5-3-gerer-workflow-dexception-avec-quorum: ready-for-dev
+  5-4-offrir-supervision-tresorerie-et-audit-des-exceptions: ready-for-dev
   epic-5-retrospective: optional
   epic-6: backlog
   6-1-versionner-plan-comptable-et-mapping-ecritures: backlog

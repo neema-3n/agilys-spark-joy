@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PostgresService } from '../common/postgres.service';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
+import { CashRiskService } from '../cash-risk/cash-risk.service';
 import type { AnnulerPaiementDto, CreatePaiementDto, RejeterPaiementDto, ReprendrePaiementDto } from './dto/paiements.dto';
 import {
   canCreatePaiementForDepense,
@@ -125,7 +126,10 @@ interface PaiementView {
 
 @Injectable()
 export class PaiementsService {
-  constructor(private readonly postgresService: PostgresService) {}
+  constructor(
+    private readonly postgresService: PostgresService,
+    private readonly cashRiskService: CashRiskService
+  ) {}
 
   async getAll(actor: AuthenticatedUser, exerciceId: string): Promise<PaiementView[]> {
     const result = await this.postgresService.query<PaiementRow>(
@@ -222,6 +226,16 @@ export class PaiementsService {
   }
 
   async executer(actor: AuthenticatedUser, id: string): Promise<PaiementView> {
+    const paiement = await this.getPaiementRow(actor, id);
+    await this.cashRiskService.assertAllowed(actor, {
+      exerciceId: paiement.exercice_id,
+      transition: 'paiement:execute',
+      sourceType: 'paiement',
+      sourceId: paiement.id,
+      entityId: paiement.depense_id,
+      amount: Number(paiement.montant ?? 0),
+    });
+
     return this.transition(actor, id, 'execute');
   }
 
@@ -330,6 +344,15 @@ export class PaiementsService {
         `Reprise impossible: le montant dépasse le reste à payer (${resteAPayer.toFixed(2)}). Action: ajustez la tentative reprise.`
       );
     }
+
+    await this.cashRiskService.assertAllowed(actor, {
+      exerciceId: paiement.exercice_id,
+      transition: 'paiement:reprendre',
+      sourceType: 'paiement',
+      sourceId: paiement.id,
+      entityId: paiement.depense_id,
+      amount: montant,
+    });
 
     const numero = await this.generateNextNumero(actor.tenantId, paiement.exercice_id);
     const tentativeNumero = await this.getNextTentativeNumero(
@@ -566,8 +589,8 @@ export class PaiementsService {
       depense_id: paiement.depense_id,
     };
 
-    await this.postgresService.query(
-      `
+      await this.postgresService.query(
+        `
         SELECT public.generate_ecritures_comptables(
           $1,
           $2::uuid,
@@ -581,13 +604,13 @@ export class PaiementsService {
         )
       `,
       [
+        paiement.client_id,
+        paiement.exercice_id,
         'paiement',
         paiement.id,
         paiement.numero,
-        paiement.exercice_id,
-        Number(paiement.montant ?? 0),
         this.toDateOnly(paiement.date_paiement),
-        `Paiement ${paiement.numero}`,
+        Number(paiement.montant ?? 0),
         JSON.stringify(sourcePayload),
         actor.sub,
       ]

@@ -53,6 +53,9 @@ const setupAuthenticatedDepensesApi = async (
   depenses: DepenseFixture[],
   events: {
     paiements: Array<{ body: unknown }>;
+  },
+  options?: {
+    blockPaiementCreation?: boolean;
   }
 ) => {
   await page.route('**://127.0.0.1:3001/**', async (route) => {
@@ -109,6 +112,38 @@ const setupAuthenticatedDepensesApi = async (
     }
 
     if (url.pathname === '/paiements' && request.method() === 'POST') {
+      if (options?.blockPaiementCreation) {
+        await route.fulfill({
+          status: 400,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            statusCode: 400,
+            error: 'CashRiskBlocked',
+            code: 'CASH_RISK_BLOCKED',
+            message: 'Transition bloquée: Gap de trésorerie projeté positif après transition.',
+            riskDecision: {
+              riskLevel: 'high',
+              riskScore: 84,
+              decision: 'block',
+              reasons: [
+                'Gap de trésorerie projeté positif après transition.',
+                'Des opérations bancaires restent non rapprochées.',
+              ],
+              snapshot: {
+                transition: 'paiement:execute',
+                availableCash: 1000,
+                projectedExposure: 1600,
+                projectedGap: 600,
+                remainingEngagements: 3,
+                outstandingDepenses: 2,
+                nonReconciledOperations: 4,
+              },
+            },
+          }),
+        });
+        return;
+      }
+
       const body = request.postDataJSON() as {
         depenseId: string;
         montant: number;
@@ -275,5 +310,60 @@ test.describe('depenses paiement ui', () => {
 
     await expect(page.getByRole('row', { name: /DEP000002/i })).toContainText('400');
     await expect(page.getByRole('row', { name: /DEP000002/i })).toContainText('Payée');
+  });
+
+  test('conserve le formulaire ouvert et affiche les remédiations en cas de blocage cash', async ({ page }) => {
+    const accessToken = makeJwt({
+      sub: 'user-depense-3',
+      tenantId: 'client-1',
+      roles: ['admin_client'],
+      email: 'depenses-risk@agilys.local',
+      nom: 'Depense',
+      prenom: 'Risk',
+      exp: Math.floor(Date.now() / 1000) + 600,
+    });
+
+    const depenses = [
+      makeDepenseFixture({
+        id: 'dep-3',
+        numero: 'DEP000003',
+        montant: 900,
+        montantPaye: 0,
+        statut: 'ordonnancee',
+      }),
+    ];
+    const events = { paiements: [] as Array<{ body: unknown }> };
+
+    await setupAuthenticatedDepensesApi(page, accessToken, depenses, events, {
+      blockPaiementCreation: true,
+    });
+
+    await page.addInitScript((token: string) => {
+      window.localStorage.setItem('agilys.auth.accessToken', token);
+      window.localStorage.setItem('agilys.auth.refreshToken', 'refresh-token-stub');
+    }, accessToken);
+
+    await page.goto(`${UI_BASE_URL}/app/depenses`);
+    await expect(page).toHaveURL(/\/app\/depenses$/);
+    const row = page.getByRole('row', { name: /DEP000003/i });
+    await row.locator('button').last().click();
+    await page.getByRole('menuitem', { name: 'Enregistrer un paiement' }).click();
+
+    await page.getByLabel('Montant *').fill('350');
+    await page.getByRole('button', { name: 'Enregistrer le paiement' }).click();
+
+    const alert = page.getByRole('alert');
+    await expect(alert).toBeVisible();
+    await expect(page.getByRole('dialog')).toContainText('Action bloquée par le contrôle de risque cash');
+    await expect(page.getByRole('dialog')).toContainText('La trésorerie projetée devient insuffisante après cette action.');
+    await expect(page.getByRole('dialog')).toContainText('Remédiations proposées');
+    await expect(page.getByRole('button', { name: /Demander une exception/ })).toBeDisabled();
+
+    const dismissButton = page.getByRole('button', { name: 'Fermer ce message' });
+    await dismissButton.focus();
+    await expect(dismissButton).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('dialog')).not.toContainText('Action bloquée par le contrôle de risque cash');
+    await expect.poll(() => events.paiements.length).toBe(0);
   });
 });

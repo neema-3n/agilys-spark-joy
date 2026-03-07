@@ -1,6 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import type { QueryResult, QueryResultRow } from 'pg';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
+import type { CashRiskService } from '../cash-risk/cash-risk.service';
 import type { PostgresService } from '../common/postgres.service';
 import { EngagementsService } from './engagements.service';
 
@@ -68,10 +69,14 @@ const makeEngagementRow = (overrides: Record<string, unknown> = {}) => ({
 describe('EngagementsService', () => {
   const query = jest.fn();
   const postgresService = { query } as unknown as PostgresService;
-  const service = new EngagementsService(postgresService);
+  const cashRiskService = {
+    assertAllowed: jest.fn(),
+  } as unknown as CashRiskService;
+  const service = new EngagementsService(postgresService, cashRiskService);
 
   beforeEach(() => {
     query.mockReset();
+    jest.clearAllMocks();
   });
 
   it("refuse la conversion si l'exercice de la réservation ne correspond pas", async () => {
@@ -205,5 +210,13 @@ describe('EngagementsService', () => {
     expect(syncSpy).toHaveBeenCalledWith(actor, 'res-1');
     (service as unknown as { syncReservationStatusFromEngagement: unknown }).syncReservationStatusFromEngagement =
       originalSync;
+  });
+
+  it('bloque la validation si le moteur de risque cash refuse la transition', async () => {
+    query.mockResolvedValueOnce(makeResult([makeEngagementRow({ statut: 'brouillon' })]));
+    (cashRiskService.assertAllowed as jest.Mock).mockRejectedValueOnce(new BadRequestException('blocked'));
+
+    await expect(service.valider(actor, 'eng-1')).rejects.toBeInstanceOf(BadRequestException);
+    expect(query).toHaveBeenCalledTimes(1);
   });
 });

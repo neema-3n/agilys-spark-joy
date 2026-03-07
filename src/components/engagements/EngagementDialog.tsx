@@ -28,6 +28,8 @@ import { useProjets } from '@/hooks/useProjets';
 import { useEngagements } from '@/hooks/useEngagements';
 import type { Engagement, EngagementFormData } from '@/types/engagement.types';
 import type { ReservationCredit } from '@/types/reservation.types';
+import type { CashRiskBlockedInfo } from '@/lib/cash-risk-ui';
+import { CashRiskBlockedPanel } from '@/components/shared/CashRiskBlockedPanel';
 
 const engagementSchema = z.object({
   ligneBudgetaireId: z.string().min(1, 'Veuillez sélectionner une ligne budgétaire'),
@@ -46,6 +48,8 @@ interface EngagementDialogProps {
   onSave: (data: EngagementFormData) => Promise<void>;
   engagement?: Engagement;
   reservation?: ReservationCredit;
+  cashRiskBlocked?: CashRiskBlockedInfo | null;
+  onClearCashRiskBlocked?: () => void;
 }
 
 export const EngagementDialog = ({
@@ -54,6 +58,8 @@ export const EngagementDialog = ({
   onSave,
   engagement,
   reservation,
+  cashRiskBlocked = null,
+  onClearCashRiskBlocked,
 }: EngagementDialogProps) => {
   const { lignes: lignesBudgetaires } = useLignesBudgetaires();
   const { fournisseurs } = useFournisseurs();
@@ -198,6 +204,10 @@ export const EngagementDialog = ({
         <div className="flex-1 overflow-y-auto px-4 min-h-0">
           <Form {...form}>
           <form className="space-y-4 py-4">
+            {cashRiskBlocked ? (
+              <CashRiskBlockedPanel info={cashRiskBlocked} onDismiss={onClearCashRiskBlocked} />
+            ) : null}
+
             {reservation && (
               <div className="p-4 bg-muted rounded-lg space-y-2">
                 <p className="text-sm font-medium">Engagement depuis la réservation : {reservation.numero}</p>

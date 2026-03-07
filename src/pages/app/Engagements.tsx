@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import type { EngagementFormData } from '@/types/engagement.types';
 import type { CreateBonCommandeInput } from '@/types/bonCommande.types';
+import { CashRiskBlockedPanel } from '@/components/shared/CashRiskBlockedPanel';
 
 const Engagements = () => {
   const { engagementId } = useParams<{ engagementId?: string }>();
@@ -60,8 +61,17 @@ const Engagements = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const { engagements, isLoading, createEngagement, updateEngagement, validerEngagement, annulerEngagement, deleteEngagement } =
-    useEngagements();
+  const {
+    engagements,
+    isLoading,
+    createEngagement,
+    updateEngagement,
+    validerEngagement,
+    annulerEngagement,
+    deleteEngagement,
+    cashRiskBlocked,
+    clearCashRiskBlocked,
+  } = useEngagements();
   const { createBonCommande, genererNumero } = useBonsCommande();
   const { createDepenseFromEngagement } = useDepenses();
 
@@ -133,8 +143,9 @@ const Engagements = () => {
     setDialogOpen(open);
     if (!open) {
       setEditingEngagementId(undefined);
+      clearCashRiskBlocked();
     }
-  }, []);
+  }, [clearCashRiskBlocked]);
 
   const handleSave = useCallback(
     async (data: EngagementFormData) => {
@@ -156,7 +167,7 @@ const Engagements = () => {
       } catch (error) {
         toast({
           title: 'Erreur',
-          description: 'Une erreur est survenue lors de la sauvegarde.',
+          description: error instanceof Error ? error.message : 'Une erreur est survenue lors de la sauvegarde.',
           variant: 'destructive',
         });
         throw error;
@@ -182,7 +193,7 @@ const Engagements = () => {
     } catch (error) {
       toast({
         title: 'Erreur',
-        description: 'Une erreur est survenue lors de la validation.',
+        description: error instanceof Error ? error.message : 'Une erreur est survenue lors de la validation.',
         variant: 'destructive',
       });
     } finally {
@@ -361,6 +372,10 @@ const Engagements = () => {
       {!isSnapshotOpen && pageHeaderContent}
 
       <div className="px-8 space-y-6">
+        {cashRiskBlocked ? (
+          <CashRiskBlockedPanel info={cashRiskBlocked} onDismiss={clearCashRiskBlocked} />
+        ) : null}
+
         {isSnapshotOpen && snapshotEngagement ? (
           <EngagementSnapshot
             engagement={snapshotEngagement}
@@ -449,7 +464,14 @@ const Engagements = () => {
         )}
       </div>
 
-      <EngagementDialog open={dialogOpen} onOpenChange={handleDialogClose} onSave={handleSave} engagement={editingEngagement} />
+      <EngagementDialog
+        open={dialogOpen}
+        onOpenChange={handleDialogClose}
+        onSave={handleSave}
+        engagement={editingEngagement}
+        cashRiskBlocked={cashRiskBlocked}
+        onClearCashRiskBlocked={clearCashRiskBlocked}
+      />
 
       <BonCommandeDialog
         open={bonCommandeDialogOpen}

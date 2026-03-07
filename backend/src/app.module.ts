@@ -3,6 +3,7 @@ import { AuthModule } from './auth/auth.module';
 import { BudgetReferentielsModule } from './budget-referentiels/budget-referentiels.module';
 import { BonsCommandeModule } from './bons-commande/bons-commande.module';
 import { PostgresModule } from './common/postgres.module';
+import { CashRiskModule } from './cash-risk/cash-risk.module';
 import { ComptesModule } from './comptes/comptes.module';
 import { ComptesTresorerieModule } from './comptes-tresorerie/comptes-tresorerie.module';
 import { DepensesModule } from './depenses/depenses.module';
@@ -27,6 +28,7 @@ import { TenantPoliciesModule } from './tenant-policies/tenant-policies.module';
   imports: [
     PostgresModule,
     AuthModule,
+    CashRiskModule,
     BudgetReferentielsModule,
     BonsCommandeModule,
     ComptesModule,

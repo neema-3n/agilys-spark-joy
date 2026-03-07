@@ -35,6 +35,7 @@ import {
   resetPaiementMotifDialog,
 } from '@/lib/paiement-page';
 import { paiementStatusLabels } from '@/lib/paiement-workflow';
+import { CashRiskBlockedPanel } from '@/components/shared/CashRiskBlockedPanel';
 
 export default function Paiements() {
   const {
@@ -46,6 +47,8 @@ export default function Paiements() {
     rejeterPaiement,
     annulerPaiement,
     reprendrePaiement,
+    cashRiskBlocked,
+    clearCashRiskBlocked,
   } = usePaiements();
   const [search, setSearch] = useState('');
   const [statutFilter, setStatutFilter] = useState<'tous' | StatutPaiement>('tous');
@@ -69,13 +72,16 @@ export default function Paiements() {
     const submission = buildPaiementMotifSubmission(motifDialogState);
     if (!submission) return;
 
-    if (submission.action === 'annuler') {
-      await annulerPaiement({ id: submission.id, payload: submission.payload });
-    } else {
-      await rejeterPaiement({ id: submission.id, payload: submission.payload });
+    try {
+      if (submission.action === 'annuler') {
+        await annulerPaiement({ id: submission.id, payload: submission.payload });
+      } else {
+        await rejeterPaiement({ id: submission.id, payload: submission.payload });
+      }
+      resetMotifDialog();
+    } catch {
+      // L'erreur est déjà gérée dans le hook via toast + état de blocage cash.
     }
-
-    resetMotifDialog();
   };
 
   const handleView = (id: string) => {
@@ -97,6 +103,10 @@ export default function Paiements() {
       <PageHeader title="Historique des Paiements" description="Consultation de tous les paiements effectués" sticky={false} />
 
       <div className="px-8 space-y-6">
+        {cashRiskBlocked ? (
+          <CashRiskBlockedPanel info={cashRiskBlocked} onDismiss={clearCashRiskBlocked} />
+        ) : null}
+
         <PaiementStats paiements={paiements} />
 
         <ListLayout
@@ -134,12 +144,12 @@ export default function Paiements() {
           <PaiementTable
             paiements={filteredPaiements}
             onView={handleView}
-            onAccepter={accepterPaiement}
-            onExecuter={executerPaiement}
-            onReconcilier={reconcilierPaiement}
+            onAccepter={(id) => void accepterPaiement(id).catch(() => undefined)}
+            onExecuter={(id) => void executerPaiement(id).catch(() => undefined)}
+            onReconcilier={(id) => void reconcilierPaiement(id).catch(() => undefined)}
             onRejeter={(id) => openMotifDialog(id, 'rejeter')}
             onAnnuler={(id) => openMotifDialog(id, 'annuler')}
-            onReprendre={(id) => reprendrePaiement({ id })}
+            onReprendre={(id) => void reprendrePaiement({ id }).catch(() => undefined)}
             stickyHeader
             stickyHeaderOffset={0}
             scrollContainerClassName="max-h-[calc(100vh-240px)] overflow-auto"
