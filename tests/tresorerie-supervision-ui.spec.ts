@@ -1,0 +1,368 @@
+import { expect, test, type Page } from '@playwright/test';
+
+const UI_BASE_URL = 'http://127.0.0.1:45179';
+
+const makeJwt = (payload: Record<string, unknown>): string => {
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  return `${header}.${body}.sig`;
+};
+
+const buildAuditPayload = () => ({
+  items: [
+    {
+      id: 'exc-1',
+      exerciceId: 'ex-2026',
+      status: 'exception-approved',
+      severity: 'critical',
+      decision: 'block',
+      transition: 'paiement:execute',
+      sourceType: 'paiement',
+      sourceId: 'pay-1',
+      entityId: 'dep-1',
+      correlationId: 'corr-1',
+      motif: 'Paiement urgent sous exception',
+      justification: 'Risque de rupture opérationnelle',
+      quorumRequired: 2,
+      requestedBy: 'user-requester-1',
+      approvedAt: '2026-03-07T10:00:00.000Z',
+      expiresAt: '2030-03-09T10:00:00.000Z',
+      createdAt: '2026-03-07T09:00:00.000Z',
+      updatedAt: '2026-03-07T10:00:00.000Z',
+      reasons: ['Le besoin projeté dépasse la trésorerie disponible.'],
+      snapshot: {
+        tenantId: 'client-1',
+        exerciceId: 'ex-2026',
+        transition: 'paiement:execute',
+        sourceType: 'paiement',
+        sourceId: 'pay-1',
+        entityId: 'dep-1',
+        projectedAmount: 450000,
+        availableCash: 120000,
+        outstandingDepenses: 300000,
+        remainingEngagements: 50000,
+        projectedExposure: 800000,
+        projectedGap: 680000,
+        nonReconciledOperations: 6,
+        threshold: 60,
+        correlationId: 'corr-1',
+      },
+      approvers: [
+        {
+          actorUserId: 'approver-1',
+          decision: 'approuver',
+          commentaire: 'Validé',
+          createdAt: '2026-03-07T10:00:00.000Z',
+        },
+      ],
+    },
+  ],
+  pagination: {
+    page: 1,
+    pageSize: 20,
+    total: 1,
+    totalPages: 1,
+  },
+});
+
+const setupApi = async (
+  page: Page,
+  accessToken: string,
+  options: {
+    denyAudit?: boolean;
+  } = {}
+) => {
+  await page.route('**://127.0.0.1:3001/**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+
+    if (url.pathname === '/auth/refresh') {
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          accessToken,
+          refreshToken: 'refresh-token-stub',
+        }),
+      });
+      return;
+    }
+
+    if (url.pathname === '/budget-referentiels/exercices') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          {
+            id: 'ex-2026',
+            clientId: 'client-1',
+            libelle: 'Exercice 2026',
+            code: 'EX2026',
+            dateDebut: '2026-01-01',
+            dateFin: '2026-12-31',
+            statut: 'ouvert',
+          },
+        ]),
+      });
+      return;
+    }
+
+    if (url.pathname === '/comptes-tresorerie' || url.pathname === '/comptes-tresorerie/actifs') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([]),
+      });
+      return;
+    }
+
+    if (url.pathname === '/recettes' || url.pathname === '/operations-tresorerie') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([]),
+      });
+      return;
+    }
+
+    if (url.pathname === '/recettes/stats') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          nombreTotal: 0,
+          nombreValidees: 0,
+          nombreAnnulees: 0,
+          montantTotal: 0,
+          montantValidees: 0,
+          montantAujourdhui: 0,
+          montantCeMois: 0,
+          repartitionParSource: [],
+        }),
+      });
+      return;
+    }
+
+    if (url.pathname === '/operations-tresorerie/stats') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          nombreTotal: 0,
+          nombreEncaissements: 0,
+          nombreDecaissements: 0,
+          nombreTransferts: 0,
+          montantEncaissements: 0,
+          montantDecaissements: 0,
+          montantTransferts: 0,
+          soldeNet: 0,
+          operationsNonRapprochees: 0,
+        }),
+      });
+      return;
+    }
+
+    if (url.pathname === '/tresorerie/supervision') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          exerciceId: 'ex-2026',
+          generatedAt: '2026-03-07T11:00:00.000Z',
+          currentPosition: 2500000,
+          shortTermProjection: 1620000,
+          pendingDisbursements: 620000,
+          pendingDisbursementsCount: 4,
+          remainingCommitments: 260000,
+          remainingCommitmentsCount: 3,
+          nonReconciledOperations: 6,
+          projectedExposure: 880000,
+          projectedGap: 120000,
+          activeExceptions: 1,
+          expiredExceptions: 1,
+          consumedExceptions: 2,
+          alerts: [
+            {
+              key: 'liquidity-gap',
+              severity: 'critical',
+              code: 'LIQUIDITY_GAP',
+              label: 'Tension de liquidité',
+              message: 'Le besoin projeté dépasse la position courante.',
+              value: 120000,
+              threshold: 0,
+            },
+          ],
+        }),
+      });
+      return;
+    }
+
+    if (url.pathname === '/tresorerie/exception-audit') {
+      if (options.denyAudit) {
+        await route.fulfill({
+          status: 403,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'Forbidden' }),
+        });
+        return;
+      }
+
+      const sourceId = url.searchParams.get('sourceId');
+      if (sourceId === 'missing-source') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            items: [],
+            pagination: {
+              page: 1,
+              pageSize: 20,
+              total: 0,
+              totalPages: 1,
+            },
+          }),
+        });
+        return;
+      }
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(buildAuditPayload()),
+      });
+      return;
+    }
+
+    if (url.pathname === '/tresorerie/exception-audit/detail') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ...buildAuditPayload().items[0],
+          votes: [
+            {
+              id: 'vote-1',
+              actorUserId: 'approver-1',
+              actorRoles: ['directeur_financier'],
+              decision: 'approuver',
+              commentaire: 'ok',
+              createdAt: '2026-03-07T10:00:00.000Z',
+            },
+          ],
+          events: [
+            {
+              id: 'evt-1',
+              actorUserId: 'user-requester-1',
+              actorRoles: ['comptable'],
+              eventType: 'soumise',
+              payload: { commentaire: 'creation' },
+              createdAt: '2026-03-07T09:00:00.000Z',
+            },
+          ],
+        }),
+      });
+      return;
+    }
+
+    if (request.method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([]),
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({}),
+    });
+  });
+};
+
+test.describe('tresorerie supervision + audit UI', () => {
+  test('affiche les KPI/alertes de supervision et preserve la page Tresorerie', async ({ page }) => {
+    const accessToken = makeJwt({
+      sub: 'user-1',
+      tenantId: 'client-1',
+      roles: ['directeur_financier'],
+      email: 'user@agilys.local',
+      nom: 'Finance',
+      prenom: 'Lead',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    });
+
+    await setupApi(page, accessToken);
+    await page.addInitScript((token: string) => {
+      window.localStorage.setItem('agilys.auth.accessToken', token);
+      window.localStorage.setItem('agilys.auth.refreshToken', 'refresh-token-stub');
+    }, accessToken);
+
+    await page.goto(`${UI_BASE_URL}/app/tresorerie`);
+    await expect(page).toHaveURL(/\/app\/tresorerie$/);
+
+    await expect(page.getByRole('tab', { name: 'Comptes' })).toBeVisible();
+    await page.getByRole('tab', { name: 'Supervision' }).click();
+    await expect(page.getByText('Journal des alertes cash')).toBeVisible();
+    await expect(page.getByText('Tension de liquidité')).toBeVisible();
+  });
+
+  test('affiche la table audit, filtres, drill-down detail et table lisible', async ({ page }) => {
+    const accessToken = makeJwt({
+      sub: 'user-2',
+      tenantId: 'client-1',
+      roles: ['auditeur'],
+      email: 'audit@agilys.local',
+      nom: 'Audit',
+      prenom: 'Reader',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    });
+
+    await setupApi(page, accessToken);
+    await page.addInitScript((token: string) => {
+      window.localStorage.setItem('agilys.auth.accessToken', token);
+      window.localStorage.setItem('agilys.auth.refreshToken', 'refresh-token-stub');
+    }, accessToken);
+
+    await page.goto(`${UI_BASE_URL}/app/controle-interne`);
+    await expect(page).toHaveURL(/\/app\/controle-interne$/);
+
+    await expect(page.getByText('Audit des exceptions cash-risk')).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Statut' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Risque' })).toBeVisible();
+
+    await page.getByText('Paiement urgent sous exception').dblclick();
+    await expect(page.getByText('Détail d\'audit')).toBeVisible();
+    await expect(page.getByText('Raisons du blocage')).toBeVisible();
+
+    const searchInput = page.getByLabel('Rechercher dans la liste');
+    await searchInput.click();
+    await searchInput.fill('missing-source');
+    await expect(page.getByText('Aucune entrée d’audit trouvée.')).toBeVisible({ timeout: 15000 });
+    await searchInput.press('Tab');
+    await expect(searchInput).not.toBeFocused();
+  });
+
+  test('affiche un message d accès restreint sans permission audit', async ({ page }) => {
+    const accessToken = makeJwt({
+      sub: 'user-3',
+      tenantId: 'client-1',
+      roles: ['operateur_saisie'],
+      email: 'ops@agilys.local',
+      nom: 'Ops',
+      prenom: 'Reader',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    });
+
+    await setupApi(page, accessToken, { denyAudit: true });
+    await page.addInitScript((token: string) => {
+      window.localStorage.setItem('agilys.auth.accessToken', token);
+      window.localStorage.setItem('agilys.auth.refreshToken', 'refresh-token-stub');
+    }, accessToken);
+
+    await page.goto(`${UI_BASE_URL}/app/controle-interne`);
+    await expect(page.getByText('Accès restreint')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText('referentiels:audit:read')).toBeVisible();
+  });
+});

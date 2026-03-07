@@ -1,6 +1,6 @@
 # Story 5.4: Offrir supervision tresorerie et audit des exceptions
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -49,57 +49,57 @@ so that je peux suivre les risques et conformites.
 
 ## Tasks / Subtasks
 
-- [ ] Revalider le contrat story contre `FR24`, `FR25`, `FR30`, `FR31`, `FR42`, `NFR1`, `NFR8`, `NFR9`, `NFR11`, `NFR13`, `NFR19`, `NFR20` et `NFR21`, puis expliciter la dependance fonctionnelle a la story `5.3` pour la persistence des exceptions gouvernees (AC: 1, 2, 5)
-- [ ] Formaliser un read model backend partage pour la supervision tresorerie, au lieu de continuer a exposer des stats derivees artificiellement depuis les seuls paiements valides (AC: 1, 4, 5)
-- [ ] Etendre `backend/src/tresorerie/*` avec des DTO et endpoints read-only dedies a:
-  - [ ] synthese position/projection/alertes
-  - [ ] journal des alertes cash
-  - [ ] liste paginee des exceptions auditees avec filtres
-  - [ ] detail d'une exception ou d'une decision risque via `correlationId`/identifiant stable (AC: 1, 2, 4, 5)
-- [ ] Reutiliser et etendre le contrat `backend/src/cash-risk/cash-risk.types.ts` plutot que definir un second format d'audit pour les decisions cash (AC: 1, 2, 4)
-- [ ] Definir l'articulation avec la story `5.3`:
-  - [ ] la story `5.3` reste source de verite des demandes/approbations d'exception
-  - [ ] la story `5.4` consomme cette source pour la supervision et l'audit
-  - [ ] aucun journal parallele d'exceptions n'est cree si une persistence dediee existe deja ou est livree avec `5.3` (AC: 2, 5)
-- [ ] Etendre `backend/src/tresorerie/tresorerie.service.ts` pour calculer des alertes deterministes basees sur seuils et ecarts reels:
-  - [ ] tension de liquidite (`projectedGap > 0`)
-  - [ ] operations non rapprochees
-  - [ ] concentration d'engagements/depenses en attente
-  - [ ] exceptions critiques actives ou expirees (AC: 1, 2, 4)
-- [ ] Introduire des types front dedies pour la supervision et l'audit au lieu de surcharger `src/types/tresorerie.types.ts` avec des structures implicites (AC: 1, 2, 4)
-- [ ] Etendre `src/services/api/tresorerie.service.ts` avec des appels types vers les nouveaux endpoints, en conservant `requestJson` comme point d'entree unique (AC: 1, 2, 4, 5)
-- [ ] Etendre `src/hooks/useTresorerie.ts` ou extraire des hooks read-only specialises si necessaire:
-  - [ ] `useTresorerieSupervision`
-  - [ ] `useExceptionAudit`
-  - [ ] partager les query keys et filtres plutot que dupliquer des `useQuery` locaux dans les pages (AC: 1, 2, 4)
-- [ ] Reutiliser les patterns UI existants:
-  - [ ] `src/components/tresorerie/TresorerieStats.tsx` pour les KPI de synthese
-  - [ ] `src/components/tresorerie/PrevisionsTresorerie.tsx` pour la projection
-  - [ ] `src/components/lists/*` pour le journal et les filtres
-  - [ ] extraire un composant partage de badge/alerte si le meme code apparait dans `Tresorerie` et `ControleInterne` (AC: 3, 4)
-- [ ] Implementer la page `src/pages/app/Tresorerie.tsx` pour afficher un onglet ou bloc "Supervision" en plus des comptes/operations existants, sans casser les flows CRUD actuels (AC: 1, 3, 5)
-- [ ] Remplacer le placeholder `src/pages/app/ControleInterne.tsx` par une vue read-only d'audit des exceptions:
-  - [ ] liste paginee
-  - [ ] filtres de severite/statut/periode/transition
-  - [ ] panneau de detail ou snapshot de lecture seule
-  - [ ] indicateurs de conformite et exceptions ouvertes/expirees (AC: 2, 3, 4, 5)
-- [ ] Garantir que les permissions restent segmentees:
-  - [ ] supervision tresorerie visible avec `referentiels:read`
-  - [ ] audit d'exception visible uniquement avec `referentiels:audit:read`
-  - [ ] masquer ou desactiver proprement les zones UI non autorisees sans recalcul de role cote composant (AC: 2, 3, 5)
-- [ ] Prevoir un export ou une structure preparatoire pour le dossier d'audit, sans essayer de livrer le dossier complet de `FR30` si le perimetre du sprint ne le couvre pas integralement (AC: 2, 5)
-- [ ] Ajouter les tests backend obligatoires:
-  - [ ] agregats de supervision corrects sur donnees mixtes
-  - [ ] filtres du journal d'exception
-  - [ ] refus cross-tenant
-  - [ ] enforcement RBAC (`referentiels:read` vs `referentiels:audit:read`)
-  - [ ] non-regression des endpoints existants `/tresorerie/stats`, `/flux`, `/previsions` si conserves (AC: 1, 2, 4, 5)
-- [ ] Ajouter les tests frontend obligatoires:
-  - [ ] rendu des KPI/alertes
-  - [ ] rendu de la table d'audit et de ses filtres
-  - [ ] accessibilite clavier/lecteurs d'ecran des vues de controle
-  - [ ] non-regression de `src/pages/app/Tresorerie.tsx` et `src/pages/app/ControleInterne.tsx` (AC: 3, 4, 5)
-- [ ] Confirmer explicitement qu'aucune nouvelle dependance runtime Supabase ni librairie de dashboard/table additionnelle n'est introduite (AC: 3, 5)
+- [x] Revalider le contrat story contre `FR24`, `FR25`, `FR30`, `FR31`, `FR42`, `NFR1`, `NFR8`, `NFR9`, `NFR11`, `NFR13`, `NFR19`, `NFR20` et `NFR21`, puis expliciter la dependance fonctionnelle a la story `5.3` pour la persistence des exceptions gouvernees (AC: 1, 2, 5)
+- [x] Formaliser un read model backend partage pour la supervision tresorerie, au lieu de continuer a exposer des stats derivees artificiellement depuis les seuls paiements valides (AC: 1, 4, 5)
+- [x] Etendre `backend/src/tresorerie/*` avec des DTO et endpoints read-only dedies a:
+  - [x] synthese position/projection/alertes
+  - [x] journal des alertes cash
+  - [x] liste paginee des exceptions auditees avec filtres
+  - [x] detail d'une exception ou d'une decision risque via `correlationId`/identifiant stable (AC: 1, 2, 4, 5)
+- [x] Reutiliser et etendre le contrat `backend/src/cash-risk/cash-risk.types.ts` plutot que definir un second format d'audit pour les decisions cash (AC: 1, 2, 4)
+- [x] Definir l'articulation avec la story `5.3`:
+  - [x] la story `5.3` reste source de verite des demandes/approbations d'exception
+  - [x] la story `5.4` consomme cette source pour la supervision et l'audit
+  - [x] aucun journal parallele d'exceptions n'est cree si une persistence dediee existe deja ou est livree avec `5.3` (AC: 2, 5)
+- [x] Etendre `backend/src/tresorerie/tresorerie.service.ts` pour calculer des alertes deterministes basees sur seuils et ecarts reels:
+  - [x] tension de liquidite (`projectedGap > 0`)
+  - [x] operations non rapprochees
+  - [x] concentration d'engagements/depenses en attente
+  - [x] exceptions critiques actives ou expirees (AC: 1, 2, 4)
+- [x] Introduire des types front dedies pour la supervision et l'audit au lieu de surcharger `src/types/tresorerie.types.ts` avec des structures implicites (AC: 1, 2, 4)
+- [x] Etendre `src/services/api/tresorerie.service.ts` avec des appels types vers les nouveaux endpoints, en conservant `requestJson` comme point d'entree unique (AC: 1, 2, 4, 5)
+- [x] Etendre `src/hooks/useTresorerie.ts` ou extraire des hooks read-only specialises si necessaire:
+  - [x] `useTresorerieSupervision`
+  - [x] `useExceptionAudit`
+  - [x] partager les query keys et filtres plutot que dupliquer des `useQuery` locaux dans les pages (AC: 1, 2, 4)
+- [x] Reutiliser les patterns UI existants:
+  - [x] `src/components/tresorerie/TresorerieStats.tsx` pour les KPI de synthese
+  - [x] `src/components/tresorerie/PrevisionsTresorerie.tsx` pour la projection
+  - [x] `src/components/lists/*` pour le journal et les filtres
+  - [x] extraire un composant partage de badge/alerte si le meme code apparait dans `Tresorerie` et `ControleInterne` (AC: 3, 4)
+- [x] Implementer la page `src/pages/app/Tresorerie.tsx` pour afficher un onglet ou bloc "Supervision" en plus des comptes/operations existants, sans casser les flows CRUD actuels (AC: 1, 3, 5)
+- [x] Remplacer le placeholder `src/pages/app/ControleInterne.tsx` par une vue read-only d'audit des exceptions:
+  - [x] liste paginee
+  - [x] filtres de severite/statut/periode/transition
+  - [x] panneau de detail ou snapshot de lecture seule
+  - [x] indicateurs de conformite et exceptions ouvertes/expirees (AC: 2, 3, 4, 5)
+- [x] Garantir que les permissions restent segmentees:
+  - [x] supervision tresorerie visible avec `referentiels:read`
+  - [x] audit d'exception visible uniquement avec `referentiels:audit:read`
+  - [x] masquer ou desactiver proprement les zones UI non autorisees sans recalcul de role cote composant (AC: 2, 3, 5)
+- [x] Prevoir un export ou une structure preparatoire pour le dossier d'audit, sans essayer de livrer le dossier complet de `FR30` si le perimetre du sprint ne le couvre pas integralement (AC: 2, 5)
+- [x] Ajouter les tests backend obligatoires:
+  - [x] agregats de supervision corrects sur donnees mixtes
+  - [x] filtres du journal d'exception
+  - [x] refus cross-tenant
+  - [x] enforcement RBAC (`referentiels:read` vs `referentiels:audit:read`)
+  - [x] non-regression des endpoints existants `/tresorerie/stats`, `/flux`, `/previsions` si conserves (AC: 1, 2, 4, 5)
+- [x] Ajouter les tests frontend obligatoires:
+  - [x] rendu des KPI/alertes
+  - [x] rendu de la table d'audit et de ses filtres
+  - [x] accessibilite clavier/lecteurs d'ecran des vues de controle
+  - [x] non-regression de `src/pages/app/Tresorerie.tsx` et `src/pages/app/ControleInterne.tsx` (AC: 3, 4, 5)
+- [x] Confirmer explicitement qu'aucune nouvelle dependance runtime Supabase ni librairie de dashboard/table additionnelle n'est introduite (AC: 3, 5)
 
 ## Dev Notes
 
@@ -332,8 +332,8 @@ GPT-5 Codex
 
 ### Debug Log References
 
-- Workflow: `/_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml`
-- Instructions: `/_bmad/bmm/workflows/4-implementation/create-story/instructions.xml`
+- Workflow: `/_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml`
+- Instructions: `/_bmad/bmm/workflows/4-implementation/dev-story/instructions.xml`
 - Engine: `/_bmad/core/tasks/workflow.xml`
 
 ### Implementation Plan
@@ -345,15 +345,58 @@ GPT-5 Codex
 
 ### Completion Notes List
 
-- Story `5.4` creee explicitement a partir de la demande utilisateur `5-4`.
-- Le document force la reutilisation des pages existantes `Tresorerie` et `ControleInterne` au lieu d'un dashboard parallele.
-- La supervision de tresorerie doit corriger les calculs simplifies actuels du backend avant toute construction UI avancee.
-- L'audit des exceptions doit reposer sur la source de verite de `5.3` et sur les artefacts `cash-risk`, sans journal concurrent.
-- Les permissions existantes `referentiels:read` et `referentiels:audit:read` sont conservees comme garde-fous principaux.
-- Aucun web research fonctionnel additionnel n'etait necessaire; le besoin est defini par les artefacts du repo et le code courant.
-- Validation create-story effectuee manuellement contre la checklist: contexte metier, contraintes d'architecture, previous story intelligence, references et guardrails de dev inclus.
+- Read model backend implemente pour la supervision avec position courante, projection court terme, exposition projetee, alertes deterministes et compteurs d'exceptions.
+- Endpoints read-only ajoutes sous `/tresorerie` pour supervision, journal d'alertes, audit pagine filtre, detail par `exceptionId/correlationId` et preparation d'export audit.
+- Integration frontend realisee dans `Tresorerie` (onglet Supervision) et `ControleInterne` (journal read-only + drill-down detail) avec reuse des patterns `ListLayout`, `ListToolbar`, `ListTable`.
+- Articulation explicite avec la source de verite de `5.3` (`workflow_exceptions`) sans creation de stockage parallele.
+- Qualite validee: `pnpm --dir backend run lint`, `pnpm --dir backend run test`, `pnpm run lint`, plus spec cible `backend/src/tresorerie/tresorerie.service.spec.ts`.
+- Test RBAC explicite ajoute sur `TresorerieController` pour verifier les permissions `referentiels:read` et `referentiels:audit:read`.
+- Tests frontend Playwright ajoutes pour supervision tresorerie et audit controle interne (filtres, drill-down, message d'acces restreint, navigation clavier).
 
 ### File List
 
 - `_bmad-output/implementation-artifacts/5-4-offrir-supervision-tresorerie-et-audit-des-exceptions.md`
 - `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `backend/src/tresorerie/dto/tresorerie.dto.ts`
+- `backend/src/tresorerie/tresorerie.controller.ts`
+- `backend/src/tresorerie/tresorerie.service.ts`
+- `backend/src/tresorerie/tresorerie.service.spec.ts`
+- `backend/src/tresorerie/tresorerie.controller.spec.ts`
+- `src/types/tresorerie.types.ts`
+- `src/services/api/tresorerie.service.ts`
+- `src/hooks/useTresorerie.ts`
+- `src/pages/app/Tresorerie.tsx`
+- `src/pages/app/ControleInterne.tsx`
+- `src/components/tresorerie/TresorerieSupervisionPanel.tsx`
+- `src/components/tresorerie/TresorerieRiskBadge.tsx`
+- `src/components/controle-interne/ExceptionAuditTable.tsx`
+- `src/components/controle-interne/ExceptionAuditDetail.tsx`
+- `tests/tresorerie-supervision-ui.spec.ts`
+- `playwright.tresorerie-supervision.config.ts`
+
+## Senior Developer Review (AI)
+
+### Date
+
+2026-03-07
+
+### Résultat
+
+Approuvé après corrections. Les écarts HIGH/MEDIUM identifiés pendant la revue ont été corrigés dans le même lot.
+
+### Findings traités
+
+1. Endpoint `GET /tresorerie/supervision/alerts` réaligné sur `referentiels:audit:read` pour éviter toute exposition de données d'audit via `referentiels:read`.
+2. Filtre `toDate` corrigé pour inclure toute la journée sélectionnée (`created_at < toDate + 1 day`).
+3. Exposition des approbateurs complétée côté UI (compteur en table + détail des approbateurs dans le panneau de drill-down).
+4. Drill-down rendu actionnable au clavier et au clic simple (accessibilité renforcée).
+5. Validation DTO renforcée pour `sourceType` via une liste contrôlée (`engagement|paiement|depense`).
+
+### Vérifications exécutées
+
+- `pnpm --dir backend run test -- tresorerie` ✅
+- `pnpm run lint` ✅
+
+### Risques résiduels
+
+- Aucun risque bloquant identifié sur ce lot après corrections.

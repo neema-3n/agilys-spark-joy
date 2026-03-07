@@ -22,6 +22,7 @@ interface ListTableProps<T> {
   items: T[];
   columns: ListColumn<T>[];
   getRowId: (item: T) => string;
+  onRowClick?: (item: T) => void;
   onRowDoubleClick?: (item: T) => void;
   emptyMessage?: string;
   stickyHeader?: boolean;
@@ -40,6 +41,7 @@ export const ListTable = <T,>({
   items,
   columns,
   getRowId,
+  onRowClick,
   onRowDoubleClick,
   emptyMessage = 'Aucun élément trouvé',
   stickyHeader = false,
@@ -84,9 +86,22 @@ export const ListTable = <T,>({
               items.map((item) => (
                 <TableRow
                   key={getRowId(item)}
+                  tabIndex={onRowClick ? 0 : undefined}
+                  onClick={onRowClick ? () => onRowClick(item) : undefined}
                   onDoubleClick={onRowDoubleClick ? () => onRowDoubleClick(item) : undefined}
+                  onKeyDown={
+                    onRowClick
+                      ? (event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            onRowClick(item);
+                          }
+                        }
+                      : undefined
+                  }
                   className={cn(
-                    onRowDoubleClick && 'cursor-pointer hover:bg-muted/30 transition-colors'
+                    (onRowClick || onRowDoubleClick) && 'cursor-pointer hover:bg-muted/30 transition-colors',
+                    onRowClick && 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
                   )}
                 >
                   {columns.map((column) => (
