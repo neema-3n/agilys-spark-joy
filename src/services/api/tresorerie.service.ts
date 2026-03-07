@@ -1,5 +1,13 @@
 import { requestJson } from '@/services/api/api-utils';
-import type { FluxTresorerie, PrevisionTresorerie, TresorerieStats } from '@/types/tresorerie.types';
+import type {
+  FluxTresorerie,
+  PaginatedTresorerieAudit,
+  PrevisionTresorerie,
+  TresorerieAuditDetail,
+  TresorerieAuditFilters,
+  TresorerieStats,
+  TresorerieSupervision,
+} from '@/types/tresorerie.types';
 
 interface FluxTresorerieApiModel {
   id: string;
@@ -33,6 +41,46 @@ const mapFluxFromApi = (row: FluxTresorerieApiModel): FluxTresorerie => ({
   updatedAt: row.updatedAt
 });
 
+const buildAuditQueryParams = (exerciceId: string, filters: TresorerieAuditFilters = {}) => {
+  const params = new URLSearchParams({ exerciceId });
+
+  if (filters.status) {
+    params.set('status', filters.status);
+  }
+  if (filters.transition) {
+    params.set('transition', filters.transition);
+  }
+  if (filters.severity) {
+    params.set('severity', filters.severity);
+  }
+  if (filters.decision) {
+    params.set('decision', filters.decision);
+  }
+  if (filters.sourceType) {
+    params.set('sourceType', filters.sourceType);
+  }
+  if (filters.sourceId) {
+    params.set('sourceId', filters.sourceId);
+  }
+  if (filters.entityId) {
+    params.set('entityId', filters.entityId);
+  }
+  if (filters.fromDate) {
+    params.set('fromDate', filters.fromDate);
+  }
+  if (filters.toDate) {
+    params.set('toDate', filters.toDate);
+  }
+  if (filters.page) {
+    params.set('page', String(filters.page));
+  }
+  if (filters.pageSize) {
+    params.set('pageSize', String(filters.pageSize));
+  }
+
+  return params;
+};
+
 export const tresorerieService = {
   async getStats(_clientId: string, exerciceId: string): Promise<TresorerieStats> {
     return requestJson<TresorerieStats>(
@@ -58,5 +106,47 @@ export const tresorerieService = {
       { method: 'GET' },
       'Erreur lors de la récupération des prévisions de trésorerie'
     );
-  }
+  },
+
+  async getSupervision(_clientId: string, exerciceId: string): Promise<TresorerieSupervision> {
+    return requestJson<TresorerieSupervision>(
+      `/tresorerie/supervision?exerciceId=${encodeURIComponent(exerciceId)}`,
+      { method: 'GET' },
+      'Erreur lors du chargement de la supervision de trésorerie'
+    );
+  },
+
+  async getExceptionAudit(
+    _clientId: string,
+    exerciceId: string,
+    filters: TresorerieAuditFilters = {}
+  ): Promise<PaginatedTresorerieAudit> {
+    const params = buildAuditQueryParams(exerciceId, filters);
+
+    return requestJson<PaginatedTresorerieAudit>(
+      `/tresorerie/exception-audit?${params.toString()}`,
+      { method: 'GET' },
+      'Erreur lors du chargement du journal d’audit des exceptions'
+    );
+  },
+
+  async getExceptionAuditDetail(
+    _clientId: string,
+    exerciceId: string,
+    query: { exceptionId?: string; correlationId?: string }
+  ): Promise<TresorerieAuditDetail> {
+    const params = new URLSearchParams({ exerciceId });
+    if (query.exceptionId) {
+      params.set('exceptionId', query.exceptionId);
+    }
+    if (query.correlationId) {
+      params.set('correlationId', query.correlationId);
+    }
+
+    return requestJson<TresorerieAuditDetail>(
+      `/tresorerie/exception-audit/detail?${params.toString()}`,
+      { method: 'GET' },
+      'Erreur lors du chargement du détail d’audit'
+    );
+  },
 };

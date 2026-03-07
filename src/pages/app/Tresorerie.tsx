@@ -3,10 +3,11 @@ import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Plus, Loader2, Wallet, FileText, ArrowLeftRight, CheckSquare } from 'lucide-react';
+import { Plus, Loader2, Wallet, FileText, ArrowLeftRight, CheckSquare, ShieldAlert } from 'lucide-react';
 import { useRecettes } from '@/hooks/useRecettes';
 import { useOperationsTresorerie } from '@/hooks/useOperationsTresorerie';
 import { useComptesTresorerie } from '@/hooks/useComptesTresorerie';
+import { useTresorerieSupervision } from '@/hooks/useTresorerie';
 import { RecetteDialog } from '@/components/recettes/RecetteDialog';
 import { RecetteTable } from '@/components/recettes/RecetteTable';
 import { RecetteStats } from '@/components/recettes/RecetteStats';
@@ -16,6 +17,7 @@ import { CompteTresorerieDialog } from '@/components/tresorerie/CompteTresorerie
 import { CompteTresorerieTable } from '@/components/tresorerie/CompteTresorerieTable';
 import { OperationTresorerieDialog } from '@/components/tresorerie/OperationTresorerieDialog';
 import { OperationTresorerieTable } from '@/components/tresorerie/OperationTresorerieTable';
+import { TresorerieSupervisionPanel } from '@/components/tresorerie/TresorerieSupervisionPanel';
 import type { Recette } from '@/types/recette.types';
 import type { CompteTresorerie } from '@/types/compte-tresorerie.types';
 
@@ -36,6 +38,7 @@ const Tresorerie = () => {
   const { comptes, isLoading: loadingComptes, createCompte } = useComptesTresorerie();
   const [compteDialogOpen, setCompteDialogOpen] = useState(false);
   const [compteToEdit, setCompteToEdit] = useState<CompteTresorerie | null>(null);
+  const supervisionQuery = useTresorerieSupervision();
 
   const handleViewRecette = (recette: Recette) => {
     setSelectedRecette(recette);
@@ -93,6 +96,10 @@ const Tresorerie = () => {
             <TabsTrigger value="rapprochement">
               <CheckSquare className="h-4 w-4 mr-2" />
               Rapprochement
+            </TabsTrigger>
+            <TabsTrigger value="supervision">
+              <ShieldAlert className="h-4 w-4 mr-2" />
+              Supervision
             </TabsTrigger>
           </TabsList>
 
@@ -173,6 +180,14 @@ const Tresorerie = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="supervision" className="space-y-4">
+            <TresorerieSupervisionPanel
+              supervision={supervisionQuery.data}
+              isLoading={supervisionQuery.isLoading}
+              error={supervisionQuery.error as Error | null}
+            />
           </TabsContent>
         </Tabs>
       </div>
