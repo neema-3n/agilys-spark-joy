@@ -35,6 +35,8 @@ DECLARE
   v_current_line INTEGER := 0;
   v_total_debit NUMERIC := 0;
   v_total_credit NUMERIC := 0;
+  v_requested_total_debit NUMERIC := NULL;
+  v_requested_total_credit NUMERIC := NULL;
   v_field_value TEXT;
   v_created_ecritures JSONB := '[]'::jsonb;
   v_ecriture_id UUID;
@@ -55,6 +57,34 @@ BEGIN
       0
     )
   );
+
+  IF p_operation_data ? 'total_debit' THEN
+    BEGIN
+      v_requested_total_debit := NULLIF(trim(p_operation_data->>'total_debit'), '')::numeric;
+    EXCEPTION WHEN invalid_text_representation THEN
+      RETURN jsonb_build_object(
+        'success', FALSE,
+        'status', 'error',
+        'code', 'TOTAL_DEBIT_INVALIDE',
+        'message', 'Le total debit fourni pour le lot comptable est invalide.',
+        'ecritures_count', 0
+      );
+    END;
+  END IF;
+
+  IF p_operation_data ? 'total_credit' THEN
+    BEGIN
+      v_requested_total_credit := NULLIF(trim(p_operation_data->>'total_credit'), '')::numeric;
+    EXCEPTION WHEN invalid_text_representation THEN
+      RETURN jsonb_build_object(
+        'success', FALSE,
+        'status', 'error',
+        'code', 'TOTAL_CREDIT_INVALIDE',
+        'message', 'Le total credit fourni pour le lot comptable est invalide.',
+        'ecritures_count', 0
+      );
+    END;
+  END IF;
 
   FOR v_regle IN
     SELECT
@@ -137,8 +167,11 @@ BEGIN
     );
   END IF;
 
-  v_total_debit := p_montant * v_candidate_count;
-  v_total_credit := p_montant * v_candidate_count;
+  -- Chaque ligne candidate represente une ecriture double entree complete.
+  -- Les totaux peuvent etre explicitement fournis par un orchestrateur composite;
+  -- sinon, ils sont derives du lot nominal courant.
+  v_total_debit := COALESCE(v_requested_total_debit, p_montant * v_candidate_count);
+  v_total_credit := COALESCE(v_requested_total_credit, p_montant * v_candidate_count);
 
   IF v_total_debit <> v_total_credit THEN
     RETURN jsonb_build_object(

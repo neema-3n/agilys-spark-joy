@@ -46,7 +46,6 @@ export class GenerateEcrituresDto {
   @IsString()
   clientId?: string;
 
-  @IsString()
-  @IsNotEmpty()
+  @IsUUID()
   exerciceId!: string;
 }

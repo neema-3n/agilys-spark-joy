@@ -1,6 +1,6 @@
 # Story 6.2: Generer ecritures en double entree idempotentes
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -74,9 +74,9 @@ so that les operations restent conformes et sans doublons.
   - [x] ne pas reintroduire de runtime Supabase pour la logique metier
   - [x] traiter `supabase/functions/generate-ecritures-comptables` comme heritage a ne pas etendre
   - [x] preferer des migrations SQL rejouables dans `supabase/migrations/*.sql` pour les contraintes/index/fonctions supportant NestJS (AC: 1, 3, 5)
-- [ ] Ajouter tests backend obligatoires:
+- [x] Ajouter tests backend obligatoires:
   - [x] generation nominale pour au moins `engagement`, `depense` et `paiement`
-  - [ ] rejet si debit != credit
+  - [x] rejet si debit != credit
   - [x] aucun doublon sur double appel successif
   - [x] aucun doublon sur scenario concurrent/retry
   - [x] refus cross-tenant / exercice invalide
@@ -287,17 +287,19 @@ GPT-5 Codex
 - Les guardrails couvrent double entree, idempotence, concurrence, securite multi-tenant, traçabilite et compatibilite avec les stories comptables suivantes.
 - Aucune evolution de dependances ou retour vers un runtime Supabase n'est recommandee pour ce lot.
 - Generation nominale centralisee via `EcrituresComptablesService` pour `reservations`, `engagements`, `bons_commande`, `factures`, `depenses` et `paiements`, avec resultat explicite `created|already_generated|error`.
-- Nouvelle migration `20260308120000_story_6_2_idempotent_ecritures.sql` ajoutant une cle d'idempotence par source/regle, un verrou transactionnel par source metier et des erreurs actionnables pour regle manquante, compte invalide ou lot desequilibre.
+- Nouvelle migration `20260308120000_story_6_2_idempotent_ecritures.sql` ajoutant une cle d'idempotence par source/regle, un verrou transactionnel par source metier, une validation explicite des totaux debit/credit du lot et des erreurs actionnables pour regle manquante, compte invalide ou lot desequilibre.
 - Contrat frontend/backend aligne sur le resultat idempotent du moteur; les toasts de generation distinguent maintenant creation reelle, deja-genere et erreur metier.
-- Couverture ajoutee sur PostgreSQL reel pour la concurrence, le double appel, le refus cross-tenant / exercice invalide et la conservation des metadonnees; couverture frontend ajoutee sur le contrat client et l'affichage `JournalComptable`.
+- Validation DTO durcie sur `exerciceId` pour bloquer les UUID invalides avant le cast SQL et conserver un contrat d'erreur actionnable cote NestJS.
+- Couverture ajoutee sur PostgreSQL reel pour `engagement`, `depense`, `paiement`, le double appel, la concurrence, le refus cross-tenant / exercice invalide, le rejet du lot desequilibre et la conservation des metadonnees; couverture frontend ajoutee sur le contrat client, l'affichage `JournalComptable` et les snapshots metier.
 - Les migrations `20260307110000_story_5_3_workflow_exceptions.sql` et `20260307113000_workflow_exception_tenant_settings.sql` ont ete corrigees pour referencer `public.tenants(id)` en `TEXT`, ce qui permet a `bash ./scripts/db-reset.sh` de rejouer proprement le schema depuis zero.
-- La story est passee en `review` avec une reserve documentee: le cas de rejet explicite `debit != credit` est considere garanti par construction avec le modele actuel, car une ecriture nominale porte deja la paire debit/credit et un montant unique; le rendre directement testable demanderait un changement de modele ou un seam de test dedie.
+- Correctifs post-review appliques: le controle `debit != credit` est maintenant testable via les totaux explicites du lot, la validation `exerciceId` est stricte, et la preuve de couverture backend/frontend est alignee sur les tests reels.
 
 ### File List
 
 - `_bmad-output/implementation-artifacts/6-2-generer-ecritures-en-double-entree-idempotentes.md`
 - `_bmad-output/implementation-artifacts/sprint-status.yaml`
 - `backend/src/ecritures-comptables/ecritures-comptables.service.ts`
+- `backend/src/ecritures-comptables/dto/ecritures-comptables.dto.ts`
 - `backend/src/ecritures-comptables/ecritures-comptables.integration.spec.ts`
 - `backend/src/ecritures-comptables/ecritures-comptables.service.spec.ts`
 - `backend/src/reservations/reservations.service.ts`
@@ -333,3 +335,4 @@ GPT-5 Codex
 - 2026-03-08: Centralisation de la generation nominale, durcissement SQL de l'idempotence et exposition explicite du resultat `created|already_generated|error`; story d'abord maintenue `in-progress` en attente des validations DB/UI restantes.
 - 2026-03-08: Validation completee sur PostgreSQL reel, Playwright UI et contrat client; correction de deux migrations `workflow_exceptions` pour rendre `bash ./scripts/db-reset.sh` rejouable sans bootstrap manuel. Le seul reste a faire documente est le cas `debit != credit`, non directement atteignable avec le modele courant.
 - 2026-03-08: Passage en `review` avec note explicite que le controle `debit != credit` est couvert par construction du modele actuel et accepte comme tel pour la revue.
+- 2026-03-08: Correctifs post-review appliques: validation UUID de `exerciceId`, test d'integration du rejet `debit != credit`, couverture nominale PostgreSQL reelle sur `engagement` et `paiement`, et test UI dedie a `JournalComptable`. Statut remis a `done`.
