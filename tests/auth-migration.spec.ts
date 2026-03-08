@@ -1053,10 +1053,12 @@ test('http client clears session and notifies when refresh network call throws',
   });
 
   const response = await client.request('/secure', { method: 'GET' });
+  const payload = await response.json();
 
-  expect(response.status).toBe(401);
-  expect(authFailureNotified).toBeTruthy();
-  expect(storage.read()).toBeNull();
+  expect(response.status).toBe(503);
+  expect(payload).toMatchObject({ message: 'Network error' });
+  expect(authFailureNotified).toBeFalsy();
+  expect(storage.read()).toEqual({ accessToken: 'expired-access', refreshToken: 'expired-refresh' });
 });
 
 test('http client preserves requested path on auth failure redirect flow', async () => {
@@ -1258,58 +1260,19 @@ test('logout calls /auth/logout and clears token storage', async () => {
   expect(tokenStorage.read()).toBeNull();
 });
 
-test('signup returns actionable error when network call fails', async () => {
+test('signup returns an explicit unavailable message without calling the API', async () => {
   const originalRequest = httpClient.request;
+  let requestCalled = false;
 
   httpClient.request = (async () => {
-    throw new Error('network down');
+    requestCalled = true;
+    throw new Error('should not be called');
   }) as typeof httpClient.request;
 
   try {
     const result = await authService.signup('user@example.com', 'ChangeMe123!', 'Nom', 'Prenom');
-    expect(result.error).toContain("Impossible de joindre l'API d'inscription");
-  } finally {
-    httpClient.request = originalRequest;
-  }
-});
-
-test('signup returns first backend validation error from message array', async () => {
-  const originalRequest = httpClient.request;
-
-  httpClient.request = (async () => {
-    return new Response(
-      JSON.stringify({ message: ['Le mot de passe est trop faible', 'Autre erreur'] }),
-      { status: 400, headers: { 'Content-Type': 'application/json' } }
-    );
-  }) as typeof httpClient.request;
-
-  try {
-    const result = await authService.signup('user@example.com', 'weak', 'Nom', 'Prenom');
-    expect(result.error).toBe('Le mot de passe est trop faible');
-  } finally {
-    httpClient.request = originalRequest;
-  }
-});
-
-test('signup does not send implicit clientId when not provided', async () => {
-  const originalRequest = httpClient.request;
-  let requestBody: Record<string, unknown> | null = null;
-
-  httpClient.request = (async (_path: string, options?: RequestInit) => {
-    if (typeof options?.body === 'string') {
-      requestBody = JSON.parse(options.body) as Record<string, unknown>;
-    }
-
-    return new Response(JSON.stringify({ id: 'user-123' }), {
-      status: 201,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }) as typeof httpClient.request;
-
-  try {
-    await authService.signup('user@example.com', 'ChangeMe123!', 'Nom', 'Prenom');
-    expect(requestBody).toBeTruthy();
-    expect(requestBody).not.toHaveProperty('clientId');
+    expect(result.error).toContain("L'inscription en libre-service n'est pas disponible");
+    expect(requestCalled).toBeFalsy();
   } finally {
     httpClient.request = originalRequest;
   }

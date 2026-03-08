@@ -252,6 +252,7 @@ GPT-5 Codex
 - Tests auth ajoutes et passes (4 scenarii): storage, refresh success retry, refresh fail cleanup, parsing claims/expiration.
 - Documentation mise a jour: variable `VITE_API_BASE_URL` et checklist de decommission Supabase auth (lot 2.4).
 - Correctifs review appliques: suppression navigation login redondante, redirection explicite vers login sur auth failure/logout avec preservation `from`, suppression du couplage Supabase auth dans `auth.service`, alignement README endpoints, extension couverture tests auth.
+- Correctifs de rereview appliques: inscription frontend alignee sur le contrat backend courant (libre-service desactive tant que `/auth/register` n'existe pas), preservation de la route courante sur logout apres navigation interne, refresh reseau non destructif (tokens conserves, reponse `503` normalisee).
 
 ### File List
 
@@ -290,6 +291,7 @@ GPT-5 Codex
 - 2026-03-02: Correctifs complementaires de re-review appliques (refresh reseau robuste, anti faux-succes login, couverture UX route protegee->login->retour), statut passe a `done`.
 - 2026-03-02: Re-review corrective appliquee (durcissement redirect post-login vers `/app/*`, normalisation des erreurs reseau HTTP client en `503`, parsing `message[]` signup, suppression `clientId` implicite), tests auth front passes.
 - 2026-03-02: Re-review corrective appliquee (logout frontend non bloquant cote UX, assouplissement redirect `/app` avec query/hash, message login reseau 503 actionnable, ajout test UI logout -> login + purge tokens), lint + tests auth front passes.
+- 2026-03-08: Correctifs post-review appliques sur la branche courante: desactivation explicite de l'inscription libre-service non supportee, mise a jour du `logout` pour conserver la route active, et distinction refresh token invalide vs panne reseau transitoire avec couverture de test.
 
 ## Senior Developer Review (AI)
 
@@ -328,3 +330,18 @@ Outcome: Approved
    - References: `tests/auth-migration.spec.ts`.
 4. [RESOLU] Erreur login reseau rendue actionnable sur `503` normalise.
    - References: `src/services/api/auth.service.ts`.
+
+## Senior Developer Review (AI) - Correctifs 2026-03-08
+
+Date: 2026-03-08
+Reviewer: Max
+Outcome: Fixed Pending Validation
+
+### Correctifs appliques
+
+1. [RESOLU] Le frontend ne tente plus un `POST /auth/register` absent du backend; l'inscription libre-service est maintenant annoncee comme indisponible.
+   - References: `src/services/api/auth.service.ts`, `src/pages/auth/Login.tsx`, `README.md`.
+2. [RESOLU] La valeur memoisée du `AuthContext` est resynchronisee avec la route courante, ce qui conserve correctement `state.from` apres navigation interne suivie d'un logout.
+   - References: `src/contexts/AuthContext.tsx`, `tests/auth-migration.spec.ts`.
+3. [RESOLU] Une panne reseau pendant `POST /auth/refresh` ne purge plus la session locale; le client retourne une `503` normalisee sans declencher de logout force.
+   - References: `src/services/api/http-client.ts`, `tests/auth-migration.spec.ts`.

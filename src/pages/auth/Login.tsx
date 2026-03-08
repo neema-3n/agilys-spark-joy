@@ -32,6 +32,8 @@ const signupSchema = z.object({
   path: ["confirmPassword"]
 });
 
+const signupUnavailableMessage = "L'inscription en libre-service n'est pas disponible actuellement. Contactez un administrateur.";
+
 const Login = () => {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -140,7 +142,7 @@ const Login = () => {
     } else {
       toast({
         title: 'Erreur d\'inscription',
-        description: result.error || 'Une erreur est survenue',
+        description: result.error || signupUnavailableMessage,
         variant: 'destructive',
       });
     }
@@ -226,6 +228,9 @@ const Login = () => {
 
             <TabsContent value="signup">
               <form onSubmit={handleSignup} className="space-y-4">
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                  {signupUnavailableMessage}
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="nom">Nom</Label>
@@ -322,13 +327,13 @@ const Login = () => {
                   type="submit" 
                   className="w-full" 
                   size="lg"
-                  disabled={isLoading}
+                  disabled
                 >
-                  {isLoading ? 'Inscription...' : "S'inscrire"}
+                  {isLoading ? 'Inscription...' : 'Inscription indisponible'}
                 </Button>
               </form>
               <p className="text-xs text-muted-foreground mt-4 text-center">
-                Un email de confirmation sera envoyé après l'inscription
+                L'ouverture de compte est gérée côté administration pour le moment.
               </p>
             </TabsContent>
           </Tabs>

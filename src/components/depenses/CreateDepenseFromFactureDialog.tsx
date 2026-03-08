@@ -40,6 +40,14 @@ interface Props {
   onSave: (data: CreateDepenseFromFactureData) => Promise<void>;
 }
 
+const resolveDefaultDateDepense = (facture: Facture | null): string => {
+  if (!facture?.dateFacture) {
+    return format(new Date(), 'yyyy-MM-dd');
+  }
+
+  return facture.dateFacture;
+};
+
 export const CreateDepenseFromFactureDialog = ({ open, onOpenChange, facture, onSave }: Props) => {
   const { factures } = useFactures();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -72,7 +80,7 @@ export const CreateDepenseFromFactureDialog = ({ open, onOpenChange, facture, on
     resolver: zodResolver(schema),
     defaultValues: {
       factureIds: [],
-      dateDepense: format(new Date(), 'yyyy-MM-dd'),
+      dateDepense: resolveDefaultDateDepense(facture),
       modePaiement: '',
       referencePaiement: '',
       observations: '',
@@ -86,7 +94,7 @@ export const CreateDepenseFromFactureDialog = ({ open, onOpenChange, facture, on
 
     form.reset({
       factureIds: [facture.id],
-      dateDepense: format(new Date(), 'yyyy-MM-dd'),
+      dateDepense: resolveDefaultDateDepense(facture),
       modePaiement: '',
       referencePaiement: '',
       observations: '',
