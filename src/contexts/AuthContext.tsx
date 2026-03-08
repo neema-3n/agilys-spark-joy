@@ -134,7 +134,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signup,
       logout
     }),
-    [user, session, isAuthenticated, isLoading]
+    [user, session, isAuthenticated, isLoading, location.pathname, location.search, location.hash]
   );
 
   if (isLoading) {

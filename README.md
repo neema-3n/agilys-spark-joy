@@ -41,6 +41,7 @@ Runbook détaillé: `docs/runbooks/local-dev-command-and-ports.md`
 ## 🔐 Configuration Auth Frontend (Story 2.4)
 
 Le frontend d'authentification utilise maintenant l'API NestJS (`/auth/login`, `/auth/refresh`, `/auth/logout`) avec stockage local des tokens.
+L'inscription en libre-service n'est pas exposee par l'API actuelle; la page frontend l'indique donc comme indisponible.
 
 Variables frontend (fichier `.env`) :
 
@@ -211,7 +212,6 @@ Le frontend est prêt à se connecter à une API REST. Endpoints attendus :
 ### Authentification
 ```
 POST   /auth/login
-POST   /auth/register
 POST   /auth/logout
 POST   /auth/refresh
 ```

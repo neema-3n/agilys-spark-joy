@@ -16,6 +16,13 @@ export interface RequestOptions extends RequestInit {
   retryOnAuthFailure?: boolean;
 }
 
+class RefreshNetworkError extends Error {
+  constructor() {
+    super('Refresh network error');
+    this.name = 'RefreshNetworkError';
+  }
+}
+
 const createNetworkErrorResponse = (): Response => new Response(
   JSON.stringify({ message: 'Network error' }),
   {
@@ -110,9 +117,7 @@ export const createHttpClient = (options?: HttpClientOptions) => {
           body: JSON.stringify({ refreshToken })
         });
       } catch {
-        storage.clear();
-        notifyAuthFailure();
-        return null;
+        throw new RefreshNetworkError();
       }
 
       if (!response.ok) {
@@ -174,7 +179,16 @@ export const createHttpClient = (options?: HttpClientOptions) => {
       return response;
     }
 
-    const nextAccessToken = await refresh();
+    let nextAccessToken: string | null;
+    try {
+      nextAccessToken = await refresh();
+    } catch (error) {
+      if (error instanceof RefreshNetworkError) {
+        return createNetworkErrorResponse();
+      }
+
+      throw error;
+    }
     if (!nextAccessToken) {
       return response;
     }

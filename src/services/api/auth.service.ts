@@ -40,25 +40,7 @@ const parseAuthError = async (response: Response): Promise<string> => {
   return 'Une erreur de connexion est survenue.';
 };
 
-const parseSignupError = async (response: Response): Promise<string> => {
-  const payload = await response.json().catch(() => null);
-  const message = payload && typeof payload === 'object' ? Reflect.get(payload, 'message') : null;
-  if (typeof message === 'string' && message.trim().length > 0) {
-    return message;
-  }
-  if (Array.isArray(message) && message.length > 0) {
-    const firstMessage = message.find((entry) => typeof entry === 'string');
-    if (typeof firstMessage === 'string' && firstMessage.trim().length > 0) {
-      return firstMessage;
-    }
-  }
-
-  if (response.status === 404) {
-    return "L'inscription n'est pas disponible actuellement.";
-  }
-
-  return "Une erreur d'inscription est survenue.";
-};
+const SIGNUP_UNAVAILABLE_ERROR = "L'inscription en libre-service n'est pas disponible actuellement. Contactez un administrateur.";
 
 const buildSessionFromAccessToken = (accessToken: string): AuthSession | null => {
   const claims = decodeAccessTokenClaims(accessToken);
@@ -134,29 +116,12 @@ export const authService = {
     prenom: string,
     clientId?: string
   ): Promise<{ user?: unknown; error?: string }> {
-    try {
-      const response = await httpClient.request('/auth/register', {
-        method: 'POST',
-        body: JSON.stringify({
-          email,
-          password,
-          nom,
-          prenom,
-          ...(clientId ? { clientId } : {})
-        }),
-        authenticated: false,
-        retryOnAuthFailure: false
-      });
-
-      if (!response.ok) {
-        return { error: await parseSignupError(response) };
-      }
-
-      const payload = await response.json().catch(() => null);
-      return { user: payload };
-    } catch {
-      return { error: "Impossible de joindre l'API d'inscription. Vérifiez que le backend est démarré." };
-    }
+    void email;
+    void password;
+    void nom;
+    void prenom;
+    void clientId;
+    return { error: SIGNUP_UNAVAILABLE_ERROR };
   },
 
   // Déconnexion
