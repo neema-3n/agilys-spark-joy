@@ -2,6 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import type { QueryResult, QueryResultRow } from 'pg';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import type { PostgresService } from '../common/postgres.service';
+import type { EcrituresComptablesService } from '../ecritures-comptables/ecritures-comptables.service';
 import type { WorkflowExceptionsService } from '../workflow-exceptions/workflow-exceptions.service';
 import { PaiementsService } from './paiements.service';
 
@@ -26,7 +27,10 @@ describe('PaiementsService', () => {
   const workflowExceptionsService = {
     assertTransitionAllowed: jest.fn(),
   } as unknown as WorkflowExceptionsService;
-  const service = new PaiementsService(postgresService, workflowExceptionsService);
+  const ecrituresComptablesService = {
+    ensureGeneratedForOperation: jest.fn(),
+  } as unknown as EcrituresComptablesService;
+  const service = new PaiementsService(postgresService, workflowExceptionsService, ecrituresComptablesService);
   const internals = service as unknown as {
     getDepenseForPaiement: (...args: unknown[]) => Promise<unknown>;
     getResteAPayer: (...args: unknown[]) => Promise<number>;
@@ -41,6 +45,24 @@ describe('PaiementsService', () => {
     query.mockReset();
     jest.restoreAllMocks();
     jest.clearAllMocks();
+  });
+
+  it('centralise la génération nominale des écritures de paiement', async () => {
+    const internalService = service as unknown as {
+      ensureEcritures: (actor: AuthenticatedUser, paiement: { id: string; exercice_id: string }) => Promise<void>;
+    };
+
+    await internalService.ensureEcritures(actor, {
+      id: 'pay-1',
+      exercice_id: 'ex-1',
+    });
+
+    expect((ecrituresComptablesService.ensureGeneratedForOperation as jest.Mock)).toHaveBeenCalledWith(
+      actor,
+      'paiement',
+      'pay-1',
+      'ex-1'
+    );
   });
 
   it('refuse la création pour une dépense non ordonnancée', async () => {

@@ -2,6 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import type { QueryResult, QueryResultRow } from 'pg';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import type { PostgresService } from '../common/postgres.service';
+import type { EcrituresComptablesService } from '../ecritures-comptables/ecritures-comptables.service';
 import { BonsCommandeService } from './bons-commande.service';
 
 const actor: AuthenticatedUser = {
@@ -22,7 +23,10 @@ const makeResult = <T extends QueryResultRow>(rows: T[], rowCount = rows.length)
 describe('BonsCommandeService', () => {
   const query = jest.fn();
   const postgresService = { query } as unknown as PostgresService;
-  const service = new BonsCommandeService(postgresService);
+  const ecrituresComptablesService = {
+    ensureGeneratedForOperation: jest.fn()
+  } as unknown as EcrituresComptablesService;
+  const service = new BonsCommandeService(postgresService, ecrituresComptablesService);
 
   beforeEach(() => {
     query.mockReset();

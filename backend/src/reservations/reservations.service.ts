@@ -3,6 +3,7 @@ import { PostgresService } from '../common/postgres.service';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import type { CreateReservationDto, UpdateReservationDto } from './dto/reservations.dto';
 import { ReservationStatus, assertReservationTransitionAllowed } from '../common/domain/reservation-engagement-rules';
+import { EcrituresComptablesService } from '../ecritures-comptables/ecritures-comptables.service';
 
 interface ReservationRow {
   id: string;
@@ -94,7 +95,10 @@ interface ReservationView {
 
 @Injectable()
 export class ReservationsService {
-  constructor(private readonly postgresService: PostgresService) {}
+  constructor(
+    private readonly postgresService: PostgresService,
+    private readonly ecrituresComptablesService: EcrituresComptablesService
+  ) {}
 
   async getAll(actor: AuthenticatedUser, exerciceId: string): Promise<ReservationView[]> {
     const result = await this.postgresService.query<ReservationRow>(
@@ -523,48 +527,7 @@ export class ReservationsService {
   }
 
   private async generateEcrituresForReservation(actor: AuthenticatedUser, reservation: ReservationView): Promise<void> {
-    const operationDataResult = await this.postgresService.query<Record<string, unknown>>(
-      `
-        SELECT *
-        FROM public.reservations_credits
-        WHERE id = $1
-          AND client_id = $2
-        LIMIT 1
-      `,
-      [reservation.id, actor.tenantId]
-    );
-
-    const operationData = operationDataResult.rows[0];
-    if (!operationData) {
-      return;
-    }
-
-    await this.postgresService.query(
-      `
-        SELECT public.generate_ecritures_comptables(
-          $1,
-          $2::uuid,
-          $3,
-          $4::uuid,
-          $5,
-          $6::date,
-          $7,
-          $8::jsonb,
-          $9::uuid
-        )
-      `,
-      [
-        reservation.clientId,
-        reservation.exerciceId,
-        'reservation',
-        reservation.id,
-        reservation.numero,
-        reservation.dateReservation,
-        reservation.montant,
-        JSON.stringify(operationData),
-        actor.sub
-      ]
-    );
+    await this.ecrituresComptablesService.ensureGeneratedForOperation(actor, 'reservation', reservation.id, reservation.exerciceId);
   }
 
   private mapUpdateKeyToColumn(key: keyof UpdateReservationDto): string {

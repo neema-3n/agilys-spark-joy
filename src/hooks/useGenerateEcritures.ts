@@ -25,7 +25,19 @@ export const useGenerateEcritures = () => {
     ),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
-      toast.success(`${data.ecritures_count || 0} écriture(s) générée(s)`);
+      if (data.status === 'already_generated') {
+        toast.info(data.message || 'Les écritures existent déjà pour cette source');
+        return;
+      }
+
+      if (data.status === 'error') {
+        toast.error('Erreur lors de la génération des écritures', {
+          description: data.message || 'Le moteur comptable a rejeté la génération'
+        });
+        return;
+      }
+
+      toast.success(`${data.ecrituresCount || 0} écriture(s) générée(s)`);
     },
     onError: (error: Error) => {
       toast.error('Erreur lors de la génération des écritures', {

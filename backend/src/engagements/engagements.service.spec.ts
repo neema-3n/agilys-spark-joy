@@ -3,6 +3,7 @@ import type { QueryResult, QueryResultRow } from 'pg';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import type { CashRiskService } from '../cash-risk/cash-risk.service';
 import type { PostgresService } from '../common/postgres.service';
+import type { EcrituresComptablesService } from '../ecritures-comptables/ecritures-comptables.service';
 import type { WorkflowExceptionsService } from '../workflow-exceptions/workflow-exceptions.service';
 import { EngagementsService } from './engagements.service';
 
@@ -76,11 +77,37 @@ describe('EngagementsService', () => {
   const workflowExceptionsService = {
     assertTransitionAllowed: jest.fn(),
   } as unknown as WorkflowExceptionsService;
-  const service = new EngagementsService(postgresService, cashRiskService, workflowExceptionsService);
+  const ecrituresComptablesService = {
+    ensureGeneratedForOperation: jest.fn(),
+  } as unknown as EcrituresComptablesService;
+  const service = new EngagementsService(
+    postgresService,
+    cashRiskService,
+    workflowExceptionsService,
+    ecrituresComptablesService
+  );
 
   beforeEach(() => {
     query.mockReset();
     jest.clearAllMocks();
+  });
+
+  it('centralise la génération nominale des écritures via le service comptable partagé', async () => {
+    const internalService = service as unknown as {
+      generateEcrituresForEngagement: (actor: AuthenticatedUser, engagement: { id: string; exerciceId: string }) => Promise<void>;
+    };
+
+    await internalService.generateEcrituresForEngagement(actor, {
+      id: 'eng-1',
+      exerciceId: 'ex-1',
+    });
+
+    expect((ecrituresComptablesService.ensureGeneratedForOperation as jest.Mock)).toHaveBeenCalledWith(
+      actor,
+      'engagement',
+      'eng-1',
+      'ex-1'
+    );
   });
 
   it("refuse la conversion si l'exercice de la réservation ne correspond pas", async () => {

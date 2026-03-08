@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PostgresService } from '../common/postgres.service';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
+import { EcrituresComptablesService } from '../ecritures-comptables/ecritures-comptables.service';
 import { WorkflowExceptionsService } from '../workflow-exceptions/workflow-exceptions.service';
 import { type DepenseWorkflowStatus, type PaiementMode } from '../paiements/paiement-workflow';
 import type {
@@ -179,7 +180,8 @@ interface FactureAllocation {
 export class DepensesService {
   constructor(
     private readonly postgresService: PostgresService,
-    private readonly workflowExceptionsService: WorkflowExceptionsService
+    private readonly workflowExceptionsService: WorkflowExceptionsService,
+    private readonly ecrituresComptablesService: EcrituresComptablesService
   ) {}
 
   async getAll(actor: AuthenticatedUser, exerciceId: string): Promise<DepenseView[]> {
@@ -1082,48 +1084,7 @@ export class DepensesService {
   }
 
   private async generateEcrituresForDepense(actor: AuthenticatedUser, depense: DepenseView): Promise<void> {
-    const operationDataResult = await this.postgresService.query<Record<string, unknown>>(
-      `
-        SELECT *
-        FROM public.depenses
-        WHERE id = $1
-          AND client_id = $2
-        LIMIT 1
-      `,
-      [depense.id, actor.tenantId]
-    );
-
-    const operationData = operationDataResult.rows[0];
-    if (!operationData) {
-      return;
-    }
-
-    await this.postgresService.query(
-      `
-        SELECT public.generate_ecritures_comptables(
-          $1,
-          $2::uuid,
-          $3,
-          $4::uuid,
-          $5,
-          $6::date,
-          $7,
-          $8::jsonb,
-          $9::uuid
-        )
-      `,
-      [
-        depense.clientId,
-        depense.exerciceId,
-        'depense',
-        depense.id,
-        depense.numero,
-        depense.dateDepense,
-        depense.montant,
-        JSON.stringify(operationData),
-        actor.sub
-      ]
-    );
+    await this.ecrituresComptablesService.ensureGeneratedForOperation(actor, 'depense', depense.id, depense.exerciceId);
   }
 
   private async recalculateFacturesMontantLiquide(clientId: string, factureIds: string[]): Promise<void> {

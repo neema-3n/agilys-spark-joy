@@ -2,7 +2,7 @@
 
 CREATE TABLE IF NOT EXISTS public.workflow_exceptions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL REFERENCES public.clients(id) ON DELETE CASCADE,
+  tenant_id TEXT NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   exercice_id UUID NOT NULL REFERENCES public.exercices(id) ON DELETE CASCADE,
   status TEXT NOT NULL,
   transition TEXT NOT NULL,
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS public.workflow_exception_votes (
 CREATE TABLE IF NOT EXISTS public.workflow_exception_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   exception_id UUID NOT NULL REFERENCES public.workflow_exceptions(id) ON DELETE CASCADE,
-  tenant_id UUID NOT NULL REFERENCES public.clients(id) ON DELETE CASCADE,
+  tenant_id TEXT NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   actor_user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE RESTRICT,
   actor_roles TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
   event_type TEXT NOT NULL,

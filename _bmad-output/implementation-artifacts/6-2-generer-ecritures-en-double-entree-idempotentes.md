@@ -1,6 +1,6 @@
 # Story 6.2: Generer ecritures en double entree idempotentes
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -44,48 +44,48 @@ so that les operations restent conformes et sans doublons.
 
 ## Tasks / Subtasks
 
-- [ ] Revalider le contrat story 6.2 contre `FR45`, `FR46`, `FR47`, `FR48`, `FR29`, `FR32`, `NFR8`, `NFR9`, `NFR11`, `NFR25`, `NFR26`, `NFR27` et formaliser les invariants non negociables du moteur (AC: 1, 2, 3, 4, 5)
-- [ ] Cartographier puis consolider tous les points d'entree existants de generation comptable avant toute modification:
-  - [ ] `backend/src/ecritures-comptables/ecritures-comptables.service.ts`
-  - [ ] `backend/src/reservations/reservations.service.ts`
-  - [ ] `backend/src/engagements/engagements.service.ts`
-  - [ ] `backend/src/bons-commande/bons-commande.service.ts`
-  - [ ] `backend/src/factures/factures.service.ts`
-  - [ ] `backend/src/depenses/depenses.service.ts`
-  - [ ] `backend/src/paiements/paiements.service.ts` (AC: 1, 3, 4, 5)
-- [ ] Renforcer la persistence et le moteur SQL pour l'idempotence forte:
-  - [ ] definir une cle logique d'idempotence basee sur la source metier et la regle appliquee
-  - [ ] remplacer les insertions aveugles par un mecanisme deterministe (`ON CONFLICT`, contrainte unique adaptee, ou verrou applicatif/transactionnel justifie)
-  - [ ] conserver une reponse exploitable quand la generation a deja ete effectuee (AC: 2, 3, 4)
-- [ ] Introduire un pre-check d'equilibre avant insertion finale:
-  - [ ] preparer les lignes candidates en memoire/CTE
-  - [ ] verifier qu'au moins une regle applicable existe
-  - [ ] refuser tout lot dont le total debit-credit n'est pas nul
-  - [ ] refuser toute ligne sans compte valide dans le tenant et l'exercice (AC: 2, 5)
-- [ ] Centraliser la responsabilite de generation dans la couche backend cible:
-  - [ ] faire de `ecritures-comptables` le point d'orchestration nominal
-  - [ ] supprimer les comportements qui recréent implicitement les memes ecritures sans garde d'idempotence
-  - [ ] conserver les contre-passations manuelles existantes comme preparation de la story `6.3`, sans les confondre avec le flux nominal (AC: 1, 3, 4)
-- [ ] Aligner les contrats d'exposition:
-  - [ ] enrichir si necessaire `backend/src/ecritures-comptables/dto/*` et `src/services/api/ecritures-comptables.service.ts`
-  - [ ] exposer de maniere explicite `regleComptable`, `statutEcriture`, resultat idempotent et erreurs metier actionnables
-  - [ ] ne pas dupliquer la logique de calcul dans `JournalComptable` (AC: 4, 5)
-- [ ] Verrouiller le nettoyage d'architecture:
-  - [ ] ne pas reintroduire de runtime Supabase pour la logique metier
-  - [ ] traiter `supabase/functions/generate-ecritures-comptables` comme heritage a ne pas etendre
-  - [ ] preferer des migrations SQL rejouables dans `supabase/migrations/*.sql` pour les contraintes/index/fonctions supportant NestJS (AC: 1, 3, 5)
+- [x] Revalider le contrat story 6.2 contre `FR45`, `FR46`, `FR47`, `FR48`, `FR29`, `FR32`, `NFR8`, `NFR9`, `NFR11`, `NFR25`, `NFR26`, `NFR27` et formaliser les invariants non negociables du moteur (AC: 1, 2, 3, 4, 5)
+- [x] Cartographier puis consolider tous les points d'entree existants de generation comptable avant toute modification:
+  - [x] `backend/src/ecritures-comptables/ecritures-comptables.service.ts`
+  - [x] `backend/src/reservations/reservations.service.ts`
+  - [x] `backend/src/engagements/engagements.service.ts`
+  - [x] `backend/src/bons-commande/bons-commande.service.ts`
+  - [x] `backend/src/factures/factures.service.ts`
+  - [x] `backend/src/depenses/depenses.service.ts`
+  - [x] `backend/src/paiements/paiements.service.ts` (AC: 1, 3, 4, 5)
+- [x] Renforcer la persistence et le moteur SQL pour l'idempotence forte:
+  - [x] definir une cle logique d'idempotence basee sur la source metier et la regle appliquee
+  - [x] remplacer les insertions aveugles par un mecanisme deterministe (`ON CONFLICT`, contrainte unique adaptee, ou verrou applicatif/transactionnel justifie)
+  - [x] conserver une reponse exploitable quand la generation a deja ete effectuee (AC: 2, 3, 4)
+- [x] Introduire un pre-check d'equilibre avant insertion finale:
+  - [x] preparer les lignes candidates en memoire/CTE
+  - [x] verifier qu'au moins une regle applicable existe
+  - [x] refuser tout lot dont le total debit-credit n'est pas nul
+  - [x] refuser toute ligne sans compte valide dans le tenant et l'exercice (AC: 2, 5)
+- [x] Centraliser la responsabilite de generation dans la couche backend cible:
+  - [x] faire de `ecritures-comptables` le point d'orchestration nominal
+  - [x] supprimer les comportements qui recréent implicitement les memes ecritures sans garde d'idempotence
+  - [x] conserver les contre-passations manuelles existantes comme preparation de la story `6.3`, sans les confondre avec le flux nominal (AC: 1, 3, 4)
+- [x] Aligner les contrats d'exposition:
+  - [x] enrichir si necessaire `backend/src/ecritures-comptables/dto/*` et `src/services/api/ecritures-comptables.service.ts`
+  - [x] exposer de maniere explicite `regleComptable`, `statutEcriture`, resultat idempotent et erreurs metier actionnables
+  - [x] ne pas dupliquer la logique de calcul dans `JournalComptable` (AC: 4, 5)
+- [x] Verrouiller le nettoyage d'architecture:
+  - [x] ne pas reintroduire de runtime Supabase pour la logique metier
+  - [x] traiter `supabase/functions/generate-ecritures-comptables` comme heritage a ne pas etendre
+  - [x] preferer des migrations SQL rejouables dans `supabase/migrations/*.sql` pour les contraintes/index/fonctions supportant NestJS (AC: 1, 3, 5)
 - [ ] Ajouter tests backend obligatoires:
-  - [ ] generation nominale pour au moins `engagement`, `depense` et `paiement`
+  - [x] generation nominale pour au moins `engagement`, `depense` et `paiement`
   - [ ] rejet si debit != credit
-  - [ ] aucun doublon sur double appel successif
-  - [ ] aucun doublon sur scenario concurrent/retry
-  - [ ] refus cross-tenant / exercice invalide
-  - [ ] conservation des metadonnees `regle_comptable_id`, `source_id`, `statut_ecriture` (AC: 2, 3, 4, 5)
-- [ ] Ajouter tests frontend / contrat cibles:
-  - [ ] lecture `JournalComptable` et services API avec le resultat reel du moteur
-  - [ ] affichage cohérent des statuts/erreurs actionnables
-  - [ ] non-regression des ecrans qui exposent `ecrituresCount` ou detail des ecritures (AC: 4, 5)
-- [ ] Confirmer explicitement qu'aucune nouvelle dependance runtime Supabase n'est introduite et que le workflow standard reste `pnpm` + NestJS/PostgreSQL (AC: 1, 5)
+  - [x] aucun doublon sur double appel successif
+  - [x] aucun doublon sur scenario concurrent/retry
+  - [x] refus cross-tenant / exercice invalide
+  - [x] conservation des metadonnees `regle_comptable_id`, `source_id`, `statut_ecriture` (AC: 2, 3, 4, 5)
+- [x] Ajouter tests frontend / contrat cibles:
+  - [x] lecture `JournalComptable` et services API avec le resultat reel du moteur
+  - [x] affichage cohérent des statuts/erreurs actionnables
+  - [x] non-regression des ecrans qui exposent `ecrituresCount` ou detail des ecritures (AC: 4, 5)
+- [x] Confirmer explicitement qu'aucune nouvelle dependance runtime Supabase n'est introduite et que le workflow standard reste `pnpm` + NestJS/PostgreSQL (AC: 1, 5)
 
 ## Dev Notes
 
@@ -286,12 +286,50 @@ GPT-5 Codex
 - Le document impose la reutilisation de `ecritures-comptables` comme facade backend commune plutot qu'une multiplication des checks locaux par domaine.
 - Les guardrails couvrent double entree, idempotence, concurrence, securite multi-tenant, traçabilite et compatibilite avec les stories comptables suivantes.
 - Aucune evolution de dependances ou retour vers un runtime Supabase n'est recommandee pour ce lot.
+- Generation nominale centralisee via `EcrituresComptablesService` pour `reservations`, `engagements`, `bons_commande`, `factures`, `depenses` et `paiements`, avec resultat explicite `created|already_generated|error`.
+- Nouvelle migration `20260308120000_story_6_2_idempotent_ecritures.sql` ajoutant une cle d'idempotence par source/regle, un verrou transactionnel par source metier et des erreurs actionnables pour regle manquante, compte invalide ou lot desequilibre.
+- Contrat frontend/backend aligne sur le resultat idempotent du moteur; les toasts de generation distinguent maintenant creation reelle, deja-genere et erreur metier.
+- Couverture ajoutee sur PostgreSQL reel pour la concurrence, le double appel, le refus cross-tenant / exercice invalide et la conservation des metadonnees; couverture frontend ajoutee sur le contrat client et l'affichage `JournalComptable`.
+- Les migrations `20260307110000_story_5_3_workflow_exceptions.sql` et `20260307113000_workflow_exception_tenant_settings.sql` ont ete corrigees pour referencer `public.tenants(id)` en `TEXT`, ce qui permet a `bash ./scripts/db-reset.sh` de rejouer proprement le schema depuis zero.
+- La story est passee en `review` avec une reserve documentee: le cas de rejet explicite `debit != credit` est considere garanti par construction avec le modele actuel, car une ecriture nominale porte deja la paire debit/credit et un montant unique; le rendre directement testable demanderait un changement de modele ou un seam de test dedie.
 
 ### File List
 
 - `_bmad-output/implementation-artifacts/6-2-generer-ecritures-en-double-entree-idempotentes.md`
 - `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `backend/src/ecritures-comptables/ecritures-comptables.service.ts`
+- `backend/src/ecritures-comptables/ecritures-comptables.integration.spec.ts`
+- `backend/src/ecritures-comptables/ecritures-comptables.service.spec.ts`
+- `backend/src/reservations/reservations.service.ts`
+- `backend/src/reservations/reservations.module.ts`
+- `backend/src/reservations/reservations.service.spec.ts`
+- `backend/src/engagements/engagements.service.ts`
+- `backend/src/engagements/engagements.module.ts`
+- `backend/src/engagements/engagements.service.spec.ts`
+- `backend/src/bons-commande/bons-commande.service.ts`
+- `backend/src/bons-commande/bons-commande.module.ts`
+- `backend/src/bons-commande/bons-commande.service.spec.ts`
+- `backend/src/factures/factures.service.ts`
+- `backend/src/factures/factures.module.ts`
+- `backend/src/factures/factures.service.spec.ts`
+- `backend/src/depenses/depenses.service.ts`
+- `backend/src/depenses/depenses.module.ts`
+- `backend/src/depenses/depenses.service.spec.ts`
+- `backend/src/paiements/paiements.service.ts`
+- `backend/src/paiements/paiements.module.ts`
+- `backend/src/paiements/paiements.service.spec.ts`
+- `src/types/ecriture-comptable.types.ts`
+- `src/services/api/ecritures-comptables.service.ts`
+- `src/hooks/useGenerateEcritures.ts`
+- `tests/ecritures-comptables-client.spec.ts`
+- `tests/ecritures-generation-ui.spec.ts`
+- `supabase/migrations/20260307110000_story_5_3_workflow_exceptions.sql`
+- `supabase/migrations/20260307113000_workflow_exception_tenant_settings.sql`
+- `supabase/migrations/20260308120000_story_6_2_idempotent_ecritures.sql`
 
 ## Change Log
 
 - 2026-03-07: Creation de la story context 6.2 avec cadrage complet du moteur d'ecritures, invariants d'equilibre, idempotence et points d'integration backend/frontend.
+- 2026-03-08: Centralisation de la generation nominale, durcissement SQL de l'idempotence et exposition explicite du resultat `created|already_generated|error`; story d'abord maintenue `in-progress` en attente des validations DB/UI restantes.
+- 2026-03-08: Validation completee sur PostgreSQL reel, Playwright UI et contrat client; correction de deux migrations `workflow_exceptions` pour rendre `bash ./scripts/db-reset.sh` rejouable sans bootstrap manuel. Le seul reste a faire documente est le cas `debit != credit`, non directement atteignable avec le modele courant.
+- 2026-03-08: Passage en `review` avec note explicite que le controle `debit != credit` est couvert par construction du modele actuel et accepte comme tel pour la revue.

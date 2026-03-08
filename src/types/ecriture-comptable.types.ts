@@ -1,6 +1,15 @@
 import type { TypeOperation } from './regle-comptable.types';
 
 export type StatutEcriture = 'validee' | 'contrepassation';
+export type GenerationEcrituresStatus = 'created' | 'already_generated' | 'error';
+
+export interface GenerationEcrituresResult {
+  success: boolean;
+  status: GenerationEcrituresStatus;
+  code?: string;
+  message?: string;
+  ecrituresCount: number;
+}
 
 export interface EcritureComptable {
   id: string;

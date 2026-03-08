@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PostgresService } from '../common/postgres.service';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
+import { EcrituresComptablesService } from '../ecritures-comptables/ecritures-comptables.service';
 import { WorkflowExceptionsService } from '../workflow-exceptions/workflow-exceptions.service';
 import type { AnnulerPaiementDto, CreatePaiementDto, RejeterPaiementDto, ReprendrePaiementDto } from './dto/paiements.dto';
 import {
@@ -128,7 +129,8 @@ interface PaiementView {
 export class PaiementsService {
   constructor(
     private readonly postgresService: PostgresService,
-    private readonly workflowExceptionsService: WorkflowExceptionsService
+    private readonly workflowExceptionsService: WorkflowExceptionsService,
+    private readonly ecrituresComptablesService: EcrituresComptablesService
   ) {}
 
   async getAll(actor: AuthenticatedUser, exerciceId: string): Promise<PaiementView[]> {
@@ -564,57 +566,7 @@ export class PaiementsService {
   }
 
   private async ensureEcritures(actor: AuthenticatedUser, paiement: PaiementRow): Promise<void> {
-    const existing = await this.postgresService.query<{ count: string | number }>(
-      `
-        SELECT COUNT(*) AS count
-        FROM public.ecritures_comptables
-        WHERE client_id = $1
-          AND paiement_id = $2
-          AND statut_ecriture = 'validee'
-      `,
-      [actor.tenantId, paiement.id]
-    );
-
-    if (Number(existing.rows[0]?.count ?? 0) > 0) {
-      return;
-    }
-
-    const sourcePayload = {
-      id: paiement.id,
-      numero: paiement.numero,
-      montant: Number(paiement.montant ?? 0),
-      date_paiement: this.toDateOnly(paiement.date_paiement),
-      mode_paiement: paiement.mode_paiement,
-      reference_paiement: paiement.reference_paiement,
-      depense_id: paiement.depense_id,
-    };
-
-      await this.postgresService.query(
-        `
-        SELECT public.generate_ecritures_comptables(
-          $1,
-          $2::uuid,
-          $3,
-          $4::uuid,
-          $5,
-          $6::date,
-          $7,
-          $8::jsonb,
-          $9::uuid
-        )
-      `,
-      [
-        paiement.client_id,
-        paiement.exercice_id,
-        'paiement',
-        paiement.id,
-        paiement.numero,
-        this.toDateOnly(paiement.date_paiement),
-        Number(paiement.montant ?? 0),
-        JSON.stringify(sourcePayload),
-        actor.sub,
-      ]
-    );
+    await this.ecrituresComptablesService.ensureGeneratedForOperation(actor, 'paiement', paiement.id, paiement.exercice_id);
   }
 
   private async revertSuccessfulArtifacts(actor: AuthenticatedUser, paiement: PaiementRow, motif: string): Promise<void> {

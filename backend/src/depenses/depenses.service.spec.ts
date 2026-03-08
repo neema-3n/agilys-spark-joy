@@ -2,6 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import type { QueryResult, QueryResultRow } from 'pg';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import type { PostgresService } from '../common/postgres.service';
+import type { EcrituresComptablesService } from '../ecritures-comptables/ecritures-comptables.service';
 import type { WorkflowExceptionsService } from '../workflow-exceptions/workflow-exceptions.service';
 import { DepensesService } from './depenses.service';
 
@@ -26,11 +27,32 @@ describe('DepensesService', () => {
   const workflowExceptionsService = {
     assertTransitionAllowed: jest.fn(),
   } as unknown as WorkflowExceptionsService;
-  const service = new DepensesService(postgresService, workflowExceptionsService);
+  const ecrituresComptablesService = {
+    ensureGeneratedForOperation: jest.fn(),
+  } as unknown as EcrituresComptablesService;
+  const service = new DepensesService(postgresService, workflowExceptionsService, ecrituresComptablesService);
 
   beforeEach(() => {
     query.mockReset();
     jest.restoreAllMocks();
+  });
+
+  it('centralise la génération nominale des écritures de dépense', async () => {
+    const internalService = service as unknown as {
+      generateEcrituresForDepense: (actor: AuthenticatedUser, depense: { id: string; exerciceId: string }) => Promise<void>;
+    };
+
+    await internalService.generateEcrituresForDepense(actor, {
+      id: 'dep-1',
+      exerciceId: 'ex-1',
+    });
+
+    expect((ecrituresComptablesService.ensureGeneratedForOperation as jest.Mock)).toHaveBeenCalledWith(
+      actor,
+      'depense',
+      'dep-1',
+      'ex-1'
+    );
   });
 
   it('refuse la création depuis plus de 20 factures', async () => {
