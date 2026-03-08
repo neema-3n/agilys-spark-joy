@@ -38,11 +38,11 @@ development_status:
   epic-5-retrospective: optional
   epic-6: in-progress
   6-1-versionner-plan-comptable-et-mapping-ecritures: in-progress
-  6-2-generer-ecritures-en-double-entree-idempotentes: ready-for-dev
+  6-2-generer-ecritures-en-double-entree-idempotentes: review
   6-3-gerer-corrections-et-contre-passations-auditables: ready-for-dev
-  6-4-executer-cloture-dexercice-gouvernee: backlog
-  6-5-implementer-rapprochement-bancaire-auto-manuel: backlog
-  6-6-produire-dossier-de-cloture-et-migration-reconciliation: backlog
+  6-4-executer-cloture-dexercice-gouvernee: ready-for-dev
+  6-5-implementer-rapprochement-bancaire-auto-manuel: ready-for-dev
+  6-6-produire-dossier-de-cloture-et-migration-reconciliation: ready-for-dev
   epic-6-retrospective: optional
   epic-7: backlog
   7-1-exposer-dashboard-budgetaire-de-pilotage: backlog

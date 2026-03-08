@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { PostgresService } from '../common/postgres.service';
+import { EcrituresComptablesService } from '../ecritures-comptables/ecritures-comptables.service';
 import type { CreateBonCommandeDto, UpdateBonCommandeDto } from './dto/bons-commande.dto';
 
 interface BonCommandeRow {
@@ -85,7 +86,10 @@ interface BonCommandeReferences {
 
 @Injectable()
 export class BonsCommandeService {
-  constructor(private readonly postgresService: PostgresService) {}
+  constructor(
+    private readonly postgresService: PostgresService,
+    private readonly ecrituresComptablesService: EcrituresComptablesService
+  ) {}
 
   async getAll(actor: AuthenticatedUser, exerciceId?: string): Promise<BonCommandeView[]> {
     const values: unknown[] = [actor.tenantId];
@@ -440,48 +444,7 @@ ORDER BY bc.date_commande DESC, bc.created_at DESC
   }
 
   private async generateEcrituresForBonCommande(actor: AuthenticatedUser, bc: BonCommandeView): Promise<void> {
-    const operationDataResult = await this.postgresService.query<Record<string, unknown>>(
-      `
-        SELECT *
-        FROM public.bons_commande
-        WHERE id = $1
-          AND client_id = $2
-        LIMIT 1
-      `,
-      [bc.id, actor.tenantId]
-    );
-
-    const operationData = operationDataResult.rows[0];
-    if (!operationData) {
-      return;
-    }
-
-    await this.postgresService.query(
-      `
-        SELECT public.generate_ecritures_comptables(
-          $1,
-          $2::uuid,
-          $3,
-          $4::uuid,
-          $5,
-          $6::date,
-          $7,
-          $8::jsonb,
-          $9::uuid
-        )
-      `,
-      [
-        'bon_commande',
-        bc.id,
-        bc.numero,
-        bc.exerciceId,
-        Number(bc.montant ?? 0),
-        bc.dateCommande,
-        bc.objet,
-        JSON.stringify(operationData),
-        actor.sub
-      ]
-    );
+    await this.ecrituresComptablesService.ensureGeneratedForOperation(actor, 'bon_commande', bc.id, bc.exerciceId);
   }
 
   private async resolveExerciceCode(tenantId: string, exerciceId: string): Promise<string> {

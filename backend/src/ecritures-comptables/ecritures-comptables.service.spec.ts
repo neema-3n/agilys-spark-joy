@@ -81,7 +81,8 @@ describe('EcrituresComptablesService', () => {
             numero: 'DEP/2026/001',
             date_depense: '2026-03-07',
             montant: 4500,
-            objet: 'Mission terrain'
+            objet: 'Mission terrain',
+            exercice_id: 'ex-1'
           }
         ])
       )
@@ -90,15 +91,17 @@ describe('EcrituresComptablesService', () => {
           {
             generate_ecritures_comptables: {
               success: true,
+              status: 'created',
               ecritures_count: 1
             }
           }
         ])
       );
 
-    await service.generateForOperation(actor, 'depense', 'dep-1', 'ex-1');
+    const result = await service.generateForOperation(actor, 'depense', 'dep-1', 'ex-1');
 
     expect(query).toHaveBeenCalledTimes(2);
+    expect(query.mock.calls[0]?.[1]).toEqual(['dep-1', actor.tenantId, 'ex-1']);
     expect(query.mock.calls[1]?.[1]).toEqual([
       actor.tenantId,
       'ex-1',
@@ -113,9 +116,81 @@ describe('EcrituresComptablesService', () => {
         numero: 'DEP/2026/001',
         date_depense: '2026-03-07',
         montant: 4500,
-        objet: 'Mission terrain'
+        objet: 'Mission terrain',
+        exercice_id: 'ex-1'
       }),
       actor.sub
     ]);
+    expect(result.status).toBe('created');
+    expect(result.ecrituresCount).toBe(1);
+  });
+
+  it('normalise un resultat idempotent sans duplicat logique', async () => {
+    query
+      .mockResolvedValueOnce(
+        makeResult([
+          {
+            id: 'dep-1',
+            client_id: actor.tenantId,
+            exercice_id: 'ex-1',
+            numero: 'DEP/2026/001',
+            date_depense: '2026-03-07',
+            montant: 4500
+          }
+        ])
+      )
+      .mockResolvedValueOnce(
+        makeResult([
+          {
+            generate_ecritures_comptables: {
+              success: true,
+              status: 'already_generated',
+              code: 'ECRITURES_DEJA_PRESENTES',
+              message: 'Les ecritures comptables existent deja pour cette source et cette configuration.',
+              ecritures_count: 1
+            }
+          }
+        ])
+      );
+
+    const result = await service.generateForOperation(actor, 'depense', 'dep-1', 'ex-1');
+
+    expect(result.success).toBe(true);
+    expect(result.status).toBe('already_generated');
+    expect(result.code).toBe('ECRITURES_DEJA_PRESENTES');
+    expect(result.ecrituresCount).toBe(1);
+  });
+
+  it('leve une erreur metier exploitable via ensureGeneratedForOperation', async () => {
+    query
+      .mockResolvedValueOnce(
+        makeResult([
+          {
+            id: 'dep-1',
+            client_id: actor.tenantId,
+            exercice_id: 'ex-1',
+            numero: 'DEP/2026/001',
+            date_depense: '2026-03-07',
+            montant: 4500
+          }
+        ])
+      )
+      .mockResolvedValueOnce(
+        makeResult([
+          {
+            generate_ecritures_comptables: {
+              success: false,
+              status: 'error',
+              code: 'REGLE_COMPTABLE_MANQUANTE',
+              message: 'Aucune regle comptable publiee ne couvre cette operation pour la date et le contexte fournis.',
+              ecritures_count: 0
+            }
+          }
+        ])
+      );
+
+    await expect(service.ensureGeneratedForOperation(actor, 'depense', 'dep-1', 'ex-1')).rejects.toThrow(
+      'Aucune regle comptable publiee'
+    );
   });
 });

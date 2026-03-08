@@ -1,7 +1,25 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { PostgresService } from '../common/postgres.service';
 import type { EcrituresComptablesQueryDto } from './dto/ecritures-comptables.dto';
+
+type TypeOperation = 'reservation' | 'engagement' | 'bon_commande' | 'facture' | 'depense' | 'paiement';
+
+interface GenerateEcrituresSqlResult {
+  success?: boolean;
+  status?: 'created' | 'already_generated' | 'error';
+  code?: string;
+  message?: string;
+  ecritures_count?: number;
+}
+
+export interface GenerateEcrituresResult {
+  success: boolean;
+  status: 'created' | 'already_generated' | 'error';
+  code?: string;
+  message?: string;
+  ecrituresCount: number;
+}
 
 interface EcritureRow {
   id: string;
@@ -36,13 +54,15 @@ interface EcritureRow {
 }
 
 interface StatsRow {
-  type_operation: 'reservation' | 'engagement' | 'bon_commande' | 'facture' | 'depense' | 'paiement';
+  type_operation: TypeOperation;
   nombre: string | number;
   montant: string | number;
 }
 
 @Injectable()
 export class EcrituresComptablesService {
+  private readonly logger = new Logger(EcrituresComptablesService.name);
+
   constructor(private readonly postgresService: PostgresService) {}
 
   async getAll(actor: AuthenticatedUser, filters: EcrituresComptablesQueryDto) {
@@ -103,7 +123,7 @@ ORDER BY ec.date_ecriture DESC, ec.numero_piece DESC, ec.numero_ligne ASC
 
   async getBySource(
     actor: AuthenticatedUser,
-    typeOperation: 'reservation' | 'engagement' | 'bon_commande' | 'facture' | 'depense' | 'paiement',
+    typeOperation: TypeOperation,
     sourceId: string
   ) {
     const result = await this.postgresService.query<EcritureRow>(
@@ -183,19 +203,20 @@ ORDER BY ec.date_ecriture DESC, ec.numero_piece DESC, ec.numero_ligne ASC
 
   async generateForOperation(
     actor: AuthenticatedUser,
-    typeOperation: 'reservation' | 'engagement' | 'bon_commande' | 'facture' | 'depense' | 'paiement',
+    typeOperation: TypeOperation,
     sourceId: string,
     exerciceId: string
-  ) {
+  ): Promise<GenerateEcrituresResult> {
     const operationResult = await this.postgresService.query<Record<string, unknown>>(
       `
         SELECT *
         FROM public.${this.resolveTableName(typeOperation)}
         WHERE id = $1
           AND client_id = $2
+          AND exercice_id = $3::uuid
         LIMIT 1
       `,
-      [sourceId, actor.tenantId]
+      [sourceId, actor.tenantId, exerciceId]
     );
 
     const operation = operationResult.rows[0];
@@ -215,7 +236,7 @@ ORDER BY ec.date_ecriture DESC, ec.numero_piece DESC, ec.numero_ligne ASC
       (operation['date_commande'] as string | undefined) ||
       (operation['date_creation'] as string | undefined) ||
       new Date().toISOString().slice(0, 10);
-    const result = await this.postgresService.query<{ generate_ecritures_comptables: unknown }>(
+    const result = await this.postgresService.query<{ generate_ecritures_comptables: GenerateEcrituresSqlResult | null }>(
       `
         SELECT public.generate_ecritures_comptables(
           $1,
@@ -242,14 +263,33 @@ ORDER BY ec.date_ecriture DESC, ec.numero_piece DESC, ec.numero_ligne ASC
       ]
     );
 
-    return (result.rows[0]?.generate_ecritures_comptables ?? { success: true, ecritures_count: 0 }) as {
-      success?: boolean;
-      ecritures_count?: number;
-      error?: string;
-    };
+    const normalized = this.normalizeGenerationResult(result.rows[0]?.generate_ecritures_comptables ?? null);
+
+    if (!normalized.success) {
+      this.logger.warn(
+        `Generation comptable en erreur: ${typeOperation}/${sourceId} [${normalized.code ?? 'SANS_CODE'}] ${normalized.message ?? ''}`
+      );
+    }
+
+    return normalized;
   }
 
-  private resolveTableName(typeOperation: string): string {
+  async ensureGeneratedForOperation(
+    actor: AuthenticatedUser,
+    typeOperation: TypeOperation,
+    sourceId: string,
+    exerciceId: string
+  ): Promise<GenerateEcrituresResult> {
+    const result = await this.generateForOperation(actor, typeOperation, sourceId, exerciceId);
+
+    if (!result.success) {
+      throw new BadRequestException(result.message ?? 'La generation des ecritures comptables a echoue');
+    }
+
+    return result;
+  }
+
+  private resolveTableName(typeOperation: TypeOperation): string {
     switch (typeOperation) {
       case 'reservation':
         return 'reservations_credits';
@@ -353,5 +393,15 @@ ORDER BY ec.date_ecriture DESC, ec.numero_piece DESC, ec.numero_ligne ASC
     }
 
     return value;
+  }
+
+  private normalizeGenerationResult(payload: GenerateEcrituresSqlResult | null): GenerateEcrituresResult {
+    return {
+      success: payload?.success ?? true,
+      status: payload?.status ?? 'created',
+      code: payload?.code,
+      message: payload?.message,
+      ecrituresCount: Number(payload?.ecritures_count ?? 0)
+    };
   }
 }

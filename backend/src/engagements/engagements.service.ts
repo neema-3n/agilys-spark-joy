@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PostgresService } from '../common/postgres.service';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { CashRiskService } from '../cash-risk/cash-risk.service';
+import { EcrituresComptablesService } from '../ecritures-comptables/ecritures-comptables.service';
 import { WorkflowExceptionsService } from '../workflow-exceptions/workflow-exceptions.service';
 import type {
   CreateEngagementDto,
@@ -113,7 +114,8 @@ export class EngagementsService {
   constructor(
     private readonly postgresService: PostgresService,
     private readonly cashRiskService: CashRiskService,
-    private readonly workflowExceptionsService: WorkflowExceptionsService
+    private readonly workflowExceptionsService: WorkflowExceptionsService,
+    private readonly ecrituresComptablesService: EcrituresComptablesService
   ) {}
 
   async getAll(actor: AuthenticatedUser, exerciceId: string): Promise<EngagementView[]> {
@@ -723,48 +725,7 @@ export class EngagementsService {
   }
 
   private async generateEcrituresForEngagement(actor: AuthenticatedUser, engagement: EngagementView): Promise<void> {
-    const operationDataResult = await this.postgresService.query<Record<string, unknown>>(
-      `
-        SELECT *
-        FROM public.engagements
-        WHERE id = $1
-          AND client_id = $2
-        LIMIT 1
-      `,
-      [engagement.id, actor.tenantId]
-    );
-
-    const operationData = operationDataResult.rows[0];
-    if (!operationData) {
-      return;
-    }
-
-    await this.postgresService.query(
-      `
-        SELECT public.generate_ecritures_comptables(
-          $1,
-          $2::uuid,
-          $3,
-          $4::uuid,
-          $5,
-          $6::date,
-          $7,
-          $8::jsonb,
-          $9::uuid
-        )
-      `,
-      [
-        engagement.clientId,
-        engagement.exerciceId,
-        'engagement',
-        engagement.id,
-        engagement.numero,
-        engagement.dateCreation,
-        engagement.montant,
-        JSON.stringify(operationData),
-        actor.sub
-      ]
-    );
+    await this.ecrituresComptablesService.ensureGeneratedForOperation(actor, 'engagement', engagement.id, engagement.exerciceId);
   }
 
   private mapUpdateKeyToColumn(key: keyof UpdateEngagementDto): string {

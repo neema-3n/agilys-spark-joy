@@ -1,5 +1,10 @@
 import { requestJson } from '@/services/api/api-utils';
-import type { EcritureComptable, EcrituresFilters, EcrituresStats } from '@/types/ecriture-comptable.types';
+import type {
+  EcritureComptable,
+  EcrituresFilters,
+  EcrituresStats,
+  GenerationEcrituresResult
+} from '@/types/ecriture-comptable.types';
 import type { TypeOperation } from '@/types/regle-comptable.types';
 
 interface EcritureComptableApiModel {
@@ -38,6 +43,14 @@ interface EcritureComptableApiModel {
     dateDebut?: string;
     dateFin?: string;
   };
+}
+
+interface GenerateEcrituresApiModel {
+  success?: boolean;
+  status?: 'created' | 'already_generated' | 'error';
+  code?: string;
+  message?: string;
+  ecritures_count?: number;
 }
 
 const mapFromApi = (row: EcritureComptableApiModel): EcritureComptable => ({
@@ -137,8 +150,8 @@ export const ecrituresComptablesService = {
     sourceId: string,
     clientId: string,
     exerciceId: string
-  ): Promise<{ success?: boolean; ecritures_count?: number; error?: string }> {
-    return requestJson<{ success?: boolean; ecritures_count?: number; error?: string }>(
+  ): Promise<GenerationEcrituresResult> {
+    const payload = await requestJson<GenerateEcrituresApiModel>(
       '/ecritures-comptables/generate',
       {
         method: 'POST',
@@ -151,5 +164,13 @@ export const ecrituresComptablesService = {
       },
       'Erreur lors de la génération des écritures comptables'
     );
+
+    return {
+      success: payload.success ?? true,
+      status: payload.status ?? 'created',
+      code: payload.code,
+      message: payload.message,
+      ecrituresCount: Number(payload.ecritures_count ?? 0)
+    };
   }
 };

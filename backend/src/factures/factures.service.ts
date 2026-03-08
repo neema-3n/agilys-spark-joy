@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { PostgresService } from '../common/postgres.service';
+import { EcrituresComptablesService } from '../ecritures-comptables/ecritures-comptables.service';
 import type { CreateFactureDto, FacturesPaginatedQueryDto, GenerateTestFacturesDto, UpdateFactureDto } from './dto/factures.dto';
 
 interface FactureRow {
@@ -154,7 +155,10 @@ interface BonCommandeScope {
 
 @Injectable()
 export class FacturesService {
-  constructor(private readonly postgresService: PostgresService) {}
+  constructor(
+    private readonly postgresService: PostgresService,
+    private readonly ecrituresComptablesService: EcrituresComptablesService
+  ) {}
 
   async getAll(actor: AuthenticatedUser, exerciceId?: string): Promise<FactureView[]> {
     const values: unknown[] = [actor.tenantId];
@@ -1218,48 +1222,7 @@ LIMIT $${index} OFFSET $${index + 1}
   }
 
   private async generateEcrituresForFacture(actor: AuthenticatedUser, facture: FactureView): Promise<void> {
-    const operationResult = await this.postgresService.query<Record<string, unknown>>(
-      `
-        SELECT *
-        FROM public.factures
-        WHERE id = $1
-          AND client_id = $2
-        LIMIT 1
-      `,
-      [facture.id, actor.tenantId]
-    );
-
-    const operationData = operationResult.rows[0];
-    if (!operationData) {
-      return;
-    }
-
-    await this.postgresService.query(
-      `
-        SELECT public.generate_ecritures_comptables(
-          $1,
-          $2::uuid,
-          $3,
-          $4::uuid,
-          $5,
-          $6::date,
-          $7,
-          $8::jsonb,
-          $9::uuid
-        )
-      `,
-      [
-        'facture',
-        facture.id,
-        facture.numero,
-        facture.exerciceId,
-        Number(facture.montantTTC ?? 0),
-        facture.dateFacture,
-        facture.objet,
-        JSON.stringify(operationData),
-        actor.sub
-      ]
-    );
+    await this.ecrituresComptablesService.ensureGeneratedForOperation(actor, 'facture', facture.id, facture.exerciceId);
   }
 
   private async getNextFactureSequence(clientId: string, exerciceId: string, exerciceCode: string): Promise<number> {
