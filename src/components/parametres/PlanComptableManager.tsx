@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Plus, FolderTree, BookOpen, Upload, Trash2, ChevronsDown, ChevronsUp, ArrowUp } from 'lucide-react';
 import { useClient } from '@/contexts/ClientContext';
-import { Compte } from '@/types/compte.types';
+import type { Compte, CreateCompteInput, UpdateCompteInput } from '@/types/compte.types';
 import { comptesService } from '@/services/api/comptes.service';
 import { CompteDialog } from './CompteDialog';
 import { CompteTreeItem } from './CompteTreeItem';
@@ -29,7 +29,6 @@ const PlanComptableManager = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [clearDialogOpen, setClearDialogOpen] = useState(false);
   const [expandAll, setExpandAll] = useState<{ expand: boolean; timestamp: number } | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
@@ -159,7 +158,7 @@ const PlanComptableManager = () => {
     }
   };
 
-  const handleCreate = async (data: any) => {
+  const handleCreate = async (data: CreateCompteInput) => {
     if (!currentClient) return;
 
     try {
@@ -185,7 +184,7 @@ const PlanComptableManager = () => {
     }
   };
 
-  const handleUpdate = async (data: any) => {
+  const handleUpdate = async (data: UpdateCompteInput) => {
     if (!selectedCompte) return;
 
     try {
@@ -291,29 +290,6 @@ const PlanComptableManager = () => {
     return labels[categorie] || categorie;
   };
 
-  const handleClearAll = async () => {
-    if (!currentClient) return;
-
-    try {
-      const deletedCount = await comptesService.deleteAll(currentClient.id);
-      
-      toast({
-        title: 'Plan comptable vidé',
-        description: `${deletedCount} comptes supprimés avec succès`
-      });
-      
-      setClearDialogOpen(false);
-      await loadComptes();
-    } catch (error) {
-      console.error('Erreur lors du nettoyage:', error);
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de vider le plan comptable',
-        variant: 'destructive'
-      });
-    }
-  };
-
   const scrollToTop = () => {
     const scrollOptions: ScrollToOptions = { top: 0, behavior: 'smooth' };
 
@@ -362,11 +338,11 @@ const PlanComptableManager = () => {
               </Button>
               <Button 
                 variant="outline" 
-                onClick={() => setClearDialogOpen(true)}
+                disabled
                 className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Vider
+                Vidage desactive
               </Button>
               <Button onClick={openCreateDialog}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -402,6 +378,10 @@ const PlanComptableManager = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="max-w-md"
             />
+          </div>
+
+          <div className="mb-4 rounded-lg border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            Le vidage global du plan comptable est desactive pour preserver une gouvernance non destructive des configurations publiees.
           </div>
           
           {isLoading ? (
@@ -481,31 +461,6 @@ const PlanComptableManager = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-destructive">
-              ⚠️ Vider le plan comptable
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              <strong>Cette action est irréversible !</strong>
-              <br /><br />
-              Tous les comptes ({comptes.length}) seront définitivement supprimés.
-              <br /><br />
-              ⚠️ Assurez-vous qu'aucune ligne budgétaire n'est liée à ces comptes.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleClearAll}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Oui, tout supprimer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 };

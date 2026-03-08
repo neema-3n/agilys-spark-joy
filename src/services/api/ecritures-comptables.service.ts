@@ -32,6 +32,11 @@ interface EcritureComptableApiModel {
   regleComptable?: {
     code: string;
     nom: string;
+    versionGroupId?: string;
+    versionNumber?: number;
+    versionStatus?: 'draft' | 'published' | 'archived';
+    dateDebut?: string;
+    dateFin?: string;
   };
 }
 
@@ -57,6 +62,11 @@ const mapFromApi = (row: EcritureComptableApiModel): EcritureComptable => ({
   compteDebit: row.compteDebit,
   compteCredit: row.compteCredit,
   regleComptable: row.regleComptable
+    ? {
+        ...row.regleComptable,
+        versionNumber: row.regleComptable.versionNumber ? Number(row.regleComptable.versionNumber) : undefined
+      }
+    : undefined
 });
 
 const buildFilters = (exerciceId?: string, filters?: EcrituresFilters): string => {

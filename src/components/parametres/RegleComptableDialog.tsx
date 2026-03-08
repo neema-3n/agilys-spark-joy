@@ -12,7 +12,7 @@ import { useComptes } from '@/hooks/useComptes';
 import { useClient } from '@/contexts/ClientContext';
 import { ConditionsBuilder } from './ConditionsBuilder';
 import { TYPE_OPERATION_LABELS } from '@/lib/regles-comptables-fields';
-import type { RegleComptable, TypeOperation, Condition } from '@/types/regle-comptable.types';
+import type { RegleComptable, TypeOperation, Condition, RegleVersionStatus } from '@/types/regle-comptable.types';
 import { CompteDoubleSelect } from './CompteDoubleSelect';
 
 interface RegleComptableDialogProps {
@@ -46,6 +46,9 @@ export const RegleComptableDialog = ({
   const [compteCreditId, setCompteCreditId] = useState('');
   const [actif, setActif] = useState(true);
   const [ordre, setOrdre] = useState(0);
+  const [versionStatus, setVersionStatus] = useState<RegleVersionStatus>('draft');
+  const [changeReason, setChangeReason] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -62,6 +65,8 @@ export const RegleComptableDialog = ({
       setCompteCreditId(regle.compteCreditId);
       setActif(regle.actif);
       setOrdre(regle.ordre);
+      setVersionStatus(regle.versionStatus);
+      setChangeReason(regle.changeReason || '');
     } else if (initialValues) {
       // Duplication : utiliser les valeurs initiales
       setCode(initialValues.code || '');
@@ -76,6 +81,8 @@ export const RegleComptableDialog = ({
       setCompteCreditId(initialValues.compteCreditId || '');
       setActif(initialValues.actif ?? true);
       setOrdre(initialValues.ordre ?? 0);
+      setVersionStatus(initialValues.versionStatus || 'draft');
+      setChangeReason(initialValues.changeReason || '');
     } else {
       setCode('');
       setNom('');
@@ -89,12 +96,32 @@ export const RegleComptableDialog = ({
       setCompteCreditId('');
       setActif(true);
       setOrdre(0);
+      setVersionStatus('draft');
+      setChangeReason('');
     }
+    setFormError(null);
   }, [regle, initialValues, defaultTypeOperation, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentClient) return;
+
+    if (!permanente && !dateDebut) {
+      setFormError("La date de debut est obligatoire pour une regle non permanente.");
+      return;
+    }
+
+    if (!permanente && dateFin && dateDebut && dateFin < dateDebut) {
+      setFormError("La date de fin doit etre posterieure ou egale a la date de debut.");
+      return;
+    }
+
+    if (!compteDebitId || !compteCreditId) {
+      setFormError('Les comptes de debit et de credit sont obligatoires.');
+      return;
+    }
+
+    setFormError(null);
 
     setIsSubmitting(true);
     try {
@@ -112,6 +139,8 @@ export const RegleComptableDialog = ({
             compteCreditId,
             actif,
             ordre,
+            versionStatus,
+            changeReason,
           },
         });
       } else {
@@ -129,11 +158,14 @@ export const RegleComptableDialog = ({
           compteCreditId,
           actif,
           ordre,
+          versionStatus,
+          changeReason,
         });
       }
       onClose();
     } catch (error) {
       console.error('Erreur:', error);
+      setFormError(error instanceof Error ? error.message : "Impossible d'enregistrer la regle.");
     } finally {
       setIsSubmitting(false);
     }
@@ -296,8 +328,45 @@ export const RegleComptableDialog = ({
                   min={0}
                 />
               </div>
+              <div>
+                <Label htmlFor="versionStatus">Statut de version</Label>
+                <Select
+                  value={versionStatus}
+                  onValueChange={(value: RegleVersionStatus) => setVersionStatus(value)}
+                >
+                  <SelectTrigger id="versionStatus">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Brouillon</SelectItem>
+                    <SelectItem value="published">Publiee</SelectItem>
+                    <SelectItem value="archived">Archivee</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+            <div>
+              <Label htmlFor="changeReason">Motif du changement</Label>
+              <Textarea
+                id="changeReason"
+                value={changeReason}
+                onChange={(e) => setChangeReason(e.target.value)}
+                placeholder="Ex: publication du mapping depense 2026"
+                rows={2}
+              />
+            </div>
+            {regle && (
+              <p className="text-xs text-muted-foreground">
+                Version actuelle: v{regle.versionNumber} · groupe {regle.versionGroupId.slice(0, 8)}
+              </p>
+            )}
           </div>
+
+          {formError && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+              {formError}
+            </div>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>

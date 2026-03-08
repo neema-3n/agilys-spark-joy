@@ -6,6 +6,8 @@ export type TypeOperation =
   | 'depense' 
   | 'paiement';
 
+export type RegleVersionStatus = 'draft' | 'published' | 'archived';
+
 export type OperateurCondition = 
   | '==' 
   | '!=' 
@@ -37,6 +39,12 @@ export interface RegleComptable {
   compteCreditId: string;
   actif: boolean;
   ordre: number;
+  versionGroupId: string;
+  versionNumber: number;
+  versionStatus: RegleVersionStatus;
+  changeReason?: string;
+  publishedAt?: string;
+  archivedAt?: string;
   createdAt: string;
   updatedAt: string;
   createdBy?: string;
@@ -66,6 +74,8 @@ export interface CreateRegleComptableInput {
   compteCreditId: string;
   actif?: boolean;
   ordre?: number;
+  versionStatus?: RegleVersionStatus;
+  changeReason?: string;
 }
 
 export interface UpdateRegleComptableInput {
@@ -79,4 +89,6 @@ export interface UpdateRegleComptableInput {
   compteCreditId?: string;
   actif?: boolean;
   ordre?: number;
+  versionStatus?: RegleVersionStatus;
+  changeReason?: string;
 }

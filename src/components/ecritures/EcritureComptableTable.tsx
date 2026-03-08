@@ -11,12 +11,14 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { EcritureComptable } from '@/types/ecriture-comptable.types';
 
+type BadgeVariant = 'default' | 'secondary' | 'outline';
+
 interface EcritureComptableTableProps {
   ecritures: EcritureComptable[];
   onRowClick?: (ecriture: EcritureComptable) => void;
 }
 
-const TYPE_OPERATION_LABELS: Record<string, { label: string; variant: any }> = {
+const TYPE_OPERATION_LABELS: Record<string, { label: string; variant: BadgeVariant }> = {
   reservation: { label: 'Réservation', variant: 'secondary' },
   engagement: { label: 'Engagement', variant: 'default' },
   bon_commande: { label: 'Bon de Commande', variant: 'outline' },
@@ -45,6 +47,7 @@ export const EcritureComptableTable = ({ ecritures, onRowClick }: EcritureCompta
             <TableHead>Compte Débit</TableHead>
             <TableHead>Compte Crédit</TableHead>
             <TableHead>Libellé</TableHead>
+            <TableHead>Règle appliquée</TableHead>
             <TableHead className="text-right">Montant</TableHead>
             <TableHead>Type</TableHead>
           </TableRow>
@@ -52,7 +55,7 @@ export const EcritureComptableTable = ({ ecritures, onRowClick }: EcritureCompta
         <TableBody>
           {ecritures.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} className="text-center text-muted-foreground">
+              <TableCell colSpan={9} className="text-center text-muted-foreground">
                 Aucune écriture comptable trouvée
               </TableCell>
             </TableRow>
@@ -90,6 +93,20 @@ export const EcritureComptableTable = ({ ecritures, onRowClick }: EcritureCompta
                 </TableCell>
                 <TableCell className="max-w-md truncate">
                   {ecriture.libelle}
+                </TableCell>
+                <TableCell>
+                  {ecriture.regleComptable ? (
+                    <div className="flex flex-col text-xs">
+                      <span className="font-medium">
+                        {ecriture.regleComptable.code} · v{ecriture.regleComptable.versionNumber ?? 1}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {ecriture.regleComptable.nom}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Non tracee</span>
+                  )}
                 </TableCell>
                 <TableCell className="text-right font-semibold">
                   {formatMontant(ecriture.montant)}

@@ -34,6 +34,11 @@ export interface EcritureComptable {
   regleComptable?: {
     code: string;
     nom: string;
+    versionGroupId?: string;
+    versionNumber?: number;
+    versionStatus?: 'draft' | 'published' | 'archived';
+    dateDebut?: string;
+    dateFin?: string;
   };
 }
 

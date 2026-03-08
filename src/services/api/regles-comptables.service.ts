@@ -21,6 +21,12 @@ interface RegleComptableApiModel {
   compteCreditId: string;
   actif: boolean;
   ordre: number;
+  versionGroupId: string;
+  versionNumber: number;
+  versionStatus: 'draft' | 'published' | 'archived';
+  changeReason?: string;
+  publishedAt?: string;
+  archivedAt?: string;
   createdAt: string;
   updatedAt: string;
   createdBy?: string;
@@ -49,6 +55,12 @@ const mapFromApi = (row: RegleComptableApiModel): RegleComptable => ({
   compteCreditId: row.compteCreditId,
   actif: row.actif,
   ordre: Number(row.ordre || 0),
+  versionGroupId: row.versionGroupId,
+  versionNumber: Number(row.versionNumber || 1),
+  versionStatus: row.versionStatus,
+  changeReason: row.changeReason,
+  publishedAt: row.publishedAt,
+  archivedAt: row.archivedAt,
   createdAt: row.createdAt,
   updatedAt: row.updatedAt,
   createdBy: row.createdBy,
@@ -96,7 +108,9 @@ export const reglesComptablesService = {
           compteDebitId: input.compteDebitId,
           compteCreditId: input.compteCreditId,
           actif: input.actif,
-          ordre: input.ordre
+          ordre: input.ordre,
+          versionStatus: input.versionStatus,
+          changeReason: input.changeReason
         })
       },
       'Erreur lors de la création de la règle comptable'
@@ -120,7 +134,9 @@ export const reglesComptablesService = {
           compteDebitId: input.compteDebitId,
           compteCreditId: input.compteCreditId,
           actif: input.actif,
-          ordre: input.ordre
+          ordre: input.ordre,
+          versionStatus: input.versionStatus,
+          changeReason: input.changeReason
         })
       },
       'Erreur lors de la mise à jour de la règle comptable'
