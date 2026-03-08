@@ -1,6 +1,8 @@
 import { Type } from 'class-transformer';
 import { IsArray, IsBoolean, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 
+const VERSION_STATUSES = ['draft', 'published', 'archived'] as const;
+
 export class ReglesComptablesQueryDto {
   @IsOptional()
   @IsIn(['reservation', 'engagement', 'bon_commande', 'facture', 'depense', 'paiement'])
@@ -52,6 +54,14 @@ export class CreateRegleComptableDto {
   @IsNumber()
   @Min(0)
   ordre?: number;
+
+  @IsOptional()
+  @IsIn(VERSION_STATUSES)
+  versionStatus?: (typeof VERSION_STATUSES)[number];
+
+  @IsOptional()
+  @IsString()
+  changeReason?: string;
 }
 
 export class UpdateRegleComptableDto {
@@ -96,6 +106,14 @@ export class UpdateRegleComptableDto {
   @IsNumber()
   @Min(0)
   ordre?: number;
+
+  @IsOptional()
+  @IsIn(VERSION_STATUSES)
+  versionStatus?: (typeof VERSION_STATUSES)[number];
+
+  @IsOptional()
+  @IsString()
+  changeReason?: string;
 }
 
 export class ReorderReglesComptablesDto {

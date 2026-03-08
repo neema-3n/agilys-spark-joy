@@ -90,6 +90,12 @@ export const ReglesComptablesManager = () => {
     });
   };
 
+  const versionStatusLabel: Record<RegleComptable['versionStatus'], string> = {
+    draft: 'Brouillon',
+    published: 'Publiee',
+    archived: 'Archivee'
+  };
+
   return (
     <Card>
       <CardHeader className="space-y-4 sm:space-y-0">
@@ -149,6 +155,9 @@ export const ReglesComptablesManager = () => {
                             <div className="flex flex-wrap items-center gap-x-3 gap-y-2 min-w-0">
                               <h4 className="font-semibold">{regle.nom}</h4>
                               <Badge variant="outline">{regle.code}</Badge>
+                              <Badge variant={regle.versionStatus === 'published' ? 'default' : 'secondary'}>
+                                v{regle.versionNumber} · {versionStatusLabel[regle.versionStatus]}
+                              </Badge>
                               <div className="flex items-center gap-2">
                                 <Switch
                                   checked={regle.actif}
@@ -226,6 +235,13 @@ export const ReglesComptablesManager = () => {
 
                           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 text-sm items-start">
                             <div className="flex flex-wrap items-center gap-1">
+                              <span className="font-medium">Version:</span>
+                              <span className="text-muted-foreground">
+                                Groupe {regle.versionGroupId.slice(0, 8)} · v{regle.versionNumber}
+                              </span>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-1">
                               <span className="font-medium">Période:</span>
                               <span className="text-muted-foreground">
                                 {regle.permanente ? 'Permanente' : `${regle.dateDebut} → ${regle.dateFin}`}
@@ -290,6 +306,12 @@ export const ReglesComptablesManager = () => {
                               </HoverCard>
                             </div>
                           </div>
+
+                          {regle.changeReason && (
+                            <p className="text-xs text-muted-foreground">
+                              Motif: {regle.changeReason}
+                            </p>
+                          )}
                         </div>
                       </CardContent>
                     </Card>

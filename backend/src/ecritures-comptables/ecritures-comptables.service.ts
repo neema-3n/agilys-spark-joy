@@ -28,6 +28,11 @@ interface EcritureRow {
   compte_credit_libelle: string | null;
   regle_code: string | null;
   regle_nom: string | null;
+  regle_version_group_id: string | null;
+  regle_version_number: number | null;
+  regle_version_status: 'draft' | 'published' | 'archived' | null;
+  regle_date_debut: Date | string | null;
+  regle_date_fin: Date | string | null;
 }
 
 interface StatsRow {
@@ -210,8 +215,6 @@ ORDER BY ec.date_ecriture DESC, ec.numero_piece DESC, ec.numero_ligne ASC
       (operation['date_commande'] as string | undefined) ||
       (operation['date_creation'] as string | undefined) ||
       new Date().toISOString().slice(0, 10);
-    const objet = (operation['objet'] as string | undefined) || (operation['libelle'] as string | undefined) || typeOperation;
-
     const result = await this.postgresService.query<{ generate_ecritures_comptables: unknown }>(
       `
         SELECT public.generate_ecritures_comptables(
@@ -227,13 +230,13 @@ ORDER BY ec.date_ecriture DESC, ec.numero_piece DESC, ec.numero_ligne ASC
         ) AS generate_ecritures_comptables
       `,
       [
+        actor.tenantId,
+        exerciceId,
         typeOperation,
         sourceId,
         numeroPiece,
-        exerciceId,
-        montant,
         dateOperation,
-        objet,
+        montant,
         JSON.stringify(operation),
         actor.sub
       ]
@@ -274,7 +277,12 @@ ORDER BY ec.date_ecriture DESC, ec.numero_piece DESC, ec.numero_ligne ASC
         cc.numero AS compte_credit_numero,
         cc.libelle AS compte_credit_libelle,
         rc.code AS regle_code,
-        rc.nom AS regle_nom
+        rc.nom AS regle_nom,
+        rc.version_group_id AS regle_version_group_id,
+        rc.version_number AS regle_version_number,
+        rc.version_status AS regle_version_status,
+        rc.date_debut AS regle_date_debut,
+        rc.date_fin AS regle_date_fin
       FROM public.ecritures_comptables ec
       LEFT JOIN public.comptes cd ON cd.id = ec.compte_debit_id
       LEFT JOIN public.comptes cc ON cc.id = ec.compte_credit_id
@@ -320,7 +328,12 @@ ORDER BY ec.date_ecriture DESC, ec.numero_piece DESC, ec.numero_ligne ASC
         row.regle_code && row.regle_nom
           ? {
               code: row.regle_code,
-              nom: row.regle_nom
+              nom: row.regle_nom,
+              versionGroupId: row.regle_version_group_id ?? undefined,
+              versionNumber: row.regle_version_number ?? undefined,
+              versionStatus: row.regle_version_status ?? undefined,
+              dateDebut: row.regle_date_debut ? this.toDateOnly(row.regle_date_debut) : undefined,
+              dateFin: row.regle_date_fin ? this.toDateOnly(row.regle_date_fin) : undefined
             }
           : undefined
     };

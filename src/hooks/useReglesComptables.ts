@@ -4,6 +4,14 @@ import { useClient } from '@/contexts/ClientContext';
 import type { CreateRegleComptableInput, UpdateRegleComptableInput, TypeOperation } from '@/types/regle-comptable.types';
 import { toast } from 'sonner';
 
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallback;
+};
+
 export const useReglesComptables = (typeOperation?: TypeOperation) => {
   const { currentClient } = useClient();
   const clientId = currentClient?.id || '';
@@ -25,8 +33,8 @@ export const useReglesComptables = (typeOperation?: TypeOperation) => {
       queryClient.invalidateQueries({ queryKey: ['regles-comptables', clientId] });
       toast.success('Règle comptable créée avec succès');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la création de la règle');
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Erreur lors de la creation de la regle'));
     },
   });
 
@@ -37,8 +45,8 @@ export const useReglesComptables = (typeOperation?: TypeOperation) => {
       queryClient.invalidateQueries({ queryKey: ['regles-comptables', clientId] });
       toast.success('Règle comptable mise à jour avec succès');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la mise à jour de la règle');
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Erreur lors de la mise a jour de la regle'));
     },
   });
 
@@ -48,8 +56,8 @@ export const useReglesComptables = (typeOperation?: TypeOperation) => {
       queryClient.invalidateQueries({ queryKey: ['regles-comptables', clientId] });
       toast.success('Règle comptable supprimée avec succès');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la suppression de la règle');
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Erreur lors de la suppression de la regle'));
     },
   });
 
@@ -60,8 +68,8 @@ export const useReglesComptables = (typeOperation?: TypeOperation) => {
       queryClient.invalidateQueries({ queryKey: ['regles-comptables', clientId] });
       toast.success('Ordre des règles mis à jour');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors du réordonnancement');
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Erreur lors du reordonnancement'));
     },
   });
 

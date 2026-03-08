@@ -1,6 +1,6 @@
 # Story 6.1: Versionner plan comptable et mapping ecritures
 
-Status: ready-for-dev
+Status: in-progress
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -44,49 +44,49 @@ so that la generation comptable soit gouvernee.
 
 ## Tasks / Subtasks
 
-- [ ] Revalider le contrat story 6.1 contre `FR43`, `FR44`, `FR29`, `FR32`, `NFR8`, `NFR9`, `NFR11`, `NFR25`, `NFR26`, `NFR27` puis formaliser les regles de versionning minimales (AC: 1, 2, 3, 4, 5)
-- [ ] Cartographier et reutiliser les modules existants avant ajout de nouvelle couche:
-  - [ ] `backend/src/referentiels/*`
-  - [ ] `backend/src/regles-comptables/*`
-  - [ ] `backend/src/ecritures-comptables/*`
-  - [ ] `src/components/parametres/PlanComptableManager.tsx`
-  - [ ] `src/pages/app/PlanComptable.tsx`
-  - [ ] `src/pages/app/JournalComptable.tsx` (AC: 1, 2, 4, 5)
+- [x] Revalider le contrat story 6.1 contre `FR43`, `FR44`, `FR29`, `FR32`, `NFR8`, `NFR9`, `NFR11`, `NFR25`, `NFR26`, `NFR27` puis formaliser les regles de versionning minimales (AC: 1, 2, 3, 4, 5)
+- [x] Cartographier et reutiliser les modules existants avant ajout de nouvelle couche:
+  - [x] `backend/src/referentiels/*`
+  - [x] `backend/src/regles-comptables/*`
+  - [x] `backend/src/ecritures-comptables/*`
+  - [x] `src/components/parametres/PlanComptableManager.tsx`
+  - [x] `src/pages/app/PlanComptable.tsx`
+  - [x] `src/pages/app/JournalComptable.tsx` (AC: 1, 2, 4, 5)
 - [ ] Introduire une strategie de versionning de plan comptable sans duplication:
   - [ ] option preferee: extension des tables/regles existantes avec metadonnees de version/date d'effet
   - [ ] interdire les suppressions destructives sur versions publiees
   - [ ] conserver auteur, horodatage, motif de changement (AC: 1, 5)
-- [ ] Renforcer les validations backend sur `regles_comptables`:
-  - [ ] non-chevauchement de periodes pour un meme perimetre logique
-  - [ ] unicite fonctionnelle des regles actives applicables
-  - [ ] debit/credit requis et comptes valides pour le tenant
-  - [ ] ordre/priorite explicite et deterministic tie-break (AC: 2, 3, 4, 5)
-- [ ] Faire porter la selection de version uniquement cote backend NestJS (pas de logique de resolution cote frontend) dans le chemin de generation d'ecritures (AC: 3, 4, 5)
-- [ ] Etendre les DTO/API existants pour exposer:
-  - [ ] metadonnees de version
-  - [ ] date d'effet debut/fin
-  - [ ] statut de version
-  - [ ] message d'erreur metier explicite en cas de conflit (AC: 1, 2, 3, 5)
-- [ ] Maintenir les patterns de structure:
-  - [ ] pas de nouveau module comptable parallele si `regles-comptables` et `ecritures-comptables` couvrent le besoin
-  - [ ] extraire utilitaires partages de validation/versionning si logique repetee (AC: 2, 3, 4)
+- [x] Renforcer les validations backend sur `regles_comptables`:
+  - [x] non-chevauchement de periodes pour un meme perimetre logique
+  - [x] unicite fonctionnelle des regles actives applicables
+  - [x] debit/credit requis et comptes valides pour le tenant
+  - [x] ordre/priorite explicite et deterministic tie-break (AC: 2, 3, 4, 5)
+- [x] Faire porter la selection de version uniquement cote backend NestJS (pas de logique de resolution cote frontend) dans le chemin de generation d'ecritures (AC: 3, 4, 5)
+- [x] Etendre les DTO/API existants pour exposer:
+  - [x] metadonnees de version
+  - [x] date d'effet debut/fin
+  - [x] statut de version
+  - [x] message d'erreur metier explicite en cas de conflit (AC: 1, 2, 3, 5)
+- [x] Maintenir les patterns de structure:
+  - [x] pas de nouveau module comptable parallele si `regles-comptables` et `ecritures-comptables` couvrent le besoin
+  - [x] extraire utilitaires partages de validation/versionning si logique repetee (AC: 2, 3, 4)
 - [ ] Frontend:
   - [ ] etendre `PlanComptableManager`/dialogs existants pour edition de metadonnees de version (sans recréer un ecran ad hoc)
-  - [ ] afficher indicateurs de version active/dates d'effet dans les vues de parametrage
-  - [ ] garder `JournalComptable` en lecture des ecritures et evidence de regle appliquee (AC: 1, 2, 3, 5)
-- [ ] Ajouter tests backend obligatoires:
-  - [ ] creation d'une version valide
-  - [ ] rejet sur chevauchement de periode
-  - [ ] rejet si debit/credit incomplets
-  - [ ] selection deterministe de regle active
-  - [ ] refus cross-tenant
-  - [ ] non-regression `generate_ecritures_comptables` (AC: 2, 3, 4, 5)
+  - [x] afficher indicateurs de version active/dates d'effet dans les vues de parametrage
+  - [x] garder `JournalComptable` en lecture des ecritures et evidence de regle appliquee (AC: 1, 2, 3, 5)
+- [x] Ajouter tests backend obligatoires:
+  - [x] creation d'une version valide
+  - [x] rejet sur chevauchement de periode
+  - [x] rejet si debit/credit incomplets
+  - [x] selection deterministe de regle active
+  - [x] refus cross-tenant
+  - [x] non-regression `generate_ecritures_comptables` (AC: 2, 3, 4, 5)
 - [ ] Ajouter tests frontend cibles:
-  - [ ] rendu des informations de version
+  - [x] rendu des informations de version
   - [ ] validations formulaire de configuration
   - [ ] affichage erreurs metier actionnables
-  - [ ] non-regression des ecrans `PlanComptable` et `JournalComptable` (AC: 1, 5)
-- [ ] Confirmer explicitement qu'aucune nouvelle dependance runtime Supabase n'est introduite et que les scripts `pnpm` restent la voie standard (AC: 4, 5)
+  - [x] non-regression des ecrans `PlanComptable` et `JournalComptable` (AC: 1, 5)
+- [x] Confirmer explicitement qu'aucune nouvelle dependance runtime Supabase n'est introduite et que les scripts `pnpm` restent la voie standard (AC: 4, 5)
 
 ## Dev Notes
 
@@ -245,12 +245,34 @@ GPT-5 Codex
 - Le document privilegie la reutilisation des modules comptables existants (`regles-comptables`, `ecritures-comptables`, `referentiels`) plutot qu'une nouvelle couche parallele.
 - Les guardrails couvrent multi-tenant, gouvernance de versions, selection deterministe de regle et preparation des stories 6.2/6.3.
 - Aucun upgrade de dependances recommande pour ce lot.
+- Migration SQL ajoutee pour expliciter `version_group_id`, `version_number`, `version_status`, `change_reason` et l'audit de publication/archive sur `regles_comptables`.
+- Le backend NestJS valide desormais les conflits de versions publiees, l'appartenance tenant des comptes debit/credit et bloque la suppression destructive des versions publiees.
+- `generate_ecritures_comptables` selectionne maintenant une unique regle publiee deterministe et expose la preuve de version appliquee jusque dans le journal comptable.
+- Le front affiche les metadonnees de version des regles et desactive le vidage global du plan comptable en attendant la couverture complete du versionning des comptes eux-memes.
+- La story reste `in-progress` car le versionning complet du plan comptable/referentiels n'est pas encore integralement implemente.
 
 ### File List
 
 - `_bmad-output/implementation-artifacts/6-1-versionner-plan-comptable-et-mapping-ecritures.md`
 - `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `supabase/migrations/20260307163000_versionner_regles_comptables.sql`
+- `backend/src/regles-comptables/dto/regles-comptables.dto.ts`
+- `backend/src/regles-comptables/regles-comptables.service.ts`
+- `backend/src/regles-comptables/regles-comptables.service.spec.ts`
+- `backend/src/ecritures-comptables/ecritures-comptables.service.ts`
+- `backend/src/ecritures-comptables/ecritures-comptables.service.spec.ts`
+- `src/types/regle-comptable.types.ts`
+- `src/types/ecriture-comptable.types.ts`
+- `src/services/api/regles-comptables.service.ts`
+- `src/services/api/ecritures-comptables.service.ts`
+- `src/hooks/useReglesComptables.ts`
+- `src/components/parametres/ReglesComptablesManager.tsx`
+- `src/components/parametres/RegleComptableDialog.tsx`
+- `src/components/parametres/PlanComptableManager.tsx`
+- `src/components/ecritures/EcritureComptableTable.tsx`
+- `tests/comptabilite-versioning-ui.spec.ts`
 
 ## Change Log
 
 - 2026-03-07: Creation de la story context 6.1 avec cadrage complet backend/frontend, exigences de versionning, mapping comptable et exigences de test.
+- 2026-03-08: Implementation partielle de la story 6.1 sur le versionning des regles comptables, la selection deterministe backend, la tracabilite UI et les tests cibles backend/frontend.
