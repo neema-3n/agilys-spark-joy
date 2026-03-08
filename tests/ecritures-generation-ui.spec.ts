@@ -36,6 +36,8 @@ const setupDepenseRoutes = async (
   accessToken: string,
   options: {
     sourceEcritures?: unknown[];
+    allEcritures?: unknown[];
+    statsResponse?: Record<string, unknown>;
     generateResponse: Record<string, unknown>;
   }
 ) => {
@@ -70,6 +72,38 @@ const setupDepenseRoutes = async (
             statut: 'ouvert'
           }
         ])
+      });
+      return;
+    }
+
+    if (url.pathname === '/ecritures-comptables/stats' && request.method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          options.statsResponse ?? {
+            nombreTotal: 0,
+            montantTotalDebit: 0,
+            montantTotalCredit: 0,
+            parTypeOperation: {
+              reservation: { nombre: 0, montant: 0 },
+              engagement: { nombre: 0, montant: 0 },
+              bon_commande: { nombre: 0, montant: 0 },
+              facture: { nombre: 0, montant: 0 },
+              depense: { nombre: 0, montant: 0 },
+              paiement: { nombre: 0, montant: 0 }
+            }
+          }
+        )
+      });
+      return;
+    }
+
+    if (url.pathname === '/ecritures-comptables' && request.method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(options.allEcritures ?? [])
       });
       return;
     }
@@ -228,6 +262,81 @@ test.describe('ecritures generation ui', () => {
     await expect(page.getByText('601 Achats')).toBeVisible();
     await expect(page.getByText('401 Fournisseurs')).toBeVisible();
     await expect(page.locator('div.text-right > p.text-sm.font-semibold').last()).toHaveText(/1\s*250/);
+  });
+
+  test('affiche les statistiques et ecritures du JournalComptable', async ({ page }) => {
+    const accessToken = makeJwt({
+      sub: 'user-ecritures-journal',
+      tenantId: 'client-1',
+      clientId: 'client-1',
+      roles: ['admin_client'],
+      exp: Math.floor(Date.now() / 1000) + 600
+    });
+
+    await setupDepenseRoutes(page, accessToken, {
+      allEcritures: [
+        {
+          id: 'ecr-journal-1',
+          clientId: 'client-1',
+          exerciceId: 'ex-2026',
+          numeroPiece: 'ENG/2026/001',
+          numeroLigne: 1,
+          dateEcriture: '2026-03-08',
+          compteDebitId: 'compte-1',
+          compteCreditId: 'compte-2',
+          montant: 850,
+          libelle: 'Engagement integration',
+          typeOperation: 'engagement',
+          sourceId: 'eng-1',
+          regleComptableId: 'reg-eng-1',
+          statutEcriture: 'validee',
+          createdAt: '2026-03-08T10:00:00.000Z',
+          updatedAt: '2026-03-08T10:00:00.000Z',
+          compteDebit: { numero: '601', libelle: 'Achats' },
+          compteCredit: { numero: '401', libelle: 'Fournisseurs' },
+          regleComptable: {
+            code: 'RG-ENG-001',
+            nom: 'Engagement integration',
+            versionNumber: 2,
+            versionStatus: 'published'
+          }
+        }
+      ],
+      statsResponse: {
+        nombreTotal: 1,
+        montantTotalDebit: 850,
+        montantTotalCredit: 850,
+        parTypeOperation: {
+          reservation: { nombre: 0, montant: 0 },
+          engagement: { nombre: 1, montant: 850 },
+          bon_commande: { nombre: 0, montant: 0 },
+          facture: { nombre: 0, montant: 0 },
+          depense: { nombre: 0, montant: 0 },
+          paiement: { nombre: 0, montant: 0 }
+        }
+      },
+      generateResponse: {
+        success: true,
+        status: 'created',
+        code: 'ECRITURES_CREEES',
+        message: 'Les ecritures comptables ont ete generees avec succes.',
+        ecritures_count: 1
+      }
+    });
+
+    await page.addInitScript((token: string) => {
+      window.localStorage.setItem('agilys.auth.accessToken', token);
+      window.localStorage.setItem('agilys.auth.refreshToken', 'refresh-token-stub');
+    }, accessToken);
+
+    await page.goto(`${UI_BASE_URL}/app/journal-comptable`);
+
+    await expect(page.getByText('Journal Comptable')).toBeVisible();
+    await expect(page.getByText('Total Écritures')).toBeVisible();
+    await expect(page.locator('div').filter({ hasText: /^Total Écritures1$/ }).first()).toBeVisible();
+    await expect(page.getByText('RG-ENG-001 · v2')).toBeVisible();
+    await expect(page.getByText('Engagement', { exact: true })).toBeVisible();
+    await expect(page.getByText('ENG/2026/001')).toBeVisible();
   });
 
   test('affiche une erreur actionnable si le moteur backend rejette la generation', async ({ page }) => {

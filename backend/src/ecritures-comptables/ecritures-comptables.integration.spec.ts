@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { NotFoundException } from '@nestjs/common';
 import { PostgresService } from '../common/postgres.service';
@@ -16,6 +18,15 @@ describe('EcrituresComptablesService integration', () => {
     tenantId: TEST_TENANT,
     roles: ['admin_client']
   };
+
+  beforeAll(async () => {
+    const migrationPath = resolve(
+      __dirname,
+      '../../../supabase/migrations/20260308120000_story_6_2_idempotent_ecritures.sql'
+    );
+    const migrationSql = readFileSync(migrationPath, 'utf8');
+    await postgresService.query(migrationSql);
+  });
 
   beforeEach(async () => {
     await cleanupTenant(TEST_TENANT);
@@ -65,6 +76,35 @@ describe('EcrituresComptablesService integration', () => {
     expect(entries.rows[0]?.regle_comptable_id).toBe(scenario.regleId);
     expect(entries.rows[0]?.source_id).toBe(scenario.sourceId);
     expect(entries.rows[0]?.statut_ecriture).toBe('validee');
+  });
+
+  it.each([
+    ['engagement', seedEngagementScenario],
+    ['paiement', seedPaiementScenario]
+  ] as const)('genere nominalement des ecritures pour %s', async (typeOperation, seedScenario) => {
+    const scenario = await seedScenario({
+      tenantId: TEST_TENANT
+    });
+
+    const result = await service.generateForOperation(actor, typeOperation, scenario.sourceId, scenario.exerciceId);
+
+    expect(result.success).toBe(true);
+    expect(result.status).toBe('created');
+    expect(result.ecrituresCount).toBe(1);
+
+    const entries = await postgresService.query<{ count: string }>(
+      `
+        SELECT COUNT(*)::text AS count
+        FROM public.ecritures_comptables
+        WHERE client_id = $1
+          AND exercice_id = $2
+          AND type_operation = $3
+          AND source_id = $4
+      `,
+      [TEST_TENANT, scenario.exerciceId, typeOperation, scenario.sourceId]
+    );
+
+    expect(Number(entries.rows[0]?.count ?? 0)).toBe(1);
   });
 
   it('retourne une erreur actionnable si la regle reference un compte hors tenant', async () => {
@@ -132,11 +172,68 @@ describe('EcrituresComptablesService integration', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
+  it('rejette un lot candidat desequilibre avant insertion finale', async () => {
+    const scenario = await seedDepenseScenario({
+      tenantId: TEST_TENANT,
+      typeOperation: 'depense'
+    });
+
+    const result = await postgresService.query<{ generate_ecritures_comptables: {
+      success: boolean;
+      status: string;
+      code: string;
+      message: string;
+      ecritures_count: number;
+    } }>(
+      `
+        SELECT public.generate_ecritures_comptables(
+          $1,
+          $2::uuid,
+          'depense',
+          $3::uuid,
+          'DEP/TEST/001',
+          DATE '2026-03-08',
+          1250,
+          jsonb_build_object(
+            'objet', 'Depense integration story 6.2',
+            'total_debit', 1250,
+            'total_credit', 1000
+          ),
+          $4::uuid
+        ) AS generate_ecritures_comptables
+      `,
+      [TEST_TENANT, scenario.exerciceId, scenario.sourceId, actor.sub]
+    );
+
+    expect(result.rows[0]?.generate_ecritures_comptables).toMatchObject({
+      success: false,
+      status: 'error',
+      code: 'ECRITURES_DESEQUILIBREES',
+      ecritures_count: 0
+    });
+
+    const entries = await postgresService.query<{ count: string }>(
+      `
+        SELECT COUNT(*)::text AS count
+        FROM public.ecritures_comptables
+        WHERE client_id = $1
+          AND exercice_id = $2
+          AND type_operation = 'depense'
+          AND source_id = $3
+      `,
+      [TEST_TENANT, scenario.exerciceId, scenario.sourceId]
+    );
+
+    expect(Number(entries.rows[0]?.count ?? 0)).toBe(0);
+  });
+
   async function cleanupTenant(tenantId: string): Promise<void> {
     await postgresService.query(`DELETE FROM public.ecritures_comptables WHERE client_id = $1`, [tenantId]);
     await postgresService.query(`DELETE FROM public.regles_comptables WHERE client_id = $1`, [tenantId]);
     await postgresService.query(`DELETE FROM public.paiements WHERE client_id = $1`, [tenantId]);
     await postgresService.query(`DELETE FROM public.depenses WHERE client_id = $1`, [tenantId]);
+    await postgresService.query(`DELETE FROM public.engagements WHERE client_id = $1`, [tenantId]);
+    await postgresService.query(`DELETE FROM public.reservations_credits WHERE client_id = $1`, [tenantId]);
     await postgresService.query(`DELETE FROM public.lignes_budgetaires WHERE client_id = $1`, [tenantId]);
     await postgresService.query(`DELETE FROM public.comptes WHERE client_id = $1`, [tenantId]);
     await postgresService.query(`DELETE FROM public.exercices WHERE client_id = $1`, [tenantId]);
@@ -149,6 +246,184 @@ describe('EcrituresComptablesService integration', () => {
   }: {
     tenantId: string;
     typeOperation: 'depense';
+    debitAccountTenantId?: string;
+  }) {
+    const base = await seedBaseScenario({
+      tenantId,
+      typeOperation,
+      regleCode: 'RG-DEP-INT',
+      regleNom: 'Depense integration',
+      debitAccountTenantId
+    });
+
+    await postgresService.query(
+      `
+        INSERT INTO public.depenses (
+          id,
+          client_id,
+          exercice_id,
+          numero,
+          date_depense,
+          objet,
+          montant,
+          montant_paye,
+          ligne_budgetaire_id,
+          statut
+        )
+        VALUES (
+          $1,
+          $2,
+          $3,
+          'DEP/TEST/001',
+          DATE '2026-03-08',
+          'Depense integration story 6.2',
+          1250,
+          0,
+          $4,
+          'ordonnancee'
+        )
+      `,
+      [base.sourceId, tenantId, base.exerciceId, base.ligneBudgetaireId]
+    );
+
+    return {
+      exerciceId: base.exerciceId,
+      sourceId: base.sourceId,
+      regleId: base.regleId
+    };
+  }
+
+  async function seedEngagementScenario({ tenantId }: { tenantId: string }) {
+    const base = await seedBaseScenario({
+      tenantId,
+      typeOperation: 'engagement',
+      regleCode: 'RG-ENG-INT',
+      regleNom: 'Engagement integration'
+    });
+
+    await postgresService.query(
+      `
+        INSERT INTO public.engagements (
+          id,
+          numero,
+          exercice_id,
+          client_id,
+          ligne_budgetaire_id,
+          objet,
+          montant,
+          statut,
+          date_creation
+        )
+        VALUES (
+          $1,
+          'ENG/TEST/001',
+          $2,
+          $3,
+          $4,
+          'Engagement integration story 6.2',
+          850,
+          'valide',
+          DATE '2026-03-08'
+        )
+      `,
+      [base.sourceId, base.exerciceId, tenantId, base.ligneBudgetaireId]
+    );
+
+    return {
+      exerciceId: base.exerciceId,
+      sourceId: base.sourceId,
+      regleId: base.regleId
+    };
+  }
+
+  async function seedPaiementScenario({ tenantId }: { tenantId: string }) {
+    const base = await seedBaseScenario({
+      tenantId,
+      typeOperation: 'paiement',
+      regleCode: 'RG-PAY-INT',
+      regleNom: 'Paiement integration'
+    });
+
+    const depenseId = randomUUID();
+
+    await postgresService.query(
+      `
+        INSERT INTO public.depenses (
+          id,
+          client_id,
+          exercice_id,
+          numero,
+          date_depense,
+          objet,
+          montant,
+          montant_paye,
+          ligne_budgetaire_id,
+          statut
+        )
+        VALUES (
+          $1,
+          $2,
+          $3,
+          'DEP/PAY/001',
+          DATE '2026-03-08',
+          'Depense support paiement integration',
+          600,
+          0,
+          $4,
+          'ordonnancee'
+        )
+      `,
+      [depenseId, tenantId, base.exerciceId, base.ligneBudgetaireId]
+    );
+
+    await postgresService.query(
+      `
+        INSERT INTO public.paiements (
+          id,
+          client_id,
+          exercice_id,
+          numero,
+          depense_id,
+          montant,
+          date_paiement,
+          mode_paiement,
+          statut,
+          tentative_numero
+        )
+        VALUES (
+          $1,
+          $2,
+          $3,
+          'PAY/TEST/001',
+          $4,
+          600,
+          DATE '2026-03-08',
+          'virement',
+          'execute',
+          1
+        )
+      `,
+      [base.sourceId, tenantId, base.exerciceId, depenseId]
+    );
+
+    return {
+      exerciceId: base.exerciceId,
+      sourceId: base.sourceId,
+      regleId: base.regleId
+    };
+  }
+
+  async function seedBaseScenario({
+    tenantId,
+    typeOperation,
+    regleCode,
+    regleNom,
+    debitAccountTenantId = tenantId
+  }: {
+    tenantId: string;
+    typeOperation: 'depense' | 'engagement' | 'paiement';
+    regleCode: string;
+    regleNom: string;
     debitAccountTenantId?: string;
   }) {
     const exerciceId = randomUUID();
@@ -224,36 +499,6 @@ describe('EcrituresComptablesService integration', () => {
 
     await postgresService.query(
       `
-        INSERT INTO public.depenses (
-          id,
-          client_id,
-          exercice_id,
-          numero,
-          date_depense,
-          objet,
-          montant,
-          montant_paye,
-          ligne_budgetaire_id,
-          statut
-        )
-        VALUES (
-          $1,
-          $2,
-          $3,
-          'DEP/TEST/001',
-          DATE '2026-03-08',
-          'Depense integration story 6.2',
-          1250,
-          0,
-          $4,
-          'ordonnancee'
-        )
-      `,
-      [sourceId, tenantId, exerciceId, ligneBudgetaireId]
-    );
-
-    await postgresService.query(
-      `
         INSERT INTO public.regles_comptables (
           id,
           client_id,
@@ -276,28 +521,29 @@ describe('EcrituresComptablesService integration', () => {
         VALUES (
           $1,
           $2,
-          'RG-DEP-INT',
-          'Depense integration',
+          $3,
+          $4,
           DATE '2026-01-01',
           DATE '2026-12-31',
           false,
-          $3,
-          '[]'::jsonb,
-          $4,
           $5,
+          '[]'::jsonb,
+          $6,
+          $7,
           true,
           1,
-          $6,
+          $8,
           1,
           'published',
           now()
         )
       `,
-      [regleId, tenantId, typeOperation, debitAccountId, creditAccountId, versionGroupId]
+      [regleId, tenantId, regleCode, regleNom, typeOperation, debitAccountId, creditAccountId, versionGroupId]
     );
 
     return {
       exerciceId,
+      ligneBudgetaireId,
       sourceId,
       regleId
     };
