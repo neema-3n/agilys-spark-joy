@@ -35,6 +35,7 @@ const setupAccountingRoutes = async (page: Page, accessToken: string) => {
   await page.route('**://127.0.0.1:3001/**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
+    const method = request.method();
 
     if (url.pathname === '/auth/refresh') {
       await route.fulfill({
@@ -67,6 +68,47 @@ const setupAccountingRoutes = async (page: Page, accessToken: string) => {
       return;
     }
 
+    if (url.pathname === '/comptes' && method === 'POST') {
+      const payload = request.postDataJSON() as Record<string, unknown> | null;
+      const numero = typeof payload?.numero === 'string' ? payload.numero : '';
+
+      if (numero === '601') {
+        await route.fulfill({
+          status: 409,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            statusCode: 409,
+            message: 'Ce compte existe déjà dans votre plan comptable. Créez une nouvelle version au lieu de dupliquer le numéro.'
+          })
+        });
+        return;
+      }
+
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 'compte-new',
+          clientId: 'client-1',
+          numero,
+          libelle: payload?.libelle || 'Nouveau compte',
+          type: payload?.type || 'charge',
+          categorie: payload?.categorie || 'exploitation',
+          niveau: payload?.niveau || 1,
+          statut: payload?.statut || 'actif',
+          versionGroupId: 'group-new',
+          versionNumber: 1,
+          versionStatus: payload?.versionStatus || 'draft',
+          effectiveStartDate: payload?.effectiveStartDate || '2026-01-01',
+          effectiveEndDate: payload?.effectiveEndDate || undefined,
+          changeReason: payload?.changeReason || undefined,
+          createdAt: '2026-03-09T00:00:00.000Z',
+          updatedAt: '2026-03-09T00:00:00.000Z'
+        })
+      });
+      return;
+    }
+
     if (url.pathname === '/comptes') {
       await route.fulfill({
         status: 200,
@@ -81,6 +123,12 @@ const setupAccountingRoutes = async (page: Page, accessToken: string) => {
             categorie: 'exploitation',
             niveau: 1,
             statut: 'actif',
+            versionGroupId: 'group-plan-1',
+            versionNumber: 2,
+            versionStatus: 'published',
+            effectiveStartDate: '2026-01-01',
+            effectiveEndDate: '2026-12-31',
+            changeReason: 'Publication exercice 2026',
             createdAt: '2026-01-01T00:00:00.000Z',
             updatedAt: '2026-01-01T00:00:00.000Z'
           },
@@ -93,6 +141,11 @@ const setupAccountingRoutes = async (page: Page, accessToken: string) => {
             categorie: 'dette',
             niveau: 1,
             statut: 'actif',
+            versionGroupId: 'group-plan-2',
+            versionNumber: 1,
+            versionStatus: 'draft',
+            effectiveStartDate: '2026-01-01',
+            changeReason: 'Preparation du plan',
             createdAt: '2026-01-01T00:00:00.000Z',
             updatedAt: '2026-01-01T00:00:00.000Z'
           }
@@ -274,5 +327,51 @@ test.describe('comptabilite versioning ui', () => {
     await page.goto(`${UI_BASE_URL}/app/journal-comptable`);
     await expect(page.getByText('RG-DEP-001 · v3')).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText('Depense fonctionnement', { exact: true })).toBeVisible();
+  });
+
+  test('valide le formulaire de versionning et affiche une erreur metier actionnable', async ({ page }) => {
+    const accessToken = makeJwt({
+      sub: 'user-plan',
+      tenantId: 'client-1',
+      clientId: 'client-1',
+      roles: ['super_admin'],
+      exp: Math.floor(Date.now() / 1000) + 600
+    });
+
+    await setupAccountingRoutes(page, accessToken);
+    await page.addInitScript((token: string) => {
+      window.localStorage.setItem('agilys.auth.accessToken', token);
+      window.localStorage.setItem('agilys.auth.refreshToken', 'refresh-token-stub');
+    }, accessToken);
+
+    await page.goto(`${UI_BASE_URL}/app/plan-comptable`);
+    await page.getByRole('button', { name: 'Nouveau compte' }).click();
+
+    await page.getByRole('button', { name: 'Créer' }).click();
+    await expect(page.getByText('Le numéro est requis')).toBeVisible();
+
+    await page.getByLabel('Numéro *').fill('601');
+    await page.getByLabel('Libellé *').fill('Achats bis');
+    await page.getByLabel('Date d\'effet de début').fill('2026-12-31');
+    await page.getByLabel('Date d\'effet de fin').fill('2026-01-01');
+    await page.getByLabel('Statut de version *').click();
+    await page.getByRole('option', { name: 'Publiee' }).click();
+    await page.getByRole('button', { name: 'Créer' }).click();
+
+    await expect(page.getByText("La date d'effet de fin doit être postérieure ou égale à la date d'effet de début")).toBeVisible();
+
+    await page.getByLabel('Date d\'effet de début').fill('2026-01-01');
+    await page.getByLabel('Date d\'effet de fin').fill('2026-12-31');
+    await page.getByRole('button', { name: 'Créer' }).click();
+    await expect(page.getByText('Le motif de changement est requis pour une version publiée ou archivée')).toBeVisible();
+
+    await page.getByLabel(/Motif du changement/).fill('Publication du compte 601');
+    await page.getByRole('button', { name: 'Créer' }).click();
+
+    await expect(
+      page.getByRole('dialog').getByText(
+        'Ce compte existe déjà dans votre plan comptable. Créez une nouvelle version au lieu de dupliquer le numéro.'
+      )
+    ).toBeVisible();
   });
 });

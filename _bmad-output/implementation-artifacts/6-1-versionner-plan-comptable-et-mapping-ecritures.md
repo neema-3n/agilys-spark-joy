@@ -1,6 +1,6 @@
 # Story 6.1: Versionner plan comptable et mapping ecritures
 
-Status: in-progress
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -52,10 +52,10 @@ so that la generation comptable soit gouvernee.
   - [x] `src/components/parametres/PlanComptableManager.tsx`
   - [x] `src/pages/app/PlanComptable.tsx`
   - [x] `src/pages/app/JournalComptable.tsx` (AC: 1, 2, 4, 5)
-- [ ] Introduire une strategie de versionning de plan comptable sans duplication:
-  - [ ] option preferee: extension des tables/regles existantes avec metadonnees de version/date d'effet
-  - [ ] interdire les suppressions destructives sur versions publiees
-  - [ ] conserver auteur, horodatage, motif de changement (AC: 1, 5)
+- [x] Introduire une strategie de versionning de plan comptable sans duplication:
+  - [x] option preferee: extension des tables/regles existantes avec metadonnees de version/date d'effet
+  - [x] interdire les suppressions destructives sur versions publiees
+  - [x] conserver auteur, horodatage, motif de changement (AC: 1, 5)
 - [x] Renforcer les validations backend sur `regles_comptables`:
   - [x] non-chevauchement de periodes pour un meme perimetre logique
   - [x] unicite fonctionnelle des regles actives applicables
@@ -70,8 +70,8 @@ so that la generation comptable soit gouvernee.
 - [x] Maintenir les patterns de structure:
   - [x] pas de nouveau module comptable parallele si `regles-comptables` et `ecritures-comptables` couvrent le besoin
   - [x] extraire utilitaires partages de validation/versionning si logique repetee (AC: 2, 3, 4)
-- [ ] Frontend:
-  - [ ] etendre `PlanComptableManager`/dialogs existants pour edition de metadonnees de version (sans recréer un ecran ad hoc)
+- [x] Frontend:
+  - [x] etendre `PlanComptableManager`/dialogs existants pour edition de metadonnees de version (sans recréer un ecran ad hoc)
   - [x] afficher indicateurs de version active/dates d'effet dans les vues de parametrage
   - [x] garder `JournalComptable` en lecture des ecritures et evidence de regle appliquee (AC: 1, 2, 3, 5)
 - [x] Ajouter tests backend obligatoires:
@@ -81,10 +81,10 @@ so that la generation comptable soit gouvernee.
   - [x] selection deterministe de regle active
   - [x] refus cross-tenant
   - [x] non-regression `generate_ecritures_comptables` (AC: 2, 3, 4, 5)
-- [ ] Ajouter tests frontend cibles:
+- [x] Ajouter tests frontend cibles:
   - [x] rendu des informations de version
-  - [ ] validations formulaire de configuration
-  - [ ] affichage erreurs metier actionnables
+  - [x] validations formulaire de configuration
+  - [x] affichage erreurs metier actionnables
   - [x] non-regression des ecrans `PlanComptable` et `JournalComptable` (AC: 1, 5)
 - [x] Confirmer explicitement qu'aucune nouvelle dependance runtime Supabase n'est introduite et que les scripts `pnpm` restent la voie standard (AC: 4, 5)
 
@@ -239,6 +239,12 @@ GPT-5 Codex
 - Instructions: `/_bmad/bmm/workflows/4-implementation/create-story/instructions.xml`
 - Engine: `/_bmad/core/tasks/workflow.xml`
 
+### Implementation Plan
+
+- Etendre `public.comptes` et `ComptesService` avec des metadonnees de version append-only, sans creer de domaine comptable parallele.
+- Reutiliser `PlanComptableManager` et `CompteDialog` pour exposer statut/date d'effet/motif et afficher les erreurs metier backend dans l'UI existante.
+- Verrouiller le lot par tests NestJS sur le service `comptes` et Playwright sur les ecrans `PlanComptable` / `JournalComptable`.
+
 ### Completion Notes List
 
 - Story context 6.1 cree avec focus sur versionning non destructif du plan comptable et mapping des ecritures.
@@ -249,7 +255,18 @@ GPT-5 Codex
 - Le backend NestJS valide desormais les conflits de versions publiees, l'appartenance tenant des comptes debit/credit et bloque la suppression destructive des versions publiees.
 - `generate_ecritures_comptables` selectionne maintenant une unique regle publiee deterministe et expose la preuve de version appliquee jusque dans le journal comptable.
 - Le front affiche les metadonnees de version des regles et desactive le vidage global du plan comptable en attendant la couverture complete du versionning des comptes eux-memes.
-- La story reste `in-progress` car le versionning complet du plan comptable/referentiels n'est pas encore integralement implemente.
+- Le plan comptable est maintenant versionne au niveau des comptes via `version_group_id`, `version_number`, `version_status`, dates d'effet et motif, avec creation append-only d'une nouvelle version lors de la mise a jour d'un compte publie.
+- Les suppressions destructives de versions publiees et le vidage global backend du plan sont bloques, avec messages metier actionnables.
+- `PlanComptableManager` et `CompteDialog` exposent les metadonnees de version sans nouvel ecran, affichent les erreurs backend actionnables et verrouillent les validations de formulaire.
+- Validation executee: `pnpm --dir backend run lint`, `pnpm --dir backend run test`, `pnpm run lint:frontend`, `pnpm run test:frontend`, `pnpm exec playwright test tests/comptabilite-versioning-ui.spec.ts`.
+- Revue senior corrigee: suppression de l'unicite incompatible `UNIQUE(client_id, numero)` au profit d'une unicite partielle sur les versions courantes, enforcement backend+SQL du motif de changement pour les versions publiees/archivees, et blocage du `deleteAll` tant qu'un historique publie existe.
+- Migration locale rejouee avec succes via `pnpm run db:migrate`, incluant `20260309091500_story_6_1_versionner_plan_comptable`.
+- Validation finale executee apres corrections: `pnpm run db:migrate`, `pnpm run lint`, `pnpm run test`, `pnpm exec playwright test tests/comptabilite-versioning-ui.spec.ts`.
+
+### Senior Developer Review (AI)
+
+- 2026-03-09: Revue adversariale executee. Findings principaux: conflit entre le versioning append-only et la contrainte historique `UNIQUE(client_id, numero)`, absence d'enforcement backend/SQL du motif de changement pour les versions publiees/archivees, et `deleteAll` encore destructif pour l'historique publie supersede.
+- 2026-03-09: Findings corriges dans `backend/src/comptes/comptes.service.ts`, `backend/src/comptes/comptes.service.spec.ts` et `supabase/migrations/20260309091500_story_6_1_versionner_plan_comptable.sql`, puis valides par lint, tests backend complets, tests Playwright cibles et application de migration locale.
 
 ### File List
 
@@ -261,18 +278,28 @@ GPT-5 Codex
 - `backend/src/regles-comptables/regles-comptables.service.spec.ts`
 - `backend/src/ecritures-comptables/ecritures-comptables.service.ts`
 - `backend/src/ecritures-comptables/ecritures-comptables.service.spec.ts`
+- `backend/src/comptes/dto/comptes.dto.ts`
+- `backend/src/comptes/comptes.service.ts`
+- `backend/src/comptes/comptes.service.spec.ts`
 - `src/types/regle-comptable.types.ts`
 - `src/types/ecriture-comptable.types.ts`
+- `src/types/compte.types.ts`
 - `src/services/api/regles-comptables.service.ts`
 - `src/services/api/ecritures-comptables.service.ts`
+- `src/services/api/comptes.service.ts`
 - `src/hooks/useReglesComptables.ts`
 - `src/components/parametres/ReglesComptablesManager.tsx`
 - `src/components/parametres/RegleComptableDialog.tsx`
 - `src/components/parametres/PlanComptableManager.tsx`
+- `src/components/parametres/CompteDialog.tsx`
+- `src/components/parametres/CompteTreeItem.tsx`
 - `src/components/ecritures/EcritureComptableTable.tsx`
 - `tests/comptabilite-versioning-ui.spec.ts`
+- `supabase/migrations/20260309091500_story_6_1_versionner_plan_comptable.sql`
 
 ## Change Log
 
 - 2026-03-07: Creation de la story context 6.1 avec cadrage complet backend/frontend, exigences de versionning, mapping comptable et exigences de test.
 - 2026-03-08: Implementation partielle de la story 6.1 sur le versionning des regles comptables, la selection deterministe backend, la tracabilite UI et les tests cibles backend/frontend.
+- 2026-03-09: Completion du versionning du plan comptable au niveau des comptes, blocage des suppressions destructives publiees, extension du dialog de parametrage et ajout des tests backend/frontend manquants.
+- 2026-03-09: Corrections post-review sur le versioning des comptes, alignement des contraintes SQL, replay de migration locale et cloture de la story en `done`.

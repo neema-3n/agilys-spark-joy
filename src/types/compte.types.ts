@@ -11,6 +11,7 @@ export type CompteCategorie =
   | 'exceptionnel' 
   | 'autre';
 export type CompteStatut = 'actif' | 'inactif';
+export type CompteVersionStatus = 'draft' | 'published' | 'archived';
 
 export interface Compte {
   id: string;
@@ -22,6 +23,15 @@ export interface Compte {
   parentId?: string;
   niveau: number;
   statut: CompteStatut;
+  versionGroupId: string;
+  versionNumber: number;
+  versionStatus: CompteVersionStatus;
+  effectiveStartDate?: string;
+  effectiveEndDate?: string;
+  changeReason?: string;
+  publishedAt?: string;
+  archivedAt?: string;
+  createdBy?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -35,6 +45,10 @@ export interface CreateCompteInput {
   parentId?: string;
   niveau?: number;
   statut?: CompteStatut;
+  versionStatus?: CompteVersionStatus;
+  effectiveStartDate?: string;
+  effectiveEndDate?: string;
+  changeReason?: string;
 }
 
 export interface UpdateCompteInput {
@@ -45,6 +59,10 @@ export interface UpdateCompteInput {
   parentId?: string;
   niveau?: number;
   statut?: CompteStatut;
+  versionStatus?: CompteVersionStatus;
+  effectiveStartDate?: string;
+  effectiveEndDate?: string;
+  changeReason?: string;
 }
 
 export interface ImportReport {
