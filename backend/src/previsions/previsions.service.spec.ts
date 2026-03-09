@@ -56,6 +56,39 @@ describe('PrevisionsService ecarts', () => {
     expect(result.totaux.ecartMontant).toBe(250);
   });
 
+  it('scope strictement la requete sur tenant + exercice pour eviter les lectures cross-tenant', async () => {
+    postgresService.query
+      .mockResolvedValueOnce({ rows: [{ id: 'ex-1' }] } as never)
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            periode: '2026',
+            section_code: 'SEC-OPS',
+            programme_code: 'PRG-INV',
+            action_code: 'ACT-1',
+            enveloppe_id: 'env-1',
+            montant_prevu: '100',
+            montant_execute: '50'
+          }
+        ]
+      } as never);
+
+    await service.getEcartsPrevisionExecution(actor, {
+      exerciceId: '2f0715a2-3860-4584-b8ca-df8bcd5b6f64'
+    });
+
+    expect(postgresService.query).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('WHERE id = $1'),
+      ['2f0715a2-3860-4584-b8ca-df8bcd5b6f64', actor.tenantId]
+    );
+    expect(postgresService.query).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('WHERE lp.client_id = $1'),
+      expect.arrayContaining([actor.tenantId, '2f0715a2-3860-4584-b8ca-df8bcd5b6f64'])
+    );
+  });
+
   it('applique les filtres metier dans la requete SQL', async () => {
     postgresService.query
       .mockResolvedValueOnce({ rows: [{ id: 'ex-1' }] } as never)
@@ -134,5 +167,62 @@ describe('PrevisionsService ecarts', () => {
         exerciceId: '2f0715a2-3860-4584-b8ca-df8bcd5b6f64'
       })
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('stabilise le mapping periodes/montants avec numeros en texte et valeurs nullables', async () => {
+    postgresService.query
+      .mockResolvedValueOnce({ rows: [{ id: 'ex-1' }] } as never)
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            periode: '2025',
+            section_code: null,
+            programme_code: null,
+            action_code: null,
+            enveloppe_id: null,
+            montant_prevu: '0',
+            montant_execute: '125.75'
+          },
+          {
+            periode: '2026',
+            section_code: 'SEC-A',
+            programme_code: 'PRG-A',
+            action_code: 'ACT-A',
+            enveloppe_id: 'env-a',
+            montant_prevu: '200.50',
+            montant_execute: '100.25'
+          }
+        ]
+      } as never);
+
+    const result = await service.getEcartsPrevisionExecution(actor, {
+      exerciceId: '2f0715a2-3860-4584-b8ca-df8bcd5b6f64'
+    });
+
+    expect(result.items[0]).toMatchObject({
+      periode: '2025',
+      montantPrevu: 0,
+      montantExecute: 125.75,
+      ecartMontant: 125.75,
+      ecartTaux: undefined
+    });
+    expect(result.items[1]).toMatchObject({
+      periode: '2026',
+      axe: {
+        sectionCode: 'SEC-A',
+        programmeCode: 'PRG-A',
+        actionCode: 'ACT-A',
+        enveloppeId: 'env-a'
+      },
+      montantPrevu: 200.5,
+      montantExecute: 100.25,
+      ecartMontant: -100.25
+    });
+    expect(result.totaux).toMatchObject({
+      montantPrevu: 200.5,
+      montantExecute: 226,
+      ecartMontant: 25.5,
+      nombreAxes: 2
+    });
   });
 });

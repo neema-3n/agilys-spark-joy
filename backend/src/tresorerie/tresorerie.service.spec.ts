@@ -68,6 +68,48 @@ describe('TresorerieService', () => {
     expect(query).toHaveBeenCalledWith(expect.any(String), [actor.tenantId, 'ex-1']);
   });
 
+  it('priorise les signaux critiques avant les severites inferieures de facon deterministe', async () => {
+    query
+      .mockResolvedValueOnce(
+        makeResult([
+          {
+            available_cash: 500,
+            pending_disbursements: 900,
+            pending_disbursements_count: 5,
+            remaining_engagements: 450,
+            remaining_engagements_count: 3,
+            non_reconciled_operations: 11,
+            pending_reconciliations: 6,
+            qualified_discrepancies: 2,
+          },
+        ])
+      )
+      .mockResolvedValueOnce(
+        makeResult([
+          {
+            active_exceptions: 2,
+            expired_exceptions: 1,
+            consumed_exceptions: 0,
+          },
+        ])
+      );
+
+    const result = await service.getSupervision(actor, 'ex-priority');
+    const severities = result.alerts.map((alert) => alert.severity);
+
+    expect(severities[0]).toBe('critical');
+    expect(severities.slice(0, 2)).toEqual(expect.arrayContaining(['critical']));
+    expect(result.alerts.map((alert) => alert.code)).toEqual(
+      expect.arrayContaining([
+        'LIQUIDITY_GAP',
+        'EXPIRED_EXCEPTIONS',
+        'ACTIVE_EXCEPTIONS',
+        'NON_RECONCILED_OPERATIONS',
+      ])
+    );
+    expect(result.projectedGap).toBeGreaterThan(0);
+  });
+
   it('retourne un journal d audit paginé et filtré', async () => {
     query.mockResolvedValueOnce(
       makeResult([
