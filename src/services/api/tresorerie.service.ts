@@ -1,5 +1,6 @@
 import { requestJson } from '@/services/api/api-utils';
 import type {
+  CloseoutDossierPayload,
   FluxTresorerie,
   PaginatedTresorerieAudit,
   PrevisionTresorerie,
@@ -147,6 +148,26 @@ export const tresorerieService = {
       `/tresorerie/exception-audit/detail?${params.toString()}`,
       { method: 'GET' },
       'Erreur lors du chargement du détail d’audit'
+    );
+  },
+
+  async getCloseoutDossier(
+    _clientId: string,
+    exerciceId: string,
+    input?: { dossierType?: 'cloture_exercice' | 'migration_reconciliation'; migrationBatchId?: string }
+  ): Promise<CloseoutDossierPayload> {
+    const params = new URLSearchParams({ exerciceId });
+    if (input?.dossierType) {
+      params.set('dossierType', input.dossierType);
+    }
+    if (input?.migrationBatchId) {
+      params.set('migrationBatchId', input.migrationBatchId);
+    }
+
+    return requestJson<CloseoutDossierPayload>(
+      `/tresorerie/closeout-dossier?${params.toString()}`,
+      { method: 'GET' },
+      'Erreur lors du chargement du dossier de clôture'
     );
   },
 };

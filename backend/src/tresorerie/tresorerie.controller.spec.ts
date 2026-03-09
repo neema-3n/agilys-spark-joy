@@ -19,5 +19,7 @@ describe('TresorerieController RBAC metadata', () => {
     expect(getPermissions('getExceptionAudit')).toEqual(['referentiels:audit:read']);
     expect(getPermissions('getExceptionAuditDetail')).toEqual(['referentiels:audit:read']);
     expect(getPermissions('getExceptionAuditExportPrep')).toEqual(['referentiels:audit:read']);
+    expect(getPermissions('getCloseoutDossier')).toEqual(['referentiels:audit:read']);
+    expect(getPermissions('getCloseoutDossierExportPrep')).toEqual(['referentiels:audit:read']);
   });
 });

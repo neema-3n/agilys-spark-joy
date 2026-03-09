@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { CloseoutDossierCard } from '@/components/controle-interne/CloseoutDossierCard';
 import { ExceptionAuditDetail } from '@/components/controle-interne/ExceptionAuditDetail';
 import { ExceptionAuditTable } from '@/components/controle-interne/ExceptionAuditTable';
-import { useExceptionAudit, useExceptionAuditDetail } from '@/hooks/useTresorerie';
+import { useCloseoutDossier, useExceptionAudit, useExceptionAuditDetail } from '@/hooks/useTresorerie';
 import { isApiError } from '@/services/api/api-utils';
 import type { TresorerieAuditEntry, TresorerieAuditFilters } from '@/types/tresorerie.types';
 
@@ -18,6 +19,7 @@ const ControleInterne = () => {
   const detailQuery = useExceptionAuditDetail(
     selected ? { exceptionId: selected.id, correlationId: selected.correlationId } : {}
   );
+  const closeoutDossierQuery = useCloseoutDossier();
 
   const canReadAudit = !isApiError(auditQuery.error) || auditQuery.error.statusCode !== 403;
 
@@ -38,6 +40,7 @@ const ControleInterne = () => {
           </Alert>
         ) : (
           <>
+            <CloseoutDossierCard dossier={closeoutDossierQuery.data} isLoading={closeoutDossierQuery.isLoading} />
             <ExceptionAuditTable
               data={auditQuery.data}
               isLoading={auditQuery.isLoading}

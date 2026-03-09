@@ -1,6 +1,6 @@
 # Story 6.5: Implementer rapprochement bancaire auto + manuel
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -44,61 +44,61 @@ so that les ecarts soient qualifies et resolus rapidement.
 
 ## Tasks / Subtasks
 
-- [ ] Revalider le contrat de la story contre `FR51`, `FR67`, `NFR9`, `NFR24`, `NFR30`, ainsi que les contraintes de migration du repo (NestJS source de verite, client API unifie, aucune nouvelle dependance Supabase) (AC: 1, 2, 3, 4, 5)
-- [ ] Cartographier et reutiliser les briques deja presentes avant toute nouvelle abstraction:
-  - [ ] `backend/src/rapprochements-bancaires/*`
-  - [ ] `backend/src/operations-tresorerie/*`
-  - [ ] `backend/src/tresorerie/*`
-  - [ ] `backend/src/cash-risk/*`
-  - [ ] `src/services/api/rapprochements-bancaires.service.ts`
-  - [ ] `src/services/api/operations-tresorerie.service.ts`
-  - [ ] `src/hooks/useRapprochementsBancaires.ts`
-  - [ ] `src/pages/app/Tresorerie.tsx`
-  - [ ] `src/pages/app/TresoreriePro.tsx` (AC: 1, 2, 3, 4, 5)
-- [ ] Etendre le backend au-dela du simple CRUD actuel de rapprochement:
-  - [ ] introduire un workflow de propositions automatiques, validation assistee et qualification d'ecart
-  - [ ] garder `RapprochementsBancairesService` comme seam principal ou extraire un sous-service dedie si la logique devient trop dense
-  - [ ] eviter de disperser la logique de matching dans le frontend ou dans plusieurs endpoints non coherents (AC: 1, 2, 3, 4, 5)
-- [ ] Concevoir un modele de rapprochement plus riche sans casser l'existant:
-  - [ ] etendre `rapprochements_bancaires` si necessaire pour stocker source, mode (`auto`/`manuel`), statut detaille, score, motif de qualification et metadata d'audit
-  - [ ] introduire, si necessaire, une table enfant pour les lignes/correspondances de rapprochement plutot que surcharger une ligne unique de synthese
-  - [ ] garder des migrations SQL versionnees, rejouables et compatibles avec les donnees existantes (AC: 1, 2, 3, 4, 5)
-- [ ] Implementer le moteur de suggestions automatiques cote backend:
-  - [ ] partir des `operations_tresorerie` non rapprochees et des donnees du releve bancaire capturees par le workflow
-  - [ ] appliquer des regles deterministes de matching (compte, date, montant, reference bancaire, type de flux)
-  - [ ] expliciter les cas `match unique`, `match ambigu`, `pas de match` et ne jamais auto-valider un cas ambigu (AC: 1, 3, 4)
-- [ ] Implementer le workflow manuel assiste:
-  - [ ] permettre la selection/validation/rejet de candidats de rapprochement
-  - [ ] imposer une qualification d'ecart quand aucun match n'est retenu
-  - [ ] journaliser auteur, justification, horodatage et impact sur les operations concernees (AC: 2, 3, 4, 5)
-- [ ] Aligner les operations de tresorerie avec l'etat de rapprochement:
-  - [ ] reutiliser `operations_tresorerie.rapproche`, `statut = 'rapprochee'`, `date_rapprochement`
-  - [ ] verifier qu'une meme operation ne peut pas etre rattachee a plusieurs rapprochements incompatibles
-  - [ ] proteger toute transition par tenant/exercice/compte et eviter les mises a jour en masse non scopees (AC: 1, 2, 4)
-- [ ] Etendre les contrats DTO/types front-back:
-  - [ ] DTO NestJS pour lancer un rapprochement auto, soumettre une decision manuelle et qualifier un ecart
-  - [ ] types frontend pour candidats, decisions, statuts detailes et categories d'ecart
-  - [ ] harmoniser les enums/status au lieu de multiplier des litteraux dans les composants (AC: 1, 2, 3, 4)
-- [ ] Construire l'interface de rapprochement dans la surface tresorerie existante plutot qu'une page parallele:
-  - [ ] remplacer le placeholder actuel de l'onglet `Rapprochement` dans `src/pages/app/Tresorerie.tsx`
-  - [ ] reutiliser TanStack Query + hooks existants pour fetch/mutations
-  - [ ] presenter clairement propositions auto, decisions manuelles, ecarts qualifies et etat final sans faire porter les regles au client (AC: 1, 2, 3, 5)
-- [ ] Mettre a jour la supervision de tresorerie et les signaux de reporting:
-  - [ ] conserver ou enrichir `operations_non_rapprochees`
-  - [ ] exposer des compteurs d'ecarts qualifies et de rapprochements en attente
-  - [ ] preparer les besoins de `FR67` et du dossier d'audit sans implementer encore tout le reporting Epic 9 (AC: 3, 5)
-- [ ] Ajouter les tests backend obligatoires:
-  - [ ] propositions automatiques deterministes sur cas nominal
-  - [ ] non-validation automatique des cas ambigus
-  - [ ] refus cross-tenant / exercice / compte incoherent
-  - [ ] prevention du double rapprochement d'une meme operation
-  - [ ] journalisation et qualification obligatoires pour les decisions manuelles/ecarts (AC: 1, 2, 3, 4, 5)
-- [ ] Ajouter les tests frontend / contrat cibles:
-  - [ ] rendu de l'onglet rapprochement avec listes d'operations/candidats/ecarts
-  - [ ] invalidation React Query coherente apres validation
-  - [ ] messages utilisateur actionnables sur ambiguite, absence de match et erreur metier
-  - [ ] non-regression de la page `Tresorerie` et des hooks existants (AC: 2, 3, 5)
-- [ ] Verifier explicitement qu'aucune nouvelle dependance runtime Supabase n'est introduite et que le lot reste aligne sur `pnpm`, NestJS et PostgreSQL local (AC: 4, 5)
+- [x] Revalider le contrat de la story contre `FR51`, `FR67`, `NFR9`, `NFR24`, `NFR30`, ainsi que les contraintes de migration du repo (NestJS source de verite, client API unifie, aucune nouvelle dependance Supabase) (AC: 1, 2, 3, 4, 5)
+- [x] Cartographier et reutiliser les briques deja presentes avant toute nouvelle abstraction:
+  - [x] `backend/src/rapprochements-bancaires/*`
+  - [x] `backend/src/operations-tresorerie/*`
+  - [x] `backend/src/tresorerie/*`
+  - [x] `backend/src/cash-risk/*`
+  - [x] `src/services/api/rapprochements-bancaires.service.ts`
+  - [x] `src/services/api/operations-tresorerie.service.ts`
+  - [x] `src/hooks/useRapprochementsBancaires.ts`
+  - [x] `src/pages/app/Tresorerie.tsx`
+  - [x] `src/pages/app/TresoreriePro.tsx` (AC: 1, 2, 3, 4, 5)
+- [x] Etendre le backend au-dela du simple CRUD actuel de rapprochement:
+  - [x] introduire un workflow de propositions automatiques, validation assistee et qualification d'ecart
+  - [x] garder `RapprochementsBancairesService` comme seam principal ou extraire un sous-service dedie si la logique devient trop dense
+  - [x] eviter de disperser la logique de matching dans le frontend ou dans plusieurs endpoints non coherents (AC: 1, 2, 3, 4, 5)
+- [x] Concevoir un modele de rapprochement plus riche sans casser l'existant:
+  - [x] etendre `rapprochements_bancaires` si necessaire pour stocker source, mode (`auto`/`manuel`), statut detaille, score, motif de qualification et metadata d'audit
+  - [x] introduire, si necessaire, une table enfant pour les lignes/correspondances de rapprochement plutot que surcharger une ligne unique de synthese
+  - [x] garder des migrations SQL versionnees, rejouables et compatibles avec les donnees existantes (AC: 1, 2, 3, 4, 5)
+- [x] Implementer le moteur de suggestions automatiques cote backend:
+  - [x] partir des `operations_tresorerie` non rapprochees et des donnees du releve bancaire capturees par le workflow
+  - [x] appliquer des regles deterministes de matching (compte, date, montant, reference bancaire, type de flux)
+  - [x] expliciter les cas `match unique`, `match ambigu`, `pas de match` et ne jamais auto-valider un cas ambigu (AC: 1, 3, 4)
+- [x] Implementer le workflow manuel assiste:
+  - [x] permettre la selection/validation/rejet de candidats de rapprochement
+  - [x] imposer une qualification d'ecart quand aucun match n'est retenu
+  - [x] journaliser auteur, justification, horodatage et impact sur les operations concernees (AC: 2, 3, 4, 5)
+- [x] Aligner les operations de tresorerie avec l'etat de rapprochement:
+  - [x] reutiliser `operations_tresorerie.rapproche`, `statut = 'rapprochee'`, `date_rapprochement`
+  - [x] verifier qu'une meme operation ne peut pas etre rattachee a plusieurs rapprochements incompatibles
+  - [x] proteger toute transition par tenant/exercice/compte et eviter les mises a jour en masse non scopees (AC: 1, 2, 4)
+- [x] Etendre les contrats DTO/types front-back:
+  - [x] DTO NestJS pour lancer un rapprochement auto, soumettre une decision manuelle et qualifier un ecart
+  - [x] types frontend pour candidats, decisions, statuts detailes et categories d'ecart
+  - [x] harmoniser les enums/status au lieu de multiplier des litteraux dans les composants (AC: 1, 2, 3, 4)
+- [x] Construire l'interface de rapprochement dans la surface tresorerie existante plutot qu'une page parallele:
+  - [x] remplacer le placeholder actuel de l'onglet `Rapprochement` dans `src/pages/app/Tresorerie.tsx`
+  - [x] reutiliser TanStack Query + hooks existants pour fetch/mutations
+  - [x] presenter clairement propositions auto, decisions manuelles, ecarts qualifies et etat final sans faire porter les regles au client (AC: 1, 2, 3, 5)
+- [x] Mettre a jour la supervision de tresorerie et les signaux de reporting:
+  - [x] conserver ou enrichir `operations_non_rapprochees`
+  - [x] exposer des compteurs d'ecarts qualifies et de rapprochements en attente
+  - [x] preparer les besoins de `FR67` et du dossier d'audit sans implementer encore tout le reporting Epic 9 (AC: 3, 5)
+- [x] Ajouter les tests backend obligatoires:
+  - [x] propositions automatiques deterministes sur cas nominal
+  - [x] non-validation automatique des cas ambigus
+  - [x] refus cross-tenant / exercice / compte incoherent
+  - [x] prevention du double rapprochement d'une meme operation
+  - [x] journalisation et qualification obligatoires pour les decisions manuelles/ecarts (AC: 1, 2, 3, 4, 5)
+- [x] Ajouter les tests frontend / contrat cibles:
+  - [x] rendu de l'onglet rapprochement avec listes d'operations/candidats/ecarts
+  - [x] invalidation React Query coherente apres validation
+  - [x] messages utilisateur actionnables sur ambiguite, absence de match et erreur metier
+  - [x] non-regression de la page `Tresorerie` et des hooks existants (AC: 2, 3, 5)
+- [x] Verifier explicitement qu'aucune nouvelle dependance runtime Supabase n'est introduite et que le lot reste aligne sur `pnpm`, NestJS et PostgreSQL local (AC: 4, 5)
 
 ## Dev Notes
 
@@ -288,9 +288,16 @@ GPT-5 Codex
 
 ### Debug Log References
 
-- Workflow: `/_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml`
-- Instructions: `/_bmad/bmm/workflows/4-implementation/create-story/instructions.xml`
+- Workflow: `/_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml`
+- Instructions: `/_bmad/bmm/workflows/4-implementation/dev-story/instructions.xml`
 - Engine: `/_bmad/core/tasks/workflow.xml`
+
+### Implementation Plan
+
+- Etendre le modele de donnees avec un read model de rapprochement detaille (lignes, candidats, decisions) tout en conservant `operations_tresorerie` comme source de verite pour l'etat rapproche/non rapproche.
+- Refaire `RapprochementsBancairesService` autour d'un matching deterministe backend-first, de decisions manuelles auditees et d'une validation finale transactionnelle.
+- Reutiliser l'onglet treasury existant via un composant partage `RapprochementBancaireWorkspace` et etendre React Query/API types au lieu de creer un flux parallele.
+- Ajouter des tests backend (matching + garde-fous de service) et frontend (client API + UI Playwright) pour verrouiller AC, erreurs metier et invalidation de cache.
 
 ### Completion Notes List
 
@@ -299,7 +306,56 @@ GPT-5 Codex
 - Les guardrails couvrent matching deterministe, decisions manuelles auditees, qualification des ecarts, isolation tenant/exercice/compte, coherence avec `6.4` et preparation de `FR67`.
 - Aucune evolution de dependances n'est recommandee; le lot est surtout une extension d'orchestration et de modele de donnees.
 - Le fichier `validate-workflow.xml` reference par le workflow BMAD n'est pas present dans le repo; la validation a donc ete faite manuellement contre le checklist et les artefacts sources.
+- Migration SQL ajoutee pour enrichir `rapprochements_bancaires`, introduire `rapprochement_bancaire_lignes`, `rapprochement_bancaire_candidats`, `rapprochement_bancaire_decisions` et relier `operations_tresorerie` au workflow de rapprochement.
+- `RapprochementsBancairesService` gere desormais creation detaillee, matching deterministe, selection/rejet/qualification manuels audites, validation transactionnelle et protection cross-tenant/exercice/compte.
+- Le frontend treasury reutilise l'onglet `Rapprochement` existant avec un workspace partage, un dialogue RHF/Zod pour les lignes de releve, et une invalidation React Query explicite.
+- La supervision treasury expose maintenant les rapprochements en attente et les ecarts qualifies pour preparer `FR67` et les futurs besoins de reporting.
+- Validations executees:
+  - `pnpm --dir backend run lint`
+  - `pnpm run lint:frontend`
+  - `pnpm --dir backend run test -- src/rapprochements-bancaires/rapprochement-matching.util.spec.ts src/rapprochements-bancaires/rapprochements-bancaires.service.spec.ts`
+  - `pnpm exec playwright test tests/rapprochements-bancaires-client.spec.ts tests/rapprochements-bancaires-ui.spec.ts`
 
 ### File List
 
 - `_bmad-output/implementation-artifacts/6-5-implementer-rapprochement-bancaire-auto-manuel.md`
+- `backend/src/rapprochements-bancaires/dto/rapprochements-bancaires.dto.ts`
+- `backend/src/rapprochements-bancaires/rapprochements-bancaires.controller.ts`
+- `backend/src/rapprochements-bancaires/rapprochements-bancaires.service.ts`
+- `backend/src/rapprochements-bancaires/rapprochement-matching.util.ts`
+- `backend/src/rapprochements-bancaires/rapprochement-matching.util.spec.ts`
+- `backend/src/rapprochements-bancaires/rapprochements-bancaires.service.spec.ts`
+- `backend/src/tresorerie/tresorerie.service.ts`
+- `src/components/tresorerie/RapprochementBancaireDialog.tsx`
+- `src/components/tresorerie/RapprochementBancaireWorkspace.tsx`
+- `src/components/tresorerie/TresorerieSupervisionPanel.tsx`
+- `src/hooks/useRapprochementsBancaires.ts`
+- `src/pages/app/Tresorerie.tsx`
+- `src/pages/app/TresoreriePro.tsx`
+- `src/services/api/rapprochements-bancaires.service.ts`
+- `src/types/rapprochement-bancaire.types.ts`
+- `src/types/tresorerie.types.ts`
+- `tests/rapprochements-bancaires-client.spec.ts`
+- `tests/rapprochements-bancaires-ui.spec.ts`
+- `supabase/migrations/20260308110000_story_6_5_bank_reconciliation_workflow.sql`
+
+### Senior Developer Review (AI)
+
+- Date: 2026-03-09
+- Reviewer: Max (AI)
+- Outcome: Approved after fixes
+- Findings traites:
+  - Blocage UI de validation finale quand seules des lignes `proposition_unique` restaient.
+  - Absence de garde backend interdisant les decisions manuelles apres validation du workflow.
+  - Incoherence lors du rejet d un candidat deja selectionne (ligne/operation non desynchronisees).
+  - Risque de double rattachement d une meme operation a plusieurs lignes d un meme rapprochement.
+  - Validation insuffisante des dates de plage (`dateDebut` / `dateFin`) au niveau DTO/service.
+- Verifications executees apres correction:
+  - `pnpm --dir backend run test -- src/rapprochements-bancaires/rapprochements-bancaires.service.spec.ts`
+  - `pnpm --dir backend run lint`
+  - `pnpm run lint:frontend -- src/components/tresorerie/RapprochementBancaireWorkspace.tsx`
+
+### Change Log
+
+- 2026-03-09: implementation completee du workflow de rapprochement bancaire auto + manuel, avec extension SQL, moteur backend deterministe, UI treasury dediee, supervision enrichie et tests cibles.
+- 2026-03-09: revue adversariale appliquee avec corrections High/Medium (garde post-validation, anti-double-rattachement, rollback coherant sur rejet, validation de plage de dates, deblocage UI de validation).

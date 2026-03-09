@@ -17,6 +17,7 @@ import { CompteTresorerieDialog } from '@/components/tresorerie/CompteTresorerie
 import { CompteTresorerieTable } from '@/components/tresorerie/CompteTresorerieTable';
 import { OperationTresorerieDialog } from '@/components/tresorerie/OperationTresorerieDialog';
 import { OperationTresorerieTable } from '@/components/tresorerie/OperationTresorerieTable';
+import { RapprochementBancaireWorkspace } from '@/components/tresorerie/RapprochementBancaireWorkspace';
 import { TresorerieSupervisionPanel } from '@/components/tresorerie/TresorerieSupervisionPanel';
 import type { Recette } from '@/types/recette.types';
 import type { CompteTresorerie } from '@/types/compte-tresorerie.types';
@@ -170,16 +171,7 @@ const Tresorerie = () => {
           </TabsContent>
 
           <TabsContent value="rapprochement" className="space-y-4">
-            <Card>
-              <CardContent className="py-12">
-                <div className="text-center space-y-4">
-                  <CheckSquare className="h-12 w-12 mx-auto text-muted-foreground" />
-                  <p className="text-muted-foreground">
-                    Fonctionnalité de rapprochement bancaire à venir...
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <RapprochementBancaireWorkspace />
           </TabsContent>
 
           <TabsContent value="supervision" className="space-y-4">

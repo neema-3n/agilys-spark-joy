@@ -77,6 +77,19 @@ export const TresorerieSupervisionPanel = ({ supervision, isLoading, error }: Tr
     <div className="space-y-6">
       <TresorerieStats stats={mappedStats} />
 
+      <div className="grid gap-4 md:grid-cols-2">
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Rapprochements en attente</AlertTitle>
+          <AlertDescription>{supervision.pendingReconciliations} workflow(s) à arbitrer ou valider.</AlertDescription>
+        </Alert>
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Écarts qualifiés</AlertTitle>
+          <AlertDescription>{supervision.qualifiedDiscrepancies} écart(s) restent visibles pour l’audit.</AlertDescription>
+        </Alert>
+      </div>
+
       <PrevisionsTresorerie
         previsions={[
           {

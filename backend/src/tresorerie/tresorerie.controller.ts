@@ -5,6 +5,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RequirePermissions } from '../auth/permissions.decorator';
 import {
+  CloseoutDossierQueryDto,
   TresorerieAuditDetailQueryDto,
   TresorerieAuditQueryDto,
   TresorerieQueryDto,
@@ -62,5 +63,17 @@ export class TresorerieController {
   @RequirePermissions('referentiels:audit:read')
   getExceptionAuditExportPrep(@CurrentUser() user: AuthenticatedUser, @Query() query: TresorerieAuditQueryDto) {
     return this.tresorerieService.getExceptionAuditExportPrep(user, query);
+  }
+
+  @Get('closeout-dossier')
+  @RequirePermissions('referentiels:audit:read')
+  getCloseoutDossier(@CurrentUser() user: AuthenticatedUser, @Query() query: CloseoutDossierQueryDto) {
+    return this.tresorerieService.getCloseoutDossier(user, query);
+  }
+
+  @Get('closeout-dossier/export-prep')
+  @RequirePermissions('referentiels:audit:read')
+  getCloseoutDossierExportPrep(@CurrentUser() user: AuthenticatedUser, @Query() query: CloseoutDossierQueryDto) {
+    return this.tresorerieService.getCloseoutDossierExportPrep(user, query);
   }
 }

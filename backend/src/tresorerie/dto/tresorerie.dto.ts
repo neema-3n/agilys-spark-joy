@@ -26,6 +26,12 @@ export const TRESORERIE_AUDIT_STATUSES = [
 ] as const;
 export type TresorerieAuditStatus = (typeof TRESORERIE_AUDIT_STATUSES)[number];
 
+export const CLOSEOUT_DOSSIER_TYPES = ['cloture_exercice', 'migration_reconciliation'] as const;
+export type CloseoutDossierType = (typeof CLOSEOUT_DOSSIER_TYPES)[number];
+
+export const CLOSEOUT_DOSSIER_STATUSES = ['ready', 'blocked', 'go', 'no_go'] as const;
+export type CloseoutDossierStatus = (typeof CLOSEOUT_DOSSIER_STATUSES)[number];
+
 export class TresorerieAuditQueryDto extends TresorerieQueryDto {
   private static readonly SOURCE_TYPES = ['engagement', 'paiement', 'depense'] as const;
 
@@ -90,4 +96,15 @@ export class TresorerieAuditDetailQueryDto extends TresorerieQueryDto {
   @IsString()
   @IsNotEmpty()
   correlationId?: string;
+}
+
+export class CloseoutDossierQueryDto extends TresorerieQueryDto {
+  @IsOptional()
+  @IsIn(CLOSEOUT_DOSSIER_TYPES)
+  dossierType?: CloseoutDossierType;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  migrationBatchId?: string;
 }

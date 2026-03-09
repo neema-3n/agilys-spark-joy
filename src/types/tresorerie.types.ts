@@ -21,6 +21,8 @@ export type TresorerieAuditStatus =
   | 'exception-approved'
   | 'exception-expired'
   | 'executed-under-exception';
+export type CloseoutDossierType = 'cloture_exercice' | 'migration_reconciliation';
+export type CloseoutDossierStatus = 'ready' | 'blocked' | 'go' | 'no_go';
 
 export interface TresorerieStats {
   soldeActuel: number;
@@ -59,6 +61,8 @@ export interface TresorerieSupervision {
   remainingCommitments: number;
   remainingCommitmentsCount: number;
   nonReconciledOperations: number;
+  pendingReconciliations: number;
+  qualifiedDiscrepancies: number;
   projectedExposure: number;
   projectedGap: number;
   activeExceptions: number;
@@ -156,5 +160,72 @@ export interface PaginatedTresorerieAudit {
     pageSize: number;
     total: number;
     totalPages: number;
+  };
+}
+
+export interface CloseoutDossierEvidenceEntry {
+  requirementId: string;
+  section: 'evidences' | 'reconciliation' | 'decision_log' | 'exceptions' | 'signatures' | 'manifest';
+  description: string;
+  sourceType: 'artifact' | 'cloture_event' | 'audit_exception';
+  source: string;
+  checksum: string;
+  sizeBytes: number;
+  timestamp: string;
+  scope: {
+    tenantId: string;
+    exerciceId: string;
+    migrationBatchId?: string;
+  };
+  authorUserId?: string;
+  status: 'covered' | 'missing';
+}
+
+export interface CloseoutDossierPayload {
+  generatedAt: string;
+  dossierType: CloseoutDossierType;
+  status: CloseoutDossierStatus;
+  scope: {
+    tenantId: string;
+    exerciceId: string;
+    migrationBatchId?: string;
+  };
+  decisionLog: Array<{
+    id: string;
+    type: 'pre_cloture' | 'cloture' | 'reouverture';
+    decision: 'accepted' | 'blocked' | 'rejected';
+    statusFrom: string | null;
+    statusTo: string | null;
+    actorUserId: string;
+    createdAt: string;
+  }>;
+  evidences: CloseoutDossierEvidenceEntry[];
+  reconciliation: {
+    found: boolean;
+    batchId?: string;
+    decision?: 'GO' | 'NO_GO';
+    anomalies?: {
+      critical: number;
+      high: number;
+      medium: number;
+    };
+    reportFiles: string[];
+  };
+  exceptions: {
+    supervision: TresorerieSupervision;
+  };
+  manifest: {
+    generatedAt: string;
+    durationMs: number;
+    durationWithinSla: boolean;
+    requirementsCoverage: {
+      total: number;
+      covered: number;
+      missing: number;
+    };
+    missingCritical: Array<{
+      requirementId: string;
+      description: string;
+    }>;
   };
 }

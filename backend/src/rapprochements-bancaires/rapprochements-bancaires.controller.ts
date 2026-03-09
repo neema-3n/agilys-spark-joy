@@ -4,7 +4,11 @@ import { AuthorizationPolicyGuard } from '../auth/authorization-policy.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RequirePermissions } from '../auth/permissions.decorator';
-import { CreateRapprochementBancaireDto, RapprochementsBancairesQueryDto } from './dto/rapprochements-bancaires.dto';
+import {
+  CreateRapprochementBancaireDto,
+  ManualRapprochementDecisionDto,
+  RapprochementsBancairesQueryDto,
+} from './dto/rapprochements-bancaires.dto';
 import { RapprochementsBancairesService } from './rapprochements-bancaires.service';
 
 @Controller('rapprochements-bancaires')
@@ -28,6 +32,16 @@ export class RapprochementsBancairesController {
   @RequirePermissions('referentiels:write')
   create(@CurrentUser() user: AuthenticatedUser, @Body() body: CreateRapprochementBancaireDto) {
     return this.rapprochementsService.create(user, body);
+  }
+
+  @Patch(':id/decision')
+  @RequirePermissions('referentiels:write')
+  applyDecision(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: ManualRapprochementDecisionDto
+  ) {
+    return this.rapprochementsService.applyDecision(user, id, body);
   }
 
   @Patch(':id/valider')
