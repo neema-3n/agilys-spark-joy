@@ -355,6 +355,220 @@ describe('TresorerieService', () => {
     expect(payload.fields).toEqual(expect.arrayContaining(['id', 'correlationId', 'createdAt']));
   });
 
+  it('applique le filtre correlationId sur le journal d audit', async () => {
+    query.mockResolvedValueOnce(makeResult([]));
+
+    await service.getExceptionAudit(actor, {
+      exerciceId: 'ex-1',
+      correlationId: 'corr-filtered',
+      page: 1,
+      pageSize: 20,
+    });
+
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining('e.correlation_id = $3'),
+      expect.arrayContaining([actor.tenantId, 'ex-1', 'corr-filtered'])
+    );
+  });
+
+  it('construit un dossier d audit exportable avec timeline, coverage et deliverables', async () => {
+    query.mockResolvedValueOnce(
+      makeResult([
+        {
+          id: 'ex-3',
+          exercice_id: 'ex-1',
+          status: 'approuvee',
+          transition: 'engagement:validate',
+          source_type: 'engagement',
+          source_id: 'eng-3',
+          entity_id: 'entity-3',
+          correlation_id: 'corr-dossier',
+          motif: 'Justification audit',
+          justification: 'Contexte exceptionnel',
+          quorum_required: 2,
+          expires_at: '2026-03-09T10:00:00.000Z',
+          requested_by: 'requester-3',
+          approved_at: '2026-03-07T10:00:00.000Z',
+          decided_at: '2026-03-07T10:00:00.000Z',
+          consumed_at: null,
+          consumed_by: null,
+          consumed_transition: null,
+          risk_decision: {
+            riskLevel: 'medium',
+            riskScore: 50,
+            decision: 'block',
+            reasons: ['traceability'],
+            snapshot: {
+              tenantId: actor.tenantId,
+              exerciceId: 'ex-1',
+              transition: 'engagement:validate',
+              sourceType: 'engagement',
+              projectedAmount: 100,
+              availableCash: 500,
+              outstandingDepenses: 120,
+              remainingEngagements: 50,
+              projectedExposure: 170,
+              projectedGap: 0,
+              nonReconciledOperations: 1,
+              threshold: 60,
+              correlationId: 'corr-dossier',
+            },
+          },
+          created_at: '2026-03-07T09:00:00.000Z',
+          updated_at: '2026-03-07T10:00:00.000Z',
+          approvers_json: [],
+          total_count: 1,
+        },
+      ])
+    );
+
+    const dossier = await service.getExceptionAuditDossier(actor, {
+      exerciceId: 'ex-1',
+      page: 1,
+      pageSize: 20,
+    });
+
+    expect(dossier.status).toBe('ready');
+    expect(dossier.timeline).toHaveLength(1);
+    expect(dossier.coverage).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          section: 'timeline',
+          status: 'covered',
+        }),
+      ])
+    );
+    expect(dossier.deliverables.archiveZipFileName).toContain('audit-dossier-ex-1-');
+    expect(dossier.deliverables.pdfStrategy).toBe('printable-html-first');
+    expect(dossier.manifest.entries?.length).toBeGreaterThan(0);
+    expect(dossier.manifest.archive?.checksumAlgorithm).toBe('sha256');
+    expect(dossier.coverage.find((entry) => entry.section === 'scope')?.evidenceIds.length).toBeGreaterThan(0);
+  });
+
+  it('charge toutes les pages du journal pour assembler le dossier complet', async () => {
+    query
+      .mockResolvedValueOnce(
+        makeResult([
+          {
+            id: 'ex-page-1',
+            exercice_id: 'ex-1',
+            status: 'approuvee',
+            transition: 'engagement:validate',
+            source_type: 'engagement',
+            source_id: 'eng-1',
+            entity_id: 'entity-1',
+            correlation_id: 'corr-1',
+            motif: 'Motif 1',
+            justification: 'Justif 1',
+            quorum_required: 1,
+            expires_at: '2026-03-09T10:00:00.000Z',
+            requested_by: 'requester-1',
+            approved_at: '2026-03-07T10:00:00.000Z',
+            decided_at: '2026-03-07T10:00:00.000Z',
+            consumed_at: null,
+            consumed_by: null,
+            consumed_transition: null,
+            risk_decision: {
+              riskLevel: 'low',
+              riskScore: 10,
+              decision: 'allow',
+              reasons: ['ok'],
+              snapshot: {
+                tenantId: actor.tenantId,
+                exerciceId: 'ex-1',
+                transition: 'engagement:validate',
+                sourceType: 'engagement',
+                projectedAmount: 100,
+                availableCash: 500,
+                outstandingDepenses: 100,
+                remainingEngagements: 50,
+                projectedExposure: 150,
+                projectedGap: 0,
+                nonReconciledOperations: 0,
+                threshold: 60,
+                correlationId: 'corr-1',
+              },
+            },
+            created_at: '2026-03-07T09:00:00.000Z',
+            updated_at: '2026-03-07T10:00:00.000Z',
+            approvers_json: [],
+            total_count: 101,
+          },
+        ])
+      )
+      .mockResolvedValueOnce(
+        makeResult([
+          {
+            id: 'ex-page-2',
+            exercice_id: 'ex-1',
+            status: 'approuvee',
+            transition: 'engagement:validate',
+            source_type: 'engagement',
+            source_id: 'eng-2',
+            entity_id: 'entity-2',
+            correlation_id: 'corr-2',
+            motif: 'Motif 2',
+            justification: 'Justif 2',
+            quorum_required: 1,
+            expires_at: '2026-03-09T10:00:00.000Z',
+            requested_by: 'requester-2',
+            approved_at: '2026-03-07T11:00:00.000Z',
+            decided_at: '2026-03-07T11:00:00.000Z',
+            consumed_at: null,
+            consumed_by: null,
+            consumed_transition: null,
+            risk_decision: {
+              riskLevel: 'low',
+              riskScore: 10,
+              decision: 'allow',
+              reasons: ['ok'],
+              snapshot: {
+                tenantId: actor.tenantId,
+                exerciceId: 'ex-1',
+                transition: 'engagement:validate',
+                sourceType: 'engagement',
+                projectedAmount: 120,
+                availableCash: 500,
+                outstandingDepenses: 100,
+                remainingEngagements: 50,
+                projectedExposure: 170,
+                projectedGap: 0,
+                nonReconciledOperations: 0,
+                threshold: 60,
+                correlationId: 'corr-2',
+              },
+            },
+            created_at: '2026-03-07T10:30:00.000Z',
+            updated_at: '2026-03-07T11:00:00.000Z',
+            approvers_json: [],
+            total_count: 101,
+          },
+        ])
+      );
+
+    const dossier = await service.getExceptionAuditDossier(actor, {
+      exerciceId: 'ex-1',
+      page: 1,
+      pageSize: 100,
+    });
+
+    expect(query).toHaveBeenCalledTimes(2);
+    expect(dossier.timeline.map((entry) => entry.id)).toEqual(expect.arrayContaining(['ex-page-1', 'ex-page-2']));
+  });
+
+  it('marque le dossier d audit blocked quand aucune preuve critique n est disponible', async () => {
+    query.mockResolvedValueOnce(makeResult([]));
+
+    const dossier = await service.getExceptionAuditDossier(actor, {
+      exerciceId: 'ex-1',
+      page: 1,
+      pageSize: 20,
+    });
+
+    expect(dossier.status).toBe('blocked');
+    expect(dossier.manifest.missingCritical.length).toBeGreaterThan(0);
+  });
+
   it('construit un dossier de clôture avec statut go quand reconciliation GO et preuves présentes', async () => {
     const tempDir = await mkdtemp(path.join(os.tmpdir(), 'closeout-go-'));
     process.env.IMPLEMENTATION_ARTIFACTS_DIR = tempDir;

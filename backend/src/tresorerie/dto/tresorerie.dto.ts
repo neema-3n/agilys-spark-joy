@@ -31,6 +31,8 @@ export type CloseoutDossierType = (typeof CLOSEOUT_DOSSIER_TYPES)[number];
 
 export const CLOSEOUT_DOSSIER_STATUSES = ['ready', 'blocked', 'go', 'no_go'] as const;
 export type CloseoutDossierStatus = (typeof CLOSEOUT_DOSSIER_STATUSES)[number];
+export const AUDIT_DOSSIER_STATUSES = ['ready', 'blocked', 'go', 'no_go'] as const;
+export type AuditDossierStatus = (typeof AUDIT_DOSSIER_STATUSES)[number];
 
 export class TresorerieAuditQueryDto extends TresorerieQueryDto {
   private static readonly SOURCE_TYPES = ['engagement', 'paiement', 'depense'] as const;
@@ -66,6 +68,11 @@ export class TresorerieAuditQueryDto extends TresorerieQueryDto {
   entityId?: string;
 
   @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  correlationId?: string;
+
+  @IsOptional()
   @IsDateString()
   fromDate?: string;
 
@@ -96,6 +103,13 @@ export class TresorerieAuditDetailQueryDto extends TresorerieQueryDto {
   @IsString()
   @IsNotEmpty()
   correlationId?: string;
+}
+
+export class TresorerieAuditDossierQueryDto extends TresorerieAuditQueryDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  dossierId?: string;
 }
 
 export class CloseoutDossierQueryDto extends TresorerieQueryDto {

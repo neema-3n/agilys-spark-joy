@@ -1,6 +1,6 @@
 # Story 7.3: Produire dossier d'audit exportable
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -44,69 +44,69 @@ so that l'inspection externe soit facilitee.
 
 ## Tasks / Subtasks
 
-- [ ] Revalider la story contre `FR30`, `FR32`, `FR42`, `FR67`, `FR70`, `NFR3`, `NFR8`, `NFR9`, `NFR11`, `NFR13`, `NFR14`, `NFR15`, `NFR34`, `NFR35`, ainsi que les regles projet (`NestJS` source de verite, `React Query`, client API unifie, aucune nouvelle dependance runtime Supabase) (AC: 1, 2, 3, 4, 5)
-- [ ] Cartographier les briques existantes a reutiliser avant toute nouvelle abstraction:
-  - [ ] `backend/src/tresorerie/tresorerie.controller.ts`
-  - [ ] `backend/src/tresorerie/tresorerie.service.ts`
-  - [ ] `backend/src/tresorerie/dto/tresorerie.dto.ts`
-  - [ ] `src/services/api/tresorerie.service.ts`
-  - [ ] `src/hooks/useTresorerie.ts`
-  - [ ] `src/pages/app/ControleInterne.tsx`
-  - [ ] `src/components/controle-interne/ExceptionAuditTable.tsx`
-  - [ ] `src/components/controle-interne/ExceptionAuditDetail.tsx`
-  - [ ] `src/lib/export-utils.ts`
-  - [ ] `scripts/build-migration-audit-dossier.mjs`
-  - [ ] `backend/src/budget-referentiels/budget-referentiels.controller.ts`
-  - [ ] `backend/src/exercice-cloture/exercice-cloture.service.ts` (AC: 1, 2, 3, 4, 5)
-- [ ] Definir un modele canonique de dossier d'audit exportable plutot qu'une juxtaposition d'exports:
-  - [ ] sections minimales `scope`, `timeline`, `decision_log`, `evidences`, `coverage`, `manifest`, `deliverables`
-  - [ ] statut global du dossier (`ready`, `blocked`, `go`, `no_go` ou equivalent documente)
-  - [ ] convention stable de nommage des livrables et des entrees de manifeste (AC: 1, 2, 3, 5)
-- [ ] Etendre le backend d'audit existant au lieu de creer un domaine parallele:
-  - [ ] conserver `tresorerie` comme seam principal pour lecture/detail/export-prep si cela couvre le besoin
-  - [ ] ajouter un endpoint de generation/assemblage seulement si `export-prep` ne suffit pas
-  - [ ] laisser l'agregation sensible et le calcul de couverture cote backend/script serveur, jamais dans le JSX (AC: 1, 2, 3, 4, 5)
-- [ ] Reutiliser explicitement le pattern `M4.2` pour le packaging:
-  - [ ] index de dossier
-  - [ ] matrice de preuves/couverture
-  - [ ] manifeste SHA-256
-  - [ ] archive ZIP structuree
-  - [ ] decision explicite si preuves critiques manquantes (AC: 2, 3, 5)
-- [ ] Evaluer la strategie PDF sans supposer une librairie absente:
-  - [ ] verifier si le besoin fonctionnel peut etre satisfait par un index HTML/printable + ZIP dans un premier temps
-  - [ ] n'introduire une vraie generation PDF que si le besoin est explicite et couvert par une solution compatible avec le repo
-  - [ ] documenter clairement l'ecart entre "exportable PDF/ZIP" du PRD et la capacite actuelle de `src/lib/export-utils.ts` (AC: 1, 2, 5)
-- [ ] Consolider les preuves a inclure sans duplicer la logique source:
-  - [ ] journal `exception-audit`
-  - [ ] detail `exception-audit/detail`
-  - [ ] preparation `exception-audit/export-prep`
-  - [ ] traces budgetaires via `budget-referentiels/audit-log` si pertinentes
-  - [ ] preuves de cloture/reconciliation deja structurees par `6.6`, `6.5` et `M4.2` lorsque le perimetre les croise (AC: 1, 2, 3, 5)
-- [ ] Definir des types/DTO explicites pour le dossier:
-  - [ ] query params de scope (`tenant`, `exercice`, `fromDate`, `toDate`, `sourceType`, `sourceId`, `entityId`, `correlationId` ou dossier cible)
-  - [ ] types pour `audit dossier summary`, `timeline item`, `evidence entry`, `coverage entry`, `manifest entry`, `delivery`
-  - [ ] harmonisation des enums/statuts entre backend, frontend et artefacts exportes (AC: 1, 3, 4, 5)
-- [ ] Integrer l'UX dans la surface audit existante:
-  - [ ] etendre `ControleInterne` avec une preparation/export du dossier et une lecture de couverture
-  - [ ] reutiliser `ExceptionAuditTable` et le detail comme point d'entree vers le dossier plutot qu'une nouvelle page de zero
-  - [ ] afficher les preuves manquantes, la decision du dossier et la disponibilite des livrables de facon actionnable (AC: 1, 3, 4, 5)
-- [ ] Garantir isolation et permissions:
-  - [ ] `JwtAuthGuard` + `AuthorizationPolicyGuard`
-  - [ ] permission `referentiels:audit:read` pour lecture/export
-  - [ ] verifier si une permission de generation distincte est necessaire et l'ajouter proprement au modele d'autorisations si oui
-  - [ ] refuser strictement tout scope cross-tenant ou exercice absent/incoherent (AC: 4)
-- [ ] Ajouter les tests backend obligatoires:
-  - [ ] payload `export-prep` enrichi ou nouveau dossier nominal complet
-  - [ ] detail de couverture et manifeste deterministes
-  - [ ] blocage/flag explicite si preuve critique manquante
-  - [ ] refus cross-tenant / exercice invalide / permission absente
-  - [ ] verification structure des sorties `json/md/zip` et cible de performance sur perimetre standard (AC: 1, 2, 3, 4, 5)
-- [ ] Ajouter les tests frontend / contrat cibles:
-  - [ ] rendu de la preparation du dossier et des etats loading/empty/error
-  - [ ] message d'acces restreint si `referentiels:audit:read` absent
-  - [ ] alignement filtres ecran -> dossier exporte
-  - [ ] non-regression de `ControleInterne`, `useTresorerie` et du pattern de listes/filtres existant (AC: 4, 5)
-- [ ] Verifier explicitement qu'aucune nouvelle dependance runtime Supabase ni aucune nouvelle librairie d'export/archive n'est introduite sans justification forte et compatibilite prouvee avec le stack existant (AC: 2, 4, 5)
+- [x] Revalider la story contre `FR30`, `FR32`, `FR42`, `FR67`, `FR70`, `NFR3`, `NFR8`, `NFR9`, `NFR11`, `NFR13`, `NFR14`, `NFR15`, `NFR34`, `NFR35`, ainsi que les regles projet (`NestJS` source de verite, `React Query`, client API unifie, aucune nouvelle dependance runtime Supabase) (AC: 1, 2, 3, 4, 5)
+- [x] Cartographier les briques existantes a reutiliser avant toute nouvelle abstraction:
+  - [x] `backend/src/tresorerie/tresorerie.controller.ts`
+  - [x] `backend/src/tresorerie/tresorerie.service.ts`
+  - [x] `backend/src/tresorerie/dto/tresorerie.dto.ts`
+  - [x] `src/services/api/tresorerie.service.ts`
+  - [x] `src/hooks/useTresorerie.ts`
+  - [x] `src/pages/app/ControleInterne.tsx`
+  - [x] `src/components/controle-interne/ExceptionAuditTable.tsx`
+  - [x] `src/components/controle-interne/ExceptionAuditDetail.tsx`
+  - [x] `src/lib/export-utils.ts`
+  - [x] `scripts/build-migration-audit-dossier.mjs`
+  - [x] `backend/src/budget-referentiels/budget-referentiels.controller.ts`
+  - [x] `backend/src/exercice-cloture/exercice-cloture.service.ts` (AC: 1, 2, 3, 4, 5)
+- [x] Definir un modele canonique de dossier d'audit exportable plutot qu'une juxtaposition d'exports:
+  - [x] sections minimales `scope`, `timeline`, `decision_log`, `evidences`, `coverage`, `manifest`, `deliverables`
+  - [x] statut global du dossier (`ready`, `blocked`, `go`, `no_go` ou equivalent documente)
+  - [x] convention stable de nommage des livrables et des entrees de manifeste (AC: 1, 2, 3, 5)
+- [x] Etendre le backend d'audit existant au lieu de creer un domaine parallele:
+  - [x] conserver `tresorerie` comme seam principal pour lecture/detail/export-prep si cela couvre le besoin
+  - [x] ajouter un endpoint de generation/assemblage seulement si `export-prep` ne suffit pas
+  - [x] laisser l'agregation sensible et le calcul de couverture cote backend/script serveur, jamais dans le JSX (AC: 1, 2, 3, 4, 5)
+- [x] Reutiliser explicitement le pattern `M4.2` pour le packaging:
+  - [x] index de dossier
+  - [x] matrice de preuves/couverture
+  - [x] manifeste SHA-256
+  - [x] archive ZIP structuree
+  - [x] decision explicite si preuves critiques manquantes (AC: 2, 3, 5)
+- [x] Evaluer la strategie PDF sans supposer une librairie absente:
+  - [x] verifier si le besoin fonctionnel peut etre satisfait par un index HTML/printable + ZIP dans un premier temps
+  - [x] n'introduire une vraie generation PDF que si le besoin est explicite et couvert par une solution compatible avec le repo
+  - [x] documenter clairement l'ecart entre "exportable PDF/ZIP" du PRD et la capacite actuelle de `src/lib/export-utils.ts` (AC: 1, 2, 5)
+- [x] Consolider les preuves a inclure sans duplicer la logique source:
+  - [x] journal `exception-audit`
+  - [x] detail `exception-audit/detail`
+  - [x] preparation `exception-audit/export-prep`
+  - [x] traces budgetaires via `budget-referentiels/audit-log` si pertinentes
+  - [x] preuves de cloture/reconciliation deja structurees par `6.6`, `6.5` et `M4.2` lorsque le perimetre les croise (AC: 1, 2, 3, 5)
+- [x] Definir des types/DTO explicites pour le dossier:
+  - [x] query params de scope (`tenant`, `exercice`, `fromDate`, `toDate`, `sourceType`, `sourceId`, `entityId`, `correlationId` ou dossier cible)
+  - [x] types pour `audit dossier summary`, `timeline item`, `evidence entry`, `coverage entry`, `manifest entry`, `delivery`
+  - [x] harmonisation des enums/statuts entre backend, frontend et artefacts exportes (AC: 1, 3, 4, 5)
+- [x] Integrer l'UX dans la surface audit existante:
+  - [x] etendre `ControleInterne` avec une preparation/export du dossier et une lecture de couverture
+  - [x] reutiliser `ExceptionAuditTable` et le detail comme point d'entree vers le dossier plutot qu'une nouvelle page de zero
+  - [x] afficher les preuves manquantes, la decision du dossier et la disponibilite des livrables de facon actionnable (AC: 1, 3, 4, 5)
+- [x] Garantir isolation et permissions:
+  - [x] `JwtAuthGuard` + `AuthorizationPolicyGuard`
+  - [x] permission `referentiels:audit:read` pour lecture/export
+  - [x] verifier si une permission de generation distincte est necessaire et l'ajouter proprement au modele d'autorisations si oui
+  - [x] refuser strictement tout scope cross-tenant ou exercice absent/incoherent (AC: 4)
+- [x] Ajouter les tests backend obligatoires:
+  - [x] payload `export-prep` enrichi ou nouveau dossier nominal complet
+  - [x] detail de couverture et manifeste deterministes
+  - [x] blocage/flag explicite si preuve critique manquante
+  - [x] refus cross-tenant / exercice invalide / permission absente
+  - [x] verification structure des sorties `json/md/zip` et cible de performance sur perimetre standard (AC: 1, 2, 3, 4, 5)
+- [x] Ajouter les tests frontend / contrat cibles:
+  - [x] rendu de la preparation du dossier et des etats loading/empty/error
+  - [x] message d'acces restreint si `referentiels:audit:read` absent
+  - [x] alignement filtres ecran -> dossier exporte
+  - [x] non-regression de `ControleInterne`, `useTresorerie` et du pattern de listes/filtres existant (AC: 4, 5)
+- [x] Verifier explicitement qu'aucune nouvelle dependance runtime Supabase ni aucune nouvelle librairie d'export/archive n'est introduite sans justification forte et compatibilite prouvee avec le stack existant (AC: 2, 4, 5)
 
 ## Dev Notes
 
@@ -327,16 +327,44 @@ GPT-5 Codex
 
 ### Completion Notes List
 
-- Story `7.3` creee avec contexte implementation complet et guardrails de reutilisation.
-- Les seams concrets backend/frontend et les limites actuelles du repo sur le PDF ont ete explicites.
-- Le pattern `M4.2` est designe comme reference obligatoire pour packaging, checksum et ZIP.
-- La story est prete pour execution `dev-story` avec statut `ready-for-dev`.
+- Extension du domaine `exception-audit` avec un dossier d'audit canonique exportable (`scope`, `timeline`, `decisionLog`, `evidences`, `coverage`, `manifest`, `deliverables`) et un endpoint d'export-prep dedie.
+- Filtrage `correlationId` harmonise entre DTO backend, requetes SQL et client frontend.
+- Integration UI dans `ControleInterne` via une carte `Dossier d'audit exportable` avec statut, couverture, livrables et manques critiques.
+- Strategie PDF explicitee en mode `printable-html-first` sans ajout de librairie PDF runtime.
+- Tests backend (service + RBAC controller) et lint global valides.
 
 ### File List
 
+- `backend/src/tresorerie/dto/tresorerie.dto.ts`
+- `backend/src/tresorerie/tresorerie.controller.ts`
+- `backend/src/tresorerie/tresorerie.controller.spec.ts`
+- `backend/src/tresorerie/tresorerie.service.ts`
+- `backend/src/tresorerie/tresorerie.service.spec.ts`
+- `src/components/controle-interne/ExceptionAuditDossierCard.tsx`
+- `src/hooks/useTresorerie.ts`
+- `src/pages/app/ControleInterne.tsx`
+- `src/services/api/tresorerie.service.ts`
+- `src/types/tresorerie.types.ts`
+- `tests/tresorerie-supervision-ui.spec.ts`
 - `/_bmad-output/implementation-artifacts/7-3-produire-dossier-daudit-exportable.md`
 - `/_bmad-output/implementation-artifacts/sprint-status.yaml`
 
 ### Change Log
 
 - 2026-03-09: creation du contexte story `7.3` (ready-for-dev) avec exigences de dossier d'audit exportable, packaging verifiable, permissions strictes et reutilisation des patterns `6.6` / `M4.2`.
+- 2026-03-09: implementation story `7.3` - dossier d'audit exportable ajoute sur `exception-audit` (backend + frontend), filtres/couverture/manifeste/livrables aligns, tests backend mis a jour, lint ok.
+- 2026-03-09: revue adversariale AI appliquee - correction pagination multi-pages du dossier, couverture liee a des preuves sectionnelles, manifeste/checksums de packaging ajoutes, etat d'erreur UI dedie ajoute, tests renforces.
+
+### Senior Developer Review (AI)
+
+- Outcome: **Approve**
+- High/Medium findings addressed:
+  - pagination dossier: aggregation complete sur toutes les pages du journal (`getExceptionAuditDossier`)
+  - couverture: suppression des faux positifs, evidenceIds reels par section
+  - packaging verifiable: manifeste enrichi avec checksums SHA-256 + checksum archive
+  - UX erreur: message d'erreur explicite sur carte dossier
+  - tests: cas multi-pages + assertions manifeste/checksum + scenario erreur dossier UI
+- Validation execution:
+  - `pnpm --dir backend run lint` ✅
+  - `pnpm --dir backend test -- tresorerie.service.spec.ts tresorerie.controller.spec.ts` ✅
+  - `pnpm run lint` ✅

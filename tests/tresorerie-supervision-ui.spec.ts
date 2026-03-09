@@ -70,6 +70,7 @@ const setupApi = async (
   accessToken: string,
   options: {
     denyAudit?: boolean;
+    dossierError?: boolean;
   } = {}
 ) => {
   await page.route('**://127.0.0.1:3001/**', async (route) => {
@@ -264,6 +265,80 @@ const setupApi = async (
       return;
     }
 
+    if (url.pathname === '/tresorerie/exception-audit/dossier') {
+      if (options.dossierError) {
+        await route.fulfill({
+          status: 500,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'Erreur dossier' }),
+        });
+        return;
+      }
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          generatedAt: '2026-03-07T12:00:00.000Z',
+          dossierId: 'audit-dossier-ex-2026-2026-03-07',
+          scope: {
+            tenantId: 'client-1',
+            exerciceId: 'ex-2026',
+            filters: {
+              fromDate: null,
+              toDate: null,
+              sourceType: null,
+              sourceId: null,
+              entityId: null,
+              correlationId: null,
+            },
+          },
+          status: 'ready',
+          timeline: [
+            {
+              id: 'exc-1',
+              correlationId: 'corr-1',
+              actorUserId: 'user-requester-1',
+              status: 'exception-approved',
+              transition: 'paiement:execute',
+              sourceType: 'paiement',
+              sourceId: 'pay-1',
+              createdAt: '2026-03-07T09:00:00.000Z',
+              approvedAt: '2026-03-07T10:00:00.000Z',
+              decidedAt: '2026-03-07T10:00:00.000Z',
+              consumedAt: null,
+            },
+          ],
+          decisionLog: [],
+          evidences: [],
+          coverage: [
+            { section: 'scope', objective: 'scope', status: 'covered', critical: true, evidenceIds: [] },
+            { section: 'timeline', objective: 'timeline', status: 'covered', critical: true, evidenceIds: [] },
+            { section: 'decision_log', objective: 'decision', status: 'covered', critical: true, evidenceIds: [] },
+            { section: 'evidences', objective: 'evidences', status: 'covered', critical: true, evidenceIds: [] },
+            { section: 'coverage', objective: 'coverage', status: 'covered', critical: false, evidenceIds: [] },
+            { section: 'manifest', objective: 'manifest', status: 'covered', critical: false, evidenceIds: [] },
+            { section: 'deliverables', objective: 'deliverables', status: 'covered', critical: false, evidenceIds: [] },
+          ],
+          manifest: {
+            generatedAt: '2026-03-07T12:00:00.000Z',
+            durationMs: 310,
+            durationWithinSla: true,
+            totalEntries: 1,
+            missingCritical: [],
+          },
+          deliverables: {
+            suggestedFileName: 'audit-dossier-ex-2026-2026-03-07.json',
+            archiveZipFileName: 'audit-dossier-ex-2026-2026-03-07.zip',
+            indexFileName: 'audit-dossier-index-ex-2026-2026-03-07.md',
+            printableFileName: 'audit-dossier-index-ex-2026-2026-03-07.html',
+            pdfStrategy: 'printable-html-first',
+          },
+        }),
+      });
+      return;
+    }
+
     if (url.pathname === '/tresorerie/closeout-dossier') {
       await route.fulfill({
         status: 200,
@@ -390,6 +465,7 @@ test.describe('tresorerie supervision + audit UI', () => {
     await page.goto(`${UI_BASE_URL}/app/controle-interne`);
     await expect(page).toHaveURL(/\/app\/controle-interne$/);
 
+    await expect(page.getByText("Dossier d'audit exportable")).toBeVisible();
     await expect(page.getByText('Dossier de clôture et migration')).toBeVisible();
     await expect(page.getByText('Audit des exceptions cash-risk')).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Statut' })).toBeVisible();
@@ -427,5 +503,26 @@ test.describe('tresorerie supervision + audit UI', () => {
     await page.goto(`${UI_BASE_URL}/app/controle-interne`);
     await expect(page.getByText('Accès restreint')).toBeVisible({ timeout: 15000 });
     await expect(page.getByText('referentiels:audit:read')).toBeVisible();
+  });
+
+  test('affiche une erreur dédiée si la préparation du dossier échoue', async ({ page }) => {
+    const accessToken = makeJwt({
+      sub: 'user-4',
+      tenantId: 'client-1',
+      roles: ['auditeur'],
+      email: 'audit-error@agilys.local',
+      nom: 'Audit',
+      prenom: 'Error',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    });
+
+    await setupApi(page, accessToken, { dossierError: true });
+    await page.addInitScript((token: string) => {
+      window.localStorage.setItem('agilys.auth.accessToken', token);
+      window.localStorage.setItem('agilys.auth.refreshToken', 'refresh-token-stub');
+    }, accessToken);
+
+    await page.goto(`${UI_BASE_URL}/app/controle-interne`);
+    await expect(page.getByText('Erreur dossier')).toBeVisible({ timeout: 15000 });
   });
 });

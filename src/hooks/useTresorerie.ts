@@ -123,3 +123,21 @@ export const useCloseoutDossier = (input?: {
     enabled: isEnabled,
   });
 };
+
+export const useExceptionAuditDossier = (
+  filters: TresorerieAuditFilters,
+  input?: { dossierId?: string }
+) => {
+  const { exerciceId, clientId, isEnabled } = useTresorerieContext();
+
+  return useQuery({
+    queryKey: ['exception-audit-dossier', clientId, exerciceId, filters, input],
+    queryFn: () => {
+      if (!clientId || !exerciceId) {
+        throw new Error('Client ou exercice non défini');
+      }
+      return tresorerieService.getExceptionAuditDossier(clientId, exerciceId, filters, input);
+    },
+    enabled: isEnabled,
+  });
+};
