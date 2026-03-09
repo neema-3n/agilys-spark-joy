@@ -1,6 +1,6 @@
 # Story 8.2: Gerer mode degrade et reprise apres reconnexion
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -50,16 +50,16 @@ so that je ne perds pas mes operations en cas de reseau instable.
 
 ## Tasks / Subtasks
 
-- [ ] Definir le contrat `OfflineSyncItem` partage (id local, type operation, payload, correlationId, tenantId, exerciceId, lastAttemptAt, retryCount, status) (AC: 1, 2, 4, 5)
-- [ ] Implementer une file offline persistante cote front (IndexedDB ou equivalent encapsule) derriere un service dedie (AC: 1)
-- [ ] Integrer un orchestrateur de reprise reseau (`online`/heartbeat) avec reprise automatique et backoff borne (AC: 2, 6)
-- [ ] Ajouter l'idempotence de synchronisation cote backend (cle idempotente + deduplication) pour les operations eligibles (AC: 2, 5)
-- [ ] Etendre les endpoints backend pour retourner des codes de conflit qualifiants et normalises (AC: 3)
-- [ ] Exposer une vue supervision/reprise (reutilisation `controle-interne`/`tresorerie` existants) pour statuts, erreurs et relance manuelle (AC: 4)
-- [ ] Reutiliser `http-client.ts` pour gestion des erreurs reseau et refresh auth sans contourner la couche API unifiee (AC: 2, 5)
-- [ ] Ajouter instrumentation de delai de rattrapage (de `queuedAt` a `syncedAt`) et compteur de conflits/retries (AC: 4, 6)
-- [ ] Garantir qu'aucun nouvel appel runtime Supabase n'est introduit (AC: 5)
-- [ ] Ajouter tests unitaires/integration/E2E resiliences (offline, reconnexion, conflit, permissions, non-regression UX) (AC: 1..6)
+- [x] Definir le contrat `OfflineSyncItem` partage (id local, type operation, payload, correlationId, tenantId, exerciceId, lastAttemptAt, retryCount, status) (AC: 1, 2, 4, 5)
+- [x] Implementer une file offline persistante cote front (IndexedDB ou equivalent encapsule) derriere un service dedie (AC: 1)
+- [x] Integrer un orchestrateur de reprise reseau (`online`/heartbeat) avec reprise automatique et backoff borne (AC: 2, 6)
+- [x] Ajouter l'idempotence de synchronisation cote backend (cle idempotente + deduplication) pour les operations eligibles (AC: 2, 5)
+- [x] Etendre les endpoints backend pour retourner des codes de conflit qualifiants et normalises (AC: 3)
+- [x] Exposer une vue supervision/reprise (reutilisation `controle-interne`/`tresorerie` existants) pour statuts, erreurs et relance manuelle (AC: 4)
+- [x] Reutiliser `http-client.ts` pour gestion des erreurs reseau et refresh auth sans contourner la couche API unifiee (AC: 2, 5)
+- [x] Ajouter instrumentation de delai de rattrapage (de `queuedAt` a `syncedAt`) et compteur de conflits/retries (AC: 4, 6)
+- [x] Garantir qu'aucun nouvel appel runtime Supabase n'est introduit (AC: 5)
+- [x] Ajouter tests unitaires/integration/E2E resiliences (offline, reconnexion, conflit, permissions, non-regression UX) (AC: 1..6)
 
 ## Dev Notes
 
@@ -204,16 +204,45 @@ GPT-5 Codex
 
 ### Debug Log References
 
-- Workflow: `_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml`
-- Instructions: `_bmad/bmm/workflows/4-implementation/create-story/instructions.xml`
+- Workflow: `_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml`
+- Instructions: `_bmad/bmm/workflows/4-implementation/dev-story/instructions.xml`
+- Backend lint: `pnpm --dir backend run lint` ✅
+- Backend tests: `pnpm --dir backend run test -- offline-sync.service.spec.ts` ✅
+- Frontend lint: `pnpm run lint:frontend` ✅
+- Frontend tests: `pnpm exec playwright test tests/offline-sync-client.spec.ts` ✅
 
 ### Completion Notes List
 
-- Ultimate context engine analysis completed - comprehensive developer guide created.
-- Story alignee sur FR36/FR37 + NFR5/NFR6, avec garde-fous derives de la story 8.1 et des patterns code existants.
-- Aucun document d'architecture dedie detecte dans `planning-artifacts`; les contraintes architecture viennent de `project-context.md` + implementation existante.
+- Ajout d'un module backend `offline-sync` (controller/service/dto/types/module) avec idempotence, journalisation des tentatives et statuts `queued/syncing/synced/failed/conflict`.
+- Ajout d'une migration SQL dédiée (`offline_sync_events` + `offline_sync_attempts`) avec clé idempotente unique, index de supervision/retry et trigger `updated_at`.
+- Extension du guard `TenantExerciceScopeGuard` pour couvrir les routes `offline-sync` et garantir le scope tenant/exercice.
+- Ajout côté frontend d'un contrat `OfflineSyncItem`, d'une queue locale persistante (localStorage versionnée), d'un orchestrateur de reprise auto (`online` + heartbeat), et d'un hook runtime global.
+- Ajout d'un panneau de supervision/reprise offline dans `Controle Interne` (statuts, retries, conflits, relance manuelle).
+- Aucun nouvel appel runtime Supabase introduit.
 
 ### File List
 
 - _bmad-output/implementation-artifacts/8-2-gerer-mode-degrade-et-reprise-apres-reconnexion.md
 - _bmad-output/implementation-artifacts/sprint-status.yaml
+- backend/src/app.module.ts
+- backend/src/auth/tenant-exercice-scope.guard.ts
+- backend/src/offline-sync/offline-sync.controller.ts
+- backend/src/offline-sync/offline-sync.module.ts
+- backend/src/offline-sync/offline-sync.service.ts
+- backend/src/offline-sync/offline-sync.service.spec.ts
+- backend/src/offline-sync/offline-sync.types.ts
+- backend/src/offline-sync/dto/offline-sync.dto.ts
+- src/App.tsx
+- src/pages/app/ControleInterne.tsx
+- src/components/controle-interne/OfflineSyncPanel.tsx
+- src/components/offline-sync/OfflineSyncRuntime.tsx
+- src/hooks/useOfflineSync.ts
+- src/services/api/offline-sync.service.ts
+- src/services/offline/offline-sync-queue.ts
+- src/types/offline-sync.types.ts
+- supabase/migrations/20260309193000_story_8_2_offline_sync.sql
+- tests/offline-sync-client.spec.ts
+
+### Change Log
+
+- 2026-03-09: Implémentation story 8.2 terminée (offline queue durable, reprise automatique, idempotence backend, conflits qualifiés, supervision/retry, tests ciblés).

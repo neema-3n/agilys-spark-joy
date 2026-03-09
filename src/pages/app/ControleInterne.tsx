@@ -5,6 +5,7 @@ import { ExceptionAuditDetail } from '@/components/controle-interne/ExceptionAud
 import { ExceptionAuditDossierCard } from '@/components/controle-interne/ExceptionAuditDossierCard';
 import { ExceptionAuditTable } from '@/components/controle-interne/ExceptionAuditTable';
 import { InternalControlActionPlans } from '@/components/controle-interne/InternalControlActionPlans';
+import { OfflineSyncPanel } from '@/components/controle-interne/OfflineSyncPanel';
 import { WorkflowExceptionsList } from '@/components/workflow-exceptions/WorkflowExceptionsList';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -109,6 +110,7 @@ const ControleInterne = () => {
                 <TabsTrigger value="exceptions">Exceptions</TabsTrigger>
                 <TabsTrigger value="plans">Plans d action</TabsTrigger>
                 <TabsTrigger value="detail">Détail / preuves</TabsTrigger>
+                <TabsTrigger value="offline-sync">Sync offline</TabsTrigger>
               </TabsList>
 
               <TabsContent value="ecarts" className="space-y-4">
@@ -178,6 +180,10 @@ const ControleInterne = () => {
                   detail={detailQuery.data}
                   isLoading={detailQuery.isLoading || detailQuery.isFetching}
                 />
+              </TabsContent>
+
+              <TabsContent value="offline-sync">
+                <OfflineSyncPanel />
               </TabsContent>
             </Tabs>
           </>

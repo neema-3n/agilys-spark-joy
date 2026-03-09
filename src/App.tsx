@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ClientProvider } from "@/contexts/ClientContext";
 import { ExerciceProvider } from "@/contexts/ExerciceContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { OfflineSyncRuntime } from "@/components/offline-sync/OfflineSyncRuntime";
 
 const Index = lazy(() => import("./pages/Index"));
 const Fonctionnalites = lazy(() => import("./pages/public/Fonctionnalites"));
@@ -50,6 +51,7 @@ const App = () => (
       <AuthProvider>
         <ClientProvider>
           <ExerciceProvider>
+            <OfflineSyncRuntime />
             <TooltipProvider>
               <Toaster />
               <Sonner />

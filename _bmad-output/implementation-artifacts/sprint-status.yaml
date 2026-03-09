@@ -52,19 +52,19 @@ development_status:
   epic-7-retrospective: optional
   epic-8: in-progress
   8-1-mettre-en-place-flux-dintegration-asynchrones: done
-  8-2-gerer-mode-degrade-et-reprise-apres-reconnexion: ready-for-dev
+  8-2-gerer-mode-degrade-et-reprise-apres-reconnexion: done
   8-3-superviser-divergences-et-sla-de-rattrapage: ready-for-dev
   epic-8-retrospective: optional
-  epic-9: backlog
-  9-1-generer-balance-grand-livre-et-fiche-compte: backlog
-  9-2-produire-etat-dettes-fournisseurs-et-avances: backlog
-  9-3-produire-execution-budgetaire-et-tresorerie: backlog
+  epic-9: in-progress
+  9-1-generer-balance-grand-livre-et-fiche-compte: ready-for-dev
+  9-2-produire-etat-dettes-fournisseurs-et-avances: ready-for-dev
+  9-3-produire-execution-budgetaire-et-tresorerie: ready-for-dev
   epic-9-retrospective: optional
   epic-10: backlog
-  10-1-offrir-tableaux-croises-et-dashboards-analytiques-avances: backlog
-  10-2-produire-dossier-de-depense-unifie-avec-preuves: backlog
-  10-3-produire-dsf-conforme-ohada-sycebnl: backlog
-  10-4-mesurer-les-temps-de-traitement-par-etape: backlog
+  10-1-offrir-tableaux-croises-et-dashboards-analytiques-avances: ready-for-dev
+  10-2-produire-dossier-de-depense-unifie-avec-preuves: ready-for-dev
+  10-3-produire-dsf-conforme-ohada-sycebnl: ready-for-dev
+  10-4-mesurer-les-temps-de-traitement-par-etape: ready-for-dev
   epic-10-retrospective: optional
   epic-m1: backlog
   m1-1-etablir-linventaire-de-parite-fonctionnelle: done
