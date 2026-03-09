@@ -322,4 +322,38 @@ describe('EngagementsService', () => {
 
     syncSpy.mockRestore();
   });
+
+  it('preserve les rattachements analytiques reservation/projet dans la vue', async () => {
+    query.mockResolvedValueOnce(
+      makeResult([
+        makeEngagementRow({
+          reservation_credit_id: 'res-1',
+          projet_id: 'prj-1',
+          projet_code: 'CC01-PROJ-A',
+          projet_nom: 'Projet A',
+          reservation_numero: 'RES-00001',
+          reservation_statut: 'active',
+          montant_bons_commande: 200,
+        }),
+      ])
+    );
+
+    const result = await service.getById(actor, 'eng-1');
+
+    expect(result.reservationCreditId).toBe('res-1');
+    expect(result.projetId).toBe('prj-1');
+    expect(result.projet).toEqual(
+      expect.objectContaining({
+        code: 'CC01-PROJ-A',
+        nom: 'Projet A',
+      })
+    );
+    expect(result.reservationCredit).toEqual(
+      expect.objectContaining({
+        numero: 'RES-00001',
+        statut: 'active',
+      })
+    );
+    expect(result.solde).toBe(300);
+  });
 });

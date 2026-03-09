@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
+import { AnalysesFinancieresModule } from './analyses-financieres/analyses-financieres.module';
 import { BudgetReferentielsModule } from './budget-referentiels/budget-referentiels.module';
 import { BonsCommandeModule } from './bons-commande/bons-commande.module';
 import { PostgresModule } from './common/postgres.module';
@@ -30,6 +31,7 @@ import { WorkflowExceptionsModule } from './workflow-exceptions/workflow-excepti
   imports: [
     PostgresModule,
     AuthModule,
+    AnalysesFinancieresModule,
     CashRiskModule,
     WorkflowExceptionsModule,
     BudgetReferentielsModule,

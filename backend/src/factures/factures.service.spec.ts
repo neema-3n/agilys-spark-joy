@@ -34,6 +34,7 @@ describe('FacturesService', () => {
   const service = new FacturesService(postgresService, ecrituresComptablesService, exerciceClotureService);
 
   beforeEach(() => {
+    jest.restoreAllMocks();
     query.mockReset();
     (exerciceClotureService.assertExerciceMutable as jest.Mock).mockReset().mockResolvedValue(undefined);
   });
@@ -277,5 +278,71 @@ describe('FacturesService', () => {
     await expect(service.valider(actor, 'fac-1')).rejects.toThrow('verrou');
     expect(exerciceClotureService.assertExerciceMutable).toHaveBeenCalledWith(actor, 'ex-1', 'validation de facture');
     expect(query).toHaveBeenCalledTimes(0);
+  });
+
+  it('preserve les rattachements analytiques projet/engagement/ligne dans la vue', async () => {
+    query.mockResolvedValueOnce(
+      makeResult([
+        {
+          id: 'fac-1',
+          client_id: actor.tenantId,
+          exercice_id: 'ex-1',
+          numero: 'FAC/EX2026/0001',
+          date_facture: '2026-01-15',
+          date_echeance: null,
+          fournisseur_id: 'f-1',
+          bon_commande_id: 'bc-1',
+          engagement_id: 'eng-1',
+          ligne_budgetaire_id: 'lb-1',
+          projet_id: 'prj-1',
+          objet: 'Facture test',
+          numero_facture_fournisseur: 'F-2026-001',
+          reference_piece: 'PJ-001',
+          montant_ht: 100,
+          montant_tva: 20,
+          montant_ttc: 120,
+          montant_liquide: 120,
+          statut: 'validee',
+          date_validation: '2026-01-16',
+          observations: null,
+          created_at: '2026-01-01T00:00:00.000Z',
+          updated_at: '2026-01-01T00:00:00.000Z',
+          created_by: actor.sub,
+          fournisseur_nom: 'Fournisseur A',
+          fournisseur_code: 'FOU-A',
+          bon_commande_numero: 'BC-001',
+          engagement_numero: 'ENG-001',
+          ligne_budgetaire_libelle: 'Ligne A',
+          projet_nom: 'Projet A',
+          projet_code: 'CC01-PROJ-A',
+          ecritures_count: 2,
+        },
+      ])
+    );
+
+    const result = await service.getById(actor, 'fac-1');
+
+    expect(result.projetId).toBe('prj-1');
+    expect(result.engagementId).toBe('eng-1');
+    expect(result.ligneBudgetaireId).toBe('lb-1');
+    expect(result.projet).toEqual(
+      expect.objectContaining({
+        id: 'prj-1',
+        nom: 'Projet A',
+        code: 'CC01-PROJ-A',
+      })
+    );
+    expect(result.engagement).toEqual(
+      expect.objectContaining({
+        id: 'eng-1',
+        numero: 'ENG-001',
+      })
+    );
+    expect(result.ligneBudgetaire).toEqual(
+      expect.objectContaining({
+        id: 'lb-1',
+        libelle: 'Ligne A',
+      })
+    );
   });
 });

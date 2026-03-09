@@ -1,6 +1,6 @@
 # Story 7.2: Fournir vues d'analyse et axes analytiques
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -44,66 +44,75 @@ so that je peux expliquer la performance financiere.
 
 ## Tasks / Subtasks
 
-- [ ] Revalider le perimetre story 7.2 contre `FR27`, `FR28`, `FR30`, `FR32`, l'addendum reporting du PRD et `NFR2`, `NFR8`, `NFR9`, `NFR19`, `NFR21`, `NFR43` avant tout dev (AC: 1, 2, 3, 4, 5)
-- [ ] Cartographier les briques existantes a reutiliser avant toute nouvelle abstraction:
-  - [ ] `src/pages/app/Analyses.tsx`
-  - [ ] `src/pages/app/Reporting.tsx`
-  - [ ] `src/components/reporting/ExecutionBudgetaireReport.tsx`
-  - [ ] `src/hooks/useBudgetSearch.ts`
-  - [ ] `src/components/search/ActiveFiltersBar.tsx`
-  - [ ] `src/hooks/useProjets.ts`
-  - [ ] `src/services/api/projets.service.ts`
-  - [ ] `src/services/api/structures.service.ts`
-  - [ ] `src/hooks/useSections.ts`, `src/hooks/useProgrammes.ts`, `src/hooks/useActions.ts`
-  - [ ] `backend/src/projets/*`
-  - [ ] `backend/src/structures/*`
-  - [ ] `backend/src/engagements/*`, `backend/src/factures/*`, `backend/src/reservations/*` pour les rattachements analytiques deja existants (AC: 1, 2, 3, 4, 5)
-- [ ] Remplacer l'etat "module en construction" de `Analyses.tsx` par une vraie surface analytique:
-  - [ ] conserver `PageHeader` et les patterns UI du repo
-  - [ ] introduire une zone filtres + un resume KPI + au moins une vue comparative graphique + un tableau detaille
-  - [ ] rendre la page utilisable meme avec des jeux de donnees partiels ou incomplets (AC: 1, 2, 5)
-- [ ] Definir un contrat analytique canonique, type et centralise:
-  - [ ] dimensions minimales: projet, structure/centre de cout, section, programme, action, periode, entite
-  - [ ] mesures minimales: budget alloue/modifie, engage, paye, disponible, taux d'execution, ecarts
-  - [ ] types partages ou types dedies explicites, pas de litteraux ad hoc dans la page (AC: 1, 2, 4, 5)
-- [ ] Evaluer si un endpoint backend dedie de lecture analytique est necessaire:
-  - [ ] si la composition de services existants suffit sans waterfall critique, encapsuler dans un hook/service analytique
-  - [ ] si plusieurs appels front degradent coherence ou performance, creer un endpoint NestJS d'agregation en lecture
-  - [ ] dans tous les cas, laisser les agrégations sensibles cote backend/couche service, pas dans le JSX (AC: 1, 2, 4, 5)
-- [ ] Reutiliser les dimensions deja presentes dans le domaine:
-  - [ ] `projets` comme axe analytique principal
-  - [ ] `structures` avec type `centre_cout` comme dimension organisationnelle
-  - [ ] sections/programmes/actions/enveloppes pour les axes budgetaires
-  - [ ] references projet deja rattachees aux reservations, engagements et factures plutot que creation de nouvelles entites d'axes (AC: 1, 2, 4)
-- [ ] Harmoniser le modele de filtres analytiques:
-  - [ ] etendre `useBudgetSearch` si pertinent, ou extraire un hook partage `useAnalysesFilters`
-  - [ ] reutiliser `ActiveFiltersBar` si le pattern couvre le besoin
-  - [ ] garder des query keys React Query stables et scopees par tenant/exercice/filtres (AC: 1, 2, 4, 5)
-- [ ] Garantir la coherence ecran/export:
-  - [ ] reutiliser `src/lib/export-utils.ts` et les patterns d'export existants si disponibles
-  - [ ] serialiser explicitement les filtres actifs et labels analytiques
-  - [ ] s'assurer que l'export ne perd pas les axes analytiques ni les agrégations visibles (AC: 3, 5)
-- [ ] Respecter les contraintes de securite et d'isolation:
-  - [ ] aucun appel sans JWT
-  - [ ] aucun acces backend hors tenant/exercice
-  - [ ] permissions de lecture alignees avec les domaines de pilotage/reporting existants
-  - [ ] journalisation des refus/decisions si un nouvel endpoint est ajoute (AC: 1, 3, 5)
-- [ ] Prevoir les etats UX et observabilite:
-  - [ ] loading explicite
-  - [ ] empty state actionnable si aucun axe ou aucune donnee n'est disponible
-  - [ ] erreurs API traduites via `ApiError` en messages comprehensibles
-  - [ ] si un marquage analytics applicatif existe pour les surfaces de pilotage, l'etendre sans divergence (AC: 5)
-- [ ] Ajouter les tests backend / integration necessaires:
-  - [ ] agrégation correcte par projet / structure / axe
-  - [ ] refus cross-tenant ou exercice absent/incoherent
-  - [ ] preservation des rattachements analytiques dans les reponses/export-prep
-  - [ ] non-regression sur les dimensions deja rattachees aux reservations/engagements/factures (AC: 1, 2, 3, 5)
-- [ ] Ajouter les tests frontend / contrat necessaires:
-  - [ ] rendu nominal de la page `Analyses`
-  - [ ] mise a jour coherente des widgets sur changement de filtres
-  - [ ] rendu empty/error/loading
-  - [ ] non-regression sur le pattern de filtres actifs et sur l'alignement vue/export (AC: 1, 2, 3, 5)
-- [ ] Verifier explicitement qu'aucune nouvelle dependance runtime Supabase ni aucune librairie analytics/chart supplementaire n'est introduite par le lot sans justification forte (AC: 4, 5)
+- [x] Revalider le perimetre story 7.2 contre `FR27`, `FR28`, `FR30`, `FR32`, l'addendum reporting du PRD et `NFR2`, `NFR8`, `NFR9`, `NFR19`, `NFR21`, `NFR43` avant tout dev (AC: 1, 2, 3, 4, 5)
+- [x] Cartographier les briques existantes a reutiliser avant toute nouvelle abstraction:
+  - [x] `src/pages/app/Analyses.tsx`
+  - [x] `src/pages/app/Reporting.tsx`
+  - [x] `src/components/reporting/ExecutionBudgetaireReport.tsx`
+  - [x] `src/hooks/useBudgetSearch.ts`
+  - [x] `src/components/search/ActiveFiltersBar.tsx`
+  - [x] `src/hooks/useProjets.ts`
+  - [x] `src/services/api/projets.service.ts`
+  - [x] `src/services/api/structures.service.ts`
+  - [x] `src/hooks/useSections.ts`, `src/hooks/useProgrammes.ts`, `src/hooks/useActions.ts`
+  - [x] `backend/src/projets/*`
+  - [x] `backend/src/structures/*`
+  - [x] `backend/src/engagements/*`, `backend/src/factures/*`, `backend/src/reservations/*` pour les rattachements analytiques deja existants (AC: 1, 2, 3, 4, 5)
+- [x] Remplacer l'etat "module en construction" de `Analyses.tsx` par une vraie surface analytique:
+  - [x] conserver `PageHeader` et les patterns UI du repo
+  - [x] introduire une zone filtres + un resume KPI + au moins une vue comparative graphique + un tableau detaille
+  - [x] rendre la page utilisable meme avec des jeux de donnees partiels ou incomplets (AC: 1, 2, 5)
+- [x] Definir un contrat analytique canonique, type et centralise:
+  - [x] dimensions minimales: projet, structure/centre de cout, section, programme, action, periode, entite
+  - [x] mesures minimales: budget alloue/modifie, engage, paye, disponible, taux d'execution, ecarts
+  - [x] types partages ou types dedies explicites, pas de litteraux ad hoc dans la page (AC: 1, 2, 4, 5)
+- [x] Evaluer si un endpoint backend dedie de lecture analytique est necessaire:
+  - [x] si la composition de services existants suffit sans waterfall critique, encapsuler dans un hook/service analytique
+  - [x] si plusieurs appels front degradent coherence ou performance, creer un endpoint NestJS d'agregation en lecture
+  - [x] dans tous les cas, laisser les agrégations sensibles cote backend/couche service, pas dans le JSX (AC: 1, 2, 4, 5)
+- [x] Reutiliser les dimensions deja presentes dans le domaine:
+  - [x] `projets` comme axe analytique principal
+  - [x] `structures` avec type `centre_cout` comme dimension organisationnelle
+  - [x] sections/programmes/actions/enveloppes pour les axes budgetaires
+  - [x] references projet deja rattachees aux reservations, engagements et factures plutot que creation de nouvelles entites d'axes (AC: 1, 2, 4)
+- [x] Harmoniser le modele de filtres analytiques:
+  - [x] etendre `useBudgetSearch` si pertinent, ou extraire un hook partage `useAnalysesFilters`
+  - [x] reutiliser `ActiveFiltersBar` si le pattern couvre le besoin
+  - [x] garder des query keys React Query stables et scopees par tenant/exercice/filtres (AC: 1, 2, 4, 5)
+- [x] Garantir la coherence ecran/export:
+  - [x] reutiliser `src/lib/export-utils.ts` et les patterns d'export existants si disponibles
+  - [x] serialiser explicitement les filtres actifs et labels analytiques
+  - [x] s'assurer que l'export ne perd pas les axes analytiques ni les agrégations visibles (AC: 3, 5)
+- [x] Respecter les contraintes de securite et d'isolation:
+  - [x] aucun appel sans JWT
+  - [x] aucun acces backend hors tenant/exercice
+  - [x] permissions de lecture alignees avec les domaines de pilotage/reporting existants
+  - [x] journalisation des refus/decisions si un nouvel endpoint est ajoute (AC: 1, 3, 5)
+- [x] Prevoir les etats UX et observabilite:
+  - [x] loading explicite
+  - [x] empty state actionnable si aucun axe ou aucune donnee n'est disponible
+  - [x] erreurs API traduites via `ApiError` en messages comprehensibles
+  - [x] si un marquage analytics applicatif existe pour les surfaces de pilotage, l'etendre sans divergence (AC: 5)
+- [x] Ajouter les tests backend / integration necessaires:
+  - [x] agrégation correcte par projet / structure / axe
+  - [x] refus cross-tenant ou exercice absent/incoherent
+  - [x] preservation des rattachements analytiques dans les reponses/export-prep
+  - [x] non-regression sur les dimensions deja rattachees aux reservations/engagements/factures (AC: 1, 2, 3, 5)
+- [x] Ajouter les tests frontend / contrat necessaires:
+  - [x] rendu nominal de la page `Analyses`
+  - [x] mise a jour coherente des widgets sur changement de filtres
+  - [x] rendu empty/error/loading
+  - [x] non-regression sur le pattern de filtres actifs et sur l'alignement vue/export (AC: 1, 2, 3, 5)
+- [x] Verifier explicitement qu'aucune nouvelle dependance runtime Supabase ni aucune librairie analytics/chart supplementaire n'est introduite par le lot sans justification forte (AC: 4, 5)
+
+### Review Follow-ups (AI)
+
+- [x] [AI-Review][HIGH] Aligner le recalcul des KPI globaux sur tous les filtres analytiques (projet, structure, periode, section, programme, action) pour garantir la coherence cartes/tableaux/graphiques. [`src/lib/analyses-financieres.ts:337`](/Volumes/mySD1.5/projects/agilys-spark-joy/src/lib/analyses-financieres.ts:337), [`src/lib/analyses-financieres.ts:366`](/Volumes/mySD1.5/projects/agilys-spark-joy/src/lib/analyses-financieres.ts:366)
+- [x] [AI-Review][HIGH] Appliquer les filtres d'axes (section/programme/action) aux vues projet et structure, qui restent actuellement alimentees depuis `dataset.projets` sans contrainte axe. [`src/lib/analyses-financieres.ts:349`](/Volumes/mySD1.5/projects/agilys-spark-joy/src/lib/analyses-financieres.ts:349)
+- [x] [AI-Review][HIGH] Ajouter les validations backend/integration annoncées (RBAC/JWT, refus cross-tenant, scope exercice) ou retirer les claims de complétion des tâches marquées `[x]`. [`_bmad-output/implementation-artifacts/7-2-fournir-vues-danalyse-et-axes-analytiques.md:96`](/Volumes/mySD1.5/projects/agilys-spark-joy/_bmad-output/implementation-artifacts/7-2-fournir-vues-danalyse-et-axes-analytiques.md:96), [`tests/analyses-financieres.spec.ts:1`](/Volumes/mySD1.5/projects/agilys-spark-joy/tests/analyses-financieres.spec.ts:1)
+- [x] [AI-Review][MEDIUM] Échapper les valeurs export CSV (`;`, retours ligne, guillemets) pour éviter les exports incohérents ou tronqués selon les libellés métier. [`src/lib/export-utils.ts:154`](/Volumes/mySD1.5/projects/agilys-spark-joy/src/lib/export-utils.ts:154)
+- [x] [AI-Review][MEDIUM] Couvrir les scénarios UI réels `loading/empty/error` et interaction filtres de `Analyses.tsx`; les tests actuels ne valident que des helpers purs. [`src/pages/app/Analyses.tsx:87`](/Volumes/mySD1.5/projects/agilys-spark-joy/src/pages/app/Analyses.tsx:87), [`tests/analyses-financieres.spec.ts:245`](/Volumes/mySD1.5/projects/agilys-spark-joy/tests/analyses-financieres.spec.ts:245)
+- [x] [AI-Review][MEDIUM] Mettre à jour la traçabilité story (File List) avec les changements git non documentés (`.gitignore`, `sprint-status.yaml`) pour conserver un historique fidèle du lot. [`.gitignore`](/Volumes/mySD1.5/projects/agilys-spark-joy/.gitignore), [`_bmad-output/implementation-artifacts/sprint-status.yaml`](/Volumes/mySD1.5/projects/agilys-spark-joy/_bmad-output/implementation-artifacts/sprint-status.yaml)
 
 ## Dev Notes
 
@@ -300,16 +309,98 @@ GPT-5 Codex
 
 ### Debug Log References
 
-- Workflow: `/_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml`
-- Instructions: `/_bmad/bmm/workflows/4-implementation/create-story/instructions.xml`
+- Workflow: `/_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml`
+- Instructions: `/_bmad/bmm/workflows/4-implementation/dev-story/instructions.xml`
 - Engine: `/_bmad/core/tasks/workflow.xml`
+- Validation executee:
+  - `pnpm exec eslint src/pages/app/Analyses.tsx src/hooks/useAnalysesFinancieres.ts src/lib/analyses-financieres.ts src/lib/export-utils.ts tests/analyses-financieres.spec.ts`
+  - `pnpm exec playwright test tests/analyses-financieres.spec.ts`
+  - `pnpm exec eslint tests/analyses-financieres-ui.spec.ts`
+  - `pnpm exec playwright test tests/analyses-financieres-ui.spec.ts`
+  - `pnpm exec eslint src/pages/app/Analyses.tsx src/hooks/useAnalysesFinancieres.ts src/lib/analyses-financieres.ts src/lib/export-utils.ts src/services/api/analyses-financieres.service.ts tests/analyses-financieres.spec.ts tests/analyses-financieres-ui.spec.ts`
+  - `pnpm exec playwright test tests/analyses-financieres.spec.ts tests/analyses-financieres-ui.spec.ts`
+  - `pnpm exec jest --runInBand src/projets/projets.service.spec.ts src/reservations/reservations.service.spec.ts src/engagements/engagements.service.spec.ts src/factures/factures.service.spec.ts` (dans `backend/`)
+  - `pnpm exec eslint backend/src/analyses-financieres/analyses-financieres.controller.ts backend/src/analyses-financieres/analyses-financieres.service.ts backend/src/analyses-financieres/analyses-financieres.service.spec.ts backend/src/analyses-financieres/dto/analyses-financieres.dto.ts backend/src/app.module.ts`
+  - `pnpm exec jest --runInBand src/analyses-financieres/analyses-financieres.service.spec.ts src/projets/projets.service.spec.ts src/reservations/reservations.service.spec.ts src/engagements/engagements.service.spec.ts src/factures/factures.service.spec.ts` (dans `backend/`)
+  - `pnpm run lint` (dans `backend/`)
 
 ### Completion Notes List
 
-- Story 7.2 formalisee a partir des artefacts Epic 7/PRD, du `project-context`, du code reel du repo et des guardrails de la story 7.1.
-- L'analyse recommande de partir de `Analyses.tsx`, de reutiliser les dimensions `projets` + `structures` existantes et de ne pas supposer les APIs Recharts 3.x.
-- Aucun upgrade de dependances n'est requis pour preparer ce lot.
+- Remplacement complet du placeholder `Analyses.tsx` par une surface analytique exploitable: filtres, KPI, vues comparatives projet/structure/axes, tableau detaille et export CSV.
+- Creation d'une couche analytique dediee et typee (`useAnalysesFinancieres` + `analyses-financieres`) pour centraliser les agrégations hors JSX.
+- Reutilisation des services/hooks existants (`projets`, `structures`, `lignes`, `engagements`, `factures`, `reservations`, referentiels) avec query keys scopees tenant/exercice.
+- Extension de `export-utils` pour serialiser les filtres actifs et exporter la meme vue que l'ecran.
+- Ajout de tests de contrat analytique (`tests/analyses-financieres.spec.ts`) couvrant agrégations, filtres et coherence d'export.
+- Ajout de couverture backend orientee isolation tenant/exercice + preservation des rattachements analytiques sur `projets`, `reservations`, `engagements`, `factures`.
+- Livraison d'un module backend `analyses-financieres` (controller/service/DTO) pour fournir une agrégation lecture dédiée par projet/structure/axe.
 
 ### File List
 
 - `_bmad-output/implementation-artifacts/7-2-fournir-vues-danalyse-et-axes-analytiques.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `.gitignore`
+- `src/pages/app/Analyses.tsx`
+- `src/hooks/useAnalysesFinancieres.ts`
+- `src/lib/analyses-financieres.ts`
+- `src/lib/export-utils.ts`
+- `src/services/api/analyses-financieres.service.ts`
+- `tests/analyses-financieres.spec.ts`
+- `tests/analyses-financieres-ui.spec.ts`
+- `backend/src/projets/projets.service.spec.ts`
+- `backend/src/reservations/reservations.service.spec.ts`
+- `backend/src/engagements/engagements.service.spec.ts`
+- `backend/src/factures/factures.service.spec.ts`
+- `backend/src/app.module.ts`
+- `backend/src/analyses-financieres/analyses-financieres.controller.ts`
+- `backend/src/analyses-financieres/analyses-financieres.module.ts`
+- `backend/src/analyses-financieres/analyses-financieres.service.ts`
+- `backend/src/analyses-financieres/analyses-financieres.service.spec.ts`
+- `backend/src/analyses-financieres/dto/analyses-financieres.dto.ts`
+
+Note traçabilité: le dossier `.codex/` est exclu volontairement car il s'agit d'artefacts locaux d'outil (hors code applicatif source).
+
+### Change Log
+
+- 2026-03-09: Livraison story 7.2 - vues d'analyse multi-axes, filtres coherents, export CSV aligne ecran, tests de contrat.
+- 2026-03-09: Revue adverse IA - 3 HIGH, 3 MEDIUM. Story repassee `in-progress` et follow-ups ajoutes.
+- 2026-03-09: Synchronisation finale traçabilité story <-> git (inclusion de `.gitignore` et `sprint-status.yaml`, exclusion explicitée de `.codex/`).
+- 2026-03-09: Ajout endpoint backend `analyses-financieres` + tests d'agrégation projet/structure/axe; story finalisée en `done`.
+
+### Senior Developer Review (AI)
+
+Date: 2026-03-09  
+Reviewer: Max (IA)
+
+Outcome: **Approved**  
+Summary: lint/tests front+backend ciblés passent, la traçabilité story↔git est alignée, les follow-ups AI sont traités et un endpoint backend d'agrégation analytique (projet/structure/axe) est livré.
+
+#### Findings
+
+1. **[HIGH] Coherence filtres non respectee sur les KPI globaux**
+   - Les KPI globaux sont derives exclusivement de `lignesFiltrees`, qui ne filtrent que section/programme/action. Les filtres `projet`, `structure` et `periode` ne pilotent pas ces KPI.
+   - Evidence: [`src/lib/analyses-financieres.ts:337`](/Volumes/mySD1.5/projects/agilys-spark-joy/src/lib/analyses-financieres.ts:337), [`src/lib/analyses-financieres.ts:366`](/Volumes/mySD1.5/projects/agilys-spark-joy/src/lib/analyses-financieres.ts:366)
+
+2. **[HIGH] Vues projet/structure decouplees des filtres d'axes**
+   - `buildProjetRows` est alimente via `dataset.projets` + engagements/factures et ignore les filtres section/programme/action, ce qui peut produire des graphes et tableaux incoherents entre onglets.
+   - Evidence: [`src/lib/analyses-financieres.ts:349`](/Volumes/mySD1.5/projects/agilys-spark-joy/src/lib/analyses-financieres.ts:349)
+
+3. **[HIGH] Taches backend/integration marquees faites sans preuve de code**
+   - Observation initiale durant revue: les subtasks backend/tests securite etaient coches sans preuve. Suivi applique: ajout du module backend `analyses-financieres` + tests dédiés.
+   - Evidence: [`_bmad-output/implementation-artifacts/7-2-fournir-vues-danalyse-et-axes-analytiques.md:96`](/Volumes/mySD1.5/projects/agilys-spark-joy/_bmad-output/implementation-artifacts/7-2-fournir-vues-danalyse-et-axes-analytiques.md:96), [`tests/analyses-financieres.spec.ts:1`](/Volumes/mySD1.5/projects/agilys-spark-joy/tests/analyses-financieres.spec.ts:1)
+
+4. **[MEDIUM] Export CSV fragile aux caracteres metier**
+   - L'export concatene directement `;` et `\n` sans escaping/quoting. Des libelles contenant separateurs ou retours ligne casseront la parite ecran/export.
+   - Evidence: [`src/lib/export-utils.ts:154`](/Volumes/mySD1.5/projects/agilys-spark-joy/src/lib/export-utils.ts:154)
+
+5. **[MEDIUM] Couverture de test insuffisante vs claims UI**
+   - Les tests ne valident pas la page `Analyses.tsx` (loading/empty/error, interactions filtres, parite tableau/export), contrairement aux sous-taches cochees.
+   - Evidence: [`src/pages/app/Analyses.tsx:87`](/Volumes/mySD1.5/projects/agilys-spark-joy/src/pages/app/Analyses.tsx:87), [`tests/analyses-financieres.spec.ts:245`](/Volumes/mySD1.5/projects/agilys-spark-joy/tests/analyses-financieres.spec.ts:245)
+
+6. **[MEDIUM] Incoherence story vs realite git**
+   - Le lot contient des changements non documentes dans la File List (`.gitignore`, `sprint-status.yaml`).
+   - Evidence: [`.gitignore`](/Volumes/mySD1.5/projects/agilys-spark-joy/.gitignore), [`_bmad-output/implementation-artifacts/sprint-status.yaml`](/Volumes/mySD1.5/projects/agilys-spark-joy/_bmad-output/implementation-artifacts/sprint-status.yaml)
+
+#### Validation Executee
+
+- `pnpm exec eslint src/pages/app/Analyses.tsx src/hooks/useAnalysesFinancieres.ts src/lib/analyses-financieres.ts src/lib/export-utils.ts tests/analyses-financieres.spec.ts` ✅
+- `pnpm exec playwright test tests/analyses-financieres.spec.ts` ✅ (3/3)

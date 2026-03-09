@@ -150,4 +150,38 @@ describe('ReservationsService', () => {
     await expect(service.utiliser(actor, 'res-1')).rejects.toThrow('verrou');
     expect(query).toHaveBeenCalledTimes(1);
   });
+
+  it('preserve les rattachements analytiques projet et engagements dans la vue', async () => {
+    query.mockResolvedValueOnce(
+      makeResult([
+        makeReservationRow({
+          projet_id: 'prj-1',
+          projet_code: 'CC01-PROJ-A',
+          projet_nom: 'Projet A',
+          projet_statut: 'en_cours',
+          engagements_json: [{ id: 'eng-1', numero: 'ENG-1', montant: 250, statut: 'valide' }],
+        }),
+      ])
+    );
+
+    const result = await service.getById(actor, 'res-1');
+
+    expect(result.projetId).toBe('prj-1');
+    expect(result.projet).toEqual(
+      expect.objectContaining({
+        id: 'prj-1',
+        code: 'CC01-PROJ-A',
+        nom: 'Projet A',
+      })
+    );
+    expect(result.engagements).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'eng-1',
+          numero: 'ENG-1',
+          montant: 250,
+        }),
+      ])
+    );
+  });
 });
