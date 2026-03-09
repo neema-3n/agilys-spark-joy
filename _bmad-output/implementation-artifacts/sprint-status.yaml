@@ -51,9 +51,9 @@ development_status:
   7-4-activer-module-controle-interne: done
   epic-7-retrospective: optional
   epic-8: in-progress
-  8-1-mettre-en-place-flux-dintegration-asynchrones: ready-for-dev
-  8-2-gerer-mode-degrade-et-reprise-apres-reconnexion: backlog
-  8-3-superviser-divergences-et-sla-de-rattrapage: backlog
+  8-1-mettre-en-place-flux-dintegration-asynchrones: done
+  8-2-gerer-mode-degrade-et-reprise-apres-reconnexion: ready-for-dev
+  8-3-superviser-divergences-et-sla-de-rattrapage: ready-for-dev
   epic-8-retrospective: optional
   epic-9: backlog
   9-1-generer-balance-grand-livre-et-fiche-compte: backlog

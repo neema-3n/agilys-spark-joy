@@ -1,6 +1,6 @@
 # Story 8.1: Mettre en place flux d'integration asynchrones
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -44,16 +44,16 @@ so that les interruptions ponctuelles ne bloquent pas l'activite.
 
 ## Tasks / Subtasks
 
-- [ ] Definir le contrat d'evenement asynchrone canonical (`eventType`, `correlationId`, `tenantId`, `exerciceId`, `sourceType`, `sourceId`, `payload`, `occurredAt`, `schemaVersion`) et le partager backend/front (AC: 1, 2)
-- [ ] Ajouter/etendre la persistence pour outbox + journal de traitement entrant avec index d'idempotence (`correlationId`, `eventType`, `direction`) (AC: 1, 2, 3)
-- [ ] Implementer un service backend de publication asynchrone avec retry exponentiel borne et dead-letter (AC: 1, 5)
-- [ ] Implementer un consumer entrant idempotent et deterministic replay-safe (AC: 2, 5)
-- [ ] Exposer des endpoints de supervision/rejeu (ou etendre ceux existants) en conservant les guards/perms existants (AC: 3, 4)
-- [ ] Reutiliser les patterns de trace/correlation deja en place dans le domaine tresorerie/audit au lieu de creer une seconde filiere de trace (AC: 1, 3)
-- [ ] Etendre le service API frontend et hooks React Query pour lister erreurs/rejets et declencher retries autorises (AC: 3, 4)
-- [ ] Ajouter journalisation metier actionnable (reason codes normalises + metadata de reprise) (AC: 3, 5)
-- [ ] Valider qu'aucune nouvelle dependance runtime Supabase n'est introduite (AC: 4)
-- [ ] Produire tests backend + front couvrant nominal, idempotence, erreurs/retry, isolation tenant, permissions (AC: 1, 2, 3, 4, 5)
+- [x] Definir le contrat d'evenement asynchrone canonical (`eventType`, `correlationId`, `tenantId`, `exerciceId`, `sourceType`, `sourceId`, `payload`, `occurredAt`, `schemaVersion`) et le partager backend/front (AC: 1, 2)
+- [x] Ajouter/etendre la persistence pour outbox + journal de traitement entrant avec index d'idempotence (`correlationId`, `eventType`, `direction`) (AC: 1, 2, 3)
+- [x] Implementer un service backend de publication asynchrone avec retry exponentiel borne et dead-letter (AC: 1, 5)
+- [x] Implementer un consumer entrant idempotent et deterministic replay-safe (AC: 2, 5)
+- [x] Exposer des endpoints de supervision/rejeu (ou etendre ceux existants) en conservant les guards/perms existants (AC: 3, 4)
+- [x] Reutiliser les patterns de trace/correlation deja en place dans le domaine tresorerie/audit au lieu de creer une seconde filiere de trace (AC: 1, 3)
+- [x] Etendre le service API frontend et hooks React Query pour lister erreurs/rejets et declencher retries autorises (AC: 3, 4)
+- [x] Ajouter journalisation metier actionnable (reason codes normalises + metadata de reprise) (AC: 3, 5)
+- [x] Valider qu'aucune nouvelle dependance runtime Supabase n'est introduite (AC: 4)
+- [x] Produire tests backend + front couvrant nominal, idempotence, erreurs/retry, isolation tenant, permissions (AC: 1, 2, 3, 4, 5)
 
 ## Dev Notes
 
@@ -197,16 +197,39 @@ GPT-5 Codex
 
 ### Debug Log References
 
-- Workflow: `_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml`
-- Instructions: `_bmad/bmm/workflows/4-implementation/create-story/instructions.xml`
+- Workflow: `_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml`
+- Instructions: `_bmad/bmm/workflows/4-implementation/dev-story/instructions.xml`
+- Validation: `_bmad/bmm/workflows/4-implementation/dev-story/checklist.md`
 
 ### Completion Notes List
 
-- Ultimate context engine analysis completed - comprehensive developer guide created.
-- Story generated in mode yolo pour respecter l'automatisation complete du workflow create-story.
-- Aucun document d'architecture dedie detecte dans `planning-artifacts`; les garde-fous architecture proviennent de `project-context.md` et des patterns deja implementes.
+- Module backend `integration-legacy` cree avec outbox/journal idempotent, dispatch asynchrone et retry exponentiel borne vers dead-letter.
+- Contrat canonical partage backend/front (`eventType`, `correlationId`, `tenantId`, `exerciceId`, `sourceType`, `sourceId`, `payload`, `occurredAt`, `schemaVersion`).
+- Endpoints securises ajoutes: enqueue sortant, dispatch, ingestion entrante idempotente, supervision paginee, retry manuel.
+- Service API frontend + hooks React Query ajoutes pour supervision et retry.
+- Migration SQL ajoutee pour tables `integration_async_events` et `integration_async_event_attempts` avec index de de-duplication.
+- Validations executees: `pnpm --dir backend run lint`, `pnpm --dir backend run test`, `pnpm exec eslint src/services/api/integration-legacy.service.ts src/hooks/useIntegrationLegacy.ts src/types/integration-legacy.types.ts`, `pnpm exec playwright test tests/integration-legacy-client.spec.ts --workers=1`, `pnpm exec eslint tests/integration-legacy-client.spec.ts`.
 
 ### File List
 
 - _bmad-output/implementation-artifacts/8-1-mettre-en-place-flux-dintegration-asynchrones.md
 - _bmad-output/implementation-artifacts/sprint-status.yaml
+- backend/src/app.module.ts
+- backend/src/integration-legacy/dto/integration-legacy.dto.ts
+- backend/src/integration-legacy/integration-legacy.controller.spec.ts
+- backend/src/integration-legacy/integration-legacy.controller.ts
+- backend/src/integration-legacy/integration-legacy.module.ts
+- backend/src/integration-legacy/integration-legacy.service.spec.ts
+- backend/src/integration-legacy/integration-legacy.service.ts
+- backend/src/integration-legacy/integration-legacy.transport.ts
+- backend/src/integration-legacy/integration-legacy.types.ts
+- src/hooks/useIntegrationLegacy.ts
+- src/services/api/integration-legacy.service.ts
+- src/types/integration-legacy.types.ts
+- supabase/migrations/20260309170000_story_8_1_integration_async_flows.sql
+- tests/integration-legacy-client.spec.ts
+
+## Change Log
+
+- 2026-03-09: Implementation Story 8.1 completee (module integration legacy backend + migration SQL + service/hooks frontend + tests/validations, incluant tests frontend automatises integration legacy).
+- 2026-03-09: Corrections post-code-review appliquees: validation stricte `tenant/exercice`, worker backend de drainage automatique de la file outbox, et gestion explicite des statuts entrants `failed/dead_letter` avec journalisation de raison.

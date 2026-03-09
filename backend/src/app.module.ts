@@ -27,6 +27,7 @@ import { StructuresModule } from './structures/structures.module';
 import { TenantPoliciesModule } from './tenant-policies/tenant-policies.module';
 import { WorkflowExceptionsModule } from './workflow-exceptions/workflow-exceptions.module';
 import { ControleInterneModule } from './controle-interne/controle-interne.module';
+import { IntegrationLegacyModule } from './integration-legacy/integration-legacy.module';
 
 @Module({
   imports: [
@@ -57,7 +58,8 @@ import { ControleInterneModule } from './controle-interne/controle-interne.modul
     ReservationsModule,
     StructuresModule,
     TenantPoliciesModule,
-    ControleInterneModule
+    ControleInterneModule,
+    IntegrationLegacyModule
   ]
 })
 export class AppModule {}
