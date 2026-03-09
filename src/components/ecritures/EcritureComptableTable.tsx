@@ -27,6 +27,11 @@ const TYPE_OPERATION_LABELS: Record<string, { label: string; variant: BadgeVaria
   paiement: { label: 'Paiement', variant: 'outline' },
 };
 
+const STATUT_LABELS: Record<EcritureComptable['statutEcriture'], { label: string; variant: BadgeVariant }> = {
+  validee: { label: 'Validée', variant: 'secondary' },
+  contrepassation: { label: 'Contre-passation', variant: 'outline' }
+};
+
 export const EcritureComptableTable = ({ ecritures, onRowClick }: EcritureComptableTableProps) => {
   const formatMontant = (montant: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -48,6 +53,8 @@ export const EcritureComptableTable = ({ ecritures, onRowClick }: EcritureCompta
             <TableHead>Compte Crédit</TableHead>
             <TableHead>Libellé</TableHead>
             <TableHead>Règle appliquée</TableHead>
+            <TableHead>Statut</TableHead>
+            <TableHead>Audit</TableHead>
             <TableHead className="text-right">Montant</TableHead>
             <TableHead>Type</TableHead>
           </TableRow>
@@ -55,7 +62,7 @@ export const EcritureComptableTable = ({ ecritures, onRowClick }: EcritureCompta
         <TableBody>
           {ecritures.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={9} className="text-center text-muted-foreground">
+              <TableCell colSpan={11} className="text-center text-muted-foreground">
                 Aucune écriture comptable trouvée
               </TableCell>
             </TableRow>
@@ -107,6 +114,26 @@ export const EcritureComptableTable = ({ ecritures, onRowClick }: EcritureCompta
                   ) : (
                     <span className="text-xs text-muted-foreground">Non tracee</span>
                   )}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={STATUT_LABELS[ecriture.statutEcriture].variant}>
+                    {STATUT_LABELS[ecriture.statutEcriture].label}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex max-w-56 flex-col text-xs">
+                    <span className="font-medium">{ecriture.createdBy || 'Système'}</span>
+                    <span className="text-muted-foreground">
+                      {format(new Date(ecriture.createdAt), 'dd/MM/yyyy HH:mm', { locale: fr })}
+                    </span>
+                    {ecriture.ecritureOrigineId ? (
+                      <span className="font-mono text-[11px] text-muted-foreground">
+                        Origine {ecriture.ecritureOrigineId.slice(0, 8)}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">Origine nominale</span>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className="text-right font-semibold">
                   {formatMontant(ecriture.montant)}

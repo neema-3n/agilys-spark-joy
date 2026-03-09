@@ -238,6 +238,34 @@ test.describe('ecritures generation ui', () => {
             versionNumber: 3,
             versionStatus: 'published'
           }
+        },
+        {
+          id: 'ecr-2',
+          clientId: 'client-1',
+          exerciceId: 'ex-2026',
+          numeroPiece: 'DEP/2026/001',
+          numeroLigne: 2,
+          dateEcriture: '2026-03-08',
+          compteDebitId: 'compte-2',
+          compteCreditId: 'compte-1',
+          montant: 1250,
+          libelle: 'Annulation: Depense integration - Correction audit',
+          typeOperation: 'depense',
+          sourceId: 'dep-1',
+          regleComptableId: 'reg-1',
+          statutEcriture: 'contrepassation',
+          ecritureOrigineId: 'ecr-1',
+          createdAt: '2026-03-08T11:00:00.000Z',
+          createdBy: 'auditeur-1',
+          updatedAt: '2026-03-08T11:00:00.000Z',
+          compteDebit: { numero: '401', libelle: 'Fournisseurs' },
+          compteCredit: { numero: '601', libelle: 'Achats' },
+          regleComptable: {
+            code: 'RG-DEP-001',
+            nom: 'Depense fonctionnement',
+            versionNumber: 3,
+            versionStatus: 'published'
+          }
         }
       ],
       generateResponse: {
@@ -258,9 +286,12 @@ test.describe('ecritures generation ui', () => {
 
     await expect(page.getByText('Écritures comptables')).toBeVisible();
     await expect(page.getByText('Validée')).toBeVisible();
-    await expect(page.getByText('Depense fonctionnement')).toBeVisible();
-    await expect(page.getByText('601 Achats')).toBeVisible();
-    await expect(page.getByText('401 Fournisseurs')).toBeVisible();
+    await expect(page.getByText('Depense fonctionnement').first()).toBeVisible();
+    await expect(page.getByText('601 Achats').first()).toBeVisible();
+    await expect(page.getByText('401 Fournisseurs').first()).toBeVisible();
+    await expect(page.getByText('Annulation', { exact: true })).toBeVisible();
+    await expect(page.getByText('auditeur-1')).toBeVisible();
+    await expect(page.getByText(/origine liée/i)).toBeVisible();
     await expect(page.locator('div.text-right > p.text-sm.font-semibold').last()).toHaveText(/1\s*250/);
   });
 
@@ -300,15 +331,43 @@ test.describe('ecritures generation ui', () => {
             versionNumber: 2,
             versionStatus: 'published'
           }
+        },
+        {
+          id: 'ecr-journal-2',
+          clientId: 'client-1',
+          exerciceId: 'ex-2026',
+          numeroPiece: 'ENG/2026/001',
+          numeroLigne: 1001,
+          dateEcriture: '2026-03-08',
+          compteDebitId: 'compte-2',
+          compteCreditId: 'compte-1',
+          montant: 850,
+          libelle: 'Annulation: Engagement integration - Correction audit',
+          typeOperation: 'engagement',
+          sourceId: 'eng-1',
+          regleComptableId: 'reg-eng-1',
+          statutEcriture: 'contrepassation',
+          ecritureOrigineId: 'ecr-journal-1',
+          createdAt: '2026-03-08T12:15:00.000Z',
+          createdBy: 'auditeur-1',
+          updatedAt: '2026-03-08T12:15:00.000Z',
+          compteDebit: { numero: '401', libelle: 'Fournisseurs' },
+          compteCredit: { numero: '601', libelle: 'Achats' },
+          regleComptable: {
+            code: 'RG-ENG-001',
+            nom: 'Engagement integration',
+            versionNumber: 2,
+            versionStatus: 'published'
+          }
         }
       ],
       statsResponse: {
-        nombreTotal: 1,
-        montantTotalDebit: 850,
-        montantTotalCredit: 850,
+        nombreTotal: 2,
+        montantTotalDebit: 1700,
+        montantTotalCredit: 1700,
         parTypeOperation: {
           reservation: { nombre: 0, montant: 0 },
-          engagement: { nombre: 1, montant: 850 },
+          engagement: { nombre: 2, montant: 1700 },
           bon_commande: { nombre: 0, montant: 0 },
           facture: { nombre: 0, montant: 0 },
           depense: { nombre: 0, montant: 0 },
@@ -333,10 +392,13 @@ test.describe('ecritures generation ui', () => {
 
     await expect(page.getByText('Journal Comptable')).toBeVisible();
     await expect(page.getByText('Total Écritures')).toBeVisible();
-    await expect(page.locator('div').filter({ hasText: /^Total Écritures1$/ }).first()).toBeVisible();
-    await expect(page.getByText('RG-ENG-001 · v2')).toBeVisible();
-    await expect(page.getByText('Engagement', { exact: true })).toBeVisible();
-    await expect(page.getByText('ENG/2026/001')).toBeVisible();
+    await expect(page.locator('div').filter({ hasText: /^Total Écritures2$/ }).first()).toBeVisible();
+    await expect(page.getByText('RG-ENG-001 · v2').first()).toBeVisible();
+    await expect(page.getByText('Engagement', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('ENG/2026/001').first()).toBeVisible();
+    await expect(page.getByText('Contre-passation')).toBeVisible();
+    await expect(page.getByText('auditeur-1')).toBeVisible();
+    await expect(page.getByText('Origine ecr-jour')).toBeVisible();
   });
 
   test('affiche une erreur actionnable si le moteur backend rejette la generation', async ({ page }) => {

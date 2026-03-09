@@ -1,6 +1,6 @@
 # Story 6.3: Gerer corrections et contre-passations auditables
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -44,41 +44,41 @@ so that l'historique reste conforme en audit.
 
 ## Tasks / Subtasks
 
-- [ ] Revalider le contrat de la story contre `FR49`, `FR48`, `FR29`, `FR32`, `NFR8`, `NFR9`, `NFR11`, `NFR25`, `NFR28`, `NFR33`, puis formaliser les invariants non negociables de correction comptable (AC: 1, 2, 3, 4, 5)
-- [ ] Cartographier et reutiliser les points de correction deja presents avant tout ajout:
-  - [ ] `backend/src/reservations/reservations.service.ts`
-  - [ ] `backend/src/engagements/engagements.service.ts`
-  - [ ] `backend/src/factures/factures.service.ts`
-  - [ ] `backend/src/depenses/depenses.service.ts`
-  - [ ] `backend/src/paiements/paiements.service.ts`
-  - [ ] `backend/src/ecritures-comptables/ecritures-comptables.service.ts` (AC: 1, 3, 4, 5)
-- [ ] Extraire ou renforcer une abstraction backend partagee de contre-passation au lieu de conserver cinq variantes d'`INSERT INTO public.ecritures_comptables` quasi identiques (AC: 1, 3, 4)
-- [ ] Durcir les garde-fous de non-duplication:
-  - [ ] interdire une seconde contre-passation pour une meme ecriture d'origine sans workflow explicite
-  - [ ] verifier tenant/exercice/source avant inversion
-  - [ ] conserver la coherence `numero_piece`, `numero_ligne`, `statut_ecriture`, `ecriture_origine_id` (AC: 1, 3, 5)
-- [ ] Completer le contrat de persistance et de consultation si necessaire:
-  - [ ] ajouter migration SQL versionnee si une contrainte/index manque sur `ecriture_origine_id`, `statut_ecriture` ou unicite logique
-  - [ ] enrichir si besoin les DTO et vues backend/frontend pour exposer motif, auteur et horodatage lisibles (AC: 2, 3, 5)
-- [ ] Garder la logique metier de decision au bon niveau:
-  - [ ] validations de statut et autorisations dans les services de domaine
-  - [ ] mecanique comptable d'inversion dans la couche partagee
-  - [ ] aucun calcul de contre-passation dans le frontend (AC: 2, 4, 5)
-- [ ] Aligner les composants UI qui consomment les ecritures:
-  - [ ] `src/components/ecritures/EcrituresSection.tsx`
-  - [ ] `src/pages/app/JournalComptable.tsx`
-  - [ ] snapshots `ReservationSnapshot`, `EngagementSnapshot`, `FactureSnapshot`, `DepenseSnapshot`, `BonCommandeSnapshot` si impactes (AC: 2, 5)
-- [ ] Ajouter les tests backend obligatoires:
-  - [ ] creation d'une contre-passation nominale a partir d'une ecriture validee
-  - [ ] refus d'une double contre-passation sur la meme origine
-  - [ ] refus cross-tenant / exercice incoherent
-  - [ ] preservation de `ecriture_origine_id`, `created_by`, `statut_ecriture`
-  - [ ] non-regression sur annulation/correction `reservation`, `engagement`, `facture`, `depense`, `paiement` (AC: 1, 2, 3, 4, 5)
-- [ ] Ajouter les tests frontend / contrat cibles:
-  - [ ] affichage groupe origine + contre-passation dans `EcrituresSection`
-  - [ ] affichage des statuts dans `JournalComptable`
-  - [ ] verification que les hooks/services existants n'ont pas besoin de logique locale supplementaire pour relier les ecritures (AC: 2, 5)
-- [ ] Confirmer explicitement qu'aucune nouvelle dependance runtime Supabase n'est introduite et que le lot reste conforme au workflow `pnpm` + NestJS/PostgreSQL + client API unifie (AC: 4, 5)
+- [x] Revalider le contrat de la story contre `FR49`, `FR48`, `FR29`, `FR32`, `NFR8`, `NFR9`, `NFR11`, `NFR25`, `NFR28`, `NFR33`, puis formaliser les invariants non negociables de correction comptable (AC: 1, 2, 3, 4, 5)
+- [x] Cartographier et reutiliser les points de correction deja presents avant tout ajout:
+  - [x] `backend/src/reservations/reservations.service.ts`
+  - [x] `backend/src/engagements/engagements.service.ts`
+  - [x] `backend/src/factures/factures.service.ts`
+  - [x] `backend/src/depenses/depenses.service.ts`
+  - [x] `backend/src/paiements/paiements.service.ts`
+  - [x] `backend/src/ecritures-comptables/ecritures-comptables.service.ts` (AC: 1, 3, 4, 5)
+- [x] Extraire ou renforcer une abstraction backend partagee de contre-passation au lieu de conserver cinq variantes d'`INSERT INTO public.ecritures_comptables` quasi identiques (AC: 1, 3, 4)
+- [x] Durcir les garde-fous de non-duplication:
+  - [x] interdire une seconde contre-passation pour une meme ecriture d'origine sans workflow explicite
+  - [x] verifier tenant/exercice/source avant inversion
+  - [x] conserver la coherence `numero_piece`, `numero_ligne`, `statut_ecriture`, `ecriture_origine_id` (AC: 1, 3, 5)
+- [x] Completer le contrat de persistance et de consultation si necessaire:
+  - [x] ajouter migration SQL versionnee si une contrainte/index manque sur `ecriture_origine_id`, `statut_ecriture` ou unicite logique
+  - [x] enrichir si besoin les DTO et vues backend/frontend pour exposer motif, auteur et horodatage lisibles (AC: 2, 3, 5)
+- [x] Garder la logique metier de decision au bon niveau:
+  - [x] validations de statut et autorisations dans les services de domaine
+  - [x] mecanique comptable d'inversion dans la couche partagee
+  - [x] aucun calcul de contre-passation dans le frontend (AC: 2, 4, 5)
+- [x] Aligner les composants UI qui consomment les ecritures:
+  - [x] `src/components/ecritures/EcrituresSection.tsx`
+  - [x] `src/pages/app/JournalComptable.tsx`
+  - [x] snapshots `ReservationSnapshot`, `EngagementSnapshot`, `FactureSnapshot`, `DepenseSnapshot`, `BonCommandeSnapshot` si impactes (AC: 2, 5)
+- [x] Ajouter les tests backend obligatoires:
+  - [x] creation d'une contre-passation nominale a partir d'une ecriture validee
+  - [x] refus d'une double contre-passation sur la meme origine
+  - [x] refus cross-tenant / exercice incoherent
+  - [x] preservation de `ecriture_origine_id`, `created_by`, `statut_ecriture`
+  - [x] non-regression sur annulation/correction `reservation`, `engagement`, `facture`, `depense`, `paiement` (AC: 1, 2, 3, 4, 5)
+- [x] Ajouter les tests frontend / contrat cibles:
+  - [x] affichage groupe origine + contre-passation dans `EcrituresSection`
+  - [x] affichage des statuts dans `JournalComptable`
+  - [x] verification que les hooks/services existants n'ont pas besoin de logique locale supplementaire pour relier les ecritures (AC: 2, 5)
+- [x] Confirmer explicitement qu'aucune nouvelle dependance runtime Supabase n'est introduite et que le lot reste conforme au workflow `pnpm` + NestJS/PostgreSQL + client API unifie (AC: 4, 5)
 
 ## Dev Notes
 
@@ -290,12 +290,59 @@ GPT-5 Codex
 - Le document impose la reutilisation et la consolidation des implementations existantes plutot qu'une nouvelle duplication de SQL dans chaque service.
 - Les guardrails couvrent lien origine/correction, non-duplication, multi-tenant, contrat API/UI et compatibilite avec les stories `6.1` et `6.2`.
 - Aucune evolution de dependances ni nouveau runtime Supabase n'est recommandee pour ce lot.
+- Implementation realisee via `EcrituresComptablesService.createContrepassations(...)` avec validation tenant/exercice/source, refus de double contre-passation et gestion explicite des collisions d'unicite.
+- Les services `reservations`, `engagements`, `factures`, `depenses` et `paiements` deleguent maintenant la mecanique comptable partagee tout en conservant les decisions metier locales.
+- Le journal comptable et `EcrituresSection` exposent maintenant plus clairement statut, auteur, horodatage et relation origine/contre-passation sans logique supplementaire cote frontend.
+- Validations executees: `pnpm --dir backend run lint`, `pnpm --dir backend run test -- src/ecritures-comptables/ecritures-comptables.service.spec.ts`, `pnpm --dir backend run test -- src/reservations/reservations.service.spec.ts src/engagements/engagements.service.spec.ts src/factures/factures.service.spec.ts src/depenses/depenses.service.spec.ts src/paiements/paiements.service.spec.ts`, `pnpm exec eslint tests/ecritures-generation-ui.spec.ts backend/src/common/postgres.service.ts backend/src/ecritures-comptables/ecritures-comptables.service.ts backend/src/ecritures-comptables/ecritures-comptables.service.spec.ts`, et `pnpm exec playwright test tests/ecritures-generation-ui.spec.ts`.
 
 ### File List
 
 - `_bmad-output/implementation-artifacts/6-3-gerer-corrections-et-contre-passations-auditables.md`
 - `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `backend/src/ecritures-comptables/ecritures-comptables.service.ts`
+- `backend/src/ecritures-comptables/ecritures-comptables.service.spec.ts`
+- `backend/src/common/postgres.service.ts`
+- `backend/src/reservations/reservations.service.ts`
+- `backend/src/reservations/reservations.service.spec.ts`
+- `backend/src/engagements/engagements.service.ts`
+- `backend/src/engagements/engagements.service.spec.ts`
+- `backend/src/factures/factures.service.ts`
+- `backend/src/factures/factures.service.spec.ts`
+- `backend/src/depenses/depenses.service.ts`
+- `backend/src/depenses/depenses.service.spec.ts`
+- `backend/src/paiements/paiements.service.ts`
+- `backend/src/paiements/paiements.service.spec.ts`
+- `src/components/ecritures/EcritureComptableTable.tsx`
+- `src/components/ecritures/EcrituresSection.tsx`
+- `src/pages/app/JournalComptable.tsx`
+- `tests/ecritures-generation-ui.spec.ts`
+- `supabase/migrations/20260308153000_story_6_3_contrepassations_auditables.sql`
+
+## Senior Developer Review (AI)
+
+### Reviewer
+
+- Max (GPT-5 Codex) le 2026-03-08
+
+### Findings Summary
+
+- Revue initiale: 2 points P1 et 1 point P2 identifies sur l'atomicite des contre-passations, la strategie de `numero_ligne`, et l'absence de couverture explicite de `EcrituresSection`.
+- Correctifs appliques dans le meme lot avant cloture de revue.
+
+### Verification Notes
+
+- `createContrepassations(...)` est maintenant execute dans une transaction backend avec rollback complet en cas d'echec.
+- La numerotation des lignes de contre-passation est allouee de maniere sequentielle a partir du maximum existant par `numero_piece`, ce qui evite les collisions directes avec `unique_piece_ligne`.
+- Les collisions SQL `23505` sont maintenant distinguees entre doublon de contre-passation et conflit de numerotation.
+- La couverture frontend verifie explicitement le rendu du couple origine/contre-passation dans le snapshot consommant `EcrituresSection`.
+
+### Outcome
+
+- Approved after fixes.
 
 ## Change Log
 
 - 2026-03-07: Creation de la story context 6.3 avec cadrage complet des contre-passations, contraintes d'audit, centralisation backend et exigences de non-regression UI.
+- 2026-03-08: Centralisation de la contre-passation dans `EcrituresComptablesService`, ajout d'une contrainte SQL anti-duplication, mise a jour des ecrans d'audit et couverture de tests backend/frontend ciblee.
+- 2026-03-08: Correctifs post-review sur l'atomicite transactionnelle des contre-passations, la numerotation de ligne sans collision et la couverture explicite du rendu `EcrituresSection`.
+- 2026-03-08: Revue senior cloturee avec validation des correctifs et passage du statut story a `done`.

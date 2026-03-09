@@ -105,6 +105,9 @@ export const EcrituresSection = ({
                       <p className="text-sm text-muted-foreground">
                         {origine.libelle}
                       </p>
+                      <p className="text-xs text-muted-foreground">
+                        Audit: {origine.createdBy || 'Système'} · {formatDate(origine.createdAt)}
+                      </p>
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div>
                           <span className="text-muted-foreground">Débit: </span>
@@ -153,6 +156,9 @@ export const EcrituresSection = ({
                           </div>
                           <p className="text-sm text-muted-foreground">
                             {contrepassation.libelle}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Audit: {contrepassation.createdBy || 'Système'} · {formatDate(contrepassation.createdAt)} · origine liée
                           </p>
                           <div className="grid grid-cols-2 gap-2 text-xs">
                             <div>

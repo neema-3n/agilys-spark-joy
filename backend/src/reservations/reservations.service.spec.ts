@@ -51,7 +51,8 @@ describe('ReservationsService', () => {
   const query = jest.fn();
   const postgresService = { query } as unknown as PostgresService;
   const ecrituresComptablesService = {
-    ensureGeneratedForOperation: jest.fn()
+    ensureGeneratedForOperation: jest.fn(),
+    createContrepassations: jest.fn()
   } as unknown as EcrituresComptablesService;
   const service = new ReservationsService(postgresService, ecrituresComptablesService);
 
@@ -92,5 +93,48 @@ describe('ReservationsService', () => {
         projetId: 'projet-invalide'
       })
     ).rejects.toThrow('Projet invalide');
+  });
+
+  it("délègue l'annulation comptable au service partagé de contre-passation", async () => {
+    query
+      .mockResolvedValueOnce(makeResult([makeReservationRow()]))
+      .mockResolvedValueOnce(
+        makeResult([
+          {
+            id: 'ecr-1',
+            client_id: actor.tenantId,
+            exercice_id: 'ex-1',
+            numero_piece: 'RES-00001',
+            numero_ligne: 1,
+            compte_debit_id: 'cd',
+            compte_credit_id: 'cc',
+            montant: 1000,
+            libelle: 'Reservation',
+            type_operation: 'reservation',
+            source_id: 'res-1',
+            regle_comptable_id: 'reg-1',
+            engagement_id: null,
+            reservation_id: 'res-1',
+            bon_commande_id: null,
+            facture_id: null,
+            depense_id: null,
+            paiement_id: null
+          }
+        ])
+      )
+      .mockResolvedValueOnce(makeResult([], 1))
+      .mockResolvedValueOnce(makeResult([makeReservationRow({ statut: 'annulee', motif_annulation: 'motif' })]));
+
+    await service.annuler(actor, 'res-1', 'motif');
+
+    expect((ecrituresComptablesService.createContrepassations as jest.Mock)).toHaveBeenCalledWith(
+      actor,
+      expect.arrayContaining([expect.objectContaining({ id: 'ecr-1', source_id: 'res-1' })]),
+      expect.objectContaining({
+        motif: 'motif',
+        expectedExerciceId: 'ex-1',
+        expectedSourceId: 'res-1'
+      })
+    );
   });
 });

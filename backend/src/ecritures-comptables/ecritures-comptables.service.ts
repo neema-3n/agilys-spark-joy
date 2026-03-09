@@ -53,6 +53,48 @@ interface EcritureRow {
   regle_date_fin: Date | string | null;
 }
 
+export interface ContrepassationEntry {
+  id: string;
+  client_id: string;
+  exercice_id: string;
+  numero_piece: string;
+  numero_ligne: number;
+  compte_debit_id: string;
+  compte_credit_id: string;
+  montant: string | number;
+  libelle: string;
+  type_operation: string;
+  source_id: string;
+  regle_comptable_id: string | null;
+  engagement_id: string | null;
+  reservation_id: string | null;
+  bon_commande_id: string | null;
+  facture_id: string | null;
+  depense_id: string | null;
+  paiement_id: string | null;
+}
+
+interface ContrepassationValidationRow {
+  id: string;
+  client_id: string;
+  exercice_id: string;
+  source_id: string;
+  statut_ecriture: 'validee' | 'contrepassation' | null;
+  has_existing_contrepassation: boolean;
+}
+
+interface ExistingPieceLineRow {
+  numero_piece: string;
+  numero_ligne: number;
+}
+
+interface CreateContrepassationsOptions {
+  motif: string;
+  libellePrefix: string;
+  expectedExerciceId?: string;
+  expectedSourceId?: string;
+}
+
 interface StatsRow {
   type_operation: TypeOperation;
   nombre: string | number;
@@ -287,6 +329,206 @@ ORDER BY ec.date_ecriture DESC, ec.numero_piece DESC, ec.numero_ligne ASC
     }
 
     return result;
+  }
+
+  async createContrepassations(
+    actor: AuthenticatedUser,
+    entries: ContrepassationEntry[],
+    options: CreateContrepassationsOptions
+  ): Promise<void> {
+    if (entries.length === 0) {
+      return;
+    }
+
+    const motif = options.motif.trim();
+    if (!motif) {
+      throw new BadRequestException('Le motif de contre-passation est requis');
+    }
+
+    const invalidTenantEntry = entries.find((entry) => entry.client_id !== actor.tenantId);
+    if (invalidTenantEntry) {
+      throw new BadRequestException('Contre-passation impossible: une écriture est hors scope tenant.');
+    }
+
+    if (options.expectedExerciceId) {
+      const invalidExerciceEntry = entries.find((entry) => entry.exercice_id !== options.expectedExerciceId);
+      if (invalidExerciceEntry) {
+        throw new BadRequestException("Contre-passation impossible: l'exercice de l'écriture source est incohérent.");
+      }
+    }
+
+    if (options.expectedSourceId) {
+      const invalidSourceEntry = entries.find((entry) => entry.source_id !== options.expectedSourceId);
+      if (invalidSourceEntry) {
+        throw new BadRequestException('Contre-passation impossible: la source comptable ne correspond pas à la demande.');
+      }
+    }
+
+    try {
+      await this.postgresService.withTransaction(async (executor) => {
+        const validationResult = await executor.query<ContrepassationValidationRow>(
+          `
+            SELECT
+              ec.id,
+              ec.client_id,
+              ec.exercice_id,
+              ec.source_id,
+              ec.statut_ecriture,
+              EXISTS (
+                SELECT 1
+                FROM public.ecritures_comptables reverse_ec
+                WHERE reverse_ec.ecriture_origine_id = ec.id
+                  AND reverse_ec.statut_ecriture = 'contrepassation'
+              ) AS has_existing_contrepassation
+            FROM public.ecritures_comptables ec
+            WHERE ec.id = ANY($1::uuid[])
+              AND ec.client_id = $2
+            FOR UPDATE
+          `,
+          [entries.map((entry) => entry.id), actor.tenantId]
+        );
+
+        if (validationResult.rows.length !== entries.length) {
+          throw new BadRequestException('Contre-passation impossible: au moins une écriture source est introuvable ou hors scope.');
+        }
+
+        const invalidStatusEntry = validationResult.rows.find((row) => row.statut_ecriture !== 'validee');
+        if (invalidStatusEntry) {
+          throw new BadRequestException("Contre-passation impossible: seules les écritures validées peuvent être inversées.");
+        }
+
+        const alreadyReversedEntry = validationResult.rows.find((row) => row.has_existing_contrepassation);
+        if (alreadyReversedEntry) {
+          throw new BadRequestException('Contre-passation impossible: cette écriture a déjà été contre-passée.');
+        }
+
+        const pieceNumbers = Array.from(new Set(entries.map((entry) => entry.numero_piece)));
+        const existingLinesResult = await executor.query<ExistingPieceLineRow>(
+          `
+            SELECT
+              numero_piece,
+              numero_ligne
+            FROM public.ecritures_comptables
+            WHERE client_id = $1
+              AND numero_piece = ANY($2::text[])
+            ORDER BY numero_piece ASC, numero_ligne ASC
+            FOR UPDATE
+          `,
+          [actor.tenantId, pieceNumbers]
+        );
+
+        const nextLineByPiece = new Map<string, number>();
+        for (const row of existingLinesResult.rows) {
+          const currentMax = nextLineByPiece.get(row.numero_piece) ?? 0;
+          nextLineByPiece.set(row.numero_piece, Math.max(currentMax, Number(row.numero_ligne ?? 0)));
+        }
+
+        const sortedEntries = [...entries].sort((left, right) => {
+          if (left.numero_piece === right.numero_piece) {
+            return left.numero_ligne - right.numero_ligne;
+          }
+
+          return left.numero_piece.localeCompare(right.numero_piece);
+        });
+
+        for (const entry of sortedEntries) {
+          const nextNumeroLigne = (nextLineByPiece.get(entry.numero_piece) ?? 0) + 1;
+          nextLineByPiece.set(entry.numero_piece, nextNumeroLigne);
+
+          await executor.query(
+            `
+              INSERT INTO public.ecritures_comptables (
+                client_id,
+                exercice_id,
+                numero_piece,
+                numero_ligne,
+                date_ecriture,
+                compte_debit_id,
+                compte_credit_id,
+                montant,
+                libelle,
+                type_operation,
+                source_id,
+                regle_comptable_id,
+                statut_ecriture,
+                ecriture_origine_id,
+                created_by,
+                engagement_id,
+                reservation_id,
+                bon_commande_id,
+                facture_id,
+                depense_id,
+                paiement_id
+              )
+              VALUES (
+                $1,
+                $2,
+                $3,
+                $4,
+                CURRENT_DATE,
+                $5,
+                $6,
+                $7,
+                $8,
+                $9,
+                $10,
+                $11,
+                'contrepassation',
+                $12,
+                $13,
+                $14,
+                $15,
+                $16,
+                $17,
+                $18,
+                $19
+              )
+            `,
+            [
+              entry.client_id,
+              entry.exercice_id,
+              entry.numero_piece,
+              nextNumeroLigne,
+              entry.compte_credit_id,
+              entry.compte_debit_id,
+              entry.montant,
+              `${options.libellePrefix}: ${entry.libelle} - ${motif}`,
+              entry.type_operation,
+              entry.source_id,
+              entry.regle_comptable_id,
+              entry.id,
+              actor.sub,
+              entry.engagement_id,
+              entry.reservation_id,
+              entry.bon_commande_id,
+              entry.facture_id,
+              entry.depense_id,
+              entry.paiement_id
+            ]
+          );
+        }
+      });
+    } catch (error) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        (error as { code?: string }).code === '23505'
+      ) {
+        const constraint = 'constraint' in error ? (error as { constraint?: string }).constraint : undefined;
+        if (constraint === 'idx_ecritures_contrepassation_origine_unique') {
+          throw new BadRequestException('Contre-passation impossible: cette écriture a déjà été contre-passée.');
+        }
+
+        if (constraint === 'unique_piece_ligne') {
+          throw new BadRequestException("Contre-passation impossible: la numérotation de ligne est déjà utilisée pour cette pièce.");
+        }
+
+        throw new BadRequestException("Contre-passation impossible: un conflit d'unicité a été détecté pendant l'inversion.");
+      }
+
+      throw error;
+    }
   }
 
   private resolveTableName(typeOperation: TypeOperation): string {

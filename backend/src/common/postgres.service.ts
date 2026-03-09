@@ -1,5 +1,9 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import { Pool, QueryResult, QueryResultRow } from 'pg';
+import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
+
+interface SqlExecutor {
+  query<T extends QueryResultRow = QueryResultRow>(text: string, values?: unknown[]): Promise<QueryResult<T>>;
+}
 
 @Injectable()
 export class PostgresService implements OnModuleDestroy {
@@ -35,6 +39,22 @@ export class PostgresService implements OnModuleDestroy {
     values: unknown[] = []
   ): Promise<QueryResult<T>> {
     return this.getPool().query<T>(text, values);
+  }
+
+  async withTransaction<T>(callback: (executor: SqlExecutor) => Promise<T>): Promise<T> {
+    const client = await this.getPool().connect();
+
+    try {
+      await client.query('BEGIN');
+      const result = await callback(client as PoolClient & SqlExecutor);
+      await client.query('COMMIT');
+      return result;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async onModuleDestroy(): Promise<void> {

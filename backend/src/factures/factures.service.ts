@@ -632,13 +632,20 @@ LIMIT $${index} OFFSET $${index + 1}
           paiement_id
         FROM public.ecritures_comptables
         WHERE facture_id = $1
+          AND client_id = $2
+          AND exercice_id = $3
           AND statut_ecriture = 'validee'
       `,
-      [id]
+      [id, actor.tenantId, facture.exerciceId]
     );
 
     if (ecritures.rows.length > 0) {
-      await this.createContrepassations(actor, ecritures.rows, motif);
+      await this.ecrituresComptablesService.createContrepassations(actor, ecritures.rows, {
+        motif,
+        libellePrefix: 'Annulation',
+        expectedExerciceId: facture.exerciceId,
+        expectedSourceId: id
+      });
     }
 
     const result = await this.postgresService.query(
@@ -1143,82 +1150,6 @@ LIMIT $${index} OFFSET $${index + 1}
     const next = match ? Number(match[1]) + 1 : 1;
 
     return `FAC/${exerciceCode}/${String(next).padStart(4, '0')}`;
-  }
-
-  private async createContrepassations(actor: AuthenticatedUser, entries: EcritureRow[], motif: string): Promise<void> {
-    for (const entry of entries) {
-      await this.postgresService.query(
-        `
-          INSERT INTO public.ecritures_comptables (
-            client_id,
-            exercice_id,
-            numero_piece,
-            numero_ligne,
-            date_ecriture,
-            compte_debit_id,
-            compte_credit_id,
-            montant,
-            libelle,
-            type_operation,
-            source_id,
-            regle_comptable_id,
-            statut_ecriture,
-            ecriture_origine_id,
-            created_by,
-            engagement_id,
-            reservation_id,
-            bon_commande_id,
-            facture_id,
-            depense_id,
-            paiement_id
-          )
-          VALUES (
-            $1,
-            $2,
-            $3,
-            $4,
-            CURRENT_DATE,
-            $5,
-            $6,
-            $7,
-            $8,
-            $9,
-            $10,
-            $11,
-            'contrepassation',
-            $12,
-            $13,
-            $14,
-            $15,
-            $16,
-            $17,
-            $18,
-            $19
-          )
-        `,
-        [
-          entry.client_id,
-          entry.exercice_id,
-          entry.numero_piece,
-          entry.numero_ligne + 1000,
-          entry.compte_credit_id,
-          entry.compte_debit_id,
-          entry.montant,
-          `Annulation: ${entry.libelle} - ${motif}`,
-          entry.type_operation,
-          entry.source_id,
-          entry.regle_comptable_id,
-          entry.id,
-          actor.sub,
-          entry.engagement_id,
-          entry.reservation_id,
-          entry.bon_commande_id,
-          entry.facture_id,
-          entry.depense_id,
-          entry.paiement_id
-        ]
-      );
-    }
   }
 
   private async generateEcrituresForFacture(actor: AuthenticatedUser, facture: FactureView): Promise<void> {
