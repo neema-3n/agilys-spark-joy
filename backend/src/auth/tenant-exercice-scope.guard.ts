@@ -16,7 +16,8 @@ const EXERCICE_SCOPED_ROUTES = [
   'actions',
   'allocations',
   'reallocations',
-  'lignes-budgetaires'
+  'lignes-budgetaires',
+  'offline-sync'
 ];
 
 @Injectable()
