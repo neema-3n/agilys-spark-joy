@@ -264,6 +264,68 @@ const setupApi = async (
       return;
     }
 
+    if (url.pathname === '/tresorerie/closeout-dossier') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          generatedAt: '2026-03-07T12:00:00.000Z',
+          dossierType: 'cloture_exercice',
+          status: 'go',
+          scope: {
+            tenantId: 'client-1',
+            exerciceId: 'ex-2026',
+          },
+          decisionLog: [],
+          evidences: [],
+          reconciliation: {
+            found: true,
+            batchId: 'lot-standard',
+            decision: 'GO',
+            anomalies: {
+              critical: 0,
+              high: 0,
+              medium: 1,
+            },
+            reportFiles: [],
+          },
+          exceptions: {
+            supervision: {
+              exerciceId: 'ex-2026',
+              generatedAt: '2026-03-07T11:00:00.000Z',
+              currentPosition: 2500000,
+              shortTermProjection: 1620000,
+              pendingDisbursements: 620000,
+              pendingDisbursementsCount: 4,
+              remainingCommitments: 260000,
+              remainingCommitmentsCount: 3,
+              nonReconciledOperations: 6,
+              pendingReconciliations: 1,
+              qualifiedDiscrepancies: 1,
+              projectedExposure: 880000,
+              projectedGap: 120000,
+              activeExceptions: 1,
+              expiredExceptions: 1,
+              consumedExceptions: 2,
+              alerts: [],
+            },
+          },
+          manifest: {
+            generatedAt: '2026-03-07T12:00:00.000Z',
+            durationMs: 430,
+            durationWithinSla: true,
+            requirementsCoverage: {
+              total: 4,
+              covered: 4,
+              missing: 0,
+            },
+            missingCritical: [],
+          },
+        }),
+      });
+      return;
+    }
+
     if (request.method() === 'GET') {
       await route.fulfill({
         status: 200,
@@ -328,6 +390,7 @@ test.describe('tresorerie supervision + audit UI', () => {
     await page.goto(`${UI_BASE_URL}/app/controle-interne`);
     await expect(page).toHaveURL(/\/app\/controle-interne$/);
 
+    await expect(page.getByText('Dossier de clôture et migration')).toBeVisible();
     await expect(page.getByText('Audit des exceptions cash-risk')).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Statut' })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Risque' })).toBeVisible();

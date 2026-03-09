@@ -1,4 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import type { QueryResult, QueryResultRow } from 'pg';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import type { PostgresService } from '../common/postgres.service';
@@ -27,6 +30,7 @@ describe('TresorerieService', () => {
 
   beforeEach(() => {
     query.mockReset();
+    delete process.env.IMPLEMENTATION_ARTIFACTS_DIR;
   });
 
   it('calcule un read model supervision déterministe avec alertes', async () => {
@@ -307,5 +311,253 @@ describe('TresorerieService', () => {
     expect(payload.totalEntries).toBe(1);
     expect(payload.preview[0]?.status).toBe('exception-requested');
     expect(payload.fields).toEqual(expect.arrayContaining(['id', 'correlationId', 'createdAt']));
+  });
+
+  it('construit un dossier de clôture avec statut go quand reconciliation GO et preuves présentes', async () => {
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'closeout-go-'));
+    process.env.IMPLEMENTATION_ARTIFACTS_DIR = tempDir;
+
+    try {
+      await Promise.all([
+        writeFile(
+          path.join(tempDir, 'migration-reconciliation-lot-standard-20260308.json'),
+          JSON.stringify({
+            batchId: 'lot-standard',
+            tenantId: actor.tenantId,
+            exerciceId: 'ex-1',
+            decision: 'GO',
+            anomalyBySeverity: { critical: 0, high: 0, medium: 1 },
+          }),
+          'utf8'
+        ),
+        writeFile(path.join(tempDir, 'migration-reconciliation-lot-standard-20260308.csv'), 'id,status\n1,ok\n', 'utf8'),
+        writeFile(path.join(tempDir, 'migration-reconciliation-lot-standard-20260308.md'), '# report\n', 'utf8'),
+      ]);
+
+      query
+        .mockResolvedValueOnce(
+          makeResult([
+            {
+              id: 'evt-1',
+              event_type: 'cloture',
+              status_from: 'en_revue',
+              status_to: 'fermee',
+              decision: 'accepted',
+              actor_user_id: 'user-1',
+              payload: {},
+              checklist: {},
+              created_at: '2026-03-08T10:00:00.000Z',
+            },
+          ])
+        )
+        .mockResolvedValueOnce(
+          makeResult([
+            {
+              available_cash: 1000,
+              pending_disbursements: 150,
+              pending_disbursements_count: 1,
+              remaining_engagements: 50,
+              remaining_engagements_count: 1,
+              non_reconciled_operations: 1,
+              pending_reconciliations: 0,
+              qualified_discrepancies: 0,
+            },
+          ])
+        )
+        .mockResolvedValueOnce(
+          makeResult([
+            {
+              active_exceptions: 1,
+              expired_exceptions: 0,
+              consumed_exceptions: 1,
+            },
+          ])
+        )
+        .mockResolvedValueOnce(
+          makeResult([
+            {
+              id: 'audit-1',
+              exercice_id: 'ex-1',
+              status: 'approuvee',
+              transition: 'paiement:execute',
+              source_type: 'paiement',
+              source_id: 'pay-1',
+              entity_id: 'dep-1',
+              correlation_id: 'corr-1',
+              motif: 'urgence',
+              justification: 'test',
+              quorum_required: 2,
+              expires_at: '2026-03-09T10:00:00.000Z',
+              requested_by: 'user-1',
+              approved_at: '2026-03-08T10:00:00.000Z',
+              decided_at: '2026-03-08T10:00:00.000Z',
+              consumed_at: null,
+              consumed_by: null,
+              consumed_transition: null,
+              risk_decision: {
+                riskLevel: 'medium',
+                decision: 'block',
+                reasons: [],
+                snapshot: {
+                  tenantId: actor.tenantId,
+                  exerciceId: 'ex-1',
+                  transition: 'paiement:execute',
+                  sourceType: 'paiement',
+                  projectedAmount: 10,
+                  availableCash: 1000,
+                  outstandingDepenses: 100,
+                  remainingEngagements: 50,
+                  projectedExposure: 150,
+                  projectedGap: 0,
+                  nonReconciledOperations: 1,
+                  threshold: 1,
+                  correlationId: 'corr-1',
+                },
+              },
+              created_at: '2026-03-08T09:00:00.000Z',
+              updated_at: '2026-03-08T09:00:00.000Z',
+              approvers_json: [],
+              total_count: 1,
+            },
+          ])
+        );
+
+      const dossier = await service.getCloseoutDossier(actor, {
+        exerciceId: 'ex-1',
+        dossierType: 'cloture_exercice',
+        migrationBatchId: 'lot-standard',
+      });
+
+      expect(dossier.status).toBe('go');
+      expect(dossier.manifest.missingCritical).toEqual([]);
+      expect(dossier.reconciliation.decision).toBe('GO');
+      expect(dossier.manifest.requirementsCoverage).toEqual({
+        total: 4,
+        covered: 3,
+        missing: 1,
+      });
+      expect(dossier.evidences.length).toBeGreaterThan(0);
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('bloque le dossier si preuves critiques absentes', async () => {
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'closeout-blocked-'));
+    process.env.IMPLEMENTATION_ARTIFACTS_DIR = tempDir;
+
+    try {
+      query
+        .mockResolvedValueOnce(makeResult([]))
+        .mockResolvedValueOnce(
+          makeResult([
+            {
+              available_cash: 500,
+              pending_disbursements: 0,
+              pending_disbursements_count: 0,
+              remaining_engagements: 0,
+              remaining_engagements_count: 0,
+              non_reconciled_operations: 0,
+              pending_reconciliations: 0,
+              qualified_discrepancies: 0,
+            },
+          ])
+        )
+        .mockResolvedValueOnce(
+          makeResult([
+            {
+              active_exceptions: 0,
+              expired_exceptions: 0,
+              consumed_exceptions: 0,
+            },
+          ])
+        )
+        .mockResolvedValueOnce(makeResult([]));
+
+      const dossier = await service.getCloseoutDossier(actor, {
+        exerciceId: 'ex-1',
+      });
+
+      expect(dossier.status).toBe('blocked');
+      expect(dossier.manifest.missingCritical.length).toBeGreaterThan(0);
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('bloque le dossier quand le rapport de reconciliation ne correspond pas au scope tenant', async () => {
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'closeout-scope-'));
+    process.env.IMPLEMENTATION_ARTIFACTS_DIR = tempDir;
+
+    try {
+      await writeFile(
+        path.join(tempDir, 'migration-reconciliation-lot-standard-20260308.json'),
+        JSON.stringify({
+          batchId: 'lot-standard',
+          tenantId: 'tenant-OTHER',
+          exerciceId: 'ex-1',
+          decision: 'GO',
+          anomalyBySeverity: { critical: 0, high: 0, medium: 0 },
+        }),
+        'utf8'
+      );
+
+      query
+        .mockResolvedValueOnce(
+          makeResult([
+            {
+              id: 'evt-1',
+              event_type: 'cloture',
+              status_from: 'en_revue',
+              status_to: 'fermee',
+              decision: 'accepted',
+              actor_user_id: 'user-1',
+              payload: {},
+              checklist: {},
+              created_at: '2026-03-08T10:00:00.000Z',
+            },
+          ])
+        )
+        .mockResolvedValueOnce(
+          makeResult([
+            {
+              available_cash: 500,
+              pending_disbursements: 0,
+              pending_disbursements_count: 0,
+              remaining_engagements: 0,
+              remaining_engagements_count: 0,
+              non_reconciled_operations: 0,
+              pending_reconciliations: 0,
+              qualified_discrepancies: 0,
+            },
+          ])
+        )
+        .mockResolvedValueOnce(
+          makeResult([
+            {
+              active_exceptions: 0,
+              expired_exceptions: 0,
+              consumed_exceptions: 0,
+            },
+          ])
+        )
+        .mockResolvedValueOnce(makeResult([]));
+
+      const dossier = await service.getCloseoutDossier(actor, {
+        exerciceId: 'ex-1',
+        migrationBatchId: 'lot-standard',
+      });
+
+      expect(dossier.status).toBe('blocked');
+      expect(dossier.manifest.missingCritical).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            requirementId: 'EV-M23-RECONCILIATION',
+          }),
+        ])
+      );
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
   });
 });

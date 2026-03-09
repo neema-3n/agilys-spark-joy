@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useComptesTresorerie } from '@/hooks/useComptesTresorerie';
 import { useRecettes } from '@/hooks/useRecettes';
 import { useOperationsTresorerie } from '@/hooks/useOperationsTresorerie';
+import { RapprochementBancaireWorkspace } from '@/components/tresorerie/RapprochementBancaireWorkspace';
 import { StatsCard } from '@/components/ui/stats-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useState } from 'react';
@@ -119,14 +120,7 @@ const TresoreriePro = () => {
           </TabsContent>
 
           <TabsContent value="rapprochement">
-            <Card>
-              <CardHeader>
-                <CardTitle>Rapprochement Bancaire</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Interface de rapprochement à venir...</p>
-              </CardContent>
-            </Card>
+            <RapprochementBancaireWorkspace />
           </TabsContent>
         </Tabs>
       </div>

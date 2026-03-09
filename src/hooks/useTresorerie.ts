@@ -105,3 +105,21 @@ export const useExceptionAuditDetail = (input: { exceptionId?: string; correlati
     enabled: isEnabled && hasIdentifier,
   });
 };
+
+export const useCloseoutDossier = (input?: {
+  dossierType?: 'cloture_exercice' | 'migration_reconciliation';
+  migrationBatchId?: string;
+}) => {
+  const { exerciceId, clientId, isEnabled } = useTresorerieContext();
+
+  return useQuery({
+    queryKey: ['closeout-dossier', clientId, exerciceId, input],
+    queryFn: () => {
+      if (!clientId || !exerciceId) {
+        throw new Error('Client ou exercice non défini');
+      }
+      return tresorerieService.getCloseoutDossier(clientId, exerciceId, input);
+    },
+    enabled: isEnabled,
+  });
+};
