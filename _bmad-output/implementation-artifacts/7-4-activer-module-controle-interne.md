@@ -1,6 +1,6 @@
 # Story 7.4: Activer module controle interne
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -44,71 +44,71 @@ so that la maitrise interne reste active en continu.
 
 ## Tasks / Subtasks
 
-- [ ] Revalider le perimetre story 7.4 contre `FR31` en source principale, avec dependances directes sur `FR23`, `FR30`, `FR32`, `FR42`, `FR51`, `FR55` et `FR57`, ainsi que `NFR8`, `NFR9`, `NFR11`, `NFR13`, `NFR19`, `NFR21` et `NFR30` avant tout dev (AC: 1, 2, 3, 4, 5)
-- [ ] Cartographier les briques existantes a reutiliser avant toute nouvelle abstraction:
-  - [ ] `src/pages/app/ControleInterne.tsx`
-  - [ ] `src/components/controle-interne/ExceptionAuditTable.tsx`
-  - [ ] `src/components/controle-interne/ExceptionAuditDetail.tsx`
-  - [ ] `src/hooks/useTresorerie.ts`
-  - [ ] `src/hooks/useWorkflowExceptions.ts`
-  - [ ] `src/components/workflow-exceptions/WorkflowExceptionsList.tsx`
-  - [ ] `src/components/workflow-exceptions/WorkflowExceptionRequestDialog.tsx`
-  - [ ] `src/components/export/ExportResultsBar.tsx`
-  - [ ] `src/lib/export-utils.ts`
-  - [ ] `backend/src/tresorerie/*`
-  - [ ] `backend/src/workflow-exceptions/*`
-  - [ ] `backend/src/auth/authorization.types.ts`
-  - [ ] `backend/src/auth/authorization-audit.service.ts`
-  - [ ] `backend/src/rapprochements-bancaires/*`
-  - [ ] `backend/src/exercice-cloture/*` (AC: 1, 2, 3, 4, 5)
-- [ ] Resoudre explicitement le gap RBAC du role "controleur interne":
-  - [ ] confirmer si le besoin doit etre porte par `auditeur`, `directeur_financier`, une combinaison existante, ou un nouveau role metier
-  - [ ] si nouveau role, l'ajouter proprement dans `authorization.types.ts`, guards, fixtures et tests de permission
-  - [ ] si mapping sur role existant, le documenter dans le module et dans les tests pour eviter toute ambiguite future (AC: 4, 5)
-- [ ] Transformer `ControleInterne.tsx` d'une page read-only d'audit en workspace controle interne:
-  - [ ] conserver `PageHeader` et les patterns UI de l'application
-  - [ ] introduire une synthese de supervision (ecarts ouverts, exceptions soumises/approuvees, plans d'action en retard)
-  - [ ] structurer la page en sections ou onglets lisibles: ecarts, exceptions, plans d'action, detail/preuves
-  - [ ] conserver les etats loading, empty, error et acces restreint deja etablis (AC: 1, 5)
-- [ ] Definir un contrat canonique et type pour le module controle interne:
-  - [ ] un type de "control item" ou equivalent pour representer exception, ecart qualifie ou anomalie bloquante
-  - [ ] un type de plan d'action (owner, dueDate, priority, status, linkedSourceType, linkedSourceId, evidenceRefs)
-  - [ ] des enums partagees explicites pour statuts et priorites, sans litteraux epars dans le JSX (AC: 2, 3, 4)
-- [ ] Evaluer l'architecture backend la plus sure pour les plans d'action:
-  - [ ] ne pas stocker l'etat des plans d'action dans le front ou dans des composants
-  - [ ] si aucun stockage existant n'est reutilisable proprement, creer un module backend dedie (ex: `backend/src/controle-interne/*`) avec migration SQL associee
-  - [ ] conserver `workflow-exceptions` comme source de verite des exceptions et relier le nouveau domaine par references stables plutot que dupliquer les donnees (AC: 2, 3, 5)
-- [ ] Agreger les sources d'ecarts sans recreer un nouveau moteur de detection:
-  - [ ] exceptions gouvernees depuis `workflow_exceptions`
-  - [ ] alertes et export-prep de `tresorerie`
-  - [ ] ecarts qualifies de rapprochement bancaire
-  - [ ] anomalies bloquantes de pre-cloture / cloture
-  - [ ] ecarts analytiques ou budgetaires deja exposes par d'autres modules si reutilisables via lecture backend (AC: 1, 2, 3, 5)
-- [ ] Relier le module controle interne au continuum audit/export:
-  - [ ] reutiliser les pivots `exceptionId`, `correlationId`, `sourceType`, `sourceId`, `entityId`
-  - [ ] exploiter `GET /tresorerie/exception-audit/export-prep` et les patterns d'export existants avant toute nouvelle route
-  - [ ] preparer une articulation claire avec la story `7.3` pour qu'un plan d'action et son historique puissent nourrir le futur dossier d'audit (AC: 3, 5)
-- [ ] Preserver l'historique non destructif:
-  - [ ] append-only ou journal evenementiel pour les changements critiques de plans d'action
-  - [ ] aucun update silencieux qui ecrase l'ancien statut, proprietaire ou echeance
-  - [ ] timestamps, auteur et raison du changement obligatoires sur les transitions critiques (AC: 2, 3)
-- [ ] Etendre les hooks/services frontend sans divergence de pattern:
-  - [ ] React Query avec query keys stables scopees par tenant + exercice + filtres
-  - [ ] services API typés via `requestJson`
-  - [ ] composants de presentation decouples des regles metier et sans calculs sensibles cote client (AC: 1, 2, 5)
-- [ ] Ajouter les tests backend / integration necessaires:
-  - [ ] lecture/aggregation correcte des ecarts et exceptions lies
-  - [ ] refus d'acces pour role non autorise
-  - [ ] isolation tenant/exercice sur toutes les lectures et mutations
-  - [ ] non-destruction de l'historique des plans d'action
-  - [ ] liaisons correctes entre plan d'action, exception source et preuves exportables (AC: 2, 3, 4, 5)
-- [ ] Ajouter les tests frontend / contrat necessaires:
-  - [ ] affichage du workspace `ControleInterne`
-  - [ ] acces restreint sans `referentiels:audit:read`
-  - [ ] interactions de filtrage / selection / drill-down detail
-  - [ ] creation ou mise a jour d'un plan d'action si le lot inclut l'UI d'edition
-  - [ ] coherence entre synthese, liste et detail sans desynchronisation React Query (AC: 1, 2, 4, 5)
-- [ ] Verifier explicitement qu'aucune nouvelle dependance runtime Supabase, aucune logique metier dans le JSX, et aucune nouvelle librairie de dashboard/workflow n'est introduite sans justification forte (AC: 4, 5)
+- [x] Revalider le perimetre story 7.4 contre `FR31` en source principale, avec dependances directes sur `FR23`, `FR30`, `FR32`, `FR42`, `FR51`, `FR55` et `FR57`, ainsi que `NFR8`, `NFR9`, `NFR11`, `NFR13`, `NFR19`, `NFR21` et `NFR30` avant tout dev (AC: 1, 2, 3, 4, 5)
+- [x] Cartographier les briques existantes a reutiliser avant toute nouvelle abstraction:
+  - [x] `src/pages/app/ControleInterne.tsx`
+  - [x] `src/components/controle-interne/ExceptionAuditTable.tsx`
+  - [x] `src/components/controle-interne/ExceptionAuditDetail.tsx`
+  - [x] `src/hooks/useTresorerie.ts`
+  - [x] `src/hooks/useWorkflowExceptions.ts`
+  - [x] `src/components/workflow-exceptions/WorkflowExceptionsList.tsx`
+  - [x] `src/components/workflow-exceptions/WorkflowExceptionRequestDialog.tsx`
+  - [x] `src/components/export/ExportResultsBar.tsx`
+  - [x] `src/lib/export-utils.ts`
+  - [x] `backend/src/tresorerie/*`
+  - [x] `backend/src/workflow-exceptions/*`
+  - [x] `backend/src/auth/authorization.types.ts`
+  - [x] `backend/src/auth/authorization-audit.service.ts`
+  - [x] `backend/src/rapprochements-bancaires/*`
+  - [x] `backend/src/exercice-cloture/*` (AC: 1, 2, 3, 4, 5)
+- [x] Resoudre explicitement le gap RBAC du role "controleur interne":
+  - [x] confirmer si le besoin doit etre porte par `auditeur`, `directeur_financier`, une combinaison existante, ou un nouveau role metier
+  - [x] si nouveau role, l'ajouter proprement dans `authorization.types.ts`, guards, fixtures et tests de permission
+  - [x] si mapping sur role existant, le documenter dans le module et dans les tests pour eviter toute ambiguite future (AC: 4, 5)
+- [x] Transformer `ControleInterne.tsx` d'une page read-only d'audit en workspace controle interne:
+  - [x] conserver `PageHeader` et les patterns UI de l'application
+  - [x] introduire une synthese de supervision (ecarts ouverts, exceptions soumises/approuvees, plans d'action en retard)
+  - [x] structurer la page en sections ou onglets lisibles: ecarts, exceptions, plans d'action, detail/preuves
+  - [x] conserver les etats loading, empty, error et acces restreint deja etablis (AC: 1, 5)
+- [x] Definir un contrat canonique et type pour le module controle interne:
+  - [x] un type de "control item" ou equivalent pour representer exception, ecart qualifie ou anomalie bloquante
+  - [x] un type de plan d'action (owner, dueDate, priority, status, linkedSourceType, linkedSourceId, evidenceRefs)
+  - [x] des enums partagees explicites pour statuts et priorites, sans litteraux epars dans le JSX (AC: 2, 3, 4)
+- [x] Evaluer l'architecture backend la plus sure pour les plans d'action:
+  - [x] ne pas stocker l'etat des plans d'action dans le front ou dans des composants
+  - [x] si aucun stockage existant n'est reutilisable proprement, creer un module backend dedie (ex: `backend/src/controle-interne/*`) avec migration SQL associee
+  - [x] conserver `workflow-exceptions` comme source de verite des exceptions et relier le nouveau domaine par references stables plutot que dupliquer les donnees (AC: 2, 3, 5)
+- [x] Agreger les sources d'ecarts sans recreer un nouveau moteur de detection:
+  - [x] exceptions gouvernees depuis `workflow_exceptions`
+  - [x] alertes et export-prep de `tresorerie`
+  - [x] ecarts qualifies de rapprochement bancaire
+  - [x] anomalies bloquantes de pre-cloture / cloture
+  - [x] ecarts analytiques ou budgetaires deja exposes par d'autres modules si reutilisables via lecture backend (AC: 1, 2, 3, 5)
+- [x] Relier le module controle interne au continuum audit/export:
+  - [x] reutiliser les pivots `exceptionId`, `correlationId`, `sourceType`, `sourceId`, `entityId`
+  - [x] exploiter `GET /tresorerie/exception-audit/export-prep` et les patterns d'export existants avant toute nouvelle route
+  - [x] preparer une articulation claire avec la story `7.3` pour qu'un plan d'action et son historique puissent nourrir le futur dossier d'audit (AC: 3, 5)
+- [x] Preserver l'historique non destructif:
+  - [x] append-only ou journal evenementiel pour les changements critiques de plans d'action
+  - [x] aucun update silencieux qui ecrase l'ancien statut, proprietaire ou echeance
+  - [x] timestamps, auteur et raison du changement obligatoires sur les transitions critiques (AC: 2, 3)
+- [x] Etendre les hooks/services frontend sans divergence de pattern:
+  - [x] React Query avec query keys stables scopees par tenant + exercice + filtres
+  - [x] services API typés via `requestJson`
+  - [x] composants de presentation decouples des regles metier et sans calculs sensibles cote client (AC: 1, 2, 5)
+- [x] Ajouter les tests backend / integration necessaires:
+  - [x] lecture/aggregation correcte des ecarts et exceptions lies
+  - [x] refus d'acces pour role non autorise
+  - [x] isolation tenant/exercice sur toutes les lectures et mutations
+  - [x] non-destruction de l'historique des plans d'action
+  - [x] liaisons correctes entre plan d'action, exception source et preuves exportables (AC: 2, 3, 4, 5)
+- [x] Ajouter les tests frontend / contrat necessaires:
+  - [x] affichage du workspace `ControleInterne`
+  - [x] acces restreint sans `referentiels:audit:read`
+  - [x] interactions de filtrage / selection / drill-down detail
+  - [x] creation ou mise a jour d'un plan d'action si le lot inclut l'UI d'edition
+  - [x] coherence entre synthese, liste et detail sans desynchronisation React Query (AC: 1, 2, 4, 5)
+- [x] Verifier explicitement qu'aucune nouvelle dependance runtime Supabase, aucune logique metier dans le JSX, et aucune nouvelle librairie de dashboard/workflow n'est introduite sans justification forte (AC: 4, 5)
 
 ## Dev Notes
 
@@ -320,11 +320,33 @@ GPT-5 Codex
 
 ### Completion Notes List
 
-- 2026-03-09: contexte story 7.4 cree en mode YOLO apres validation du target story par identifiant fourni.
-- 2026-03-09: guardrail critique ajoute sur le gap RBAC (`controleur_interne` absent).
-- 2026-03-09: guardrail critique ajoute sur l'absence de domaine persistant pour les plans d'action.
-- 2026-03-09: alignement explicite impose avec `5.3/5.4` pour eviter toute duplication du moteur d'exceptions et des endpoints d'audit.
+- 2026-03-09: module backend `controle-interne` ajoute avec endpoints workspace + plans d action et historique append-only.
+- 2026-03-09: migration SQL ajoutee pour persister les plans d action et leur journal d evenements non destructif.
+- 2026-03-09: page `ControleInterne` transformee en workspace metier (synthese, onglets ecarts/exceptions/plans/detail).
+- 2026-03-09: mapping RBAC explicite documente (permission `referentiels:audit:read`, roles existants `auditeur`, `directeur_financier`, `admin_client`, `super_admin`).
+- 2026-03-09: tests backend service et test UI Playwright etendus pour creation/mise a jour des plans d action.
+- 2026-03-09: revue adversariale appliquee (rejet motive impose, endpoint historique consultable, UI historique/rejet, coverage tests completee, sync sprint status).
 
 ### File List
 
 - `/_bmad-output/implementation-artifacts/7-4-activer-module-controle-interne.md`
+- `/_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `/backend/src/app.module.ts`
+- `/backend/src/controle-interne/controle-interne.controller.ts`
+- `/backend/src/controle-interne/controle-interne.module.ts`
+- `/backend/src/controle-interne/controle-interne.service.ts`
+- `/backend/src/controle-interne/controle-interne.service.spec.ts`
+- `/backend/src/controle-interne/controle-interne.types.ts`
+- `/backend/src/controle-interne/dto/controle-interne.dto.ts`
+- `/supabase/migrations/20260309123000_story_7_4_controle_interne_action_plans.sql`
+- `/src/pages/app/ControleInterne.tsx`
+- `/src/components/controle-interne/InternalControlActionPlans.tsx`
+- `/src/hooks/useControleInterne.ts`
+- `/src/services/api/controle-interne.service.ts`
+- `/src/types/controle-interne.types.ts`
+- `/tests/tresorerie-supervision-ui.spec.ts`
+
+### Change Log
+
+- 2026-03-09: Story 7.4 implementee de bout en bout (backend persistant + frontend workspace + tests + migration).
+- 2026-03-09: Correctifs post-review appliques et story promue a `done`.
