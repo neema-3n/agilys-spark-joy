@@ -1,5 +1,7 @@
 import { Type } from 'class-transformer';
-import { IsBoolean, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { IsBoolean, IsDateString, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+
+const COMPTE_VERSION_STATUSES = ['draft', 'published', 'archived'] as const;
 
 export class CreateCompteDto {
   @IsString()
@@ -39,6 +41,22 @@ export class CreateCompteDto {
   @IsOptional()
   @IsIn(['actif', 'inactif'])
   statut?: 'actif' | 'inactif';
+
+  @IsOptional()
+  @IsIn(COMPTE_VERSION_STATUSES)
+  versionStatus?: (typeof COMPTE_VERSION_STATUSES)[number];
+
+  @IsOptional()
+  @IsDateString()
+  effectiveStartDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  effectiveEndDate?: string;
+
+  @IsOptional()
+  @IsString()
+  changeReason?: string;
 }
 
 export class UpdateCompteDto {
@@ -81,6 +99,22 @@ export class UpdateCompteDto {
   @IsOptional()
   @IsIn(['actif', 'inactif'])
   statut?: 'actif' | 'inactif';
+
+  @IsOptional()
+  @IsIn(COMPTE_VERSION_STATUSES)
+  versionStatus?: (typeof COMPTE_VERSION_STATUSES)[number];
+
+  @IsOptional()
+  @IsDateString()
+  effectiveStartDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  effectiveEndDate?: string;
+
+  @IsOptional()
+  @IsString()
+  changeReason?: string;
 }
 
 export class ImportComptesCsvDto {

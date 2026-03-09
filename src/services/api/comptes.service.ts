@@ -11,6 +11,15 @@ interface CompteApiModel {
   parentId?: string;
   niveau: number;
   statut: Compte['statut'];
+  versionGroupId: string;
+  versionNumber: number;
+  versionStatus: Compte['versionStatus'];
+  effectiveStartDate?: string;
+  effectiveEndDate?: string;
+  changeReason?: string;
+  publishedAt?: string;
+  archivedAt?: string;
+  createdBy?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -25,6 +34,15 @@ const mapFromApi = (c: CompteApiModel): Compte => ({
   parentId: c.parentId,
   niveau: Number(c.niveau),
   statut: c.statut,
+  versionGroupId: c.versionGroupId,
+  versionNumber: Number(c.versionNumber || 1),
+  versionStatus: c.versionStatus,
+  effectiveStartDate: c.effectiveStartDate,
+  effectiveEndDate: c.effectiveEndDate,
+  changeReason: c.changeReason,
+  publishedAt: c.publishedAt,
+  archivedAt: c.archivedAt,
+  createdBy: c.createdBy,
   createdAt: c.createdAt,
   updatedAt: c.updatedAt
 });
@@ -62,7 +80,11 @@ export const comptesService = {
           categorie: input.categorie,
           parentId: input.parentId,
           niveau: input.niveau,
-          statut: input.statut
+          statut: input.statut,
+          versionStatus: input.versionStatus,
+          effectiveStartDate: input.effectiveStartDate,
+          effectiveEndDate: input.effectiveEndDate,
+          changeReason: input.changeReason
         })
       },
       'Erreur lors de la création du compte'
@@ -83,7 +105,11 @@ export const comptesService = {
           categorie: input.categorie,
           parentId: input.parentId,
           niveau: input.niveau,
-          statut: input.statut
+          statut: input.statut,
+          versionStatus: input.versionStatus,
+          effectiveStartDate: input.effectiveStartDate,
+          effectiveEndDate: input.effectiveEndDate,
+          changeReason: input.changeReason
         })
       },
       'Erreur lors de la mise à jour du compte'

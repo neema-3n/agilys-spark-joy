@@ -7,6 +7,7 @@ import { Plus, FolderTree, BookOpen, Upload, Trash2, ChevronsDown, ChevronsUp, A
 import { useClient } from '@/contexts/ClientContext';
 import type { Compte, CreateCompteInput, UpdateCompteInput } from '@/types/compte.types';
 import { comptesService } from '@/services/api/comptes.service';
+import { isApiError } from '@/services/api/api-utils';
 import { CompteDialog } from './CompteDialog';
 import { CompteTreeItem } from './CompteTreeItem';
 import { ImportPlanComptableDialog } from './ImportPlanComptableDialog';
@@ -31,6 +32,7 @@ const PlanComptableManager = () => {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [expandAll, setExpandAll] = useState<{ expand: boolean; timestamp: number } | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Trouver le premier ancêtre disponible dans la vue filtrée
   const findAvailableAncestor = (
@@ -162,6 +164,7 @@ const PlanComptableManager = () => {
     if (!currentClient) return;
 
     try {
+      setSubmitError(null);
       await comptesService.create({
         ...data,
         clientId: currentClient.id
@@ -176,9 +179,11 @@ const PlanComptableManager = () => {
       await loadComptes();
     } catch (error) {
       console.error('Erreur lors de la création:', error);
+      const description = isApiError(error) ? error.message : 'Impossible de créer le compte';
+      setSubmitError(description);
       toast({
         title: 'Erreur',
-        description: 'Impossible de créer le compte',
+        description,
         variant: 'destructive'
       });
     }
@@ -188,6 +193,7 @@ const PlanComptableManager = () => {
     if (!selectedCompte) return;
 
     try {
+      setSubmitError(null);
       await comptesService.update(selectedCompte.id, data);
       
       toast({
@@ -200,9 +206,11 @@ const PlanComptableManager = () => {
       await loadComptes();
     } catch (error) {
       console.error('Erreur lors de la mise à jour:', error);
+      const description = isApiError(error) ? error.message : 'Impossible de mettre à jour le compte';
+      setSubmitError(description);
       toast({
         title: 'Erreur',
-        description: 'Impossible de mettre à jour le compte',
+        description,
         variant: 'destructive'
       });
     }
@@ -254,11 +262,13 @@ const PlanComptableManager = () => {
   };
 
   const openEditDialog = (compte: Compte) => {
+    setSubmitError(null);
     setSelectedCompte(compte);
     setDialogOpen(true);
   };
 
   const openCreateDialog = () => {
+    setSubmitError(null);
     setSelectedCompte(undefined);
     setDialogOpen(true);
   };
@@ -431,10 +441,16 @@ const PlanComptableManager = () => {
 
       <CompteDialog
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) {
+            setSubmitError(null);
+          }
+        }}
         onSubmit={selectedCompte ? handleUpdate : handleCreate}
         compte={selectedCompte}
         comptes={comptes}
+        submitError={submitError}
       />
 
       <ImportPlanComptableDialog

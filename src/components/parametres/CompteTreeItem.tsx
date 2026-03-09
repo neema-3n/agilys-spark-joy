@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, FolderOpen, Folder, FileText } from 'lucide-react';
 import { Compte } from '@/types';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,6 +36,7 @@ export const CompteTreeItem = ({
 }: CompteTreeItemProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const hasChildren = node.children.length > 0;
+  const versionLabel = node.versionStatus === 'published' ? 'Publiee' : node.versionStatus === 'archived' ? 'Archivee' : 'Brouillon';
 
   useEffect(() => {
     if (expandAll !== null) {
@@ -70,8 +72,24 @@ export const CompteTreeItem = ({
         
         <div className="flex items-center gap-2 flex-1 min-w-0">
           {getIcon()}
-          <span className="font-mono text-sm font-medium">{node.numero}</span>
-          <span className="text-sm truncate">{node.libelle}</span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="font-mono text-sm font-medium">{node.numero}</span>
+              <span className="text-sm truncate">{node.libelle}</span>
+            </div>
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <Badge variant={node.versionStatus === 'published' ? 'default' : 'secondary'} className="px-2 py-0">
+                v{node.versionNumber} · {versionLabel}
+              </Badge>
+              {node.effectiveStartDate && (
+                <span>
+                  Effet {node.effectiveStartDate}
+                  {node.effectiveEndDate ? ` → ${node.effectiveEndDate}` : ''}
+                </span>
+              )}
+              {node.changeReason && <span className="truncate">Motif: {node.changeReason}</span>}
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
