@@ -9,6 +9,7 @@ import {
   CreateOutgoingIntegrationEventDto,
   IntegrationDispatchQueryDto,
   ListIntegrationEventsQueryDto,
+  RemediateIntegrationEventDto,
   RetryIntegrationEventDto,
 } from './dto/integration-legacy.dto';
 import { IntegrationLegacyService } from './integration-legacy.service';
@@ -50,5 +51,15 @@ export class IntegrationLegacyController {
     @Body() body: RetryIntegrationEventDto
   ) {
     return this.integrationLegacyService.retryEvent(user, id, body);
+  }
+
+  @Post('events/:id/remediate')
+  @RequirePermissions('referentiels:write')
+  remediate(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: RemediateIntegrationEventDto
+  ) {
+    return this.integrationLegacyService.remediateEvent(user, id, body);
   }
 }

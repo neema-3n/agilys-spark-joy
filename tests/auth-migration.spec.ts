@@ -12,6 +12,7 @@ import { buildEcartsPrevisionQueryKey } from '../src/hooks/usePrevisions';
 import { bonsCommandeService } from '../src/services/api/bonsCommande.service';
 import { facturesService } from '../src/services/api/factures.service';
 import { createDepenseFromFacture } from '../src/services/api/depenses.service';
+import { reportingComptableService } from '../src/services/api/reporting-comptable.service';
 
 class MockStorage implements StorageLike {
   private readonly store = new Map<string, string>();
@@ -1806,6 +1807,144 @@ test('depensesService.createDepenseFromFacture remonte le message metier actionn
         'user-1'
       )
     ).rejects.toThrow('maximum 20 factures');
+  } finally {
+    httpClient.request = originalRequest;
+  }
+});
+
+test('reportingComptableService.getReport charge balance/grand-livre/fiche-compte', async () => {
+  const originalRequest = httpClient.request;
+
+  httpClient.request = (async () =>
+    new Response(
+      JSON.stringify({
+        filters: {
+          dateDebut: '2026-03-01',
+          dateFin: '2026-03-31',
+          page: 1,
+          pageSize: 100,
+        },
+        integrity: {
+          totalDebit: 100,
+          totalCredit: 100,
+          ecart: 0,
+          isBalanced: true,
+        },
+        balance: {
+          rows: [
+            {
+              compteId: 'c-1',
+              numero: '601',
+              libelle: 'Achats',
+              debit: 100,
+              credit: 0,
+              solde: 100,
+            },
+          ],
+        },
+        grandLivre: {
+          total: 1,
+          page: 1,
+          pageSize: 100,
+          rows: [
+            {
+              ecritureId: 'e-1',
+              dateEcriture: '2026-03-05',
+              numeroPiece: 'PC-001',
+              numeroLigne: 1,
+              libelle: 'Achat fournitures',
+              montant: 100,
+              debitCompteId: 'c-1',
+              debitCompteNumero: '601',
+              debitCompteLibelle: 'Achats',
+              creditCompteId: 'c-2',
+              creditCompteNumero: '401',
+              creditCompteLibelle: 'Fournisseurs',
+            },
+          ],
+        },
+        ficheCompte: {
+          compteId: 'c-1',
+          compteNumero: '601',
+          compteLibelle: 'Achats',
+          soldeOuverture: 0,
+          totalDebit: 100,
+          totalCredit: 0,
+          soldeCloture: 100,
+          mouvements: [],
+        },
+      }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    )) as typeof httpClient.request;
+
+  try {
+    const report = await reportingComptableService.getReport({
+      dateDebut: '2026-03-01',
+      dateFin: '2026-03-31',
+      page: 1,
+      pageSize: 100,
+    });
+
+    expect(report.integrity.isBalanced).toBeTruthy();
+    expect(report.balance.rows).toHaveLength(1);
+    expect(report.grandLivre.rows).toHaveLength(1);
+    expect(report.ficheCompte.compteNumero).toBe('601');
+  } finally {
+    httpClient.request = originalRequest;
+  }
+});
+
+test('reportingComptableService.startExport construit la requete export asynchrone', async () => {
+  const originalRequest = httpClient.request;
+
+  httpClient.request = (async (url: RequestInfo | URL) => {
+    const requestUrl = typeof url === 'string' ? url : url.toString();
+    expect(requestUrl).toContain('/reporting-comptable/exports?');
+    expect(requestUrl).toContain('view=grand-livre');
+    expect(requestUrl).toContain('format=xlsx');
+
+    return new Response(
+      JSON.stringify({
+        exportId: 'exp-1',
+        status: 'pending',
+      }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }) as typeof httpClient.request;
+
+  try {
+    const result = await reportingComptableService.startExport({
+      dateDebut: '2026-03-01',
+      dateFin: '2026-03-31',
+      view: 'grand-livre',
+      format: 'xlsx',
+    });
+
+    expect(result).toMatchObject({ exportId: 'exp-1', status: 'pending' });
+  } finally {
+    httpClient.request = originalRequest;
+  }
+});
+
+test('reportingComptableService.downloadExport remonte une erreur API lisible', async () => {
+  const originalRequest = httpClient.request;
+
+  httpClient.request = (async () =>
+    new Response(JSON.stringify({ message: 'Lien expiré' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    })) as typeof httpClient.request;
+
+  try {
+    await expect(
+      reportingComptableService.downloadExport('/reporting-comptable/exports/exp-1/download?token=x', 'fallback.csv')
+    ).rejects.toThrow('telechargement export');
   } finally {
     httpClient.request = originalRequest;
   }

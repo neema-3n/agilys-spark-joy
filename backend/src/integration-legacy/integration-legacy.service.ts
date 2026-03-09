@@ -7,14 +7,18 @@ import {
   CreateOutgoingIntegrationEventDto,
   IntegrationDispatchQueryDto,
   ListIntegrationEventsQueryDto,
+  RemediateIntegrationEventDto,
   RetryIntegrationEventDto,
 } from './dto/integration-legacy.dto';
 import { IntegrationLegacyTransport } from './integration-legacy.transport';
 import type {
   IntegrationCanonicalEvent,
   IntegrationEventDirection,
+  IntegrationEventPriority,
+  IntegrationRemediationAction,
   IntegrationEventSeverity,
   IntegrationEventStatus,
+  IntegrationTreatmentStatus,
   IntegrationEventView,
 } from './integration-legacy.types';
 
@@ -31,8 +35,13 @@ interface IntegrationEventRow {
   schema_version: string;
   status: IntegrationEventStatus;
   severity: IntegrationEventSeverity;
+  priority: IntegrationEventPriority;
+  treatment_status: IntegrationTreatmentStatus;
   reason_code: string | null;
   reason_message: string | null;
+  owner: string | null;
+  detected_at: string | Date | null;
+  resolved_at: string | Date | null;
   attempt_count: number;
   max_attempts: number;
   next_retry_at: string | Date | null;
@@ -45,9 +54,17 @@ interface IntegrationEventRow {
   total_count?: number;
 }
 
+interface IntegrationCounterRow {
+  status: IntegrationEventStatus;
+  priority: IntegrationEventPriority;
+  total: string;
+}
+
 @Injectable()
 export class IntegrationLegacyService implements OnModuleInit, OnModuleDestroy {
   private static readonly DISPATCH_WORKER_USER = 'integration-legacy-worker';
+  private static readonly DETECTION_SLA_MS = 5 * 60 * 1000; // NFR23
+  private static readonly RECOVERY_SLA_MS = 15 * 60 * 1000; // NFR22
   private dispatchWorkerTimer: NodeJS.Timeout | null = null;
   private dispatchWorkerRunning = false;
 
@@ -127,8 +144,13 @@ export class IntegrationLegacyService implements OnModuleInit, OnModuleDestroy {
           schema_version,
           status,
           severity,
+          priority,
+          treatment_status,
           reason_code,
           reason_message,
+          owner,
+          detected_at,
+          resolved_at,
           attempt_count,
           max_attempts,
           occurred_at,
@@ -147,7 +169,12 @@ export class IntegrationLegacyService implements OnModuleInit, OnModuleDestroy {
           $8,
           'received',
           'info',
+          'P3',
+          'open',
           NULL,
+          NULL,
+          NULL,
+          now(),
           NULL,
           0,
           5,
@@ -226,9 +253,24 @@ export class IntegrationLegacyService implements OnModuleInit, OnModuleDestroy {
       where.push(`severity = $${values.length}`);
     }
 
+    if (query.priority) {
+      values.push(query.priority);
+      where.push(`priority = $${values.length}`);
+    }
+
+    if (query.treatmentStatus) {
+      values.push(query.treatmentStatus);
+      where.push(`treatment_status = $${values.length}`);
+    }
+
     if (query.correlationId) {
       values.push(query.correlationId);
       where.push(`correlation_id = $${values.length}`);
+    }
+
+    if (query.owner) {
+      values.push(query.owner);
+      where.push(`owner = $${values.length}`);
     }
 
     if (query.fromDate) {
@@ -251,7 +293,10 @@ export class IntegrationLegacyService implements OnModuleInit, OnModuleDestroy {
         SELECT *, COUNT(*) OVER() AS total_count
         FROM public.integration_async_events
         WHERE ${where.join(' AND ')}
-        ORDER BY created_at DESC
+        ORDER BY
+          CASE priority WHEN 'P1' THEN 1 WHEN 'P2' THEN 2 ELSE 3 END ASC,
+          created_at DESC,
+          id DESC
         LIMIT $${values.length - 1}
         OFFSET $${values.length}
       `,
@@ -259,9 +304,31 @@ export class IntegrationLegacyService implements OnModuleInit, OnModuleDestroy {
     );
 
     const total = Number(result.rows[0]?.total_count ?? 0);
+    const countersResult = await this.postgresService.query<IntegrationCounterRow>(
+      `
+        SELECT status, priority, COUNT(*)::text AS total
+        FROM public.integration_async_events
+        WHERE ${where.join(' AND ')}
+        GROUP BY status, priority
+      `,
+      values.slice(0, values.length - 2)
+    );
+
+    const counters = countersResult.rows.reduce(
+      (acc, row) => {
+        acc.byStatus[row.status] = (acc.byStatus[row.status] ?? 0) + Number(row.total);
+        acc.byPriority[row.priority] = (acc.byPriority[row.priority] ?? 0) + Number(row.total);
+        return acc;
+      },
+      {
+        byStatus: {} as Record<string, number>,
+        byPriority: {} as Record<string, number>,
+      }
+    );
 
     return {
       items: result.rows.map((row) => this.mapEvent(row)),
+      counters,
       pagination: {
         page,
         pageSize,
@@ -328,6 +395,82 @@ export class IntegrationLegacyService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
+  async remediateEvent(actor: AuthenticatedUser, id: string, dto: RemediateIntegrationEventDto) {
+    await this.assertExerciceBelongsToTenant(actor.tenantId, dto.exerciceId);
+    const current = await this.getEventById(actor.tenantId, dto.exerciceId, id);
+    if (!current) {
+      throw new NotFoundException('Evénement introuvable pour remediation.');
+    }
+
+    if (dto.action === 'retry') {
+      return this.retryEvent(actor, id, {
+        exerciceId: dto.exerciceId,
+        reasonCode: dto.reasonCode,
+        reasonMessage: dto.reasonMessage,
+      });
+    }
+
+    const nextTreatmentStatus: IntegrationTreatmentStatus =
+      dto.treatmentStatus
+      ?? (dto.action === 'escalate' ? 'triaged' : 'resolved');
+    const nextPriority: IntegrationEventPriority =
+      dto.priority
+      ?? (dto.action === 'escalate' ? 'P1' : current.priority);
+    const resolvedAt = nextTreatmentStatus === 'resolved' || nextTreatmentStatus === 'closed' ? new Date().toISOString() : null;
+    const reasonCode =
+      dto.reasonCode
+      ?? (dto.action === 'escalate' ? 'MANUAL_ESCALATION' : 'MANUAL_RECONCILIATION');
+    const reasonMessage =
+      dto.reasonMessage
+      ?? (dto.action === 'escalate' ? 'Escalade manuelle opérateur.' : 'Réconciliation manuelle opérateur.');
+
+    const updateResult = await this.postgresService.query<IntegrationEventRow>(
+      `
+        UPDATE public.integration_async_events
+        SET
+          priority = $1,
+          treatment_status = $2,
+          owner = COALESCE($3, owner),
+          reason_code = $4,
+          reason_message = $5,
+          resolved_at = COALESCE($6::timestamptz, resolved_at),
+          updated_by = $7,
+          updated_at = now()
+        WHERE id = $8
+          AND tenant_id = $9
+          AND exercice_id = $10
+        RETURNING *
+      `,
+      [nextPriority, nextTreatmentStatus, dto.owner ?? null, reasonCode, reasonMessage, resolvedAt, actor.sub, id, actor.tenantId, dto.exerciceId]
+    );
+
+    const updated = updateResult.rows[0];
+    if (!updated) {
+      throw new NotFoundException('Evénement introuvable après remediation.');
+    }
+
+    const action: IntegrationRemediationAction = dto.action === 'escalate' ? 'escalate' : 'reconcile-manual';
+    await this.recordAttempt({
+      eventId: updated.id,
+      tenantId: actor.tenantId,
+      exerciceId: dto.exerciceId,
+      direction: updated.direction,
+      attemptNumber: updated.attempt_count,
+      action,
+      status: updated.status,
+      reasonCode,
+      reasonMessage,
+      metadata: {
+        owner: dto.owner ?? updated.owner ?? undefined,
+        treatmentStatus: nextTreatmentStatus,
+        priority: nextPriority,
+      },
+      createdBy: actor.sub,
+    });
+
+    return { event: this.mapEvent(updated) };
+  }
+
   private buildCanonicalEvent(
     actor: AuthenticatedUser,
     dto: CreateOutgoingIntegrationEventDto | ConsumeIncomingIntegrationEventDto
@@ -369,8 +512,13 @@ export class IntegrationLegacyService implements OnModuleInit, OnModuleDestroy {
           schema_version,
           status,
           severity,
+          priority,
+          treatment_status,
           reason_code,
           reason_message,
+          owner,
+          detected_at,
+          resolved_at,
           attempt_count,
           max_attempts,
           occurred_at,
@@ -389,7 +537,12 @@ export class IntegrationLegacyService implements OnModuleInit, OnModuleDestroy {
           $9,
           $10,
           $11,
+          'P3',
+          'open',
           NULL,
+          NULL,
+          NULL,
+          now(),
           NULL,
           0,
           $12,
@@ -748,7 +901,7 @@ export class IntegrationLegacyService implements OnModuleInit, OnModuleDestroy {
     exerciceId: string;
     direction: IntegrationEventDirection;
     attemptNumber: number;
-    action: 'dispatch' | 'ingest' | 'manual-retry';
+    action: IntegrationRemediationAction;
     status: IntegrationEventStatus | 'duplicate';
     reasonCode?: string | null;
     reasonMessage?: string | null;
@@ -842,11 +995,19 @@ export class IntegrationLegacyService implements OnModuleInit, OnModuleDestroy {
   }
 
   private mapEvent(row: IntegrationEventRow): IntegrationEventView {
+    const detectedAt = row.detected_at ? this.toIso(row.detected_at) : undefined;
+    const resolvedAt = row.resolved_at ? this.toIso(row.resolved_at) : undefined;
+    const detectionDelayMs = detectedAt ? this.computeDelayMs(row.occurred_at, detectedAt) : undefined;
+    const recoveryDelayMs = detectedAt && resolvedAt ? this.computeDelayMs(detectedAt, resolvedAt) : undefined;
+    const atRiskSla = this.computeSlaRisk(detectionDelayMs, recoveryDelayMs, row.treatment_status);
+
     return {
       id: row.id,
       direction: row.direction,
       status: row.status,
       severity: row.severity,
+      priority: row.priority ?? 'P3',
+      treatmentStatus: row.treatment_status ?? 'open',
       tenantId: row.tenant_id,
       exerciceId: row.exercice_id,
       eventType: row.event_type,
@@ -862,11 +1023,44 @@ export class IntegrationLegacyService implements OnModuleInit, OnModuleDestroy {
       deadLetteredAt: row.dead_lettered_at ? this.toIso(row.dead_lettered_at) : undefined,
       reasonCode: row.reason_code ?? undefined,
       reasonMessage: row.reason_message ?? undefined,
+      owner: row.owner ?? undefined,
+      detectedAt,
+      resolvedAt,
+      detectionDelayMs,
+      recoveryDelayMs,
+      atRiskSla,
       createdBy: row.created_by,
       updatedBy: row.updated_by,
       createdAt: this.toIso(row.created_at),
       updatedAt: this.toIso(row.updated_at),
     };
+  }
+
+  private computeDelayMs(start: string | Date, end: string): number {
+    const from = typeof start === 'string' ? new Date(start).getTime() : start.getTime();
+    const to = new Date(end).getTime();
+    return Math.max(0, to - from);
+  }
+
+  private computeSlaRisk(
+    detectionDelayMs: number | undefined,
+    recoveryDelayMs: number | undefined,
+    treatmentStatus: IntegrationTreatmentStatus | undefined
+  ): 'none' | 'detection' | 'recovery' | 'breach' {
+    const unresolved = treatmentStatus !== 'resolved' && treatmentStatus !== 'closed';
+    if (detectionDelayMs !== undefined && detectionDelayMs > IntegrationLegacyService.DETECTION_SLA_MS) {
+      return 'breach';
+    }
+    if (recoveryDelayMs !== undefined && recoveryDelayMs > IntegrationLegacyService.RECOVERY_SLA_MS) {
+      return 'breach';
+    }
+    if (unresolved && detectionDelayMs !== undefined && detectionDelayMs > Math.floor(IntegrationLegacyService.DETECTION_SLA_MS * 0.8)) {
+      return 'detection';
+    }
+    if (unresolved && recoveryDelayMs !== undefined && recoveryDelayMs > Math.floor(IntegrationLegacyService.RECOVERY_SLA_MS * 0.8)) {
+      return 'recovery';
+    }
+    return 'none';
   }
 
   private toIso(value: string | Date): string {

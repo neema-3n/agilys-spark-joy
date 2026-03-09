@@ -52,3 +52,38 @@ export const useRetryIntegrationEvent = () => {
     },
   });
 };
+
+export const useRemediateIntegrationEvent = () => {
+  const { exerciceId, clientId } = useIntegrationLegacyContext();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: {
+      eventId: string;
+      action: 'retry' | 'escalate' | 'reconcile-manual';
+      priority?: 'P1' | 'P2' | 'P3';
+      treatmentStatus?: 'open' | 'triaged' | 'in_progress' | 'resolved' | 'closed';
+      owner?: string;
+      reasonCode?: string;
+      reasonMessage?: string;
+    }) => {
+      if (!clientId || !exerciceId) {
+        throw new Error('Client ou exercice non défini');
+      }
+
+      return integrationLegacyService.remediate(clientId, {
+        eventId: input.eventId,
+        exerciceId,
+        action: input.action,
+        priority: input.priority,
+        treatmentStatus: input.treatmentStatus,
+        owner: input.owner,
+        reasonCode: input.reasonCode,
+        reasonMessage: input.reasonMessage,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['integration-legacy-supervision'] });
+    },
+  });
+};

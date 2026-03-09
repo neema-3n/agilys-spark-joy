@@ -12,7 +12,12 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
-import { INTEGRATION_EVENT_SEVERITIES, INTEGRATION_EVENT_STATUSES } from '../integration-legacy.types';
+import {
+  INTEGRATION_EVENT_PRIORITIES,
+  INTEGRATION_EVENT_SEVERITIES,
+  INTEGRATION_EVENT_STATUSES,
+  INTEGRATION_TREATMENT_STATUSES,
+} from '../integration-legacy.types';
 
 export class IntegrationDispatchQueryDto {
   @IsUUID()
@@ -88,6 +93,37 @@ export class RetryIntegrationEventDto {
   reasonMessage?: string;
 }
 
+export class RemediateIntegrationEventDto {
+  @IsUUID()
+  exerciceId!: string;
+
+  @IsIn(['retry', 'escalate', 'reconcile-manual'])
+  action!: 'retry' | 'escalate' | 'reconcile-manual';
+
+  @IsOptional()
+  @IsIn(INTEGRATION_EVENT_PRIORITIES)
+  priority?: (typeof INTEGRATION_EVENT_PRIORITIES)[number];
+
+  @IsOptional()
+  @IsIn(INTEGRATION_TREATMENT_STATUSES)
+  treatmentStatus?: (typeof INTEGRATION_TREATMENT_STATUSES)[number];
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  owner?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  reasonCode?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  reasonMessage?: string;
+}
+
 export class ListIntegrationEventsQueryDto {
   @IsUUID()
   exerciceId!: string;
@@ -101,9 +137,22 @@ export class ListIntegrationEventsQueryDto {
   severity?: (typeof INTEGRATION_EVENT_SEVERITIES)[number];
 
   @IsOptional()
+  @IsIn(INTEGRATION_EVENT_PRIORITIES)
+  priority?: (typeof INTEGRATION_EVENT_PRIORITIES)[number];
+
+  @IsOptional()
+  @IsIn(INTEGRATION_TREATMENT_STATUSES)
+  treatmentStatus?: (typeof INTEGRATION_TREATMENT_STATUSES)[number];
+
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
   correlationId?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  owner?: string;
 
   @IsOptional()
   @IsDateString()

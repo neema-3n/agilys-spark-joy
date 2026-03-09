@@ -143,3 +143,6 @@ export * from './reservation.types';
 
 // Export engagement types
 export * from './engagement.types';
+
+// Export reporting comptable types
+export * from './reporting-comptable.types';

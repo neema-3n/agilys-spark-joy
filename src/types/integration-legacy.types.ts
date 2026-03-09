@@ -10,6 +10,10 @@ export type IntegrationEventStatus =
   | 'replayed';
 
 export type IntegrationEventSeverity = 'info' | 'warning' | 'error' | 'critical';
+export type IntegrationEventPriority = 'P1' | 'P2' | 'P3';
+export type IntegrationTreatmentStatus = 'open' | 'triaged' | 'in_progress' | 'resolved' | 'closed';
+export type IntegrationSlaRisk = 'none' | 'detection' | 'recovery' | 'breach';
+export type IntegrationRemediationAction = 'retry' | 'escalate' | 'reconcile-manual';
 
 export interface IntegrationCanonicalEventPayload {
   eventType: string;
@@ -28,6 +32,8 @@ export interface IntegrationEvent {
   direction: IntegrationEventDirection;
   status: IntegrationEventStatus;
   severity: IntegrationEventSeverity;
+  priority: IntegrationEventPriority;
+  treatmentStatus: IntegrationTreatmentStatus;
   tenantId: string;
   exerciceId: string;
   eventType: string;
@@ -43,6 +49,12 @@ export interface IntegrationEvent {
   deadLetteredAt?: string;
   reasonCode?: string;
   reasonMessage?: string;
+  owner?: string;
+  detectedAt?: string;
+  resolvedAt?: string;
+  detectionDelayMs?: number;
+  recoveryDelayMs?: number;
+  atRiskSla?: IntegrationSlaRisk;
   createdBy: string;
   updatedBy: string;
   createdAt: string;
@@ -52,6 +64,9 @@ export interface IntegrationEvent {
 export interface IntegrationSupervisionFilters {
   status?: IntegrationEventStatus;
   severity?: IntegrationEventSeverity;
+  priority?: IntegrationEventPriority;
+  treatmentStatus?: IntegrationTreatmentStatus;
+  owner?: string;
   correlationId?: string;
   fromDate?: string;
   toDate?: string;
@@ -61,6 +76,10 @@ export interface IntegrationSupervisionFilters {
 
 export interface PaginatedIntegrationEvents {
   items: IntegrationEvent[];
+  counters: {
+    byStatus: Record<string, number>;
+    byPriority: Record<string, number>;
+  };
   pagination: {
     page: number;
     pageSize: number;

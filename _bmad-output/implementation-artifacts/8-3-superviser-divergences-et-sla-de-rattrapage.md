@@ -1,6 +1,6 @@
 # Story 8.3: Superviser divergences et SLA de rattrapage
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -50,16 +50,16 @@ so that les anomalies soient corrigees dans les delais cibles.
 
 ## Tasks / Subtasks
 
-- [ ] Etendre le modele de divergence integration (ou reutiliser l'existant 8.1) pour inclure priorite, owner, SLA timestamps et statut de remediation (AC: 1, 2, 5)
-- [ ] Ajouter/adapter les endpoints backend de supervision pour filtres, pagination, compteurs et indicateurs SLA derives (AC: 2, 3)
-- [ ] Implementer la logique backend de calcul des deltas SLA (`detectionDelayMs`, `recoveryDelayMs`) sans recalcul fragile cote UI (AC: 2)
-- [ ] Exposer des actions de remediation securisees (`retry`, `escalate`, `reconcile-manual`) avec audit trail complet (AC: 4, 6)
-- [ ] Reutiliser les hooks/services React Query existants (`integration-legacy`, `controle-interne`, `tresorerie`) au lieu de creer une filiere parallele (AC: 3, 5)
-- [ ] Ajouter les badges/alertes de risque SLA dans l'UI de supervision avec tri stable et etats loading/empty/error explicites (AC: 3)
-- [ ] Garantir idempotence des actions de reprise et absence de doublons sur traitements critiques (AC: 5)
-- [ ] Verifier l'isolation tenant/exercice sur toutes les routes de supervision/remediation (AC: 6)
-- [ ] Ajouter tests backend + front + E2E ciblant qualification, SLA, remediation securisee et non-regression 8.1 (AC: 1..6)
-- [ ] Confirmer qu'aucune nouvelle dependance runtime Supabase n'est introduite (AC: 5, 6)
+- [x] Etendre le modele de divergence integration (ou reutiliser l'existant 8.1) pour inclure priorite, owner, SLA timestamps et statut de remediation (AC: 1, 2, 5)
+- [x] Ajouter/adapter les endpoints backend de supervision pour filtres, pagination, compteurs et indicateurs SLA derives (AC: 2, 3)
+- [x] Implementer la logique backend de calcul des deltas SLA (`detectionDelayMs`, `recoveryDelayMs`) sans recalcul fragile cote UI (AC: 2)
+- [x] Exposer des actions de remediation securisees (`retry`, `escalate`, `reconcile-manual`) avec audit trail complet (AC: 4, 6)
+- [x] Reutiliser les hooks/services React Query existants (`integration-legacy`, `controle-interne`, `tresorerie`) au lieu de creer une filiere parallele (AC: 3, 5)
+- [x] Ajouter les badges/alertes de risque SLA dans l'UI de supervision avec tri stable et etats loading/empty/error explicites (AC: 3)
+- [x] Garantir idempotence des actions de reprise et absence de doublons sur traitements critiques (AC: 5)
+- [x] Verifier l'isolation tenant/exercice sur toutes les routes de supervision/remediation (AC: 6)
+- [x] Ajouter tests backend + front + E2E ciblant qualification, SLA, remediation securisee et non-regression 8.1 (AC: 1..6)
+- [x] Confirmer qu'aucune nouvelle dependance runtime Supabase n'est introduite (AC: 5, 6)
 
 ## Dev Notes
 
@@ -199,18 +199,34 @@ GPT-5 Codex
 
 ### Debug Log References
 
-- Workflow: `_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml`
-- Instructions: `_bmad/bmm/workflows/4-implementation/create-story/instructions.xml`
-- Checklist: `_bmad/bmm/workflows/4-implementation/create-story/checklist.md`
+- Workflow: `_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml`
+- Instructions: `_bmad/bmm/workflows/4-implementation/dev-story/instructions.xml`
+- Checklist: `_bmad/bmm/workflows/4-implementation/dev-story/checklist.md`
 
 ### Completion Notes List
 
-- Ultimate context engine analysis completed - comprehensive developer guide created.
-- Story alignee FR35/FR33/FR34 et NFR22/NFR23/NFR24/NFR9/NFR12 avec exigences implementables.
-- Reuse-first confirme sur les modules `integration-legacy`, `controle-interne`, `tresorerie`.
-- Aucune dependance runtime Supabase additionnelle requise.
+- Extension backend `integration-legacy` pour priorite/statut de traitement/owner et timestamps SLA (`detected_at`, `resolved_at`).
+- Supervision enrichie avec filtres `priority`, `treatmentStatus`, `owner`, tri deterministe et compteurs par statut/priorite.
+- Actions de remediation `retry|escalate|reconcile-manual` exposees via endpoint dedie et journalisation des tentatives.
+- Ajout migration `20260309200000_story_8_3_integration_supervision_sla.sql` pour schema/index/check constraints.
+- Frontend aligne: types, API service, hooks React Query et panneau supervision integration dans `ControleInterne`.
+- Tests executes avec succes: backend lint+specs integration-legacy, frontend lint, playwright `integration-legacy-client.spec.ts`.
 
 ### File List
 
+- backend/src/integration-legacy/integration-legacy.service.ts
+- backend/src/integration-legacy/integration-legacy.service.spec.ts
+- backend/src/integration-legacy/integration-legacy.controller.spec.ts
+- src/types/integration-legacy.types.ts
+- src/services/api/integration-legacy.service.ts
+- src/hooks/useIntegrationLegacy.ts
+- src/components/controle-interne/IntegrationLegacyPanel.tsx
+- src/pages/app/ControleInterne.tsx
+- tests/integration-legacy-client.spec.ts
+- supabase/migrations/20260309200000_story_8_3_integration_supervision_sla.sql
 - _bmad-output/implementation-artifacts/8-3-superviser-divergences-et-sla-de-rattrapage.md
 - _bmad-output/implementation-artifacts/sprint-status.yaml
+
+### Change Log
+
+- 2026-03-09: Implementation completee pour Story 8.3 (backend supervision/remediation SLA, front panel supervision, migration SQL, tests backend/frontend).
