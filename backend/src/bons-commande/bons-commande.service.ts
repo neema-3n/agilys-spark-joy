@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { PostgresService } from '../common/postgres.service';
 import { EcrituresComptablesService } from '../ecritures-comptables/ecritures-comptables.service';
+import { ExerciceClotureService } from '../exercice-cloture/exercice-cloture.service';
 import type { CreateBonCommandeDto, UpdateBonCommandeDto } from './dto/bons-commande.dto';
 
 interface BonCommandeRow {
@@ -88,7 +89,10 @@ interface BonCommandeReferences {
 export class BonsCommandeService {
   constructor(
     private readonly postgresService: PostgresService,
-    private readonly ecrituresComptablesService: EcrituresComptablesService
+    private readonly ecrituresComptablesService: EcrituresComptablesService,
+    private readonly exerciceClotureService: ExerciceClotureService = {
+      assertExerciceMutable: async () => undefined
+    } as unknown as ExerciceClotureService
   ) {}
 
   async getAll(actor: AuthenticatedUser, exerciceId?: string): Promise<BonCommandeView[]> {
@@ -134,6 +138,7 @@ ORDER BY bc.date_commande DESC, bc.created_at DESC
   }
 
   async create(actor: AuthenticatedUser, payload: CreateBonCommandeDto): Promise<BonCommandeView> {
+    await this.exerciceClotureService.assertExerciceMutable(actor, payload.exerciceId, 'création de bon de commande');
     await this.validateReferences(actor, {
       exerciceId: payload.exerciceId,
       fournisseurId: payload.fournisseurId,
@@ -214,6 +219,7 @@ ORDER BY bc.date_commande DESC, bc.created_at DESC
 
   async update(actor: AuthenticatedUser, id: string, payload: UpdateBonCommandeDto): Promise<BonCommandeView> {
     const current = await this.getById(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, current.exerciceId, 'mise à jour de bon de commande');
 
     if (current.statut !== 'brouillon' && current.statut !== 'valide') {
       throw new BadRequestException('Seuls les bons de commande en brouillon ou validés peuvent être modifiés');
@@ -273,6 +279,9 @@ ORDER BY bc.date_commande DESC, bc.created_at DESC
   }
 
   async delete(actor: AuthenticatedUser, id: string): Promise<void> {
+    const current = await this.getById(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, current.exerciceId, 'suppression de bon de commande');
+
     const result = await this.postgresService.query(
       `
         DELETE FROM public.bons_commande
@@ -296,6 +305,7 @@ ORDER BY bc.date_commande DESC, bc.created_at DESC
 
   async valider(actor: AuthenticatedUser, id: string): Promise<BonCommandeView> {
     const bc = await this.getById(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, bc.exerciceId, 'validation de bon de commande');
 
     if (bc.statut !== 'brouillon') {
       throw new BadRequestException('Seuls les bons de commande en brouillon peuvent être validés');
@@ -350,6 +360,7 @@ ORDER BY bc.date_commande DESC, bc.created_at DESC
 
   async mettreEnCours(actor: AuthenticatedUser, id: string): Promise<BonCommandeView> {
     const bc = await this.getById(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, bc.exerciceId, 'mise en cours de bon de commande');
     if (bc.statut !== 'valide') {
       throw new BadRequestException('Seuls les bons de commande validés peuvent être mis en cours');
     }
@@ -377,6 +388,7 @@ ORDER BY bc.date_commande DESC, bc.created_at DESC
 
   async receptionner(actor: AuthenticatedUser, id: string, dateLivraisonReelle: string): Promise<BonCommandeView> {
     const bc = await this.getById(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, bc.exerciceId, 'réception de bon de commande');
     if (bc.statut !== 'en_cours') {
       throw new BadRequestException('Seuls les bons de commande en cours peuvent être réceptionnés');
     }

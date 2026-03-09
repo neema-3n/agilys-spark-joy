@@ -3,6 +3,7 @@ import type { QueryResult, QueryResultRow } from 'pg';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import type { PostgresService } from '../common/postgres.service';
 import type { EcrituresComptablesService } from '../ecritures-comptables/ecritures-comptables.service';
+import type { ExerciceClotureService } from '../exercice-cloture/exercice-cloture.service';
 import type { WorkflowExceptionsService } from '../workflow-exceptions/workflow-exceptions.service';
 import { DepensesService } from './depenses.service';
 
@@ -31,11 +32,20 @@ describe('DepensesService', () => {
     ensureGeneratedForOperation: jest.fn(),
     createContrepassations: jest.fn(),
   } as unknown as EcrituresComptablesService;
-  const service = new DepensesService(postgresService, workflowExceptionsService, ecrituresComptablesService);
+  const exerciceClotureService = {
+    assertExerciceMutable: jest.fn(),
+  } as unknown as ExerciceClotureService;
+  const service = new DepensesService(
+    postgresService,
+    workflowExceptionsService,
+    ecrituresComptablesService,
+    exerciceClotureService
+  );
 
   beforeEach(() => {
     query.mockReset();
     jest.restoreAllMocks();
+    (exerciceClotureService.assertExerciceMutable as jest.Mock).mockReset().mockResolvedValue(undefined);
   });
 
   it('centralise la génération nominale des écritures de dépense', async () => {
@@ -256,6 +266,29 @@ describe('DepensesService', () => {
     } as any);
 
     await expect(service.annuler(actor, 'dep-1', 'Erreur de saisie')).rejects.toThrow('paiements liés');
+    expect(query).toHaveBeenCalledTimes(0);
+  });
+
+  it("applique le verrou d'exercice avant l'ordonnancement", async () => {
+    jest.spyOn(service, 'getById').mockResolvedValue({
+      id: 'dep-1',
+      clientId: actor.tenantId,
+      exerciceId: 'ex-1',
+      numero: 'DEP/EX/0001',
+      dateDepense: '2026-03-05',
+      objet: 'Test',
+      montant: 10,
+      montantPaye: 0,
+      statut: 'validee',
+      createdAt: '2026-03-05T00:00:00.000Z',
+      updatedAt: '2026-03-05T00:00:00.000Z',
+    } as any);
+    (exerciceClotureService.assertExerciceMutable as jest.Mock).mockRejectedValueOnce(
+      new BadRequestException('verrou')
+    );
+
+    await expect(service.ordonnancer(actor, 'dep-1')).rejects.toThrow('verrou');
+    expect(exerciceClotureService.assertExerciceMutable).toHaveBeenCalledWith(actor, 'ex-1', 'ordonnancement de dépense');
     expect(query).toHaveBeenCalledTimes(0);
   });
 

@@ -80,6 +80,7 @@ export class BudgetReferentielsService {
     this.assertExercicePeriod(payload.dateDebut, payload.dateFin);
     const resolvedCode = payload.code?.trim() || `EX-${new Date(payload.dateDebut).getFullYear()}`;
     this.assertUniqueCode('exercice', resolvedCode, user.tenantId);
+    const statut = payload.statut === 'ouvert' ? 'ouverte' : payload.statut;
 
     const exercice: ExerciceEntity = {
       id: randomUUID(),
@@ -88,7 +89,7 @@ export class BudgetReferentielsService {
       code: resolvedCode,
       dateDebut: payload.dateDebut,
       dateFin: payload.dateFin,
-      statut: payload.statut,
+      statut,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       createdBy: user.sub,
@@ -104,6 +105,12 @@ export class BudgetReferentielsService {
 
   updateExercice(user: AuthenticatedUser, id: string, payload: ExerciceUpdateDto): ExerciceEntity {
     const current = this.getByTenantOrThrow(this.exercices, id, user.tenantId, 'Exercice introuvable');
+
+    if ('statut' in (payload as Record<string, unknown>)) {
+      throw new BadRequestException(
+        "Changement de statut interdit via la mise à jour générique. Utilisez le workflow gouverné de pré-clôture / clôture / réouverture."
+      );
+    }
 
     if (payload.dateDebut || payload.dateFin) {
       this.assertExercicePeriod(payload.dateDebut ?? current.dateDebut, payload.dateFin ?? current.dateFin);
@@ -127,22 +134,32 @@ export class BudgetReferentielsService {
     return updated;
   }
 
-  archiveExercice(user: AuthenticatedUser, id: string): ExerciceEntity {
+  setExerciceStatus(
+    user: AuthenticatedUser,
+    id: string,
+    statut: Extract<ExerciceEntity['statut'], 'ouverte' | 'en_revue' | 'fermee'>
+  ): ExerciceEntity {
     const current = this.getByTenantOrThrow(this.exercices, id, user.tenantId, 'Exercice introuvable');
-    const now = new Date().toISOString();
-
-    const archived: ExerciceEntity = {
+    const updated: ExerciceEntity = {
       ...current,
-      statut: 'cloture',
-      archivedAt: now,
-      updatedAt: now
+      statut,
+      updatedAt: new Date().toISOString()
     };
 
-    this.exercices.set(id, archived);
-    this.appendAudit(user, 'exercice', id, 'archive', current, archived);
+    this.exercices.set(id, updated);
+    this.appendAudit(user, 'exercice', id, 'update', current, updated);
     this.persist();
 
-    return archived;
+    return updated;
+  }
+
+  archiveExercice(user: AuthenticatedUser, id: string): ExerciceEntity {
+    void user;
+    void id;
+
+    throw new BadRequestException(
+      "Archivage direct interdit: utilisez le workflow gouverné de pré-clôture / clôture / réouverture."
+    );
   }
 
   getEnveloppes(user: AuthenticatedUser, exerciceId: string): EnveloppeEntity[] {
@@ -155,6 +172,7 @@ export class BudgetReferentielsService {
 
   createEnveloppe(user: AuthenticatedUser, payload: EnveloppeCreateDto): EnveloppeEntity {
     this.ensureExerciceAccessible(user.tenantId, payload.exerciceId);
+    this.assertExerciceMutable(user.tenantId, payload.exerciceId, "création d'enveloppe");
     this.assertUniqueCode('enveloppe', payload.code, user.tenantId, undefined, payload.exerciceId);
 
     const entity: EnveloppeEntity = {
@@ -183,6 +201,7 @@ export class BudgetReferentielsService {
   updateEnveloppe(user: AuthenticatedUser, id: string, payload: EnveloppeUpdateDto, exerciceId: string): EnveloppeEntity {
     const current = this.getByTenantOrThrow(this.enveloppes, id, user.tenantId, 'Enveloppe introuvable');
     this.assertEntityWithinExercice(current.exerciceId, exerciceId);
+    this.assertExerciceMutable(user.tenantId, current.exerciceId, "mise à jour d'enveloppe");
 
     if (payload.code && payload.code !== current.code) {
       this.assertUniqueCode('enveloppe', payload.code, user.tenantId, id, current.exerciceId);
@@ -205,6 +224,7 @@ export class BudgetReferentielsService {
   archiveEnveloppe(user: AuthenticatedUser, id: string, exerciceId: string): EnveloppeEntity {
     const current = this.getByTenantOrThrow(this.enveloppes, id, user.tenantId, 'Enveloppe introuvable');
     this.assertEntityWithinExercice(current.exerciceId, exerciceId);
+    this.assertExerciceMutable(user.tenantId, current.exerciceId, "archivage d'enveloppe");
     const archived = {
       ...current,
       statut: 'cloture' as const,
@@ -229,6 +249,7 @@ export class BudgetReferentielsService {
 
   createSection(user: AuthenticatedUser, payload: SectionCreateDto): SectionEntity {
     this.ensureExerciceAccessible(user.tenantId, payload.exerciceId);
+    this.assertExerciceMutable(user.tenantId, payload.exerciceId, 'création de section');
     this.assertUniqueCode('section', payload.code, user.tenantId, undefined, payload.exerciceId);
 
     const entity: SectionEntity = {
@@ -255,6 +276,7 @@ export class BudgetReferentielsService {
   updateSection(user: AuthenticatedUser, id: string, payload: SectionUpdateDto, exerciceId: string): SectionEntity {
     const current = this.getByTenantOrThrow(this.sections, id, user.tenantId, 'Section introuvable');
     this.assertEntityWithinExercice(current.exerciceId, exerciceId);
+    this.assertExerciceMutable(user.tenantId, current.exerciceId, 'mise à jour de section');
 
     if (payload.code && payload.code !== current.code) {
       this.assertUniqueCode('section', payload.code, user.tenantId, id, current.exerciceId);
@@ -277,6 +299,7 @@ export class BudgetReferentielsService {
   archiveSection(user: AuthenticatedUser, id: string, exerciceId: string): SectionEntity {
     const current = this.getByTenantOrThrow(this.sections, id, user.tenantId, 'Section introuvable');
     this.assertEntityWithinExercice(current.exerciceId, exerciceId);
+    this.assertExerciceMutable(user.tenantId, current.exerciceId, 'archivage de section');
 
     const hasActiveProgrammes = this.filterByTenant(this.programmes, user.tenantId).some(
       (programme) => programme.sectionId === id && !programme.archivedAt
@@ -310,6 +333,7 @@ export class BudgetReferentielsService {
 
   createProgramme(user: AuthenticatedUser, payload: ProgrammeCreateDto): ProgrammeEntity {
     this.ensureExerciceAccessible(user.tenantId, payload.exerciceId);
+    this.assertExerciceMutable(user.tenantId, payload.exerciceId, 'création de programme');
     this.ensureSectionAccessible(user.tenantId, payload.sectionId, payload.exerciceId);
     this.assertUniqueCode('programme', payload.code, user.tenantId, undefined, payload.exerciceId);
 
@@ -338,6 +362,7 @@ export class BudgetReferentielsService {
   updateProgramme(user: AuthenticatedUser, id: string, payload: ProgrammeUpdateDto, exerciceId: string): ProgrammeEntity {
     const current = this.getByTenantOrThrow(this.programmes, id, user.tenantId, 'Programme introuvable');
     this.assertEntityWithinExercice(current.exerciceId, exerciceId);
+    this.assertExerciceMutable(user.tenantId, current.exerciceId, 'mise à jour de programme');
 
     if (payload.sectionId) {
       this.ensureSectionAccessible(user.tenantId, payload.sectionId, current.exerciceId);
@@ -364,6 +389,7 @@ export class BudgetReferentielsService {
   archiveProgramme(user: AuthenticatedUser, id: string, exerciceId: string): ProgrammeEntity {
     const current = this.getByTenantOrThrow(this.programmes, id, user.tenantId, 'Programme introuvable');
     this.assertEntityWithinExercice(current.exerciceId, exerciceId);
+    this.assertExerciceMutable(user.tenantId, current.exerciceId, 'archivage de programme');
 
     const hasActiveActions = this.filterByTenant(this.actions, user.tenantId).some(
       (action) => action.programmeId === id && !action.archivedAt
@@ -397,6 +423,7 @@ export class BudgetReferentielsService {
 
   createAction(user: AuthenticatedUser, payload: ActionCreateDto): ActionEntity {
     this.ensureExerciceAccessible(user.tenantId, payload.exerciceId);
+    this.assertExerciceMutable(user.tenantId, payload.exerciceId, "création d'action");
     this.ensureProgrammeAccessible(user.tenantId, payload.programmeId, payload.exerciceId);
     this.assertUniqueCode('action', payload.code, user.tenantId, undefined, payload.exerciceId);
 
@@ -425,6 +452,7 @@ export class BudgetReferentielsService {
   updateAction(user: AuthenticatedUser, id: string, payload: ActionUpdateDto, exerciceId: string): ActionEntity {
     const current = this.getByTenantOrThrow(this.actions, id, user.tenantId, 'Action introuvable');
     this.assertEntityWithinExercice(current.exerciceId, exerciceId);
+    this.assertExerciceMutable(user.tenantId, current.exerciceId, "mise à jour d'action");
 
     if (payload.programmeId) {
       this.ensureProgrammeAccessible(user.tenantId, payload.programmeId, current.exerciceId);
@@ -451,6 +479,7 @@ export class BudgetReferentielsService {
   archiveAction(user: AuthenticatedUser, id: string, exerciceId: string): ActionEntity {
     const current = this.getByTenantOrThrow(this.actions, id, user.tenantId, 'Action introuvable');
     this.assertEntityWithinExercice(current.exerciceId, exerciceId);
+    this.assertExerciceMutable(user.tenantId, current.exerciceId, "archivage d'action");
 
     const archived = {
       ...current,
@@ -484,6 +513,7 @@ export class BudgetReferentielsService {
 
   createLigneBudgetaire(user: AuthenticatedUser, payload: LigneBudgetaireCreateDto): LigneBudgetaireEntity {
     this.ensureExerciceAccessible(user.tenantId, payload.exerciceId);
+    this.assertExerciceMutable(user.tenantId, payload.exerciceId, 'création de ligne budgétaire');
     this.ensureActionAccessible(user.tenantId, payload.actionId, payload.exerciceId, 'destination');
     this.assertValidMontantOrZero(payload.montantInitial, 'montantInitial');
 
@@ -524,6 +554,7 @@ export class BudgetReferentielsService {
   ): LigneBudgetaireEntity {
     const current = this.getByTenantOrThrow(this.lignesBudgetaires, id, user.tenantId, 'Ligne budgétaire introuvable');
     this.assertEntityWithinExercice(current.exerciceId, exerciceId);
+    this.assertExerciceMutable(user.tenantId, current.exerciceId, 'mise à jour de ligne budgétaire');
 
     if (payload.actionId) {
       this.ensureActionAccessible(user.tenantId, payload.actionId, current.exerciceId, 'destination');
@@ -567,6 +598,7 @@ export class BudgetReferentielsService {
   archiveLigneBudgetaire(user: AuthenticatedUser, id: string, exerciceId: string): LigneBudgetaireEntity {
     const current = this.getByTenantOrThrow(this.lignesBudgetaires, id, user.tenantId, 'Ligne budgétaire introuvable');
     this.assertEntityWithinExercice(current.exerciceId, exerciceId);
+    this.assertExerciceMutable(user.tenantId, current.exerciceId, 'archivage de ligne budgétaire');
     const now = new Date().toISOString();
 
     const archived: LigneBudgetaireEntity = {
@@ -680,6 +712,7 @@ export class BudgetReferentielsService {
 
   createAllocation(user: AuthenticatedUser, payload: AllocationCreateDto): AllocationEntity {
     this.ensureExerciceAccessible(user.tenantId, payload.exerciceId);
+    this.assertExerciceMutable(user.tenantId, payload.exerciceId, "création d'allocation");
     this.assertValidAxeId(payload.destinationAxeId, 'destination');
     this.ensureActionAccessible(user.tenantId, payload.destinationAxeId, payload.exerciceId, 'destination');
     this.assertValidMotif(payload.motif);
@@ -734,6 +767,7 @@ export class BudgetReferentielsService {
 
   createReallocation(user: AuthenticatedUser, payload: ReallocationCreateDto): AllocationEntity {
     this.ensureExerciceAccessible(user.tenantId, payload.exerciceId);
+    this.assertExerciceMutable(user.tenantId, payload.exerciceId, 'création de réallocation');
     this.assertValidAxeId(payload.sourceAxeId, 'source');
     this.assertValidAxeId(payload.destinationAxeId, 'destination');
     this.ensureActionAccessible(user.tenantId, payload.sourceAxeId, payload.exerciceId, 'source');
@@ -1224,6 +1258,33 @@ export class BudgetReferentielsService {
     }
 
     return candidate;
+  }
+
+  private assertExerciceMutable(tenantId: string, exerciceId: string, operation: string): void {
+    const exercice = this.getByTenantOrThrow(this.exercices, exerciceId, tenantId, 'Exercice introuvable');
+    const statut = this.normalizeExerciceStatus(exercice.statut);
+
+    if (statut === 'ouverte') {
+      return;
+    }
+
+    const workflowLabel = statut === 'en_revue' ? 'pré-clôture / clôture gouvernée' : 'réouverture gouvernée';
+
+    throw new BadRequestException(
+      `Mutation refusée: ${operation} impossible car l'exercice ${exercice.code} est ${statut}. Utilisez le workflow ${workflowLabel}.`
+    );
+  }
+
+  private normalizeExerciceStatus(statut: ExerciceEntity['statut']): 'ouverte' | 'en_revue' | 'fermee' {
+    if (statut === 'ouvert') {
+      return 'ouverte';
+    }
+
+    if (statut === 'cloture') {
+      return 'fermee';
+    }
+
+    return statut;
   }
 
   private appendAudit(

@@ -1,6 +1,6 @@
 # Story 6.4: Executer cloture d'exercice gouvernee
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -300,23 +300,69 @@ GPT-5 Codex
 
 ### Debug Log References
 
-- Workflow: `/_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml`
-- Instructions: `/_bmad/bmm/workflows/4-implementation/create-story/instructions.xml`
+- Workflow: `/_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml`
+- Instructions: `/_bmad/bmm/workflows/4-implementation/dev-story/instructions.xml`
 - Engine: `/_bmad/core/tasks/workflow.xml`
 
 ### Completion Notes List
 
-- Story context `6.4` cree avec focus sur le vrai gap du repo: l'absence de workflow de cloture d'exercice gouvernee et de statut `en_revue`.
-- Le document impose une orchestration backend dediee, une checklist pre-cloture bloquante et un verrouillage transversal des mutations par periode.
-- Les guardrails couvrent multi-tenant, audit trail, preparation N+1, reouverture gouvernee et preparation des stories `6.5` et `6.6`.
-- Aucune evolution de dependances ni retour vers un runtime Supabase n'est recommandee pour ce lot.
-- Le repo ne contient pas le task file `validate-workflow.xml` reference par le workflow BMAD; la validation a donc ete effectuee manuellement contre le checklist et les artefacts sources.
+- Implementation plan executee:
+  - ajout d'un module NestJS `exercice-cloture` pour piloter `ouverte -> en_revue -> fermee`, calculer une checklist bloquante, journaliser les transitions et preparer N+1 de facon idempotente;
+  - synchronisation des exercices du store `budget-referentiels` vers `public.exercices` au meme `id` pour rendre le verrouillage PostgreSQL effectif sur les modules transactionnels;
+  - branchement du verrou de periode sur `bons-commande`, `factures`, `depenses`, `operations-tresorerie`, `rapprochements-bancaires` et la generation d'ecritures.
+- Surface frontend alignee:
+  - types d'exercice canoniques `ouverte | en_revue | fermee`;
+  - suppression du changement libre de statut dans `ExerciceDialog`;
+  - ajout dans `ExercicesManager` des actions voir checklist, pre-cloturer, cloturer et reouvrir.
+- Validations executees:
+  - `pnpm --dir backend run lint`
+  - `pnpm --dir backend exec jest --runInBand src/exercice-cloture/exercice-cloture.service.spec.ts src/factures/factures.service.spec.ts`
+  - `pnpm exec eslint src/components/parametres/ExerciceDialog.tsx src/components/parametres/ExercicesManager.tsx src/contexts/ExerciceContext.tsx src/services/api/exercices.service.ts src/types/index.ts`
+- Hardening post-review execute apres revue adversariale:
+  - suppression du contournement par changement libre de `statut` dans le CRUD des exercices et reservation des transitions d'etat au workflow gouverne;
+  - extension du verrou de periode aux mutations `budget-referentiels`, `bons-commande`, `factures`, `depenses`, `reservations`, `engagements` et `paiements`;
+  - suppression du fail-open quand la ligne `public.exercices` est absente, avec resynchronisation defensive puis blocage si l'exercice n'est pas `ouverte`;
+  - retrait du chemin de suppression d'exercice cote UI et alignement du contrat frontend associe.
+- Validation finale du lot:
+  - `pnpm --dir backend exec jest --runInBand src/reservations/reservations.service.spec.ts src/engagements/engagements.service.spec.ts src/paiements/paiements.service.spec.ts src/exercice-cloture/exercice-cloture.service.spec.ts src/budget-referentiels/budget-referentiels.service.spec.ts`
+  - `pnpm --dir backend run test`
+  - aucune nouvelle dependance runtime ajoutee; lot conserve sur le socle `pnpm` + NestJS/PostgreSQL + client API unifie.
 
 ### File List
 
 - `_bmad-output/implementation-artifacts/6-4-executer-cloture-dexercice-gouvernee.md`
 - `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `backend/src/app.module.ts`
+- `backend/src/bons-commande/bons-commande.module.ts`
+- `backend/src/bons-commande/bons-commande.service.ts`
+- `backend/src/budget-referentiels/budget-referentiels.module.ts`
+- `backend/src/budget-referentiels/budget-referentiels.types.ts`
+- `backend/src/budget-referentiels/dto/referentiels.dto.ts`
+- `backend/src/depenses/depenses.module.ts`
+- `backend/src/depenses/depenses.service.ts`
+- `backend/src/ecritures-comptables/ecritures-comptables.module.ts`
+- `backend/src/ecritures-comptables/ecritures-comptables.service.ts`
+- `backend/src/exercice-cloture/dto/exercice-cloture.dto.ts`
+- `backend/src/exercice-cloture/exercice-cloture.controller.ts`
+- `backend/src/exercice-cloture/exercice-cloture.module.ts`
+- `backend/src/exercice-cloture/exercice-cloture.service.spec.ts`
+- `backend/src/exercice-cloture/exercice-cloture.service.ts`
+- `backend/src/exercice-cloture/exercice-cloture.types.ts`
+- `backend/src/factures/factures.module.ts`
+- `backend/src/factures/factures.service.ts`
+- `backend/src/operations-tresorerie/operations-tresorerie.module.ts`
+- `backend/src/operations-tresorerie/operations-tresorerie.service.ts`
+- `backend/src/rapprochements-bancaires/rapprochements-bancaires.module.ts`
+- `backend/src/rapprochements-bancaires/rapprochements-bancaires.service.ts`
+- `src/components/parametres/ExerciceDialog.tsx`
+- `src/components/parametres/ExercicesManager.tsx`
+- `src/contexts/ExerciceContext.tsx`
+- `src/services/api/exercices.service.ts`
+- `src/types/index.ts`
+- `supabase/migrations/20260308120000_story_6_4_exercice_cloture.sql`
 
 ## Change Log
 
 - 2026-03-08: Creation de la story context 6.4 avec cadrage complet du workflow de cloture, de la checklist pre-cloture, du verrouillage des periodes et de la preparation N+1.
+- 2026-03-08: Implementation initiale du workflow de cloture gouvernee, du verrouillage transversal des mutations et de l'alignement frontend associe. Statut conserve en `in-progress` en attendant la validation finale du lot.
+- 2026-03-08: Hardening post-review du verrou de cloture, suppression des chemins de contournement, extension des garde-fous a l'ensemble des services transactionnels cibles et validation backend complete. Story passee en `done`.

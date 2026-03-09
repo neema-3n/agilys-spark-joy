@@ -1,4 +1,4 @@
-import { Exercice } from '@/types';
+import { Exercice, ExerciceChecklist, ExerciceCloseResult, ExerciceStatut, ReouvrirExercicePayload } from '@/types';
 import { requestJson } from '@/services/api/api-utils';
 
 interface ExerciceApiModel {
@@ -8,8 +8,20 @@ interface ExerciceApiModel {
   code: string;
   dateDebut: string;
   dateFin: string;
-  statut: 'ouvert' | 'cloture';
+  statut: 'ouvert' | 'cloture' | 'ouverte' | 'en_revue' | 'fermee';
 }
+
+const normalizeExerciceStatut = (statut: ExerciceApiModel['statut']): ExerciceStatut => {
+  if (statut === 'ouvert') {
+    return 'ouverte';
+  }
+
+  if (statut === 'cloture') {
+    return 'fermee';
+  }
+
+  return statut;
+};
 
 const mapExercice = (input: ExerciceApiModel): Exercice => ({
   id: input.id,
@@ -18,7 +30,7 @@ const mapExercice = (input: ExerciceApiModel): Exercice => ({
   code: input.code || undefined,
   dateDebut: input.dateDebut,
   dateFin: input.dateFin,
-  statut: input.statut
+  statut: normalizeExerciceStatut(input.statut)
 });
 
 export const exercicesService = {
@@ -64,15 +76,46 @@ export const exercicesService = {
     return mapExercice(payload);
   },
 
-  async cloturer(id: string): Promise<Exercice> {
-    return this.update(id, { statut: 'cloture' });
+  async cloturer(id: string): Promise<ExerciceCloseResult> {
+    const payload = await requestJson<ExerciceCloseResult>(
+      `/budget-referentiels/exercices/${id}/cloturer`,
+      { method: 'POST' },
+      'Erreur lors de la clôture gouvernée de l\'exercice'
+    );
+
+    return {
+      ...payload,
+      exercice: mapExercice(payload.exercice as unknown as ExerciceApiModel),
+      nextExercice: mapExercice(payload.nextExercice as unknown as ExerciceApiModel)
+    };
   },
 
-  async delete(id: string): Promise<void> {
-    await requestJson(
-      `/budget-referentiels/exercices/${id}`,
-      { method: 'DELETE' },
-      'Erreur lors de l\'archivage de l\'exercice'
+  async preCloturer(id: string): Promise<ExerciceChecklist> {
+    return requestJson<ExerciceChecklist>(
+      `/budget-referentiels/exercices/${id}/pre-cloture`,
+      { method: 'POST' },
+      'Erreur lors de la pré-clôture de l\'exercice'
     );
+  },
+
+  async getChecklist(id: string): Promise<ExerciceChecklist> {
+    return requestJson<ExerciceChecklist>(
+      `/budget-referentiels/exercices/${id}/checklist`,
+      { method: 'GET' },
+      'Erreur lors de la récupération de la checklist de clôture'
+    );
+  },
+
+  async reouvrir(id: string, payload: ReouvrirExercicePayload): Promise<Exercice> {
+    const exercice = await requestJson<ExerciceApiModel>(
+      `/budget-referentiels/exercices/${id}/reouvrir`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(payload)
+      },
+      'Erreur lors de la réouverture gouvernée de l\'exercice'
+    );
+
+    return mapExercice(exercice);
   }
 };

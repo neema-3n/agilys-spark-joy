@@ -3,6 +3,7 @@ import type { QueryResult, QueryResultRow } from 'pg';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import type { PostgresService } from '../common/postgres.service';
 import type { EcrituresComptablesService } from '../ecritures-comptables/ecritures-comptables.service';
+import type { ExerciceClotureService } from '../exercice-cloture/exercice-cloture.service';
 import type { WorkflowExceptionsService } from '../workflow-exceptions/workflow-exceptions.service';
 import { PaiementsService } from './paiements.service';
 
@@ -31,7 +32,15 @@ describe('PaiementsService', () => {
     ensureGeneratedForOperation: jest.fn(),
     createContrepassations: jest.fn(),
   } as unknown as EcrituresComptablesService;
-  const service = new PaiementsService(postgresService, workflowExceptionsService, ecrituresComptablesService);
+  const exerciceClotureService = {
+    assertExerciceMutable: jest.fn(),
+  } as unknown as ExerciceClotureService;
+  const service = new PaiementsService(
+    postgresService,
+    workflowExceptionsService,
+    ecrituresComptablesService,
+    exerciceClotureService
+  );
   const internals = service as unknown as {
     getDepenseForPaiement: (...args: unknown[]) => Promise<unknown>;
     getResteAPayer: (...args: unknown[]) => Promise<number>;
@@ -46,6 +55,7 @@ describe('PaiementsService', () => {
     query.mockReset();
     jest.restoreAllMocks();
     jest.clearAllMocks();
+    (exerciceClotureService.assertExerciceMutable as jest.Mock).mockReset().mockResolvedValue(undefined);
   });
 
   it('centralise la génération nominale des écritures de paiement', async () => {
@@ -130,6 +140,22 @@ describe('PaiementsService', () => {
 
     expect(query).toHaveBeenCalledTimes(1);
     expect(result.statut).toBe('transmis');
+  });
+
+  it("applique le verrou d'exercice avant création d'un paiement", async () => {
+    (exerciceClotureService.assertExerciceMutable as jest.Mock).mockRejectedValueOnce(new BadRequestException('verrou'));
+
+    await expect(
+      service.create(actor, {
+        depenseId: 'dep-1',
+        exerciceId: 'ex-1',
+        montant: 40,
+        datePaiement: '2026-03-05',
+        modePaiement: 'virement',
+      })
+    ).rejects.toThrow('verrou');
+
+    expect(query).toHaveBeenCalledTimes(0);
   });
 
   it("bloque l'exécution d'un paiement si le risque cash dépasse le seuil", async () => {

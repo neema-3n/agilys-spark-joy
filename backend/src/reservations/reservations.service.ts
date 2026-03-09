@@ -4,6 +4,7 @@ import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import type { CreateReservationDto, UpdateReservationDto } from './dto/reservations.dto';
 import { ReservationStatus, assertReservationTransitionAllowed } from '../common/domain/reservation-engagement-rules';
 import { EcrituresComptablesService } from '../ecritures-comptables/ecritures-comptables.service';
+import { ExerciceClotureService } from '../exercice-cloture/exercice-cloture.service';
 
 interface ReservationRow {
   id: string;
@@ -97,7 +98,10 @@ interface ReservationView {
 export class ReservationsService {
   constructor(
     private readonly postgresService: PostgresService,
-    private readonly ecrituresComptablesService: EcrituresComptablesService
+    private readonly ecrituresComptablesService: EcrituresComptablesService,
+    private readonly exerciceClotureService: ExerciceClotureService = {
+      assertExerciceMutable: async () => undefined
+    } as unknown as ExerciceClotureService
   ) {}
 
   async getAll(actor: AuthenticatedUser, exerciceId: string): Promise<ReservationView[]> {
@@ -134,6 +138,7 @@ export class ReservationsService {
   }
 
   async create(actor: AuthenticatedUser, payload: CreateReservationDto): Promise<ReservationView> {
+    await this.exerciceClotureService.assertExerciceMutable(actor, payload.exerciceId, 'création de réservation');
     const exerciceResult = await this.postgresService.query<{ code: string }>(
       `
         SELECT code
@@ -214,6 +219,7 @@ export class ReservationsService {
 
   async update(actor: AuthenticatedUser, id: string, payload: UpdateReservationDto): Promise<ReservationView> {
     const reservation = await this.getById(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, reservation.exerciceId, 'mise à jour de réservation');
     assertReservationTransitionAllowed('update', reservation.statut);
 
     const ecritures = await this.postgresService.query<{ id: string }>(
@@ -290,6 +296,7 @@ export class ReservationsService {
 
   async utiliser(actor: AuthenticatedUser, id: string): Promise<ReservationView> {
     const reservation = await this.getById(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, reservation.exerciceId, 'consommation de réservation');
     assertReservationTransitionAllowed('utiliser', reservation.statut);
 
     const result = await this.postgresService.query(
@@ -313,6 +320,7 @@ export class ReservationsService {
 
   async annuler(actor: AuthenticatedUser, id: string, motifAnnulation: string): Promise<ReservationView> {
     const reservation = await this.getById(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, reservation.exerciceId, 'annulation de réservation');
     assertReservationTransitionAllowed('annuler', reservation.statut);
 
     const ecritures = await this.postgresService.query<EcritureRow>(
@@ -376,6 +384,7 @@ export class ReservationsService {
 
   async delete(actor: AuthenticatedUser, id: string): Promise<void> {
     const reservation = await this.getById(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, reservation.exerciceId, 'suppression de réservation');
 
     if (reservation.statut !== 'active') {
       throw new BadRequestException(

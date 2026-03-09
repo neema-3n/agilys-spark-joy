@@ -40,13 +40,13 @@ development_status:
   6-1-versionner-plan-comptable-et-mapping-ecritures: done
   6-2-generer-ecritures-en-double-entree-idempotentes: done
   6-3-gerer-corrections-et-contre-passations-auditables: done
-  6-4-executer-cloture-dexercice-gouvernee: ready-for-dev
+  6-4-executer-cloture-dexercice-gouvernee: done
   6-5-implementer-rapprochement-bancaire-auto-manuel: ready-for-dev
   6-6-produire-dossier-de-cloture-et-migration-reconciliation: ready-for-dev
   epic-6-retrospective: optional
-  epic-7: backlog
-  7-1-exposer-dashboard-budgetaire-de-pilotage: backlog
-  7-2-fournir-vues-danalyse-et-axes-analytiques: backlog
+  epic-7: in-progress
+  7-1-exposer-dashboard-budgetaire-de-pilotage: ready-for-dev
+  7-2-fournir-vues-danalyse-et-axes-analytiques: ready-for-dev
   7-3-produire-dossier-daudit-exportable: backlog
   7-4-activer-module-controle-interne: backlog
   epic-7-retrospective: optional

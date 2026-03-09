@@ -22,7 +22,7 @@ export interface ExerciceEntity extends EntityBase {
   code: string;
   dateDebut: string;
   dateFin: string;
-  statut: 'ouvert' | 'cloture';
+  statut: 'ouvert' | 'cloture' | 'ouverte' | 'en_revue' | 'fermee';
 }
 
 export interface EnveloppeEntity extends EntityBase {
