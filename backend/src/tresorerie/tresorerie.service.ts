@@ -6,9 +6,11 @@ import type { CashRiskDecision, CashRiskLevel } from '../cash-risk/cash-risk.typ
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { PostgresService } from '../common/postgres.service';
 import {
+  type AuditDossierStatus,
   type CloseoutDossierQueryDto,
   type CloseoutDossierStatus,
   type CloseoutDossierType,
+  type TresorerieAuditDossierQueryDto,
   type TresorerieAuditDetailQueryDto,
   type TresorerieAuditQueryDto,
   type TresorerieAuditStatus,
@@ -125,6 +127,36 @@ interface CloseoutReconciliationSummary {
   scopeValidated: boolean;
   scopeIssues: string[];
   reportFiles: string[];
+}
+
+interface ExceptionAuditDossierEvidenceEntry {
+  id: string;
+  section: 'scope' | 'timeline' | 'decision_log' | 'evidences' | 'coverage' | 'manifest' | 'deliverables';
+  objective: string;
+  sourceType: 'audit_exception' | 'audit_event' | 'audit_vote' | 'artifact';
+  sourceId: string;
+  correlationId: string;
+  status: 'covered' | 'partial' | 'missing';
+  reason?: string;
+  authorUserId?: string;
+  timestamp: string;
+}
+
+interface ExceptionAuditDossierCoverageEntry {
+  section: ExceptionAuditDossierEvidenceEntry['section'];
+  objective: string;
+  status: 'covered' | 'partial' | 'missing';
+  critical: boolean;
+  evidenceIds: string[];
+  reason?: string;
+}
+
+interface ExceptionAuditDossierManifestEntry {
+  section: ExceptionAuditDossierEvidenceEntry['section'];
+  fileName: string;
+  checksum: string;
+  sizeBytes: number;
+  generatedAt: string;
 }
 
 const CLOSEOUT_EVIDENCE_REQUIREMENTS: CloseoutEvidenceRequirement[] = [
@@ -480,6 +512,10 @@ export class TresorerieService {
       values.push(query.entityId);
       where.push(`e.entity_id = $${values.length}`);
     }
+    if (query.correlationId) {
+      values.push(query.correlationId);
+      where.push(`e.correlation_id = $${values.length}`);
+    }
     if (query.decision) {
       values.push(query.decision);
       where.push(`COALESCE(e.risk_decision->>'decision', 'block') = $${values.length}`);
@@ -674,6 +710,157 @@ export class TresorerieService {
       ],
       totalEntries: audit.pagination.total,
       preview: audit.items,
+    };
+  }
+
+  async getExceptionAuditDossier(actor: AuthenticatedUser, query: TresorerieAuditDossierQueryDto) {
+    const startedAt = Date.now();
+    const generatedAt = new Date().toISOString();
+    const dossierId = query.dossierId ?? `audit-dossier-${query.exerciceId}-${generatedAt.slice(0, 10)}`;
+    const pageSize = Math.min(query.pageSize ?? 50, 100);
+    const audit = await this.collectAllExceptionAuditEntries(actor, query, pageSize);
+    const deliverables = this.buildExceptionAuditDeliverables(query.exerciceId, generatedAt, dossierId);
+    const timeline = audit.items.map((entry) => ({
+      id: entry.id,
+      correlationId: entry.correlationId,
+      actorUserId: entry.requestedBy,
+      status: entry.status,
+      transition: entry.transition,
+      sourceType: entry.sourceType,
+      sourceId: entry.sourceId ?? null,
+      createdAt: entry.createdAt,
+      approvedAt: entry.approvedAt ?? null,
+      decidedAt: entry.decidedAt ?? null,
+      consumedAt: entry.consumedAt ?? null,
+    }));
+    const decisionLog = audit.items.map((entry) => ({
+      id: entry.id,
+      correlationId: entry.correlationId,
+      decision: entry.decision,
+      severity: entry.severity,
+      reasons: entry.reasons,
+      actorUserId: entry.requestedBy,
+      timestamp: entry.decidedAt ?? entry.approvedAt ?? entry.createdAt,
+    }));
+    const baseEvidenceEntries = this.buildExceptionAuditEvidenceEntries({
+      actor,
+      entries: audit.items,
+      generatedAt,
+      exerciceId: query.exerciceId,
+      dossierId,
+    });
+    const manifestEntries = this.buildExceptionAuditManifestEntries({
+      generatedAt,
+      dossierId,
+      deliverables,
+      scope: {
+        tenantId: actor.tenantId,
+        exerciceId: query.exerciceId,
+        filters: {
+          fromDate: query.fromDate ?? null,
+          toDate: query.toDate ?? null,
+          sourceType: query.sourceType ?? null,
+          sourceId: query.sourceId ?? null,
+          entityId: query.entityId ?? null,
+          correlationId: query.correlationId ?? null,
+        },
+      },
+      timeline,
+      decisionLog,
+      evidences: baseEvidenceEntries,
+    });
+    const packagingEvidenceEntries = this.buildExceptionAuditPackagingEvidence({
+      entries: audit.items,
+      generatedAt,
+      manifestEntries,
+      deliverables,
+    });
+    const evidenceEntries = [...baseEvidenceEntries, ...packagingEvidenceEntries];
+    const coverage = this.buildExceptionAuditCoverage(evidenceEntries);
+    const coverageEvidenceEntry: ExceptionAuditDossierEvidenceEntry = {
+      id: `coverage-${dossierId}`,
+      section: 'coverage',
+      objective: 'Rendre explicite le statut covered/partial/missing',
+      sourceType: 'artifact',
+      sourceId: 'coverage-matrix',
+      correlationId: this.resolveDossierCorrelationId(audit.items),
+      status: 'covered',
+      reason: undefined,
+      authorUserId: actor.sub,
+      timestamp: generatedAt,
+    };
+    const evidenceEntriesWithCoverage = [...evidenceEntries, coverageEvidenceEntry];
+    const finalCoverage = this.buildExceptionAuditCoverage(evidenceEntriesWithCoverage);
+    const coverageManifestEntry: ExceptionAuditDossierManifestEntry = {
+      section: 'coverage',
+      fileName: `${dossierId}/coverage.json`,
+      checksum: this.computeSha256Hex(JSON.stringify(finalCoverage)),
+      sizeBytes: Buffer.byteLength(JSON.stringify(finalCoverage), 'utf8'),
+      generatedAt,
+    };
+    const manifestEntriesWithCoverage = [...manifestEntries, coverageManifestEntry];
+    const archiveChecksum = this.computeSha256Hex(
+      manifestEntriesWithCoverage
+        .map((entry) => `${entry.fileName}:${entry.checksum}`)
+        .join('|')
+    );
+    const missingCritical = finalCoverage
+      .filter((item) => item.critical && item.status !== 'covered')
+      .map((item) => ({
+        section: item.section,
+        objective: item.objective,
+        reason: item.reason ?? 'critical_evidence_missing',
+      }));
+    const durationMs = Date.now() - startedAt;
+    const status = this.deriveExceptionAuditDossierStatus(missingCritical.length);
+
+    return {
+      generatedAt,
+      dossierId,
+      scope: {
+        tenantId: actor.tenantId,
+        exerciceId: query.exerciceId,
+        filters: {
+          fromDate: query.fromDate ?? null,
+          toDate: query.toDate ?? null,
+          sourceType: query.sourceType ?? null,
+          sourceId: query.sourceId ?? null,
+          entityId: query.entityId ?? null,
+          correlationId: query.correlationId ?? null,
+        },
+      },
+      status,
+      timeline,
+      decisionLog,
+      evidences: evidenceEntriesWithCoverage,
+      coverage: finalCoverage,
+      manifest: {
+        generatedAt,
+        durationMs,
+        durationWithinSla: durationMs <= 60_000,
+        totalEntries: audit.pagination.total,
+        missingCritical,
+        entries: manifestEntriesWithCoverage,
+        archive: {
+          fileName: deliverables.archiveZipFileName,
+          checksumAlgorithm: 'sha256',
+          checksum: archiveChecksum,
+        },
+      },
+      deliverables,
+    };
+  }
+
+  async getExceptionAuditDossierExportPrep(actor: AuthenticatedUser, query: TresorerieAuditDossierQueryDto) {
+    const dossier = await this.getExceptionAuditDossier(actor, query);
+    return {
+      generatedAt: dossier.generatedAt,
+      scope: dossier.scope,
+      status: dossier.status,
+      dossierId: dossier.dossierId,
+      sections: ['scope', 'timeline', 'decisionLog', 'evidences', 'coverage', 'manifest', 'deliverables'],
+      blockedByMissingCriticalEvidence: dossier.manifest.missingCritical.length > 0,
+      preview: dossier,
     };
   }
 
@@ -1115,6 +1302,307 @@ export class TresorerieService {
       return 'go';
     }
     return 'ready';
+  }
+
+  private deriveExceptionAuditDossierStatus(missingCriticalCount: number): AuditDossierStatus {
+    if (missingCriticalCount > 0) {
+      return 'blocked';
+    }
+    return 'ready';
+  }
+
+  private buildExceptionAuditDeliverables(exerciceId: string, generatedAt: string, dossierId: string) {
+    const dateLabel = generatedAt.slice(0, 10);
+    return {
+      suggestedFileName: `${dossierId}.json`,
+      archiveZipFileName: `audit-dossier-${exerciceId}-${dateLabel}.zip`,
+      indexFileName: `${dossierId}-index.md`,
+      printableFileName: `${dossierId}-index.html`,
+      pdfStrategy: 'printable-html-first',
+    };
+  }
+
+  private async collectAllExceptionAuditEntries(
+    actor: AuthenticatedUser,
+    query: TresorerieAuditDossierQueryDto,
+    pageSize: number
+  ) {
+    const firstPage = await this.getExceptionAudit(actor, { ...query, page: 1, pageSize });
+    if (firstPage.pagination.totalPages <= 1) {
+      return firstPage;
+    }
+
+    const pageRequests = Array.from({ length: firstPage.pagination.totalPages - 1 }, (_, index) =>
+      this.getExceptionAudit(actor, { ...query, page: index + 2, pageSize })
+    );
+    const remainingPages = await Promise.all(pageRequests);
+
+    return {
+      items: [firstPage.items, ...remainingPages.map((page) => page.items)].flat(),
+      pagination: firstPage.pagination,
+    };
+  }
+
+  private buildExceptionAuditEvidenceEntries(input: {
+    actor: AuthenticatedUser;
+    entries: Array<ReturnType<TresorerieService['mapAuditRow']>>;
+    generatedAt: string;
+    exerciceId: string;
+    dossierId: string;
+  }): ExceptionAuditDossierEvidenceEntry[] {
+    const dossierCorrelationId = this.resolveDossierCorrelationId(input.entries);
+    const scopeEvidence: ExceptionAuditDossierEvidenceEntry = {
+      id: `scope-${input.dossierId}`,
+      section: 'scope',
+      objective: 'Scope tenant/exercice explicite',
+      sourceType: 'artifact',
+      sourceId: `${input.actor.tenantId}/${input.exerciceId}`,
+      correlationId: dossierCorrelationId,
+      status: 'covered',
+      authorUserId: input.actor.sub,
+      timestamp: input.generatedAt,
+    };
+
+    if (input.entries.length === 0) {
+      return [
+        scopeEvidence,
+        {
+          id: `timeline-missing-${input.dossierId}`,
+          section: 'timeline',
+          objective: 'Relier les etapes de decision et execution',
+          sourceType: 'artifact',
+          sourceId: 'audit-exception-empty-scope',
+          correlationId: dossierCorrelationId,
+          status: 'missing',
+          reason: 'audit_entries_missing',
+          authorUserId: input.actor.sub,
+          timestamp: input.generatedAt,
+        },
+        {
+          id: `decision-missing-${input.dossierId}`,
+          section: 'decision_log',
+          objective: 'Journaliser decision/risk et raisons associees',
+          sourceType: 'artifact',
+          sourceId: 'audit-exception-empty-scope',
+          correlationId: dossierCorrelationId,
+          status: 'missing',
+          reason: 'audit_entries_missing',
+          authorUserId: input.actor.sub,
+          timestamp: input.generatedAt,
+        },
+        {
+          id: `evidence-missing-${input.dossierId}`,
+          section: 'evidences',
+          objective: 'Prouver l exception avec correlationId, auteur et horodatage',
+          sourceType: 'artifact',
+          sourceId: 'audit-exception-empty-scope',
+          correlationId: dossierCorrelationId,
+          status: 'missing',
+          reason: 'audit_entries_missing',
+          authorUserId: input.actor.sub,
+          timestamp: input.generatedAt,
+        },
+      ];
+    }
+
+    const entryEvidence = input.entries.flatMap((entry) => {
+      const primary: ExceptionAuditDossierEvidenceEntry = {
+        id: `evidence-${entry.id}`,
+        section: 'evidences',
+        objective: 'Prouver l exception avec correlationId, auteur et horodatage',
+        sourceType: 'audit_exception',
+        sourceId: entry.id,
+        correlationId: entry.correlationId,
+        status: 'covered',
+        authorUserId: entry.requestedBy,
+        timestamp: entry.createdAt,
+      };
+      const timeline: ExceptionAuditDossierEvidenceEntry = {
+        id: `timeline-${entry.id}`,
+        section: 'timeline',
+        objective: 'Relier les etapes de decision et execution',
+        sourceType: 'audit_event',
+        sourceId: entry.id,
+        correlationId: entry.correlationId,
+        status: entry.decidedAt || entry.approvedAt || entry.consumedAt ? 'covered' : 'partial',
+        reason: entry.decidedAt || entry.approvedAt || entry.consumedAt ? undefined : 'decision_timestamps_missing',
+        authorUserId: entry.requestedBy,
+        timestamp: entry.updatedAt,
+      };
+      const decision: ExceptionAuditDossierEvidenceEntry = {
+        id: `decision-${entry.id}`,
+        section: 'decision_log',
+        objective: 'Journaliser decision/risk et raisons associees',
+        sourceType: 'audit_vote',
+        sourceId: entry.id,
+        correlationId: entry.correlationId,
+        status: entry.reasons.length > 0 ? 'covered' : 'partial',
+        reason: entry.reasons.length > 0 ? undefined : 'decision_reasons_missing',
+        authorUserId: entry.requestedBy,
+        timestamp: entry.decidedAt ?? entry.createdAt,
+      };
+      return [primary, timeline, decision];
+    });
+
+    return [scopeEvidence, ...entryEvidence];
+  }
+
+  private buildExceptionAuditManifestEntries(input: {
+    generatedAt: string;
+    dossierId: string;
+    deliverables: {
+      suggestedFileName: string;
+      archiveZipFileName: string;
+      indexFileName: string;
+      printableFileName: string;
+      pdfStrategy: string;
+    };
+    scope: {
+      tenantId: string;
+      exerciceId: string;
+      filters: {
+        fromDate: string | null;
+        toDate: string | null;
+        sourceType: string | null;
+        sourceId: string | null;
+        entityId: string | null;
+        correlationId: string | null;
+      };
+    };
+    timeline: Array<Record<string, unknown>>;
+    decisionLog: Array<Record<string, unknown>>;
+    evidences: ExceptionAuditDossierEvidenceEntry[];
+  }): ExceptionAuditDossierManifestEntry[] {
+    const sections = [
+      { section: 'scope', fileName: `${input.dossierId}/scope.json`, payload: JSON.stringify(input.scope) },
+      { section: 'timeline', fileName: `${input.dossierId}/timeline.json`, payload: JSON.stringify(input.timeline) },
+      { section: 'decision_log', fileName: `${input.dossierId}/decision-log.json`, payload: JSON.stringify(input.decisionLog) },
+      { section: 'evidences', fileName: `${input.dossierId}/evidences.json`, payload: JSON.stringify(input.evidences) },
+      {
+        section: 'deliverables',
+        fileName: `${input.dossierId}/deliverables.json`,
+        payload: JSON.stringify({
+          ...input.deliverables,
+          archiveMembers: [
+            `${input.dossierId}/scope.json`,
+            `${input.dossierId}/timeline.json`,
+            `${input.dossierId}/decision-log.json`,
+            `${input.dossierId}/evidences.json`,
+            `${input.dossierId}/coverage.json`,
+            `${input.dossierId}/manifest.json`,
+            `${input.dossierId}/${input.deliverables.indexFileName}`,
+            `${input.dossierId}/${input.deliverables.printableFileName}`,
+          ],
+        }),
+      },
+    ] as const;
+
+    return sections.map((section) => ({
+      section: section.section,
+      fileName: section.fileName,
+      checksum: this.computeSha256Hex(section.payload),
+      sizeBytes: Buffer.byteLength(section.payload, 'utf8'),
+      generatedAt: input.generatedAt,
+    }));
+  }
+
+  private buildExceptionAuditPackagingEvidence(input: {
+    entries: Array<ReturnType<TresorerieService['mapAuditRow']>>;
+    generatedAt: string;
+    manifestEntries: ExceptionAuditDossierManifestEntry[];
+    deliverables: {
+      archiveZipFileName: string;
+      indexFileName: string;
+      printableFileName: string;
+    };
+  }): ExceptionAuditDossierEvidenceEntry[] {
+    const dossierCorrelationId = this.resolveDossierCorrelationId(input.entries);
+    const manifestChecksum = this.computeSha256Hex(
+      input.manifestEntries.map((entry) => `${entry.fileName}:${entry.checksum}`).join('|')
+    );
+
+    return [
+      {
+        id: `manifest-${dossierCorrelationId}`,
+        section: 'manifest',
+        objective: 'Manifeste de tracabilite',
+        sourceType: 'artifact',
+        sourceId: 'manifest.json',
+        correlationId: dossierCorrelationId,
+        status: 'covered',
+        reason: undefined,
+        authorUserId: input.entries[0]?.requestedBy,
+        timestamp: input.generatedAt,
+      },
+      {
+        id: `deliverables-${dossierCorrelationId}`,
+        section: 'deliverables',
+        objective: 'Livrables exportables identifies',
+        sourceType: 'artifact',
+        sourceId: input.deliverables.archiveZipFileName,
+        correlationId: dossierCorrelationId,
+        status: manifestChecksum.length > 0 ? 'covered' : 'missing',
+        reason: manifestChecksum.length > 0 ? undefined : 'manifest_checksum_missing',
+        authorUserId: input.entries[0]?.requestedBy,
+        timestamp: input.generatedAt,
+      },
+    ];
+  }
+
+  private buildExceptionAuditCoverage(entries: ExceptionAuditDossierEvidenceEntry[]) {
+    const bySection = new Map<ExceptionAuditDossierEvidenceEntry['section'], ExceptionAuditDossierEvidenceEntry[]>();
+    for (const entry of entries) {
+      const collection = bySection.get(entry.section) ?? [];
+      collection.push(entry);
+      bySection.set(entry.section, collection);
+    }
+
+    const definitions: Array<{
+      section: ExceptionAuditDossierEvidenceEntry['section'];
+      objective: string;
+      critical: boolean;
+    }> = [
+      { section: 'scope', objective: 'Scope tenant/exercice explicite', critical: true },
+      { section: 'timeline', objective: 'Timeline des evenements', critical: true },
+      { section: 'decision_log', objective: 'Decision log exploitable', critical: true },
+      { section: 'evidences', objective: 'Preuves rattachables', critical: true },
+      { section: 'coverage', objective: 'Statut de couverture explicite', critical: false },
+      { section: 'manifest', objective: 'Manifeste de tracabilite', critical: false },
+      { section: 'deliverables', objective: 'Livrables exportables identifies', critical: false },
+    ];
+
+    return definitions.map<ExceptionAuditDossierCoverageEntry>((definition) => {
+      const sectionEntries = bySection.get(definition.section) ?? [];
+      if (sectionEntries.length === 0) {
+        return {
+          section: definition.section,
+          objective: definition.objective,
+          status: 'missing',
+          critical: definition.critical,
+          evidenceIds: [],
+          reason: 'section_without_evidence',
+        };
+      }
+
+      const hasMissing = sectionEntries.some((entry) => entry.status === 'missing');
+      const hasPartial = sectionEntries.some((entry) => entry.status === 'partial');
+      return {
+        section: definition.section,
+        objective: definition.objective,
+        status: hasMissing ? 'missing' : hasPartial ? 'partial' : 'covered',
+        critical: definition.critical,
+        evidenceIds: sectionEntries.map((entry) => entry.id),
+        reason: hasMissing ? 'missing_evidence_entries' : hasPartial ? 'partial_evidence_entries' : undefined,
+      };
+    });
+  }
+
+  private resolveDossierCorrelationId(entries: Array<ReturnType<TresorerieService['mapAuditRow']>>) {
+    return entries[0]?.correlationId ?? 'no-correlation-id';
+  }
+
+  private computeSha256Hex(payload: string) {
+    return createHash('sha256').update(payload).digest('hex');
   }
 
   private normalizePath(absolutePath: string) {

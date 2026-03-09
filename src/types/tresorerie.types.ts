@@ -23,6 +23,7 @@ export type TresorerieAuditStatus =
   | 'executed-under-exception';
 export type CloseoutDossierType = 'cloture_exercice' | 'migration_reconciliation';
 export type CloseoutDossierStatus = 'ready' | 'blocked' | 'go' | 'no_go';
+export type AuditDossierStatus = 'ready' | 'blocked' | 'go' | 'no_go';
 
 export interface TresorerieStats {
   soldeActuel: number;
@@ -147,6 +148,7 @@ export interface TresorerieAuditFilters {
   sourceType?: 'engagement' | 'paiement' | 'depense';
   sourceId?: string;
   entityId?: string;
+  correlationId?: string;
   fromDate?: string;
   toDate?: string;
   page?: number;
@@ -160,6 +162,96 @@ export interface PaginatedTresorerieAudit {
     pageSize: number;
     total: number;
     totalPages: number;
+  };
+}
+
+export interface ExceptionAuditDossierPayload {
+  generatedAt: string;
+  dossierId: string;
+  scope: {
+    tenantId: string;
+    exerciceId: string;
+    filters: {
+      fromDate: string | null;
+      toDate: string | null;
+      sourceType: string | null;
+      sourceId: string | null;
+      entityId: string | null;
+      correlationId: string | null;
+    };
+  };
+  status: AuditDossierStatus;
+  timeline: Array<{
+    id: string;
+    correlationId: string;
+    actorUserId: string;
+    status: TresorerieAuditStatus;
+    transition: string;
+    sourceType: 'engagement' | 'paiement' | 'depense';
+    sourceId: string | null;
+    createdAt: string;
+    approvedAt: string | null;
+    decidedAt: string | null;
+    consumedAt: string | null;
+  }>;
+  decisionLog: Array<{
+    id: string;
+    correlationId: string;
+    decision: 'allow' | 'block';
+    severity: TresorerieAlertSeverity;
+    reasons: string[];
+    actorUserId: string;
+    timestamp: string;
+  }>;
+  evidences: Array<{
+    id: string;
+    section: 'scope' | 'timeline' | 'decision_log' | 'evidences' | 'coverage' | 'manifest' | 'deliverables';
+    objective: string;
+    sourceType: 'audit_exception' | 'audit_event' | 'audit_vote' | 'artifact';
+    sourceId: string;
+    correlationId: string;
+    status: 'covered' | 'partial' | 'missing';
+    reason?: string;
+    authorUserId?: string;
+    timestamp: string;
+  }>;
+  coverage: Array<{
+    section: 'scope' | 'timeline' | 'decision_log' | 'evidences' | 'coverage' | 'manifest' | 'deliverables';
+    objective: string;
+    status: 'covered' | 'partial' | 'missing';
+    critical: boolean;
+    evidenceIds: string[];
+    reason?: string;
+  }>;
+  manifest: {
+    generatedAt: string;
+    durationMs: number;
+    durationWithinSla: boolean;
+    totalEntries: number;
+    missingCritical: Array<{
+      section: string;
+      objective: string;
+      reason: string;
+    }>;
+    entries?: Array<{
+      section: 'scope' | 'timeline' | 'decision_log' | 'evidences' | 'coverage' | 'manifest' | 'deliverables';
+      fileName: string;
+      checksum: string;
+      sizeBytes: number;
+      generatedAt: string;
+    }>;
+    archive?: {
+      fileName: string;
+      checksumAlgorithm: 'sha256';
+      checksum: string;
+    };
+  };
+  deliverables: {
+    suggestedFileName: string;
+    archiveZipFileName: string;
+    indexFileName: string;
+    printableFileName: string;
+    pdfStrategy: string;
   };
 }
 

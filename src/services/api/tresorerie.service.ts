@@ -1,6 +1,7 @@
 import { requestJson } from '@/services/api/api-utils';
 import type {
   CloseoutDossierPayload,
+  ExceptionAuditDossierPayload,
   FluxTresorerie,
   PaginatedTresorerieAudit,
   PrevisionTresorerie,
@@ -65,6 +66,9 @@ const buildAuditQueryParams = (exerciceId: string, filters: TresorerieAuditFilte
   }
   if (filters.entityId) {
     params.set('entityId', filters.entityId);
+  }
+  if (filters.correlationId) {
+    params.set('correlationId', filters.correlationId);
   }
   if (filters.fromDate) {
     params.set('fromDate', filters.fromDate);
@@ -168,6 +172,24 @@ export const tresorerieService = {
       `/tresorerie/closeout-dossier?${params.toString()}`,
       { method: 'GET' },
       'Erreur lors du chargement du dossier de clôture'
+    );
+  },
+
+  async getExceptionAuditDossier(
+    _clientId: string,
+    exerciceId: string,
+    filters: TresorerieAuditFilters = {},
+    input?: { dossierId?: string }
+  ): Promise<ExceptionAuditDossierPayload> {
+    const params = buildAuditQueryParams(exerciceId, filters);
+    if (input?.dossierId) {
+      params.set('dossierId', input.dossierId);
+    }
+
+    return requestJson<ExceptionAuditDossierPayload>(
+      `/tresorerie/exception-audit/dossier?${params.toString()}`,
+      { method: 'GET' },
+      'Erreur lors du chargement du dossier d’audit exportable'
     );
   },
 };

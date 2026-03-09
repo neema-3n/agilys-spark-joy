@@ -47,7 +47,7 @@ development_status:
   epic-7: in-progress
   7-1-exposer-dashboard-budgetaire-de-pilotage: done
   7-2-fournir-vues-danalyse-et-axes-analytiques: done
-  7-3-produire-dossier-daudit-exportable: ready-for-dev
+  7-3-produire-dossier-daudit-exportable: done
   7-4-activer-module-controle-interne: ready-for-dev
   epic-7-retrospective: optional
   epic-8: backlog

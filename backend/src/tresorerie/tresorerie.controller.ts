@@ -6,6 +6,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RequirePermissions } from '../auth/permissions.decorator';
 import {
   CloseoutDossierQueryDto,
+  TresorerieAuditDossierQueryDto,
   TresorerieAuditDetailQueryDto,
   TresorerieAuditQueryDto,
   TresorerieQueryDto,
@@ -63,6 +64,18 @@ export class TresorerieController {
   @RequirePermissions('referentiels:audit:read')
   getExceptionAuditExportPrep(@CurrentUser() user: AuthenticatedUser, @Query() query: TresorerieAuditQueryDto) {
     return this.tresorerieService.getExceptionAuditExportPrep(user, query);
+  }
+
+  @Get('exception-audit/dossier')
+  @RequirePermissions('referentiels:audit:read')
+  getExceptionAuditDossier(@CurrentUser() user: AuthenticatedUser, @Query() query: TresorerieAuditDossierQueryDto) {
+    return this.tresorerieService.getExceptionAuditDossier(user, query);
+  }
+
+  @Get('exception-audit/dossier/export-prep')
+  @RequirePermissions('referentiels:audit:read')
+  getExceptionAuditDossierExportPrep(@CurrentUser() user: AuthenticatedUser, @Query() query: TresorerieAuditDossierQueryDto) {
+    return this.tresorerieService.getExceptionAuditDossierExportPrep(user, query);
   }
 
   @Get('closeout-dossier')
