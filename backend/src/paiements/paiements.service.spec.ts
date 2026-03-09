@@ -29,6 +29,7 @@ describe('PaiementsService', () => {
   } as unknown as WorkflowExceptionsService;
   const ecrituresComptablesService = {
     ensureGeneratedForOperation: jest.fn(),
+    createContrepassations: jest.fn(),
   } as unknown as EcrituresComptablesService;
   const service = new PaiementsService(postgresService, workflowExceptionsService, ecrituresComptablesService);
   const internals = service as unknown as {
@@ -355,6 +356,52 @@ describe('PaiementsService', () => {
 
     expect(revertSuccessfulArtifacts).toHaveBeenCalledTimes(1);
     expect(result.statut).toBe('rejete');
+  });
+
+  it('centralise aussi la contre-passation des paiements via le service comptable partagé', async () => {
+    query.mockResolvedValueOnce(
+      makeResult([
+        {
+          id: 'ecr-1',
+          client_id: actor.tenantId,
+          exercice_id: 'ex-1',
+          numero_piece: 'PAY000001',
+          numero_ligne: 1,
+          compte_debit_id: 'cd',
+          compte_credit_id: 'cc',
+          montant: 50,
+          libelle: 'Paiement',
+          type_operation: 'paiement',
+          source_id: 'pay-1',
+          regle_comptable_id: 'reg-1',
+          engagement_id: null,
+          reservation_id: null,
+          bon_commande_id: null,
+          facture_id: null,
+          depense_id: 'dep-1',
+          paiement_id: 'pay-1',
+        }
+      ])
+    );
+
+    await internals.revertSuccessfulArtifacts(
+      actor,
+      {
+        id: 'pay-1',
+        exercice_id: 'ex-1'
+      } as any,
+      'Retour banque'
+    );
+
+    expect((ecrituresComptablesService.createContrepassations as jest.Mock)).toHaveBeenCalledWith(
+      actor,
+      expect.arrayContaining([expect.objectContaining({ id: 'ecr-1', source_id: 'pay-1' })]),
+      expect.objectContaining({
+        motif: 'Retour banque',
+        expectedExerciceId: 'ex-1',
+        expectedSourceId: 'pay-1'
+      })
+    );
   });
 
   it('reprend un paiement rejeté en créant une nouvelle tentative rattachée', async () => {

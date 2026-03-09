@@ -20,11 +20,16 @@ const makeResult = <T extends QueryResultRow>(rows: T[], rowCount = rows.length)
 
 describe('EcrituresComptablesService', () => {
   const query = jest.fn();
-  const postgresService = { query } as unknown as PostgresService;
+  const withTransaction = jest.fn();
+  const postgresService = { query, withTransaction } as unknown as PostgresService;
   const service = new EcrituresComptablesService(postgresService);
 
   beforeEach(() => {
     query.mockReset();
+    withTransaction.mockReset();
+    withTransaction.mockImplementation(async (callback: (executor: { query: typeof query }) => Promise<unknown>) =>
+      callback({ query })
+    );
   });
 
   it('expose la preuve de la version de regle appliquee', async () => {
@@ -192,5 +197,325 @@ describe('EcrituresComptablesService', () => {
     await expect(service.ensureGeneratedForOperation(actor, 'depense', 'dep-1', 'ex-1')).rejects.toThrow(
       'Aucune regle comptable publiee'
     );
+  });
+
+  it('cree une contre-passation en inversant les comptes et en preservant le lien d audit', async () => {
+    query
+      .mockResolvedValueOnce(
+        makeResult([
+          {
+            id: 'ecr-1',
+            client_id: actor.tenantId,
+            exercice_id: 'ex-1',
+            source_id: 'dep-1',
+            statut_ecriture: 'validee',
+            has_existing_contrepassation: false
+          }
+        ])
+      )
+      .mockResolvedValueOnce(
+        makeResult([
+          {
+            numero_piece: 'DEP/2026/001',
+            numero_ligne: 1
+          }
+        ])
+      )
+      .mockResolvedValueOnce(makeResult([]));
+
+    await service.createContrepassations(
+      actor,
+      [
+        {
+          id: 'ecr-1',
+          client_id: actor.tenantId,
+          exercice_id: 'ex-1',
+          numero_piece: 'DEP/2026/001',
+          numero_ligne: 1,
+          compte_debit_id: 'compte-debit',
+          compte_credit_id: 'compte-credit',
+          montant: 1250,
+          libelle: 'Depense mission',
+          type_operation: 'depense',
+          source_id: 'dep-1',
+          regle_comptable_id: 'reg-1',
+          engagement_id: null,
+          reservation_id: null,
+          bon_commande_id: null,
+          facture_id: null,
+          depense_id: 'dep-1',
+          paiement_id: null
+        }
+      ],
+      {
+        motif: 'Erreur de saisie',
+        libellePrefix: 'Annulation',
+        expectedExerciceId: 'ex-1',
+        expectedSourceId: 'dep-1'
+      }
+    );
+
+    expect(withTransaction).toHaveBeenCalledTimes(1);
+    expect(query).toHaveBeenCalledTimes(3);
+    expect(query.mock.calls[2]?.[1]).toEqual([
+      actor.tenantId,
+      'ex-1',
+      'DEP/2026/001',
+      2,
+      'compte-credit',
+      'compte-debit',
+      1250,
+      'Annulation: Depense mission - Erreur de saisie',
+      'depense',
+      'dep-1',
+      'reg-1',
+      'ecr-1',
+      actor.sub,
+      null,
+      null,
+      null,
+      null,
+      'dep-1',
+      null
+    ]);
+  });
+
+  it('refuse une double contre-passation sur la meme origine', async () => {
+    query.mockResolvedValueOnce(
+      makeResult([
+        {
+          id: 'ecr-1',
+          client_id: actor.tenantId,
+          exercice_id: 'ex-1',
+          source_id: 'dep-1',
+          statut_ecriture: 'validee',
+          has_existing_contrepassation: true
+        }
+      ])
+    );
+
+    await expect(
+      service.createContrepassations(
+        actor,
+        [
+          {
+            id: 'ecr-1',
+            client_id: actor.tenantId,
+            exercice_id: 'ex-1',
+            numero_piece: 'DEP/2026/001',
+            numero_ligne: 1,
+            compte_debit_id: 'compte-debit',
+            compte_credit_id: 'compte-credit',
+            montant: 1250,
+            libelle: 'Depense mission',
+            type_operation: 'depense',
+            source_id: 'dep-1',
+            regle_comptable_id: 'reg-1',
+            engagement_id: null,
+            reservation_id: null,
+            bon_commande_id: null,
+            facture_id: null,
+            depense_id: 'dep-1',
+            paiement_id: null
+          }
+        ],
+        {
+          motif: 'Erreur de saisie',
+          libellePrefix: 'Annulation',
+          expectedExerciceId: 'ex-1',
+          expectedSourceId: 'dep-1'
+        }
+      )
+    ).rejects.toThrow('déjà été contre-passée');
+  });
+
+  it('refuse une contre-passation cross-tenant ou exercice incoherent', async () => {
+    await expect(
+      service.createContrepassations(
+        actor,
+        [
+          {
+            id: 'ecr-1',
+            client_id: 'tenant-2',
+            exercice_id: 'ex-2',
+            numero_piece: 'DEP/2026/001',
+            numero_ligne: 1,
+            compte_debit_id: 'compte-debit',
+            compte_credit_id: 'compte-credit',
+            montant: 1250,
+            libelle: 'Depense mission',
+            type_operation: 'depense',
+            source_id: 'dep-1',
+            regle_comptable_id: 'reg-1',
+            engagement_id: null,
+            reservation_id: null,
+            bon_commande_id: null,
+            facture_id: null,
+            depense_id: 'dep-1',
+            paiement_id: null
+          }
+        ],
+        {
+          motif: 'Erreur de saisie',
+          libellePrefix: 'Annulation',
+          expectedExerciceId: 'ex-1',
+          expectedSourceId: 'dep-1'
+        }
+      )
+    ).rejects.toThrow('hors scope tenant');
+  });
+
+  it('attribue des numeros de ligne consecutifs a partir du maximum deja present pour la piece', async () => {
+    query
+      .mockResolvedValueOnce(
+        makeResult([
+          {
+            id: 'ecr-1',
+            client_id: actor.tenantId,
+            exercice_id: 'ex-1',
+            source_id: 'dep-1',
+            statut_ecriture: 'validee',
+            has_existing_contrepassation: false
+          },
+          {
+            id: 'ecr-2',
+            client_id: actor.tenantId,
+            exercice_id: 'ex-1',
+            source_id: 'dep-1',
+            statut_ecriture: 'validee',
+            has_existing_contrepassation: false
+          }
+        ])
+      )
+      .mockResolvedValueOnce(
+        makeResult([
+          {
+            numero_piece: 'DEP/2026/001',
+            numero_ligne: 1
+          },
+          {
+            numero_piece: 'DEP/2026/001',
+            numero_ligne: 1004
+          }
+        ])
+      )
+      .mockResolvedValue(makeResult([]));
+
+    await service.createContrepassations(
+      actor,
+      [
+        {
+          id: 'ecr-1',
+          client_id: actor.tenantId,
+          exercice_id: 'ex-1',
+          numero_piece: 'DEP/2026/001',
+          numero_ligne: 1,
+          compte_debit_id: 'compte-debit',
+          compte_credit_id: 'compte-credit',
+          montant: 1250,
+          libelle: 'Depense mission',
+          type_operation: 'depense',
+          source_id: 'dep-1',
+          regle_comptable_id: 'reg-1',
+          engagement_id: null,
+          reservation_id: null,
+          bon_commande_id: null,
+          facture_id: null,
+          depense_id: 'dep-1',
+          paiement_id: null
+        },
+        {
+          id: 'ecr-2',
+          client_id: actor.tenantId,
+          exercice_id: 'ex-1',
+          numero_piece: 'DEP/2026/001',
+          numero_ligne: 2,
+          compte_debit_id: 'compte-debit',
+          compte_credit_id: 'compte-credit',
+          montant: 450,
+          libelle: 'TVA mission',
+          type_operation: 'depense',
+          source_id: 'dep-1',
+          regle_comptable_id: 'reg-1',
+          engagement_id: null,
+          reservation_id: null,
+          bon_commande_id: null,
+          facture_id: null,
+          depense_id: 'dep-1',
+          paiement_id: null
+        }
+      ],
+      {
+        motif: 'Erreur de saisie',
+        libellePrefix: 'Annulation',
+        expectedExerciceId: 'ex-1',
+        expectedSourceId: 'dep-1'
+      }
+    );
+
+    expect(query.mock.calls[2]?.[1]?.[3]).toBe(1005);
+    expect(query.mock.calls[3]?.[1]?.[3]).toBe(1006);
+  });
+
+  it("traduit une collision d'unicite sur la piece en erreur explicite", async () => {
+    query
+      .mockResolvedValueOnce(
+        makeResult([
+          {
+            id: 'ecr-1',
+            client_id: actor.tenantId,
+            exercice_id: 'ex-1',
+            source_id: 'dep-1',
+            statut_ecriture: 'validee',
+            has_existing_contrepassation: false
+          }
+        ])
+      )
+      .mockResolvedValueOnce(
+        makeResult([
+          {
+            numero_piece: 'DEP/2026/001',
+            numero_ligne: 7
+          }
+        ])
+      )
+      .mockRejectedValueOnce({
+        code: '23505',
+        constraint: 'unique_piece_ligne'
+      });
+
+    await expect(
+      service.createContrepassations(
+        actor,
+        [
+          {
+            id: 'ecr-1',
+            client_id: actor.tenantId,
+            exercice_id: 'ex-1',
+            numero_piece: 'DEP/2026/001',
+            numero_ligne: 1,
+            compte_debit_id: 'compte-debit',
+            compte_credit_id: 'compte-credit',
+            montant: 1250,
+            libelle: 'Depense mission',
+            type_operation: 'depense',
+            source_id: 'dep-1',
+            regle_comptable_id: 'reg-1',
+            engagement_id: null,
+            reservation_id: null,
+            bon_commande_id: null,
+            facture_id: null,
+            depense_id: 'dep-1',
+            paiement_id: null
+          }
+        ],
+        {
+          motif: 'Erreur de saisie',
+          libellePrefix: 'Annulation',
+          expectedExerciceId: 'ex-1',
+          expectedSourceId: 'dep-1'
+        }
+      )
+    ).rejects.toThrow('numérotation de ligne');
   });
 });

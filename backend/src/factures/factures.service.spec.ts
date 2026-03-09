@@ -24,7 +24,8 @@ describe('FacturesService', () => {
   const query = jest.fn();
   const postgresService = { query } as unknown as PostgresService;
   const ecrituresComptablesService = {
-    ensureGeneratedForOperation: jest.fn()
+    ensureGeneratedForOperation: jest.fn(),
+    createContrepassations: jest.fn()
   } as unknown as EcrituresComptablesService;
   const service = new FacturesService(postgresService, ecrituresComptablesService);
 
@@ -139,5 +140,122 @@ describe('FacturesService', () => {
         statut: 'payee'
       })
     ).rejects.toThrow('Transition interdite via mise a jour generique');
+  });
+
+  it("délègue l'annulation comptable d'une facture au service partagé", async () => {
+    query
+      .mockResolvedValueOnce(
+        makeResult([
+          {
+            id: 'fac-1',
+            client_id: actor.tenantId,
+            exercice_id: 'ex-1',
+            numero: 'FAC/EX-2026/0001',
+            date_facture: '2026-01-15',
+            date_echeance: null,
+            fournisseur_id: 'f-1',
+            bon_commande_id: null,
+            engagement_id: null,
+            ligne_budgetaire_id: null,
+            projet_id: null,
+            objet: 'Facture test',
+            numero_facture_fournisseur: 'F-2026-001',
+            reference_piece: 'PJ-001',
+            montant_ht: 100,
+            montant_tva: 20,
+            montant_ttc: 120,
+            montant_liquide: 120,
+            statut: 'validee',
+            date_validation: null,
+            observations: null,
+            created_at: '2026-01-01T00:00:00.000Z',
+            updated_at: '2026-01-01T00:00:00.000Z',
+            created_by: actor.sub,
+            fournisseur_nom: null,
+            fournisseur_code: null,
+            bon_commande_numero: null,
+            engagement_numero: null,
+            ligne_budgetaire_libelle: null,
+            projet_nom: null,
+            projet_code: null,
+            ecritures_count: 1
+          }
+        ])
+      )
+      .mockResolvedValueOnce(
+        makeResult([
+          {
+            id: 'ecr-1',
+            client_id: actor.tenantId,
+            exercice_id: 'ex-1',
+            numero_piece: 'FAC/EX-2026/0001',
+            numero_ligne: 1,
+            compte_debit_id: 'cd',
+            compte_credit_id: 'cc',
+            montant: 120,
+            libelle: 'Facture',
+            type_operation: 'facture',
+            source_id: 'fac-1',
+            regle_comptable_id: 'reg-1',
+            engagement_id: null,
+            reservation_id: null,
+            bon_commande_id: null,
+            facture_id: 'fac-1',
+            depense_id: null,
+            paiement_id: null
+          }
+        ])
+      )
+      .mockResolvedValueOnce(makeResult([], 1))
+      .mockResolvedValueOnce(
+        makeResult([
+          {
+            id: 'fac-1',
+            client_id: actor.tenantId,
+            exercice_id: 'ex-1',
+            numero: 'FAC/EX-2026/0001',
+            date_facture: '2026-01-15',
+            date_echeance: null,
+            fournisseur_id: 'f-1',
+            bon_commande_id: null,
+            engagement_id: null,
+            ligne_budgetaire_id: null,
+            projet_id: null,
+            objet: 'Facture test',
+            numero_facture_fournisseur: 'F-2026-001',
+            reference_piece: 'PJ-001',
+            montant_ht: 100,
+            montant_tva: 20,
+            montant_ttc: 120,
+            montant_liquide: 120,
+            statut: 'annulee',
+            date_validation: null,
+            observations: 'motif',
+            created_at: '2026-01-01T00:00:00.000Z',
+            updated_at: '2026-01-01T00:00:00.000Z',
+            created_by: actor.sub,
+            fournisseur_nom: null,
+            fournisseur_code: null,
+            bon_commande_numero: null,
+            engagement_numero: null,
+            ligne_budgetaire_libelle: null,
+            projet_nom: null,
+            projet_code: null,
+            ecritures_count: 1
+          }
+        ])
+      );
+
+    await service.annuler(actor, 'fac-1', 'motif');
+
+    expect((ecrituresComptablesService.createContrepassations as jest.Mock)).toHaveBeenCalledWith(
+      actor,
+      expect.arrayContaining([expect.objectContaining({ id: 'ecr-1', source_id: 'fac-1' })]),
+      expect.objectContaining({
+        motif: 'motif',
+        expectedExerciceId: 'ex-1',
+        expectedSourceId: 'fac-1'
+      })
+    );
   });
 });

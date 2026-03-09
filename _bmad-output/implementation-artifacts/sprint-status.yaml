@@ -39,7 +39,7 @@ development_status:
   epic-6: in-progress
   6-1-versionner-plan-comptable-et-mapping-ecritures: in-progress
   6-2-generer-ecritures-en-double-entree-idempotentes: done
-  6-3-gerer-corrections-et-contre-passations-auditables: ready-for-dev
+  6-3-gerer-corrections-et-contre-passations-auditables: done
   6-4-executer-cloture-dexercice-gouvernee: ready-for-dev
   6-5-implementer-rapprochement-bancaire-auto-manuel: ready-for-dev
   6-6-produire-dossier-de-cloture-et-migration-reconciliation: ready-for-dev

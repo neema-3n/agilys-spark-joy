@@ -47,7 +47,20 @@ export default function JournalComptable() {
   const hasActiveFilters = Object.values(filters).some(v => v !== undefined && v !== '');
 
   const exportToCsv = () => {
-    const headers = ['Date', 'N° Pièce', 'Ligne', 'Compte Débit', 'Compte Crédit', 'Libellé', 'Montant', 'Type'];
+    const headers = [
+      'Date',
+      'N° Pièce',
+      'Ligne',
+      'Compte Débit',
+      'Compte Crédit',
+      'Libellé',
+      'Statut',
+      'Auteur',
+      'Horodatage',
+      'Origine',
+      'Montant',
+      'Type'
+    ];
     const rows = ecritures.map(e => [
       e.dateEcriture,
       e.numeroPiece,
@@ -55,6 +68,10 @@ export default function JournalComptable() {
       `${e.compteDebit?.numero} - ${e.compteDebit?.libelle}`,
       `${e.compteCredit?.numero} - ${e.compteCredit?.libelle}`,
       e.libelle,
+      e.statutEcriture,
+      e.createdBy || 'systeme',
+      e.createdAt,
+      e.ecritureOrigineId || '',
       e.montant,
       e.typeOperation
     ]);

@@ -79,6 +79,7 @@ describe('EngagementsService', () => {
   } as unknown as WorkflowExceptionsService;
   const ecrituresComptablesService = {
     ensureGeneratedForOperation: jest.fn(),
+    createContrepassations: jest.fn(),
   } as unknown as EcrituresComptablesService;
   const service = new EngagementsService(
     postgresService,
@@ -249,5 +250,55 @@ describe('EngagementsService', () => {
 
     await expect(service.valider(actor, 'eng-1')).rejects.toBeInstanceOf(BadRequestException);
     expect(query).toHaveBeenCalledTimes(1);
+  });
+
+  it("délègue l'annulation comptable d'un engagement au service partagé", async () => {
+    query
+      .mockResolvedValueOnce(makeResult([makeEngagementRow({ reservation_credit_id: 'res-1' })]))
+      .mockResolvedValueOnce(makeResult([]))
+      .mockResolvedValueOnce(
+        makeResult([
+          {
+            id: 'ecr-1',
+            client_id: actor.tenantId,
+            exercice_id: 'ex-1',
+            numero_piece: 'ENG/EX-2026/001',
+            numero_ligne: 1,
+            compte_debit_id: 'cd',
+            compte_credit_id: 'cc',
+            montant: 500,
+            libelle: 'Engagement',
+            type_operation: 'engagement',
+            source_id: 'eng-1',
+            regle_comptable_id: 'reg-1',
+            engagement_id: 'eng-1',
+            reservation_id: 'res-1',
+            bon_commande_id: null,
+            facture_id: null,
+            depense_id: null,
+            paiement_id: null
+          }
+        ])
+      )
+      .mockResolvedValueOnce(makeResult([], 1))
+      .mockResolvedValueOnce(makeResult([makeEngagementRow({ statut: 'annule', reservation_credit_id: 'res-1' })]));
+
+    const syncSpy = jest
+      .spyOn(service as unknown as { syncReservationStatusFromEngagement: (actor: AuthenticatedUser, id?: string) => Promise<void> }, 'syncReservationStatusFromEngagement')
+      .mockResolvedValue(undefined);
+
+    await service.annuler(actor, 'eng-1', 'motif');
+
+    expect((ecrituresComptablesService.createContrepassations as jest.Mock)).toHaveBeenCalledWith(
+      actor,
+      expect.arrayContaining([expect.objectContaining({ id: 'ecr-1', source_id: 'eng-1' })]),
+      expect.objectContaining({
+        motif: 'motif',
+        expectedExerciceId: 'ex-1',
+        expectedSourceId: 'eng-1'
+      })
+    );
+
+    syncSpy.mockRestore();
   });
 });

@@ -29,6 +29,7 @@ describe('DepensesService', () => {
   } as unknown as WorkflowExceptionsService;
   const ecrituresComptablesService = {
     ensureGeneratedForOperation: jest.fn(),
+    createContrepassations: jest.fn(),
   } as unknown as EcrituresComptablesService;
   const service = new DepensesService(postgresService, workflowExceptionsService, ecrituresComptablesService);
 
@@ -256,5 +257,59 @@ describe('DepensesService', () => {
 
     await expect(service.annuler(actor, 'dep-1', 'Erreur de saisie')).rejects.toThrow('paiements liés');
     expect(query).toHaveBeenCalledTimes(0);
+  });
+
+  it("délègue l'annulation comptable d'une dépense au service partagé", async () => {
+    jest.spyOn(service, 'getById').mockResolvedValue({
+      id: 'dep-1',
+      clientId: actor.tenantId,
+      exerciceId: 'ex-1',
+      numero: 'DEP/EX/0001',
+      dateDepense: '2026-03-05',
+      objet: 'Test',
+      montant: 100,
+      montantPaye: 0,
+      statut: 'validee',
+      createdAt: '2026-03-05T00:00:00.000Z',
+      updatedAt: '2026-03-05T00:00:00.000Z',
+    } as any);
+    query
+      .mockResolvedValueOnce(
+        makeResult([
+          {
+            id: 'ecr-1',
+            client_id: actor.tenantId,
+            exercice_id: 'ex-1',
+            numero_piece: 'DEP/EX/0001',
+            numero_ligne: 1,
+            compte_debit_id: 'cd',
+            compte_credit_id: 'cc',
+            montant: 100,
+            libelle: 'Depense',
+            type_operation: 'depense',
+            source_id: 'dep-1',
+            regle_comptable_id: 'reg-1',
+            engagement_id: null,
+            reservation_id: null,
+            bon_commande_id: null,
+            facture_id: null,
+            depense_id: 'dep-1',
+            paiement_id: null
+          }
+        ])
+      )
+      .mockResolvedValueOnce(makeResult([], 1));
+
+    await service.annuler(actor, 'dep-1', 'motif');
+
+    expect((ecrituresComptablesService.createContrepassations as jest.Mock)).toHaveBeenCalledWith(
+      actor,
+      expect.arrayContaining([expect.objectContaining({ id: 'ecr-1', source_id: 'dep-1' })]),
+      expect.objectContaining({
+        motif: 'motif',
+        expectedExerciceId: 'ex-1',
+        expectedSourceId: 'dep-1'
+      })
+    );
   });
 });
