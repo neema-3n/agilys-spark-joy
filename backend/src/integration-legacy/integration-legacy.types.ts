@@ -16,6 +16,14 @@ export type IntegrationEventStatus = (typeof INTEGRATION_EVENT_STATUSES)[number]
 export const INTEGRATION_EVENT_SEVERITIES = ['info', 'warning', 'error', 'critical'] as const;
 export type IntegrationEventSeverity = (typeof INTEGRATION_EVENT_SEVERITIES)[number];
 
+export const INTEGRATION_EVENT_PRIORITIES = ['P1', 'P2', 'P3'] as const;
+export type IntegrationEventPriority = (typeof INTEGRATION_EVENT_PRIORITIES)[number];
+
+export const INTEGRATION_TREATMENT_STATUSES = ['open', 'triaged', 'in_progress', 'resolved', 'closed'] as const;
+export type IntegrationTreatmentStatus = (typeof INTEGRATION_TREATMENT_STATUSES)[number];
+
+export type IntegrationRemediationAction = 'dispatch' | 'ingest' | 'manual-retry' | 'escalate' | 'reconcile-manual';
+
 export interface IntegrationCanonicalEvent {
   eventType: string;
   correlationId: string;
@@ -32,7 +40,7 @@ export interface IntegrationEventAttemptView {
   id: string;
   eventId: string;
   attemptNumber: number;
-  action: 'dispatch' | 'ingest' | 'manual-retry';
+  action: IntegrationRemediationAction;
   status: IntegrationEventStatus | 'duplicate';
   reasonCode?: string;
   reasonMessage?: string;
@@ -46,6 +54,8 @@ export interface IntegrationEventView {
   direction: IntegrationEventDirection;
   status: IntegrationEventStatus;
   severity: IntegrationEventSeverity;
+  priority: IntegrationEventPriority;
+  treatmentStatus: IntegrationTreatmentStatus;
   tenantId: string;
   exerciceId: string;
   eventType: string;
@@ -61,6 +71,12 @@ export interface IntegrationEventView {
   deadLetteredAt?: string;
   reasonCode?: string;
   reasonMessage?: string;
+  owner?: string;
+  detectedAt?: string;
+  resolvedAt?: string;
+  detectionDelayMs?: number;
+  recoveryDelayMs?: number;
+  atRiskSla?: 'none' | 'detection' | 'recovery' | 'breach';
   createdBy: string;
   updatedBy: string;
   createdAt: string;

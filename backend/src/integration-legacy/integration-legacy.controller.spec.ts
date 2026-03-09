@@ -28,4 +28,11 @@ describe('IntegrationLegacyController metadata', () => {
 
     expect(permissions).toEqual(['referentiels:write']);
   });
+
+  it('protège la remediation avec permission write', () => {
+    const method = IntegrationLegacyController.prototype.remediate;
+    const permissions = Reflect.getMetadata(PERMISSIONS_KEY, method) as string[];
+
+    expect(permissions).toEqual(['referentiels:write']);
+  });
 });

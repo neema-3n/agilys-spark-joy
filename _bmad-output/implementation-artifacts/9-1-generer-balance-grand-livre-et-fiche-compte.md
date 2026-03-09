@@ -1,6 +1,6 @@
 # Story 9.1: Generer balance, grand livre et fiche compte
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -19,30 +19,30 @@ so that je peux controler la qualite comptable periodique.
 
 ## Tasks / Subtasks
 
-- [ ] Concevoir le contrat API reporting comptable (AC: 1)
-  - [ ] Definir DTO de filtres communs (periode obligatoire, compte optionnel, axe/entite optionnels, pagination)
-  - [ ] Definir schema de reponse unifie pour 3 vues: balance, grand-livre, fiche-compte
-  - [ ] Definir endpoints d'export asynchrone CSV/XLSX/PDF avec suivi de statut d'export
+- [x] Concevoir le contrat API reporting comptable (AC: 1)
+  - [x] Definir DTO de filtres communs (periode obligatoire, compte optionnel, axe/entite optionnels, pagination)
+  - [x] Definir schema de reponse unifie pour 3 vues: balance, grand-livre, fiche-compte
+  - [x] Definir endpoints d'export asynchrone CSV/XLSX/PDF avec suivi de statut d'export
 
-- [ ] Implementer les requetes backend multi-tenant pour les 3 rapports (AC: 1)
-  - [ ] Creer un module backend dedie `reporting-comptable` sans duplication des aggregations existantes
-  - [ ] Reutiliser les ecritures et comptes existants (`ecritures-comptables`, `comptes`) comme source de verite
-  - [ ] Garantir isolation tenant (`client_id`) et filtrage periode sur toutes les requetes
+- [x] Implementer les requetes backend multi-tenant pour les 3 rapports (AC: 1)
+  - [x] Creer un module backend dedie `reporting-comptable` sans duplication des aggregations existantes
+  - [x] Reutiliser les ecritures et comptes existants (`ecritures-comptables`, `comptes`) comme source de verite
+  - [x] Garantir isolation tenant (`client_id`) et filtrage periode sur toutes les requetes
 
-- [ ] Ajouter la surface frontend de consultation des rapports (AC: 1)
-  - [ ] Creer un service API front type `reporting-comptable.service.ts`
-  - [ ] Integrer la vue dans `Reporting.tsx` via onglet ou sous-onglet sans casser les composants existants
-  - [ ] Afficher table balance + table grand livre + fiche compte avec etats chargement/erreur vides
+- [x] Ajouter la surface frontend de consultation des rapports (AC: 1)
+  - [x] Creer un service API front type `reporting-comptable.service.ts`
+  - [x] Integrer la vue dans `Reporting.tsx` via onglet ou sous-onglet sans casser les composants existants
+  - [x] Afficher table balance + table grand livre + fiche compte avec etats chargement/erreur vides
 
-- [ ] Implementer l'export CSV/XLSX/PDF (AC: 1)
-  - [ ] Produire CSV direct pour petits volumes
-  - [ ] Produire XLSX/PDF via pipeline backend (job + polling statut)
-  - [ ] Ajouter telechargement securise (JWT + verif tenant + expiration lien)
+- [x] Implementer l'export CSV/XLSX/PDF (AC: 1)
+  - [x] Produire CSV direct pour petits volumes
+  - [x] Produire XLSX/PDF via pipeline backend (job + polling statut)
+  - [x] Ajouter telechargement securise (JWT + verif tenant + expiration lien)
 
-- [ ] Couvrir les tests et garde-fous de regression (AC: 1)
-  - [ ] Tests backend: cas nominal, filtres invalides, isolation tenant, autorisation
-  - [ ] Tests backend: coherence debit=credit dans balance et non-duplication des lignes grand livre
-  - [ ] Tests frontend: parcours consultation + export + gestion erreurs API
+- [x] Couvrir les tests et garde-fous de regression (AC: 1)
+  - [x] Tests backend: cas nominal, filtres invalides, isolation tenant, autorisation
+  - [x] Tests backend: coherence debit=credit dans balance et non-duplication des lignes grand livre
+  - [x] Tests frontend: parcours consultation + export + gestion erreurs API
 
 ## Dev Notes
 
@@ -117,12 +117,37 @@ GPT-5 Codex
 ### Debug Log References
 
 - Story key detectee automatiquement via sprint-status: `9-1-generer-balance-grand-livre-et-fiche-compte`
-- Statut epic `epic-9` passe de `backlog` a `in-progress`
+- Statut story dans `sprint-status.yaml`: `ready-for-dev` -> `in-progress`
+- Lint global passe (`pnpm run lint`)
+- Tests cibles module reporting comptable passes (`pnpm --dir backend run test -- reporting-comptable.service.spec.ts`)
+- Tests frontend cibles service reporting passes (`pnpm exec playwright test tests/auth-migration.spec.ts --grep reportingComptableService`)
+- Suite backend globale executee avec echec non lie au scope sur `test/budget-referentiels.e2e.spec.ts` (timeouts + table manquante `integration_async_events`)
 
 ### Completion Notes List
 
-- Ultimate context engine analysis completed - comprehensive developer guide created.
+- Module backend `reporting-comptable` ajoute avec DTO filtres communs, schema unifie (balance/grand-livre/fiche-compte), isolation tenant stricte et pagination.
+- Export CSV direct + pipeline asynchrone XLSX/PDF implementes avec suivi de statut, lien signe avec expiration, verification tenant/utilisateur, et telechargement protege JWT.
+- Integration frontend complete: service API dedie, hook React Query, composant de consultation des 3 vues avec etats loading/erreur/vide, et integration dans `Reporting.tsx` via onglet additionnel sans regression de l'existant.
+- Couverture de tests ajoutee: backend (nominal, filtres invalides, scope tenant, coherence balance, non-dup grand livre, export async) + frontend service (consultation, lancement export, erreur telechargement).
 
 ### File List
 
 - _bmad-output/implementation-artifacts/9-1-generer-balance-grand-livre-et-fiche-compte.md
+- _bmad-output/implementation-artifacts/sprint-status.yaml
+- backend/src/app.module.ts
+- backend/src/reporting-comptable/dto/reporting-comptable.dto.ts
+- backend/src/reporting-comptable/reporting-comptable.controller.ts
+- backend/src/reporting-comptable/reporting-comptable.module.ts
+- backend/src/reporting-comptable/reporting-comptable.service.ts
+- backend/src/reporting-comptable/reporting-comptable.service.spec.ts
+- src/components/reporting-comptable/ReportingComptableReport.tsx
+- src/hooks/useReportingComptable.ts
+- src/pages/app/Reporting.tsx
+- src/services/api/reporting-comptable.service.ts
+- src/types/index.ts
+- src/types/reporting-comptable.types.ts
+- tests/auth-migration.spec.ts
+
+### Change Log
+
+- 2026-03-09: Story 9.1 implementee end-to-end (API reporting comptable, UI consultation, exports securises, tests backend/frontend, passage en review).

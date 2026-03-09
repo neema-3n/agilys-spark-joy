@@ -4,6 +4,7 @@ import { CloseoutDossierCard } from '@/components/controle-interne/CloseoutDossi
 import { ExceptionAuditDetail } from '@/components/controle-interne/ExceptionAuditDetail';
 import { ExceptionAuditDossierCard } from '@/components/controle-interne/ExceptionAuditDossierCard';
 import { ExceptionAuditTable } from '@/components/controle-interne/ExceptionAuditTable';
+import { IntegrationLegacyPanel } from '@/components/controle-interne/IntegrationLegacyPanel';
 import { InternalControlActionPlans } from '@/components/controle-interne/InternalControlActionPlans';
 import { OfflineSyncPanel } from '@/components/controle-interne/OfflineSyncPanel';
 import { WorkflowExceptionsList } from '@/components/workflow-exceptions/WorkflowExceptionsList';
@@ -54,7 +55,7 @@ const ControleInterne = () => {
     <div className="space-y-6">
       <PageHeader
         title="Contrôle Interne"
-        description="Workspace de supervision des écarts, exceptions et plans d action." 
+        description="Workspace de supervision des écarts, exceptions et plans d action."
       />
 
       <div className="space-y-6 px-8">
@@ -109,6 +110,7 @@ const ControleInterne = () => {
                 <TabsTrigger value="ecarts">Écarts</TabsTrigger>
                 <TabsTrigger value="exceptions">Exceptions</TabsTrigger>
                 <TabsTrigger value="plans">Plans d action</TabsTrigger>
+                <TabsTrigger value="integration">Intégration</TabsTrigger>
                 <TabsTrigger value="detail">Détail / preuves</TabsTrigger>
                 <TabsTrigger value="offline-sync">Sync offline</TabsTrigger>
               </TabsList>
@@ -173,6 +175,10 @@ const ControleInterne = () => {
                     });
                   }}
                 />
+              </TabsContent>
+
+              <TabsContent value="integration">
+                <IntegrationLegacyPanel />
               </TabsContent>
 
               <TabsContent value="detail">

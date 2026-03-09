@@ -3,19 +3,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExecutionBudgetaireReport } from '@/components/reporting/ExecutionBudgetaireReport';
 import { EtatsFinanciersReport } from '@/components/reporting/EtatsFinanciersReport';
 import { DSFReport } from '@/components/reporting/DSFReport';
-import { FileText, TrendingUp, DollarSign } from 'lucide-react';
+import { ReportingComptableReport } from '@/components/reporting-comptable/ReportingComptableReport';
+import { FileText, TrendingUp, DollarSign, BookOpen } from 'lucide-react';
 
 const Reporting = () => {
   return (
     <div className="space-y-6">
       <PageHeader
         title="Reporting"
-        description="Exécution budgétaire, DSF et états financiers"
+        description="Exécution budgétaire, DSF, états financiers et reporting comptable"
       />
       
       <div className="px-4 md:px-6">
         <Tabs defaultValue="execution" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="execution" className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
               <span className="hidden sm:inline">Exécution Budgétaire</span>
@@ -31,6 +32,11 @@ const Reporting = () => {
               <span className="hidden sm:inline">États Financiers</span>
               <span className="sm:hidden">États</span>
             </TabsTrigger>
+            <TabsTrigger value="comptable" className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4" />
+              <span className="hidden sm:inline">Reporting Comptable</span>
+              <span className="sm:hidden">Compta</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="execution" className="space-y-6">
@@ -43,6 +49,10 @@ const Reporting = () => {
 
           <TabsContent value="etats" className="space-y-6">
             <EtatsFinanciersReport />
+          </TabsContent>
+
+          <TabsContent value="comptable" className="space-y-6">
+            <ReportingComptableReport />
           </TabsContent>
         </Tabs>
       </div>

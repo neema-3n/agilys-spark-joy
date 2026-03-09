@@ -12,6 +12,7 @@ test.describe('integration legacy api client', () => {
       return new Response(
         JSON.stringify({
           items: [],
+          counters: { byStatus: {}, byPriority: {} },
           pagination: { page: 2, pageSize: 25, total: 0, totalPages: 1 },
         }),
         {
@@ -25,6 +26,9 @@ test.describe('integration legacy api client', () => {
       await integrationLegacyService.getSupervision('tenant-1', '11111111-1111-1111-1111-111111111111', {
         status: 'failed',
         severity: 'error',
+        priority: 'P1',
+        treatmentStatus: 'triaged',
+        owner: 'ops@tenant',
         correlationId: 'corr-ops-001',
         fromDate: '2026-03-01',
         toDate: '2026-03-09',
@@ -36,6 +40,9 @@ test.describe('integration legacy api client', () => {
       expect(capturedPath).toContain('exerciceId=11111111-1111-1111-1111-111111111111');
       expect(capturedPath).toContain('status=failed');
       expect(capturedPath).toContain('severity=error');
+      expect(capturedPath).toContain('priority=P1');
+      expect(capturedPath).toContain('treatmentStatus=triaged');
+      expect(capturedPath).toContain('owner=ops%40tenant');
       expect(capturedPath).toContain('correlationId=corr-ops-001');
       expect(capturedPath).toContain('fromDate=2026-03-01');
       expect(capturedPath).toContain('toDate=2026-03-09');
@@ -103,6 +110,75 @@ test.describe('integration legacy api client', () => {
       });
       expect(result.dispatchedStatus).toBe('acked');
       expect(result.event.status).toBe('acked');
+    } finally {
+      (httpClient as typeof httpClient & { request: typeof httpClient.request }).request = originalRequest;
+    }
+  });
+
+  test('remediation escalate poste l action et les metadonnees de traitement', async () => {
+    const originalRequest = httpClient.request;
+    let capturedPath = '';
+    let capturedBody: Record<string, unknown> | null = null;
+
+    (httpClient as typeof httpClient & { request: typeof httpClient.request }).request = async (path, options) => {
+      capturedPath = path;
+      capturedBody = typeof options?.body === 'string' ? (JSON.parse(options.body) as Record<string, unknown>) : null;
+
+      return new Response(
+        JSON.stringify({
+          event: {
+            id: 'evt-1',
+            direction: 'outgoing',
+            status: 'failed',
+            severity: 'error',
+            priority: 'P1',
+            treatmentStatus: 'triaged',
+            tenantId: 'tenant-1',
+            exerciceId: '11111111-1111-1111-1111-111111111111',
+            eventType: 'paiement.executed',
+            correlationId: 'corr-1',
+            sourceType: 'paiement',
+            sourceId: 'pay-1',
+            payload: { amount: 1500 },
+            schemaVersion: '1.0.0',
+            occurredAt: '2026-03-09T10:00:00.000Z',
+            attemptCount: 2,
+            maxAttempts: 5,
+            createdBy: 'user-1',
+            updatedBy: 'user-1',
+            createdAt: '2026-03-09T10:00:00.000Z',
+            updatedAt: '2026-03-09T10:02:00.000Z',
+          },
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    };
+
+    try {
+      const result = await integrationLegacyService.remediate('tenant-1', {
+        eventId: 'evt-1',
+        exerciceId: '11111111-1111-1111-1111-111111111111',
+        action: 'escalate',
+        priority: 'P1',
+        treatmentStatus: 'triaged',
+        owner: 'ops@tenant',
+        reasonCode: 'MANUAL_ESCALATION',
+      });
+
+      expect(capturedPath).toBe('/integration-legacy/events/evt-1/remediate');
+      expect(capturedBody).toMatchObject({
+        exerciceId: '11111111-1111-1111-1111-111111111111',
+        action: 'escalate',
+        priority: 'P1',
+        treatmentStatus: 'triaged',
+        owner: 'ops@tenant',
+        reasonCode: 'MANUAL_ESCALATION',
+      });
+      expect(result.event.priority).toBe('P1');
+      expect(result.event.treatmentStatus).toBe('triaged');
     } finally {
       (httpClient as typeof httpClient & { request: typeof httpClient.request }).request = originalRequest;
     }

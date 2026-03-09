@@ -35,8 +35,13 @@ const makeEventRow = (overrides: Record<string, unknown> = {}) => ({
   schema_version: '1.0.0',
   status: 'queued',
   severity: 'info',
+  priority: 'P3',
+  treatment_status: 'open',
   reason_code: null,
   reason_message: null,
+  owner: null,
+  detected_at: '2026-03-09T10:00:00.000Z',
+  resolved_at: null,
   attempt_count: 0,
   max_attempts: 5,
   next_retry_at: null,
@@ -155,6 +160,79 @@ describe('IntegrationLegacyService', () => {
         exerciceId: '11111111-1111-1111-1111-111111111111',
       })
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('remediation escalate met à jour priorité/statut de traitement', async () => {
+    query
+      .mockResolvedValueOnce(makeResult([makeScopeRow()]))
+      .mockResolvedValueOnce(
+        makeResult([
+          makeEventRow({
+            status: 'failed',
+            treatment_status: 'open',
+            priority: 'P3',
+          }),
+        ])
+      )
+      .mockResolvedValueOnce(
+        makeResult([
+          makeEventRow({
+            status: 'failed',
+            treatment_status: 'triaged',
+            priority: 'P1',
+            reason_code: 'MANUAL_ESCALATION',
+          }),
+        ])
+      )
+      .mockResolvedValueOnce(makeResult([]));
+
+    const result = await service.remediateEvent(actor, 'evt-1', {
+      exerciceId: '11111111-1111-1111-1111-111111111111',
+      action: 'escalate',
+      reasonMessage: 'Escalade support N2',
+    });
+
+    expect(result.event.priority).toBe('P1');
+    expect(result.event.treatmentStatus).toBe('triaged');
+  });
+
+  it('supervision expose items paginés et compteurs', async () => {
+    query
+      .mockResolvedValueOnce(makeResult([makeScopeRow()]))
+      .mockResolvedValueOnce(
+        makeResult([
+          makeEventRow({
+            status: 'failed',
+            priority: 'P1',
+            treatment_status: 'triaged',
+            total_count: 2,
+          }),
+          makeEventRow({
+            id: 'evt-2',
+            status: 'dead_letter',
+            priority: 'P2',
+            treatment_status: 'open',
+            total_count: 2,
+          }),
+        ])
+      )
+      .mockResolvedValueOnce(
+        makeResult([
+          { status: 'failed', priority: 'P1', total: '1' },
+          { status: 'dead_letter', priority: 'P2', total: '1' },
+        ])
+      );
+
+    const result = await service.getSupervision(actor, {
+      exerciceId: '11111111-1111-1111-1111-111111111111',
+      page: 1,
+      pageSize: 20,
+    });
+
+    expect(result.items).toHaveLength(2);
+    expect(result.pagination.total).toBe(2);
+    expect(result.counters.byStatus.failed).toBe(1);
+    expect(result.counters.byPriority.P1).toBe(1);
   });
 
   it("rejette l'utilisation d'un exercice hors tenant", async () => {

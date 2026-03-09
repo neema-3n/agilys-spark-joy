@@ -29,6 +29,7 @@ import { WorkflowExceptionsModule } from './workflow-exceptions/workflow-excepti
 import { ControleInterneModule } from './controle-interne/controle-interne.module';
 import { IntegrationLegacyModule } from './integration-legacy/integration-legacy.module';
 import { OfflineSyncModule } from './offline-sync/offline-sync.module';
+import { ReportingComptableModule } from './reporting-comptable/reporting-comptable.module';
 
 @Module({
   imports: [
@@ -61,7 +62,8 @@ import { OfflineSyncModule } from './offline-sync/offline-sync.module';
     TenantPoliciesModule,
     ControleInterneModule,
     IntegrationLegacyModule,
-    OfflineSyncModule
+    OfflineSyncModule,
+    ReportingComptableModule
   ]
 })
 export class AppModule {}
