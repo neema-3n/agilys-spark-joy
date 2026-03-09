@@ -73,6 +73,32 @@ const setupApi = async (
     dossierError?: boolean;
   } = {}
 ) => {
+  const createdPlans: Array<{
+    id: string;
+    title: string;
+    description?: string;
+    ownerUserId: string;
+    dueDate: string;
+    priority: 'basse' | 'moyenne' | 'haute' | 'critique';
+    status: 'a_traiter' | 'en_cours' | 'resolu' | 'rejete' | 'cloture';
+    sourceType: string;
+    sourceId: string;
+    correlationId?: string;
+  }> = [];
+  const createdPlanEvents = new Map<
+    string,
+    Array<{
+      id: string;
+      actionPlanId: string;
+      tenantId: string;
+      exerciceId: string;
+      eventType: 'created' | 'updated' | 'status_changed';
+      changedBy: string;
+      reason?: string;
+      payload: Record<string, unknown>;
+      createdAt: string;
+    }>
+  >();
   await page.route('**://127.0.0.1:3001/**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -158,6 +184,143 @@ const setupApi = async (
           montantTransferts: 0,
           soldeNet: 0,
           operationsNonRapprochees: 0,
+        }),
+      });
+      return;
+    }
+
+    if (url.pathname === '/controle-interne/workspace') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          exerciceId: 'ex-2026',
+          generatedAt: '2026-03-09T11:00:00.000Z',
+          roleStrategy: {
+            requiredPermission: 'referentiels:audit:read',
+            mappedRoles: ['auditeur', 'directeur_financier'],
+            note: 'Mapping role existant',
+          },
+          summary: {
+            openDiscrepancies: 3,
+            activeExceptions: 1,
+            overdueActionPlans: 0,
+            totalActionPlans: 0,
+          },
+          controlItems: [
+            {
+              id: 'alert-liquidity-gap',
+              itemType: 'ecart',
+              severity: 'critical',
+              sourceType: 'tresorerie-supervision',
+              sourceId: 'LIQUIDITY_GAP',
+              label: 'Tension de liquidité',
+              message: 'Le besoin projeté dépasse la position courante.',
+              status: 'open',
+              createdAt: '2026-03-09T11:00:00.000Z',
+            },
+          ],
+        }),
+      });
+      return;
+    }
+
+    if (url.pathname === '/controle-interne/action-plans' && request.method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          items: createdPlans,
+          pagination: {
+            page: 1,
+            pageSize: 20,
+            total: createdPlans.length,
+            totalPages: 1,
+          },
+        }),
+      });
+      return;
+    }
+
+    if (url.pathname === '/controle-interne/action-plans' && request.method() === 'POST') {
+      const payload = JSON.parse(request.postData() ?? '{}') as Record<string, string>;
+      const created = {
+        id: `plan-${createdPlans.length + 1}`,
+        tenantId: 'client-1',
+        exerciceId: 'ex-2026',
+        title: payload.title,
+        description: payload.description,
+        ownerUserId: payload.ownerUserId,
+        dueDate: payload.dueDate,
+        priority: (payload.priority ?? 'moyenne') as 'basse' | 'moyenne' | 'haute' | 'critique',
+        status: (payload.status ?? 'a_traiter') as 'a_traiter' | 'en_cours' | 'resolu' | 'rejete' | 'cloture',
+        sourceType: payload.sourceType,
+        sourceId: payload.sourceId,
+        correlationId: payload.correlationId,
+        evidenceRefs: [],
+        createdBy: 'user-2',
+        updatedBy: 'user-2',
+        createdAt: '2026-03-09T11:00:00.000Z',
+        updatedAt: '2026-03-09T11:00:00.000Z',
+      };
+      createdPlans.push(created);
+      createdPlanEvents.set(created.id, [
+        {
+          id: `evt-${created.id}-1`,
+          actionPlanId: created.id,
+          tenantId: 'client-1',
+          exerciceId: 'ex-2026',
+          eventType: 'created',
+          changedBy: 'user-2',
+          payload: { after: created },
+          createdAt: '2026-03-09T11:00:00.000Z',
+        },
+      ]);
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify(created),
+      });
+      return;
+    }
+
+    if (url.pathname.startsWith('/controle-interne/action-plans/') && request.method() === 'PATCH') {
+      const id = url.pathname.split('/').pop();
+      const payload = JSON.parse(request.postData() ?? '{}') as Record<string, string>;
+      const index = createdPlans.findIndex((item) => item.id === id);
+      if (index >= 0 && payload.status) {
+        createdPlans[index] = { ...createdPlans[index], status: payload.status as typeof createdPlans[number]['status'] };
+        const previousEvents = createdPlanEvents.get(createdPlans[index].id) ?? [];
+        createdPlanEvents.set(createdPlans[index].id, [
+          {
+            id: `evt-${createdPlans[index].id}-${previousEvents.length + 1}`,
+            actionPlanId: createdPlans[index].id,
+            tenantId: 'client-1',
+            exerciceId: 'ex-2026',
+            eventType: 'status_changed',
+            changedBy: 'user-2',
+            reason: payload.reason,
+            payload: { status: payload.status },
+            createdAt: '2026-03-09T11:05:00.000Z',
+          },
+          ...previousEvents,
+        ]);
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(createdPlans[index]),
+      });
+      return;
+    }
+
+    if (url.pathname.includes('/controle-interne/action-plans/') && url.pathname.endsWith('/events')) {
+      const id = url.pathname.split('/')[3];
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          items: createdPlanEvents.get(id) ?? [],
         }),
       });
       return;
@@ -465,6 +628,8 @@ test.describe('tresorerie supervision + audit UI', () => {
     await page.goto(`${UI_BASE_URL}/app/controle-interne`);
     await expect(page).toHaveURL(/\/app\/controle-interne$/);
 
+    await expect(page.getByText('Synthèse de supervision')).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Plans d action' })).toBeVisible();
     await expect(page.getByText("Dossier d'audit exportable")).toBeVisible();
     await expect(page.getByText('Dossier de clôture et migration')).toBeVisible();
     await expect(page.getByText('Audit des exceptions cash-risk')).toBeVisible();
@@ -472,15 +637,36 @@ test.describe('tresorerie supervision + audit UI', () => {
     await expect(page.getByRole('columnheader', { name: 'Risque' })).toBeVisible();
 
     await page.getByText('Paiement urgent sous exception').dblclick();
+    await page.getByRole('tab', { name: 'Détail / preuves' }).click();
     await expect(page.getByText('Détail d\'audit')).toBeVisible();
     await expect(page.getByText('Raisons du blocage')).toBeVisible();
 
+    await page.getByRole('tab', { name: 'Écarts' }).click();
     const searchInput = page.getByLabel('Rechercher dans la liste');
     await searchInput.click();
     await searchInput.fill('missing-source');
     await expect(page.getByText('Aucune entrée d’audit trouvée.')).toBeVisible({ timeout: 15000 });
     await searchInput.press('Tab');
     await expect(searchInput).not.toBeFocused();
+
+    await page.getByRole('tab', { name: 'Plans d action' }).click();
+    await page.getByLabel('Titre').fill('Corriger écart de caisse');
+    await page.getByLabel('Responsable').fill('user-controller-1');
+    await page.getByLabel('Échéance').fill('2030-03-09T12:00');
+    await page.getByLabel('Source ID').fill('exc-1');
+    await page.getByRole('button', { name: 'Créer le plan d action' }).click();
+    await expect(page.getByText('Corriger écart de caisse')).toBeVisible({ timeout: 15000 });
+
+    await page.getByRole('button', { name: 'Marquer résolu' }).click();
+    await expect(page.getByText('Résolu')).toBeVisible({ timeout: 15000 });
+
+    await page.getByLabel('Motif de rejet (obligatoire pour rejeter)').fill('Preuve insuffisante');
+    await page.getByRole('button', { name: 'Rejeter' }).click();
+    await expect(page.getByText('Rejeté')).toBeVisible({ timeout: 15000 });
+
+    await page.getByRole('button', { name: 'Historique' }).click();
+    await expect(page.getByText('Historique du plan sélectionné')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText('Preuve insuffisante').last()).toBeVisible({ timeout: 15000 });
   });
 
   test('affiche un message d accès restreint sans permission audit', async ({ page }) => {

@@ -26,6 +26,7 @@ import { ReservationsModule } from './reservations/reservations.module';
 import { StructuresModule } from './structures/structures.module';
 import { TenantPoliciesModule } from './tenant-policies/tenant-policies.module';
 import { WorkflowExceptionsModule } from './workflow-exceptions/workflow-exceptions.module';
+import { ControleInterneModule } from './controle-interne/controle-interne.module';
 
 @Module({
   imports: [
@@ -55,7 +56,8 @@ import { WorkflowExceptionsModule } from './workflow-exceptions/workflow-excepti
     TresorerieModule,
     ReservationsModule,
     StructuresModule,
-    TenantPoliciesModule
+    TenantPoliciesModule,
+    ControleInterneModule
   ]
 })
 export class AppModule {}

@@ -48,10 +48,10 @@ development_status:
   7-1-exposer-dashboard-budgetaire-de-pilotage: done
   7-2-fournir-vues-danalyse-et-axes-analytiques: done
   7-3-produire-dossier-daudit-exportable: done
-  7-4-activer-module-controle-interne: ready-for-dev
+  7-4-activer-module-controle-interne: done
   epic-7-retrospective: optional
-  epic-8: backlog
-  8-1-mettre-en-place-flux-dintegration-asynchrones: backlog
+  epic-8: in-progress
+  8-1-mettre-en-place-flux-dintegration-asynchrones: ready-for-dev
   8-2-gerer-mode-degrade-et-reprise-apres-reconnexion: backlog
   8-3-superviser-divergences-et-sla-de-rattrapage: backlog
   epic-8-retrospective: optional
