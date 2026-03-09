@@ -1,6 +1,6 @@
 # Story 7.1: Exposer dashboard budgetaire de pilotage
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -44,8 +44,8 @@ so that je priorise les actions correctives.
 
 ## Tasks / Subtasks
 
-- [ ] Revalider le perimetre story 7.1 contre `FR26`, `FR27`, `FR28`, `FR32`, `NFR2`, `NFR8`, `NFR9`, `NFR11`, `NFR19`, `NFR21` et l'addendum reporting FR65-FR69 avant tout dev (AC: 1, 2, 3, 4, 5)
-- [ ] Cartographier et reutiliser les briques existantes avant d'ajouter une nouvelle abstraction:
+- [x] Revalider le perimetre story 7.1 contre `FR26`, `FR27`, `FR28`, `FR32`, `NFR2`, `NFR8`, `NFR9`, `NFR11`, `NFR19`, `NFR21` et l'addendum reporting FR65-FR69 avant tout dev (AC: 1, 2, 3, 4, 5)
+- [x] Cartographier et reutiliser les briques existantes avant d'ajouter une nouvelle abstraction:
   - [ ] `src/pages/app/Dashboard.tsx`
   - [ ] `src/components/reporting/ExecutionBudgetaireReport.tsx`
   - [ ] `src/hooks/useLignesBudgetaires.ts`
@@ -57,55 +57,55 @@ so that je priorise les actions correctives.
   - [ ] `backend/src/previsions/*`
   - [ ] `backend/src/cash-risk/*`
   - [ ] `src/pages/app/ControleInterne.tsx` et `src/pages/app/Tresorerie.tsx` pour le drill-down/contexte (AC: 1, 2, 3, 4, 5)
-- [ ] Remplacer les sources mockees du dashboard actuel par une orchestration de donnees reelles:
+- [x] Remplacer les sources mockees du dashboard actuel par une orchestration de donnees reelles:
   - [ ] supprimer l'usage de `executionData`
   - [ ] supprimer l'usage de `MOCK_ENGAGEMENTS`
   - [ ] definir un contrat d'agregation unique pour les KPI et tuiles de priorisation
   - [ ] conserver la logique metier et les calculs de severite cote backend ou couche service API, pas dans les composants React (AC: 1, 2, 4, 5)
-- [ ] Concevoir un modele de dashboard budgetaire canonique et type:
+- [x] Concevoir un modele de dashboard budgetaire canonique et type:
   - [ ] resume KPI (budget modifie, engage, paye, disponible, taux execution, taux engagement)
   - [ ] serie d'execution par periode
   - [ ] liste des risques/blocages prioritaires
   - [ ] liste des axes/entites les plus sous tension
   - [ ] eventuels liens d'action vers `ControleInterne`, `Tresorerie`, `Budget` ou `Previsions` (AC: 1, 2, 3, 5)
-- [ ] Evaluer si un endpoint backend dedie est necessaire:
+- [x] Evaluer si un endpoint backend dedie est necessaire:
   - [ ] si oui, creer une agregation NestJS orientee lecture dans un domaine coherent (`budget-referentiels`, `previsions` ou module de reporting/pilotage)
   - [ ] si non, composer proprement a partir des contrats existants dans une couche hook/service sans recalcul divergent
   - [ ] dans les deux cas, eviter un N+1 d'appels front qui degraderait le chargement du dashboard (AC: 1, 2, 3, 4, 5)
-- [ ] Reutiliser les donnees budgetaires et previsionnelles deja exposees:
+- [x] Reutiliser les donnees budgetaires et previsionnelles deja exposees:
   - [ ] lignes budgetaires via `budgetService.getLignesBudgetaires`
   - [ ] ecarts prevision/execution via `previsionsService.getEcartsPrevisionExecution`
   - [ ] supervision/risques via `tresorerieService.getSupervision` et, si pertinent, audit des exceptions
   - [ ] harmoniser les formats numeriques et statuts au lieu de dupliquer des mappings locaux (AC: 1, 2, 3, 5)
-- [ ] Prioriser la vue "signaux d'action" dans l'UX:
+- [x] Prioriser la vue "signaux d'action" dans l'UX:
   - [ ] afficher les alertes critiques avant les graphiques secondaires
   - [ ] fournir une copy explicite sur les blocages, ecarts et actions attendues
   - [ ] garantir une navigation claire vers les ecrans source (`ControleInterne`, `Tresorerie`, budget, previsions) (AC: 2, 3, 5)
-- [ ] Etendre les composants existants plutot que repliquer des cartes/graphiques:
+- [x] Etendre les composants existants plutot que repliquer des cartes/graphiques:
   - [ ] reutiliser le pattern `StatsCard`
   - [ ] reutiliser ou faire evoluer `ExecutionBudgetaireReport`
   - [ ] extraire un composant partage si plusieurs sections du dashboard reutilisent la meme structure KPI/alertes
   - [ ] rester coherent avec les conventions `recharts`, `Card`, `PageHeader` et le design system existant (AC: 1, 2, 3, 4)
-- [ ] Garantir permissions et isolation:
+- [x] Garantir permissions et isolation:
   - [ ] dashboard scope au tenant courant et a l'exercice courant
   - [ ] refuser toute lecture backend hors scope tenant/exercice
   - [ ] respecter les guards backend et ne pas exposer de details sensibles non necessaires au role de pilotage (AC: 1, 2, 5)
-- [ ] Instrumenter la qualite et l'observabilite du dashboard:
+- [x] Instrumenter la qualite et l'observabilite du dashboard:
   - [ ] erreurs metier actionnables si aucune donnee ou exercice absent
   - [ ] etats loading/empty/error clairs
   - [ ] eventuelle instrumentation analytics de consultation du dashboard si un plan de marquage applicatif existe deja (AC: 1, 2, 5)
-- [ ] Ajouter les tests backend / integration necessaires:
-  - [ ] agregations correctes des KPI budgetaires
-  - [ ] priorisation correcte des signaux de risque/blocage
-  - [ ] refus cross-tenant / exercice incoherent
-  - [ ] stabilite des mappings de montants, statuts et periodes (AC: 1, 2, 3, 5)
-- [ ] Ajouter les tests frontend / contrat necessaires:
+- [x] Ajouter les tests backend / integration necessaires:
+  - [x] agregations correctes des KPI budgetaires
+  - [x] priorisation correcte des signaux de risque/blocage
+  - [x] refus cross-tenant / exercice incoherent
+  - [x] stabilite des mappings de montants, statuts et periodes (AC: 1, 2, 3, 5)
+- [x] Ajouter les tests frontend / contrat necessaires:
   - [ ] rendu du dashboard sur donnees reelles
   - [ ] absence de regression quand les jeux de donnees sont vides ou partiels
   - [ ] rendu des alertes prioritaires
   - [ ] navigation/drill-down vers les surfaces source
   - [ ] non-regression du remplacement des mocks par les hooks/services reels (AC: 2, 3, 4, 5)
-- [ ] Verifier explicitement qu'aucune nouvelle dependance runtime Supabase ou calcul critique duplique cote React n'est introduit par le lot (AC: 4, 5)
+- [x] Verifier explicitement qu'aucune nouvelle dependance runtime Supabase ou calcul critique duplique cote React n'est introduit par le lot (AC: 4, 5)
 
 ## Dev Notes
 
@@ -251,19 +251,76 @@ GPT-5 Codex
 
 ### Debug Log References
 
-- Workflow: `/_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml`
-- Instructions: `/_bmad/bmm/workflows/4-implementation/create-story/instructions.xml`
+- Workflow: `/_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml`
+- Instructions: `/_bmad/bmm/workflows/4-implementation/dev-story/instructions.xml`
 - Engine: `/_bmad/core/tasks/workflow.xml`
+- Validation executee:
+  - `pnpm exec eslint src/pages/app/Dashboard.tsx src/hooks/useDashboardBudgetaire.ts src/lib/dashboard-budgetaire.ts tests/dashboard-budgetaire.spec.ts`
+  - `pnpm exec eslint tests/dashboard-budgetaire-ui.spec.ts`
+  - `pnpm exec playwright test tests/dashboard-budgetaire.spec.ts`
+  - `pnpm exec playwright test tests/dashboard-budgetaire-ui.spec.ts`
+  - `pnpm exec playwright test tests/dashboard-budgetaire.spec.ts tests/dashboard-budgetaire-ui.spec.ts`
+  - `pnpm --dir backend test src/previsions/previsions.service.spec.ts src/tresorerie/tresorerie.service.spec.ts`
+  - `pnpm --dir backend lint`
+  - `pnpm exec playwright test tests/previsions-ecarts.spec.ts tests/tresorerie-supervision-ui.spec.ts`
+  - `pnpm run build:frontend`
+  - `pnpm test`
 
 ### Completion Notes List
 
-- Story 7.1 formalisee a partir des artefacts Epic 7/PRD et du code reel du repo.
-- Le guardrail principal impose le remplacement des mocks du dashboard par des donnees reelles issues des contrats budget, previsions et tresorerie.
-- La story privilegie la reutilisation des hooks/services/composants existants et interdit toute duplication de logique de risque ou de calcul sensible cote React.
-- Les points d'extension probables sont `Dashboard.tsx`, `ExecutionBudgetaireReport`, les hooks domaine existants et possiblement un endpoint backend d'agregation si necessaire pour la performance.
-- Validation checklist effectuee manuellement; le fichier `_bmad/core/tasks/validate-workflow.xml` reference par le workflow n'a pas ete charge via un automatisme dedie dans ce tour.
+- Remplacement complet des sources mockees (`executionData`, `MOCK_ENGAGEMENTS`) dans `Dashboard.tsx` par une orchestration de donnees reelles via hooks/services API existants.
+- Ajout d'une couche partagee `src/lib/dashboard-budgetaire.ts` pour centraliser les agregations KPI, les signaux prioritaires, les axes sous tension et la coherence des filtres.
+- Ajout du hook `useDashboardBudgetaire` pour composer budget + previsions + supervision tresorerie sans dupliquer les calculs metier dans les composants React.
+- Mise en place d'une UX de pilotage orientee action: alertes prioritaires en tete, severite explicite, message actionnable et drill-down vers `Tresorerie`, `Previsions` et `ControleInterne`.
+- Ajout des tests frontend/contrat `tests/dashboard-budgetaire.spec.ts` pour verrouiller filtres, agregations et priorisation des signaux; non-regression verifiee sur les specs `previsions` et `tresorerie-supervision`.
+- Ajout des tests UI `tests/dashboard-budgetaire-ui.spec.ts` pour valider le rendu dashboard en donnees reelles, l'application des filtres envoyes aux endpoints et le drill-down vers les surfaces source.
+- Renforcement des tests backend/integration: couverture agregations ecarts prevision/execution, scope tenant+exercice, stabilite des mappings montants/periodes et priorisation des alertes supervision.
+- Verification explicite qu'aucune dependance runtime Supabase nouvelle n'est introduite et qu'aucune logique critique cash-risk n'est recodee dans la page.
+- Revue senior 2026-03-09: correction de coherence des filtres periode/KPI, exposition explicite des selecteurs entite+exercice, propagation des erreurs metadata et suppression des seuils severite recodes cote UI.
 
 ### File List
 
+- `src/lib/dashboard-budgetaire.ts`
+- `src/hooks/useDashboardBudgetaire.ts`
+- `src/pages/app/Dashboard.tsx`
+- `tests/dashboard-budgetaire.spec.ts`
+- `tests/dashboard-budgetaire-ui.spec.ts`
+- `backend/src/previsions/previsions.service.spec.ts`
+- `backend/src/tresorerie/tresorerie.service.spec.ts`
 - `_bmad-output/implementation-artifacts/7-1-exposer-dashboard-budgetaire-de-pilotage.md`
 - `_bmad-output/implementation-artifacts/sprint-status.yaml`
+
+### Change Log
+
+- 2026-03-08: Creation de la story 7.1 avec cadrage FR/NFR et references techniques pour converger vers un dashboard budgetaire reel.
+- 2026-03-09: Implementation story 7.1: suppression des mocks dashboard, orchestration API reelle, filtres coherents, alertes prioritaires, tests dashboard dedies et statut passe a `review`.
+- 2026-03-09: Revue senior (adversarial): correction des ecarts HIGH/MEDIUM detectes, statut repasse a `in-progress` en attente de cloture des tests backend/integration et validation front complete.
+- 2026-03-09: Extension couverture frontend dashboard avec spec UI Playwright (filtres, drill-down, erreur API actionnable).
+- 2026-03-09: Completion lot review: tests backend/integration completes (ecarts + supervision), story repassee en `review`.
+- 2026-03-09: Validation globale executee (`pnpm test`) avec succes; story 7.1 cloturee en `done`.
+
+## Senior Developer Review (AI)
+
+### Reviewer
+
+- Max (AI Senior Reviewer)
+- Date: 2026-03-09
+
+### Scope Reviewed
+
+- `src/pages/app/Dashboard.tsx`
+- `src/hooks/useDashboardBudgetaire.ts`
+- `src/lib/dashboard-budgetaire.ts`
+- `tests/dashboard-budgetaire.spec.ts`
+
+### Findings Fixed
+
+- Coherence des filtres: la periode active impacte maintenant les KPI via alignement axes ecarts -> lignes budgetaires.
+- Selection explicite de perimetre: ajout des selecteurs Entite et Exercice dans les filtres de pilotage.
+- Robustesse erreur: les erreurs de metadata (sections/programmes/actions/enveloppes) remontent desormais dans l'etat erreur du dashboard.
+- Divergence metier: suppression des seuils severite hardcodes pour les ecarts/non rapprochees dans le helper UI.
+- Couverture front: extension des tests helper avec cas periode->KPI et assertions de severite non recodee.
+
+### Remaining Follow-up
+
+- Aucun blocant restant detecte dans le scope de la review 7.1.

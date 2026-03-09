@@ -45,7 +45,7 @@ development_status:
   6-6-produire-dossier-de-cloture-et-migration-reconciliation: done
   epic-6-retrospective: optional
   epic-7: in-progress
-  7-1-exposer-dashboard-budgetaire-de-pilotage: ready-for-dev
+  7-1-exposer-dashboard-budgetaire-de-pilotage: done
   7-2-fournir-vues-danalyse-et-axes-analytiques: ready-for-dev
   7-3-produire-dossier-daudit-exportable: ready-for-dev
   7-4-activer-module-controle-interne: ready-for-dev
