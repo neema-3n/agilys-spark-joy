@@ -3,6 +3,7 @@ import { PostgresService } from '../common/postgres.service';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { CashRiskService } from '../cash-risk/cash-risk.service';
 import { EcrituresComptablesService } from '../ecritures-comptables/ecritures-comptables.service';
+import { ExerciceClotureService } from '../exercice-cloture/exercice-cloture.service';
 import { WorkflowExceptionsService } from '../workflow-exceptions/workflow-exceptions.service';
 import type {
   CreateEngagementDto,
@@ -115,7 +116,10 @@ export class EngagementsService {
     private readonly postgresService: PostgresService,
     private readonly cashRiskService: CashRiskService,
     private readonly workflowExceptionsService: WorkflowExceptionsService,
-    private readonly ecrituresComptablesService: EcrituresComptablesService
+    private readonly ecrituresComptablesService: EcrituresComptablesService,
+    private readonly exerciceClotureService: ExerciceClotureService = {
+      assertExerciceMutable: async () => undefined
+    } as unknown as ExerciceClotureService
   ) {}
 
   async getAll(actor: AuthenticatedUser, exerciceId: string): Promise<EngagementView[]> {
@@ -271,6 +275,7 @@ export class EngagementsService {
 
   async update(actor: AuthenticatedUser, id: string, payload: UpdateEngagementDto): Promise<EngagementView> {
     const engagement = await this.getById(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, engagement.exerciceId, 'mise à jour d’engagement');
     assertEngagementTransitionAllowed('update', engagement.statut);
 
     const ecritures = await this.postgresService.query<{ id: string }>(
@@ -348,6 +353,7 @@ export class EngagementsService {
 
   async valider(actor: AuthenticatedUser, id: string): Promise<EngagementView> {
     const engagement = await this.getById(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, engagement.exerciceId, 'validation d’engagement');
     assertEngagementTransitionAllowed('valider', engagement.statut);
     await this.workflowExceptionsService.assertTransitionAllowed(actor, {
       exerciceId: engagement.exerciceId,
@@ -382,6 +388,7 @@ export class EngagementsService {
 
   async annuler(actor: AuthenticatedUser, id: string, motifAnnulation: string): Promise<EngagementView> {
     const engagement = await this.getById(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, engagement.exerciceId, 'annulation d’engagement');
     assertEngagementTransitionAllowed('annuler', engagement.statut);
 
     const bonsCommande = await this.postgresService.query<{ numero: string }>(
@@ -462,6 +469,7 @@ export class EngagementsService {
 
   async delete(actor: AuthenticatedUser, id: string): Promise<void> {
     const engagement = await this.getById(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, engagement.exerciceId, 'suppression d’engagement');
 
     const bonsCommande = await this.postgresService.query<{ numero: string }>(
       `
@@ -540,6 +548,7 @@ export class EngagementsService {
   }
 
   private async createInternal(actor: AuthenticatedUser, payload: CreateEngagementDto): Promise<EngagementView> {
+    await this.exerciceClotureService.assertExerciceMutable(actor, payload.exerciceId, 'création d’engagement');
     await this.cashRiskService.assertAllowed(actor, {
       exerciceId: payload.exerciceId,
       transition: 'engagement:create',

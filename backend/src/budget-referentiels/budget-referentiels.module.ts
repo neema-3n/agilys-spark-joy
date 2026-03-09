@@ -8,6 +8,7 @@ import { TenantExerciceScopeGuard } from '../auth/tenant-exercice-scope.guard';
 @Module({
   imports: [AuthModule],
   controllers: [BudgetReferentielsController],
-  providers: [BudgetReferentielsService, BudgetReferentielsStore, TenantExerciceScopeGuard]
+  providers: [BudgetReferentielsService, BudgetReferentielsStore, TenantExerciceScopeGuard],
+  exports: [BudgetReferentielsService]
 })
 export class BudgetReferentielsModule {}

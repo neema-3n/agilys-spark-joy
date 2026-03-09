@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { PostgresService } from '../common/postgres.service';
 import { EcrituresComptablesService } from '../ecritures-comptables/ecritures-comptables.service';
+import { ExerciceClotureService } from '../exercice-cloture/exercice-cloture.service';
 import type { CreateFactureDto, FacturesPaginatedQueryDto, GenerateTestFacturesDto, UpdateFactureDto } from './dto/factures.dto';
 
 interface FactureRow {
@@ -157,7 +158,10 @@ interface BonCommandeScope {
 export class FacturesService {
   constructor(
     private readonly postgresService: PostgresService,
-    private readonly ecrituresComptablesService: EcrituresComptablesService
+    private readonly ecrituresComptablesService: EcrituresComptablesService,
+    private readonly exerciceClotureService: ExerciceClotureService = {
+      assertExerciceMutable: async () => undefined
+    } as unknown as ExerciceClotureService
   ) {}
 
   async getAll(actor: AuthenticatedUser, exerciceId?: string): Promise<FactureView[]> {
@@ -286,6 +290,7 @@ LIMIT $${index} OFFSET $${index + 1}
   }
 
   async create(actor: AuthenticatedUser, payload: CreateFactureDto): Promise<FactureView> {
+    await this.exerciceClotureService.assertExerciceMutable(actor, payload.exerciceId, 'création de facture');
     this.ensureRequiredFactureMetadata(payload);
     const references = await this.resolveFactureReferences(actor, {
       exerciceId: payload.exerciceId,
@@ -384,12 +389,13 @@ LIMIT $${index} OFFSET $${index + 1}
   async update(actor: AuthenticatedUser, id: string, payload: UpdateFactureDto): Promise<FactureView> {
     const current = await this.postgresService.query<{
       id: string;
+      exercice_id: string;
       statut: 'brouillon' | 'validee' | 'payee' | 'annulee';
       bon_commande_id: string | null;
       montant_ttc: string | number;
     }>(
       `
-        SELECT id, statut, bon_commande_id, montant_ttc
+        SELECT id, exercice_id, statut, bon_commande_id, montant_ttc
         FROM public.factures
         WHERE id = $1
           AND client_id = $2
@@ -402,6 +408,8 @@ LIMIT $${index} OFFSET $${index + 1}
     if (!facture) {
       throw new NotFoundException('Facture introuvable');
     }
+
+    await this.exerciceClotureService.assertExerciceMutable(actor, facture.exercice_id, 'mise à jour de facture');
 
     const isAnnulation = payload.statut === 'annulee';
 
@@ -549,6 +557,7 @@ LIMIT $${index} OFFSET $${index + 1}
 
   async valider(actor: AuthenticatedUser, id: string): Promise<FactureView> {
     const facture = await this.getById(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, facture.exerciceId, 'validation de facture');
 
     if (facture.statut !== 'brouillon') {
       throw new BadRequestException('Transition interdite: seule une facture en brouillon peut être validée');
@@ -578,6 +587,7 @@ LIMIT $${index} OFFSET $${index + 1}
 
   async marquerPayee(actor: AuthenticatedUser, id: string): Promise<FactureView> {
     const facture = await this.getById(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, facture.exerciceId, 'paiement de facture');
 
     if (facture.statut !== 'validee') {
       throw new BadRequestException('Transition interdite: seule une facture validée peut être marquée comme payée');
@@ -604,6 +614,7 @@ LIMIT $${index} OFFSET $${index + 1}
 
   async annuler(actor: AuthenticatedUser, id: string, motif: string): Promise<FactureView> {
     const facture = await this.getById(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, facture.exerciceId, 'annulation de facture');
 
     if (facture.statut === 'payee') {
       throw new BadRequestException('Une facture payée ne peut pas être annulée');
@@ -669,6 +680,9 @@ LIMIT $${index} OFFSET $${index + 1}
   }
 
   async delete(actor: AuthenticatedUser, id: string): Promise<void> {
+    const facture = await this.getById(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, facture.exerciceId, 'suppression de facture');
+
     const result = await this.postgresService.query(
       `
         DELETE FROM public.factures

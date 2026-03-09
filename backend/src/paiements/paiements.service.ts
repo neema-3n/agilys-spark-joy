@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PostgresService } from '../common/postgres.service';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { EcrituresComptablesService } from '../ecritures-comptables/ecritures-comptables.service';
+import { ExerciceClotureService } from '../exercice-cloture/exercice-cloture.service';
 import { WorkflowExceptionsService } from '../workflow-exceptions/workflow-exceptions.service';
 import type { AnnulerPaiementDto, CreatePaiementDto, RejeterPaiementDto, ReprendrePaiementDto } from './dto/paiements.dto';
 import {
@@ -130,7 +131,10 @@ export class PaiementsService {
   constructor(
     private readonly postgresService: PostgresService,
     private readonly workflowExceptionsService: WorkflowExceptionsService,
-    private readonly ecrituresComptablesService: EcrituresComptablesService
+    private readonly ecrituresComptablesService: EcrituresComptablesService,
+    private readonly exerciceClotureService: ExerciceClotureService = {
+      assertExerciceMutable: async () => undefined
+    } as unknown as ExerciceClotureService
   ) {}
 
   async getAll(actor: AuthenticatedUser, exerciceId: string): Promise<PaiementView[]> {
@@ -167,6 +171,7 @@ export class PaiementsService {
   }
 
   async create(actor: AuthenticatedUser, payload: CreatePaiementDto): Promise<PaiementView> {
+    await this.exerciceClotureService.assertExerciceMutable(actor, payload.exerciceId, 'création de paiement');
     const depense = await this.getDepenseForPaiement(actor, payload.depenseId);
     this.assertDepenseMatchesExercice(depense, payload.exerciceId);
     this.assertDepenseCanReceivePaiement(depense);
@@ -247,6 +252,7 @@ export class PaiementsService {
 
   async rejeter(actor: AuthenticatedUser, id: string, payload: RejeterPaiementDto): Promise<PaiementView> {
     const paiement = await this.getPaiementRow(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, paiement.exercice_id, 'rejet de paiement');
     this.assertTransitionAllowed(paiement.statut, 'rejete');
 
     if (!payload.motif.trim()) {
@@ -288,6 +294,7 @@ export class PaiementsService {
 
   async annuler(actor: AuthenticatedUser, id: string, payload: AnnulerPaiementDto): Promise<PaiementView> {
     const paiement = await this.getPaiementRow(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, paiement.exercice_id, 'annulation de paiement');
     this.assertTransitionAllowed(paiement.statut, 'annule');
 
     if (!payload.motif.trim()) {
@@ -329,6 +336,7 @@ export class PaiementsService {
 
   async reprendre(actor: AuthenticatedUser, id: string, payload: ReprendrePaiementDto): Promise<PaiementView> {
     const paiement = await this.getPaiementRow(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, paiement.exercice_id, 'reprise de paiement');
 
     if (!['rejete', 'annule'].includes(paiement.statut)) {
       throw new BadRequestException(
@@ -412,6 +420,7 @@ export class PaiementsService {
 
   async delete(actor: AuthenticatedUser, id: string): Promise<void> {
     const paiement = await this.getPaiementRow(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, paiement.exercice_id, 'suppression de paiement');
 
     if (!['annule', 'rejete'].includes(paiement.statut)) {
       throw new BadRequestException(
@@ -435,6 +444,7 @@ export class PaiementsService {
 
   private async transition(actor: AuthenticatedUser, id: string, nextStatus: PaiementStatus): Promise<PaiementView> {
     const paiement = await this.getPaiementRow(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, paiement.exercice_id, `transition de paiement vers ${nextStatus}`);
     this.assertTransitionAllowed(paiement.statut, nextStatus);
 
     await this.postgresService.query(

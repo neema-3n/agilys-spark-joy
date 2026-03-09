@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { PostgresService } from '../common/postgres.service';
+import { ExerciceClotureService } from '../exercice-cloture/exercice-cloture.service';
 import type { EcrituresComptablesQueryDto } from './dto/ecritures-comptables.dto';
 
 type TypeOperation = 'reservation' | 'engagement' | 'bon_commande' | 'facture' | 'depense' | 'paiement';
@@ -105,7 +106,12 @@ interface StatsRow {
 export class EcrituresComptablesService {
   private readonly logger = new Logger(EcrituresComptablesService.name);
 
-  constructor(private readonly postgresService: PostgresService) {}
+  constructor(
+    private readonly postgresService: PostgresService,
+    private readonly exerciceClotureService: ExerciceClotureService = {
+      assertExerciceMutable: async () => undefined
+    } as unknown as ExerciceClotureService
+  ) {}
 
   async getAll(actor: AuthenticatedUser, filters: EcrituresComptablesQueryDto) {
     const values: unknown[] = [actor.tenantId];
@@ -249,6 +255,8 @@ ORDER BY ec.date_ecriture DESC, ec.numero_piece DESC, ec.numero_ligne ASC
     sourceId: string,
     exerciceId: string
   ): Promise<GenerateEcrituresResult> {
+    await this.exerciceClotureService.assertExerciceMutable(actor, exerciceId, "génération d'écritures comptables");
+
     const operationResult = await this.postgresService.query<Record<string, unknown>>(
       `
         SELECT *

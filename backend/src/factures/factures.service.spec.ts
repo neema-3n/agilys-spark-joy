@@ -3,6 +3,7 @@ import type { QueryResult, QueryResultRow } from 'pg';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import type { PostgresService } from '../common/postgres.service';
 import type { EcrituresComptablesService } from '../ecritures-comptables/ecritures-comptables.service';
+import type { ExerciceClotureService } from '../exercice-cloture/exercice-cloture.service';
 import { FacturesService } from './factures.service';
 
 const actor: AuthenticatedUser = {
@@ -27,10 +28,14 @@ describe('FacturesService', () => {
     ensureGeneratedForOperation: jest.fn(),
     createContrepassations: jest.fn()
   } as unknown as EcrituresComptablesService;
-  const service = new FacturesService(postgresService, ecrituresComptablesService);
+  const exerciceClotureService = {
+    assertExerciceMutable: jest.fn()
+  } as unknown as ExerciceClotureService;
+  const service = new FacturesService(postgresService, ecrituresComptablesService, exerciceClotureService);
 
   beforeEach(() => {
     query.mockReset();
+    (exerciceClotureService.assertExerciceMutable as jest.Mock).mockReset().mockResolvedValue(undefined);
   });
 
   it('refuse la creation de facture sans numero fournisseur', async () => {
@@ -257,5 +262,20 @@ describe('FacturesService', () => {
         expectedSourceId: 'fac-1'
       })
     );
+  });
+
+  it("applique le verrou d'exercice avant la validation d'une facture", async () => {
+    jest.spyOn(service, 'getById').mockResolvedValue({
+      id: 'fac-1',
+      exerciceId: 'ex-1',
+      statut: 'brouillon'
+    } as any);
+    (exerciceClotureService.assertExerciceMutable as jest.Mock).mockRejectedValueOnce(
+      new BadRequestException('verrou')
+    );
+
+    await expect(service.valider(actor, 'fac-1')).rejects.toThrow('verrou');
+    expect(exerciceClotureService.assertExerciceMutable).toHaveBeenCalledWith(actor, 'ex-1', 'validation de facture');
+    expect(query).toHaveBeenCalledTimes(0);
   });
 });

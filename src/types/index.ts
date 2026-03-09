@@ -37,6 +37,8 @@ export interface Client {
   statut: 'actif' | 'inactif';
 }
 
+export type ExerciceStatut = 'ouverte' | 'en_revue' | 'fermee';
+
 export interface Exercice {
   id: string;
   clientId: string;
@@ -44,7 +46,37 @@ export interface Exercice {
   code?: string;
   dateDebut: string;
   dateFin: string;
-  statut: 'ouvert' | 'cloture';
+  statut: ExerciceStatut;
+}
+
+export interface ExerciceChecklistItem {
+  code: string;
+  label: string;
+  status: 'ok' | 'warning' | 'blocking';
+  detail: string;
+  evidenceCount: number;
+  evidence: Array<Record<string, unknown>>;
+}
+
+export interface ExerciceChecklist {
+  exerciceId: string;
+  statutExercice: ExerciceStatut;
+  generatedAt: string;
+  canClose: boolean;
+  items: ExerciceChecklistItem[];
+}
+
+export interface ExerciceCloseResult {
+  exercice: Exercice;
+  checklist: ExerciceChecklist;
+  nextExercice: Exercice;
+}
+
+export interface ReouvrirExercicePayload {
+  motif: string;
+  approbateur?: string;
+  impact?: string;
+  regularisationAttendue?: string;
 }
 
 export interface AuthContextType {
@@ -74,8 +106,10 @@ export interface ExerciceContextType {
   hasLoaded: boolean;
   createExercice: (exercice: Omit<Exercice, 'id'>) => Promise<Exercice>;
   updateExercice: (id: string, updates: Partial<Omit<Exercice, 'id' | 'clientId'>>) => Promise<Exercice>;
-  cloturerExercice: (id: string) => Promise<Exercice>;
-  deleteExercice: (id: string) => Promise<void>;
+  preCloturerExercice: (id: string) => Promise<ExerciceChecklist>;
+  cloturerExercice: (id: string) => Promise<ExerciceCloseResult>;
+  reouvrirExercice: (id: string, payload: ReouvrirExercicePayload) => Promise<Exercice>;
+  getExerciceChecklist: (id: string) => Promise<ExerciceChecklist>;
   isLoading: boolean;
   refreshExercices: () => Promise<void>;
 }

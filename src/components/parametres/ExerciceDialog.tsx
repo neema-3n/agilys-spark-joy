@@ -23,14 +23,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Calendar } from 'lucide-react';
 import { Exercice } from '@/types';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
 const exerciceSchema = z.object({
   libelle: z.string()
@@ -43,7 +35,7 @@ const exerciceSchema = z.object({
     .or(z.literal('')),
   dateDebut: z.string().min(1, 'La date de début est requise'),
   dateFin: z.string().min(1, 'La date de fin est requise'),
-  statut: z.enum(['ouvert', 'cloture'])
+  statut: z.enum(['ouverte', 'en_revue', 'fermee'])
 }).refine(data => new Date(data.dateFin) > new Date(data.dateDebut), {
   message: 'La date de fin doit être après la date de début',
   path: ['dateFin']
@@ -85,7 +77,7 @@ export function ExerciceDialog({
       code: exercice?.code || '',
       dateDebut: exercice?.dateDebut || '',
       dateFin: exercice?.dateFin || '',
-      statut: exercice?.statut || 'ouvert'
+      statut: exercice?.statut || 'ouverte'
     }
   });
 
@@ -104,7 +96,7 @@ export function ExerciceDialog({
         code: '',
         dateDebut: '',
         dateFin: '',
-        statut: 'ouvert'
+        statut: 'ouverte'
       });
     }
   }, [exercice, form, open]);
@@ -268,27 +260,9 @@ export function ExerciceDialog({
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="statut"
-                render={({ field }) => (
-                  <FormItem className="col-span-2">
-                    <FormLabel>Statut</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner un statut" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="ouvert">Ouvert</SelectItem>
-                        <SelectItem value="cloture">Clôturé</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="col-span-2 rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground">
+                Le statut d&apos;exercice est piloté par le workflow gouverné de pré-clôture / clôture. Il n&apos;est pas modifiable librement ici.
+              </div>
             </div>
 
           </form>

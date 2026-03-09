@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PostgresService } from '../common/postgres.service';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { EcrituresComptablesService } from '../ecritures-comptables/ecritures-comptables.service';
+import { ExerciceClotureService } from '../exercice-cloture/exercice-cloture.service';
 import { WorkflowExceptionsService } from '../workflow-exceptions/workflow-exceptions.service';
 import { type DepenseWorkflowStatus, type PaiementMode } from '../paiements/paiement-workflow';
 import type {
@@ -181,7 +182,10 @@ export class DepensesService {
   constructor(
     private readonly postgresService: PostgresService,
     private readonly workflowExceptionsService: WorkflowExceptionsService,
-    private readonly ecrituresComptablesService: EcrituresComptablesService
+    private readonly ecrituresComptablesService: EcrituresComptablesService,
+    private readonly exerciceClotureService: ExerciceClotureService = {
+      assertExerciceMutable: async () => undefined
+    } as unknown as ExerciceClotureService
   ) {}
 
   async getAll(actor: AuthenticatedUser, exerciceId: string): Promise<DepenseView[]> {
@@ -538,6 +542,7 @@ export class DepensesService {
 
   async update(actor: AuthenticatedUser, id: string, payload: UpdateDepenseDto): Promise<DepenseView> {
     const current = await this.getById(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, current.exerciceId, 'mise à jour de dépense');
 
     const ecritures = await this.postgresService.query<{ id: string }>(
       `
@@ -606,6 +611,7 @@ export class DepensesService {
 
   async valider(actor: AuthenticatedUser, id: string): Promise<DepenseView> {
     const current = await this.getById(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, current.exerciceId, 'validation de dépense');
 
     if (current.statut !== 'brouillon') {
       throw new BadRequestException(
@@ -637,6 +643,7 @@ export class DepensesService {
 
   async ordonnancer(actor: AuthenticatedUser, id: string): Promise<DepenseView> {
     const current = await this.getById(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, current.exerciceId, 'ordonnancement de dépense');
 
     if (current.statut !== 'validee') {
       throw new BadRequestException(
@@ -687,6 +694,7 @@ export class DepensesService {
 
   async annuler(actor: AuthenticatedUser, id: string, motif: string): Promise<DepenseView> {
     const current = await this.getById(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, current.exerciceId, 'annulation de dépense');
 
     if (current.statut === 'annulee') {
       throw new BadRequestException("Transition invalide: cette dépense est déjà annulée.");
@@ -761,6 +769,7 @@ export class DepensesService {
 
   async delete(actor: AuthenticatedUser, id: string): Promise<void> {
     const depense = await this.getById(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, depense.exerciceId, 'suppression de dépense');
 
     if (depense.statut !== 'brouillon') {
       throw new BadRequestException(
@@ -866,6 +875,8 @@ export class DepensesService {
     payload: CreateDepenseDto,
     factureAllocations: FactureAllocation[] = []
   ): Promise<DepenseView> {
+    await this.exerciceClotureService.assertExerciceMutable(actor, payload.exerciceId, 'création de dépense');
+
     if (!payload.engagementId && !payload.reservationCreditId && !payload.ligneBudgetaireId) {
       throw new BadRequestException(
         'Au moins une imputation budgétaire est requise (engagement, réservation ou ligne budgétaire)'

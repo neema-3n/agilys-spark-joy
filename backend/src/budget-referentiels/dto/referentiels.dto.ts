@@ -32,8 +32,8 @@ export class ExerciceCreateDto {
   @IsDateString()
   dateFin!: string;
 
-  @IsIn(['ouvert', 'cloture'])
-  statut!: 'ouvert' | 'cloture';
+  @IsIn(['ouvert', 'ouverte'])
+  statut!: 'ouvert' | 'ouverte';
 }
 
 export class ExerciceUpdateDto {
@@ -55,10 +55,6 @@ export class ExerciceUpdateDto {
   @IsOptional()
   @IsDateString()
   dateFin?: string;
-
-  @IsOptional()
-  @IsIn(['ouvert', 'cloture'])
-  statut?: 'ouvert' | 'cloture';
 }
 
 export class EnveloppeCreateDto {

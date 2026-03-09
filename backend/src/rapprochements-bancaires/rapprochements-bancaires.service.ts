@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { PostgresService } from '../common/postgres.service';
 import type { CreateRapprochementBancaireDto } from './dto/rapprochements-bancaires.dto';
+import { ExerciceClotureService } from '../exercice-cloture/exercice-cloture.service';
 
 interface RapprochementRow {
   id: string;
@@ -28,7 +29,12 @@ interface RapprochementRow {
 
 @Injectable()
 export class RapprochementsBancairesService {
-  constructor(private readonly postgresService: PostgresService) {}
+  constructor(
+    private readonly postgresService: PostgresService,
+    private readonly exerciceClotureService: ExerciceClotureService = {
+      assertExerciceMutable: async () => undefined
+    } as unknown as ExerciceClotureService
+  ) {}
 
   async getAll(actor: AuthenticatedUser, exerciceId: string) {
     const result = await this.postgresService.query<RapprochementRow>(
@@ -64,6 +70,7 @@ export class RapprochementsBancairesService {
   }
 
   async create(actor: AuthenticatedUser, payload: CreateRapprochementBancaireDto) {
+    await this.exerciceClotureService.assertExerciceMutable(actor, payload.exerciceId, 'création de rapprochement bancaire');
     const operations = await this.postgresService.query<{ type_operation: string; montant: string | number }>(
       `
         SELECT type_operation, montant
@@ -131,6 +138,9 @@ export class RapprochementsBancairesService {
   }
 
   async valider(actor: AuthenticatedUser, id: string): Promise<void> {
+    const current = await this.getById(actor, id);
+    await this.exerciceClotureService.assertExerciceMutable(actor, current.exerciceId, 'validation de rapprochement bancaire');
+
     const result = await this.postgresService.query(
       `
         UPDATE public.rapprochements_bancaires

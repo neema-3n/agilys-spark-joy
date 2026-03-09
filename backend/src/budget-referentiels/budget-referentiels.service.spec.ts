@@ -1,4 +1,4 @@
-import { ConflictException, ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { BudgetReferentielsService } from './budget-referentiels.service';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { applyTestEnv } from '../../test/test-env';
@@ -162,16 +162,28 @@ describe('BudgetReferentielsService', () => {
       statut: 'ouvert'
     });
 
-    service.archiveExercice(adminUser, exercice.id);
+    expect(() => service.archiveExercice(adminUser, exercice.id)).toThrow(BadRequestException);
+  });
 
-    const exercices = service.getExercices(adminUser);
-    expect(exercices.find((entry) => entry.id === exercice.id)).toBeUndefined();
+  it('refuses direct referentiel mutations when the exercice is no longer open', () => {
+    const exercice = service.createExercice(adminUser, {
+      libelle: 'Exercice verrouille',
+      code: 'EX-LOCK',
+      dateDebut: '2030-01-01',
+      dateFin: '2030-12-31',
+      statut: 'ouverte'
+    });
+    service.setExerciceStatus(adminUser, exercice.id, 'en_revue');
 
-    const auditEntries = service.getAuditLog(adminUser, 'exercice', exercice.id);
-    const archiveEntry = auditEntries.find((entry) => entry.action === 'archive');
-    expect(archiveEntry).toBeDefined();
-    expect(archiveEntry?.before).not.toBeNull();
-    expect(archiveEntry?.after).not.toBeNull();
+    expect(() =>
+      service.createSection(adminUser, {
+        exerciceId: exercice.id,
+        code: 'SEC-LOCK',
+        libelle: 'Section verrouillée',
+        ordre: 1,
+        statut: 'actif'
+      })
+    ).toThrow(BadRequestException);
   });
 
   it('creates allocation and reallocation with audit trace and non-destructive history', () => {

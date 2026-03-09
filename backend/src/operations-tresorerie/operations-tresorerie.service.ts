@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PostgresService } from '../common/postgres.service';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import type { CreateOperationTresorerieDto } from './dto/operations-tresorerie.dto';
+import { ExerciceClotureService } from '../exercice-cloture/exercice-cloture.service';
 
 interface OperationTresorerieRow {
   id: string;
@@ -118,7 +119,12 @@ interface OperationsTresorerieStatsView {
 
 @Injectable()
 export class OperationsTresorerieService {
-  constructor(private readonly postgresService: PostgresService) {}
+  constructor(
+    private readonly postgresService: PostgresService,
+    private readonly exerciceClotureService: ExerciceClotureService = {
+      assertExerciceMutable: async () => undefined
+    } as unknown as ExerciceClotureService
+  ) {}
 
   async getAll(actor: AuthenticatedUser, exerciceId: string): Promise<OperationTresorerieView[]> {
     const result = await this.postgresService.query<OperationTresorerieRow>(
@@ -168,6 +174,7 @@ export class OperationsTresorerieService {
   }
 
   async create(actor: AuthenticatedUser, payload: CreateOperationTresorerieDto): Promise<OperationTresorerieView> {
+    await this.exerciceClotureService.assertExerciceMutable(actor, payload.exerciceId, "création d'opération de trésorerie");
     const numero = await this.generateNextNumero(actor.tenantId, payload.exerciceId);
 
     const result = await this.postgresService.query<{ id: string }>(
@@ -235,6 +242,9 @@ export class OperationsTresorerieService {
   }
 
   async rapprocher(actor: AuthenticatedUser, operationIds: string[]): Promise<void> {
+    const exerciceId = await this.resolveExerciceIdForOperations(actor, operationIds);
+    await this.exerciceClotureService.assertExerciceMutable(actor, exerciceId, "rapprochement d'opérations de trésorerie");
+
     const result = await this.postgresService.query(
       `
         UPDATE public.operations_tresorerie
@@ -316,6 +326,26 @@ export class OperationsTresorerieService {
     const nextNumber = match ? Number(match[1]) + 1 : 1;
 
     return `OPE${String(nextNumber).padStart(6, '0')}`;
+  }
+
+  private async resolveExerciceIdForOperations(actor: AuthenticatedUser, operationIds: string[]): Promise<string> {
+    const result = await this.postgresService.query<{ exercice_id: string }>(
+      `
+        SELECT exercice_id
+        FROM public.operations_tresorerie
+        WHERE client_id = $1
+          AND id = ANY($2::uuid[])
+        LIMIT 1
+      `,
+      [actor.tenantId, operationIds]
+    );
+
+    const exerciceId = result.rows[0]?.exercice_id;
+    if (!exerciceId) {
+      throw new NotFoundException('Aucune opération de trésorerie à rapprocher');
+    }
+
+    return exerciceId;
   }
 
   private buildBaseSelect(): string {

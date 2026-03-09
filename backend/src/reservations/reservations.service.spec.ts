@@ -3,6 +3,7 @@ import type { QueryResult, QueryResultRow } from 'pg';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import type { PostgresService } from '../common/postgres.service';
 import type { EcrituresComptablesService } from '../ecritures-comptables/ecritures-comptables.service';
+import type { ExerciceClotureService } from '../exercice-cloture/exercice-cloture.service';
 import { ReservationsService } from './reservations.service';
 
 const actor: AuthenticatedUser = {
@@ -54,10 +55,14 @@ describe('ReservationsService', () => {
     ensureGeneratedForOperation: jest.fn(),
     createContrepassations: jest.fn()
   } as unknown as EcrituresComptablesService;
-  const service = new ReservationsService(postgresService, ecrituresComptablesService);
+  const exerciceClotureService = {
+    assertExerciceMutable: jest.fn()
+  } as unknown as ExerciceClotureService;
+  const service = new ReservationsService(postgresService, ecrituresComptablesService, exerciceClotureService);
 
   beforeEach(() => {
     query.mockReset();
+    (exerciceClotureService.assertExerciceMutable as jest.Mock).mockReset().mockResolvedValue(undefined);
   });
 
   it("refuse la transition 'utiliser' quand la réservation n'est pas active", async () => {
@@ -136,5 +141,13 @@ describe('ReservationsService', () => {
         expectedSourceId: 'res-1'
       })
     );
+  });
+
+  it("applique le verrou d'exercice avant de consommer une réservation", async () => {
+    query.mockResolvedValueOnce(makeResult([makeReservationRow()]));
+    (exerciceClotureService.assertExerciceMutable as jest.Mock).mockRejectedValueOnce(new BadRequestException('verrou'));
+
+    await expect(service.utiliser(actor, 'res-1')).rejects.toThrow('verrou');
+    expect(query).toHaveBeenCalledTimes(1);
   });
 });

@@ -4,6 +4,7 @@ import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import type { CashRiskService } from '../cash-risk/cash-risk.service';
 import type { PostgresService } from '../common/postgres.service';
 import type { EcrituresComptablesService } from '../ecritures-comptables/ecritures-comptables.service';
+import type { ExerciceClotureService } from '../exercice-cloture/exercice-cloture.service';
 import type { WorkflowExceptionsService } from '../workflow-exceptions/workflow-exceptions.service';
 import { EngagementsService } from './engagements.service';
 
@@ -81,16 +82,22 @@ describe('EngagementsService', () => {
     ensureGeneratedForOperation: jest.fn(),
     createContrepassations: jest.fn(),
   } as unknown as EcrituresComptablesService;
+  const exerciceClotureService = {
+    assertExerciceMutable: jest.fn(),
+  } as unknown as ExerciceClotureService;
   const service = new EngagementsService(
     postgresService,
     cashRiskService,
     workflowExceptionsService,
-    ecrituresComptablesService
+    ecrituresComptablesService,
+    exerciceClotureService
   );
 
   beforeEach(() => {
     query.mockReset();
+    jest.restoreAllMocks();
     jest.clearAllMocks();
+    (exerciceClotureService.assertExerciceMutable as jest.Mock).mockReset().mockResolvedValue(undefined);
   });
 
   it('centralise la génération nominale des écritures via le service comptable partagé', async () => {
@@ -222,6 +229,20 @@ describe('EngagementsService', () => {
       expect.stringContaining('AND client_id = $2'),
       ['res-1', actor.tenantId]
     );
+  });
+
+  it("applique le verrou d'exercice avant validation d'un engagement", async () => {
+    jest.spyOn(service, 'getById').mockResolvedValue({
+      id: 'eng-1',
+      exerciceId: 'ex-1',
+      ligneBudgetaireId: 'lb-1',
+      montant: 100,
+      statut: 'brouillon'
+    } as any);
+    (exerciceClotureService.assertExerciceMutable as jest.Mock).mockRejectedValueOnce(new BadRequestException('verrou'));
+
+    await expect(service.valider(actor, 'eng-1')).rejects.toThrow('verrou');
+    expect(query).toHaveBeenCalledTimes(0);
   });
 
   it("resynchronise la reservation source apres annulation d'un engagement", async () => {

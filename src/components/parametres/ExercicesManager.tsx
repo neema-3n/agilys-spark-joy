@@ -13,34 +13,42 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { ExerciceDialog } from './ExerciceDialog';
-import { Plus, MoreVertical, Edit, Lock, Trash2 } from 'lucide-react';
-import { Exercice } from '@/types';
+import { Plus, MoreVertical, Edit, Lock, RefreshCcw, ShieldCheck } from 'lucide-react';
+import { Exercice, ExerciceChecklist } from '@/types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 export function ExercicesManager() {
-  const { exercices, isLoading, createExercice, updateExercice, cloturerExercice, deleteExercice } = useExercice();
+  const {
+    exercices,
+    isLoading,
+    createExercice,
+    updateExercice,
+    preCloturerExercice,
+    cloturerExercice,
+    reouvrirExercice,
+    getExerciceChecklist
+  } = useExercice();
   const { currentClient } = useClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedExercice, setSelectedExercice] = useState<Exercice | undefined>();
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [exerciceToDelete, setExerciceToDelete] = useState<Exercice | null>(null);
+  const [checklistDialogOpen, setChecklistDialogOpen] = useState(false);
+  const [activeChecklist, setActiveChecklist] = useState<ExerciceChecklist | null>(null);
+  const [activeChecklistExercice, setActiveChecklistExercice] = useState<Exercice | null>(null);
 
   const handleCreate = async (data: any) => {
     if (!currentClient) return;
@@ -50,7 +58,7 @@ export function ExercicesManager() {
       code: data.code || undefined,
       dateDebut: data.dateDebut,
       dateFin: data.dateFin,
-      statut: data.statut,
+      statut: 'ouverte',
     });
   };
 
@@ -61,20 +69,43 @@ export function ExercicesManager() {
       code: data.code || undefined,
       dateDebut: data.dateDebut,
       dateFin: data.dateFin,
-      statut: data.statut,
     });
     setSelectedExercice(undefined);
   };
 
-  const handleCloturer = async (exercice: Exercice) => {
-    await cloturerExercice(exercice.id);
+  const openChecklistDialog = (exercice: Exercice, checklist: ExerciceChecklist) => {
+    setActiveChecklistExercice(exercice);
+    setActiveChecklist(checklist);
+    setChecklistDialogOpen(true);
   };
 
-  const handleDelete = async () => {
-    if (!exerciceToDelete) return;
-    await deleteExercice(exerciceToDelete.id);
-    setDeleteDialogOpen(false);
-    setExerciceToDelete(null);
+  const handleShowChecklist = async (exercice: Exercice) => {
+    const checklist = await getExerciceChecklist(exercice.id);
+    openChecklistDialog(exercice, checklist);
+  };
+
+  const handlePreCloturer = async (exercice: Exercice) => {
+    const checklist = await preCloturerExercice(exercice.id);
+    openChecklistDialog(exercice, checklist);
+  };
+
+  const handleCloturer = async (exercice: Exercice) => {
+    if (exercice.statut === 'ouverte') {
+      await handlePreCloturer(exercice);
+      return;
+    }
+
+    const result = await cloturerExercice(exercice.id);
+    openChecklistDialog(result.exercice, result.checklist);
+  };
+
+  const handleReouvrir = async (exercice: Exercice) => {
+    const motif = window.prompt('Motif de réouverture gouvernée');
+    if (!motif?.trim()) {
+      return;
+    }
+
+    await reouvrirExercice(exercice.id, { motif: motif.trim() });
   };
 
   const openEditDialog = (exercice: Exercice) => {
@@ -85,6 +116,27 @@ export function ExercicesManager() {
   const openCreateDialog = () => {
     setSelectedExercice(undefined);
     setDialogOpen(true);
+  };
+
+  const getStatutLabel = (statut: Exercice['statut']) => {
+    switch (statut) {
+      case 'ouverte':
+        return 'Ouverte';
+      case 'en_revue':
+        return 'En revue';
+      case 'fermee':
+        return 'Fermée';
+      default:
+        return statut;
+    }
+  };
+
+  const getBadgeVariant = (statut: Exercice['statut']) => {
+    if (statut === 'ouverte') {
+      return 'default' as const;
+    }
+
+    return 'secondary' as const;
   };
 
   return (
@@ -140,8 +192,8 @@ export function ExercicesManager() {
                       {format(new Date(exercice.dateFin), 'dd MMMM yyyy', { locale: fr })}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={exercice.statut === 'ouvert' ? 'default' : 'secondary'}>
-                        {exercice.statut === 'ouvert' ? 'Ouvert' : 'Clôturé'}
+                      <Badge variant={getBadgeVariant(exercice.statut)}>
+                        {getStatutLabel(exercice.statut)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
@@ -152,26 +204,34 @@ export function ExercicesManager() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEditDialog(exercice)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Modifier
+                          <DropdownMenuItem onClick={() => handleShowChecklist(exercice)}>
+                            <ShieldCheck className="mr-2 h-4 w-4" />
+                            Voir checklist
                           </DropdownMenuItem>
-                          {exercice.statut === 'ouvert' && (
+                          {exercice.statut === 'ouverte' && (
+                            <DropdownMenuItem onClick={() => openEditDialog(exercice)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Modifier
+                            </DropdownMenuItem>
+                          )}
+                          {exercice.statut === 'ouverte' && (
+                            <DropdownMenuItem onClick={() => handlePreCloturer(exercice)}>
+                              <ShieldCheck className="mr-2 h-4 w-4" />
+                              Pré-clôturer
+                            </DropdownMenuItem>
+                          )}
+                          {exercice.statut === 'en_revue' && (
                             <DropdownMenuItem onClick={() => handleCloturer(exercice)}>
                               <Lock className="mr-2 h-4 w-4" />
                               Clôturer
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setExerciceToDelete(exercice);
-                              setDeleteDialogOpen(true);
-                            }}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Supprimer
-                          </DropdownMenuItem>
+                          {exercice.statut === 'fermee' && (
+                            <DropdownMenuItem onClick={() => handleReouvrir(exercice)}>
+                              <RefreshCcw className="mr-2 h-4 w-4" />
+                              Réouvrir
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -196,23 +256,43 @@ export function ExercicesManager() {
         }
       />
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-            <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer l'exercice "{exerciceToDelete?.libelle}" ? 
-              Cette action est irréversible et supprimera toutes les données associées.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Supprimer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Dialog open={checklistDialogOpen} onOpenChange={setChecklistDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Checklist de clôture</DialogTitle>
+            <DialogDescription>
+              {activeChecklistExercice?.libelle} · {activeChecklist?.canClose ? 'prête pour clôture' : 'bloquée'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] space-y-3 overflow-y-auto pr-1">
+            {activeChecklist?.items.map((item) => (
+              <div key={item.code} className="rounded-lg border p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="font-medium">{item.label}</div>
+                  <Badge variant={item.status === 'blocking' ? 'destructive' : item.status === 'warning' ? 'warning' : 'success'}>
+                    {item.status === 'blocking' ? 'Bloquant' : item.status === 'warning' ? 'Alerte' : 'OK'}
+                  </Badge>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">{item.detail}</p>
+                {item.evidence.length > 0 && (
+                  <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                    {item.evidence.map((evidence, index) => (
+                      <li key={`${item.code}-${index}`} className="rounded bg-muted px-2 py-1">
+                        {JSON.stringify(evidence)}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setChecklistDialogOpen(false)}>
+              Fermer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

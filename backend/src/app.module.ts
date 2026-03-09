@@ -9,6 +9,7 @@ import { ComptesTresorerieModule } from './comptes-tresorerie/comptes-tresorerie
 import { DepensesModule } from './depenses/depenses.module';
 import { EngagementsModule } from './engagements/engagements.module';
 import { EcrituresComptablesModule } from './ecritures-comptables/ecritures-comptables.module';
+import { ExerciceClotureModule } from './exercice-cloture/exercice-cloture.module';
 import { ReferentielsModule } from './referentiels/referentiels.module';
 import { ReglesComptablesModule } from './regles-comptables/regles-comptables.module';
 import { FacturesModule } from './factures/factures.module';
@@ -38,6 +39,7 @@ import { WorkflowExceptionsModule } from './workflow-exceptions/workflow-excepti
     DepensesModule,
     EngagementsModule,
     EcrituresComptablesModule,
+    ExerciceClotureModule,
     ReferentielsModule,
     ReglesComptablesModule,
     FacturesModule,
