@@ -1,6 +1,7 @@
 import { LigneBudgetaire, Section, Programme, Action } from '@/types/budget.types';
 import { Compte } from '@/types/compte.types';
 import { Enveloppe } from '@/types/enveloppe.types';
+import type { AnalyseRow } from '@/lib/analyses-financieres';
 
 interface ExportContext {
   sections: Section[];
@@ -9,6 +10,17 @@ interface ExportContext {
   comptes: Compte[];
   enveloppes: Enveloppe[];
 }
+
+export const toCsvCell = (value: string | number | boolean | null | undefined): string => {
+  const normalized = String(value ?? '');
+  if (!/[;"\n\r]/.test(normalized)) {
+    return normalized;
+  }
+  return `"${normalized.replace(/"/g, '""')}"`;
+};
+
+const toCsvLine = (values: Array<string | number | boolean | null | undefined>): string =>
+  values.map((value) => toCsvCell(value)).join(';');
 
 const formatMontant = (montant: number) => {
   return new Intl.NumberFormat('fr-FR', {
@@ -94,11 +106,15 @@ export function exportBudgetToCSV(
   });
 
   const csv = [
-    headers.join(';'),
-    ...rows.map(row => row.join(';'))
+    toCsvLine(headers),
+    ...rows.map((row) => toCsvLine(row))
   ].join('\n');
 
-  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  downloadCsv(csv, filename);
+}
+
+const downloadCsv = (csvContent: string, filename: string) => {
+  const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
   link.setAttribute('href', url);
@@ -107,6 +123,49 @@ export function exportBudgetToCSV(
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+};
+
+export function exportAnalysesToCSV(
+  rows: AnalyseRow[],
+  activeFilters: Record<string, string>,
+  filename: string = 'analyses-financieres.csv'
+) {
+  const headers = [
+    'Dimension',
+    'Libelle',
+    'Projet',
+    'Structure',
+    'Section',
+    'Programme',
+    'Action',
+    'Budget Alloue',
+    'Engage',
+    'Paye',
+    'Disponible',
+    'Taux Execution (%)',
+    'Ecart',
+  ];
+
+  const rowsPayload = rows.map((row) => [
+    row.dimensionType,
+    row.dimensionLabel,
+    row.projetLabel ?? '',
+    row.structureLabel ?? '',
+    row.sectionCode ?? '',
+    row.programmeCode ?? '',
+    row.actionCode ?? '',
+    row.budgetAlloue,
+    row.engage,
+    row.paye,
+    row.disponible,
+    row.tauxExecution,
+    row.ecart,
+  ]);
+
+  const filterLines = Object.entries(activeFilters).map(([key, value]) => `# ${toCsvCell(key)};${toCsvCell(value)}`);
+  const csv = [...filterLines, toCsvLine(headers), ...rowsPayload.map((row) => toCsvLine(row))].join('\n');
+
+  downloadCsv(csv, filename);
 }
 
 export function printBudgetResults(
