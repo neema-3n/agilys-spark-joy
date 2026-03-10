@@ -32,6 +32,7 @@ import { OfflineSyncModule } from './offline-sync/offline-sync.module';
 import { ReportingComptableModule } from './reporting-comptable/reporting-comptable.module';
 import { ReportingFournisseursModule } from './reporting-fournisseurs/reporting-fournisseurs.module';
 import { ReportingExecutionTresorerieModule } from './reporting-execution-tresorerie/reporting-execution-tresorerie.module';
+import { ReportingAnalytiqueModule } from './reporting-analytique/reporting-analytique.module';
 
 @Module({
   imports: [
@@ -67,7 +68,8 @@ import { ReportingExecutionTresorerieModule } from './reporting-execution-tresor
     OfflineSyncModule,
     ReportingComptableModule,
     ReportingFournisseursModule,
-    ReportingExecutionTresorerieModule
+    ReportingExecutionTresorerieModule,
+    ReportingAnalytiqueModule
   ]
 })
 export class AppModule {}

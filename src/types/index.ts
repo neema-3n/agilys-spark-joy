@@ -149,3 +149,6 @@ export * from './reporting-comptable.types';
 
 // Export reporting fournisseurs types
 export * from './reporting-fournisseurs.types';
+
+// Export reporting analytique types
+export * from './reporting-analytique.types';

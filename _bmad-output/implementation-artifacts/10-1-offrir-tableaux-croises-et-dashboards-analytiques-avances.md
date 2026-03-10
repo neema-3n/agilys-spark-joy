@@ -1,6 +1,6 @@
 # Story 10.1: Offrir tableaux croises et dashboards analytiques avances
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -19,30 +19,30 @@ so that j'identifie rapidement tendances et anomalies.
 
 ## Tasks / Subtasks
 
-- [ ] Definir contrat API analytique multi-dimensions (AC: 1)
-  - [ ] DTO filtres: periode, entite, axeAnalytique, composanteBudgetaire, fournisseur, statut.
-  - [ ] Parametres tableau croise: dimensions lignes/colonnes + mesures.
-  - [ ] Contrat export CSV/XLSX/PDF des vues analytiques.
+- [x] Definir contrat API analytique multi-dimensions (AC: 1)
+  - [x] DTO filtres: periode, entite, axeAnalytique, composanteBudgetaire, fournisseur, statut.
+  - [x] Parametres tableau croise: dimensions lignes/colonnes + mesures.
+  - [x] Contrat export CSV/XLSX/PDF des vues analytiques.
 
-- [ ] Implementer moteur d'aggregation analytique backend (AC: 1)
-  - [ ] Reutiliser jeux de donnees reporting existants (execution budgetaire, paiements, depenses, axes analytiques).
-  - [ ] Garantir exactitude des aggregations multi-axes et comparatifs inter-periodes.
-  - [ ] Eviter doubles comptages sur jointures (cles metier explicites).
+- [x] Implementer moteur d'aggregation analytique backend (AC: 1)
+  - [x] Reutiliser jeux de donnees reporting existants (execution budgetaire, paiements, depenses, axes analytiques).
+  - [x] Garantir exactitude des aggregations multi-axes et comparatifs inter-periodes.
+  - [x] Eviter doubles comptages sur jointures (cles metier explicites).
 
-- [ ] Integrer UI tableaux croises + dashboards (AC: 1)
-  - [ ] Etendre `src/pages/app/Reporting.tsx` avec section analytique avancee.
-  - [ ] Ajouter composants pour selection dimensions/mesures et visualisations (table + charts).
-  - [ ] Gérer etats loading/error/empty + persistance locale filtres utilisateur.
+- [x] Integrer UI tableaux croises + dashboards (AC: 1)
+  - [x] Etendre `src/pages/app/Reporting.tsx` avec section analytique avancee.
+  - [x] Ajouter composants pour selection dimensions/mesures et visualisations (table + charts).
+  - [x] Gérer etats loading/error/empty + persistance locale filtres utilisateur.
 
-- [ ] Ajouter export et gouvernance d'acces (AC: 1)
-  - [ ] Export des vues analytiques avec metadonnees de filtre applique.
-  - [ ] Verifier RBAC/ABAC pour consultation et export.
-  - [ ] Journaliser generation/telechargement pour audit.
+- [x] Ajouter export et gouvernance d'acces (AC: 1)
+  - [x] Export des vues analytiques avec metadonnees de filtre applique.
+  - [x] Verifier RBAC/ABAC pour consultation et export.
+  - [x] Journaliser generation/telechargement pour audit.
 
-- [ ] Couvrir les tests (AC: 1)
-  - [ ] Backend: exactitude agrégats, isolation tenant, autorisation, erreurs DTO.
-  - [ ] Front: creation tableau croise, changement dimensions, export.
-  - [ ] Non-regression des vues `ExecutionBudgetaireReport` et `EtatsFinanciersReport`.
+- [x] Couvrir les tests (AC: 1)
+  - [x] Backend: exactitude agrégats, isolation tenant, autorisation, erreurs DTO.
+  - [x] Front: creation tableau croise, changement dimensions, export.
+  - [x] Non-regression des vues `ExecutionBudgetaireReport` et `EtatsFinanciersReport`.
 
 ## Dev Notes
 
@@ -148,8 +148,50 @@ GPT-5 Codex
 
 ### Completion Notes List
 
-- Ultimate context engine analysis completed - comprehensive developer guide created.
+- Implémentation complète du module backend `reporting-analytique` (DTO, controller, service, module) avec agrégations multi-dimensions et vues `tableau-croise` + `dashboard`.
+- Export CSV/XLSX/PDF ajouté avec jeton signé, audit authorization et journalisation de génération/téléchargement.
+- UI analytique avancée ajoutée dans `Reporting.tsx` avec sélection dimensions/mesures, tableau croisé, dashboard, anomalies et persistance locale des filtres.
+- Tests backend ciblés ajoutés/passés pour agrégations, isolation tenant, sécurité des exports et métadonnées de permission.
+- Test UI Playwright ajouté pour non-régression des onglets Reporting existants et présence du nouvel onglet analytique.
+- Correctif post-review: génération XLSX fiabilisée (construction tabulaire directe, plus de parsing CSV naïf sur virgules).
+- Correctif post-review: couverture explicite des erreurs DTO ajoutée (UUID invalide, enums invalides).
+- Correctif post-review: test UI étendu pour changements dimensions/mesures, export et non-régression fonctionnelle des onglets existants.
 
 ### File List
 
+- backend/src/app.module.ts
+- backend/src/reporting-analytique/dto/reporting-analytique.dto.ts
+- backend/src/reporting-analytique/dto/reporting-analytique.dto.spec.ts
+- backend/src/reporting-analytique/reporting-analytique.controller.ts
+- backend/src/reporting-analytique/reporting-analytique.controller.spec.ts
+- backend/src/reporting-analytique/reporting-analytique.module.ts
+- backend/src/reporting-analytique/reporting-analytique.service.ts
+- backend/src/reporting-analytique/reporting-analytique.service.spec.ts
+- src/components/reporting-analytique/ReportingAnalytiqueReport.tsx
+- src/hooks/useReportingAnalytique.ts
+- src/pages/app/Reporting.tsx
+- src/services/api/reporting-analytique.service.ts
+- src/types/index.ts
+- src/types/reporting-analytique.types.ts
+- tests/reporting-analytique-ui.spec.ts
+- _bmad-output/implementation-artifacts/sprint-status.yaml
 - _bmad-output/implementation-artifacts/10-1-offrir-tableaux-croises-et-dashboards-analytiques-avances.md
+
+## Senior Developer Review (AI)
+
+### Review Date
+
+- 2026-03-10
+
+### Findings Fixed
+
+- Couverture test frontend complétée pour changements de dimensions/mesures et flux d’export.
+- Non-régression Reporting renforcée par assertions fonctionnelles sur onglets existants.
+- Couverture erreurs DTO backend ajoutée.
+- Robustesse export XLSX améliorée sur données contenant des virgules/guillemets.
+- Traçabilité story synchronisée avec `sprint-status.yaml`.
+
+## Change Log
+
+- 2026-03-10: Implémentation Story 10.1 terminée (backend+frontend+tests), statut passé à `review`.
+- 2026-03-10: Revue adverse traitée, correctifs appliqués (tests + export XLSX + traçabilité), statut passé à `done`.
