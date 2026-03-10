@@ -1,6 +1,6 @@
 # Story 10.2: Produire dossier de depense unifie avec preuves
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -19,30 +19,30 @@ so that je verifie la conformite complete de la chaine.
 
 ## Tasks / Subtasks
 
-- [ ] Definir contrat API du dossier unifie (AC: 1)
-  - [ ] Endpoint detail dossier par `depenseId` avec timeline de chaine complete.
-  - [ ] Endpoint export PDF/ZIP avec preuves et metadonnees d'audit.
-  - [ ] DTO filtres pour scope tenant/exercice/periode et niveau de detail.
+- [x] Definir contrat API du dossier unifie (AC: 1)
+  - [x] Endpoint detail dossier par `depenseId` avec timeline de chaine complete.
+  - [x] Endpoint export PDF/ZIP avec preuves et metadonnees d'audit.
+  - [x] DTO filtres pour scope tenant/exercice/periode et niveau de detail.
 
-- [ ] Implementer composition backend de la chaine documentaire (AC: 1)
-  - [ ] Relier reservation, engagement, bon de commande, facture(s), depense, paiement(s).
-  - [ ] Inclure pieces justificatives, statuts, transitions et controles executes.
-  - [ ] Inclure actions utilisateurs (qui/quand/quoi) avec correlation et horodatage.
+- [x] Implementer composition backend de la chaine documentaire (AC: 1)
+  - [x] Relier reservation, engagement, bon de commande, facture(s), depense, paiement(s).
+  - [x] Inclure pieces justificatives, statuts, transitions et controles executes.
+  - [x] Inclure actions utilisateurs (qui/quand/quoi) avec correlation et horodatage.
 
-- [ ] Integrer surface front de consultation du dossier (AC: 1)
-  - [ ] Ajouter service API type `dossier-depense-unifie.service.ts`.
-  - [ ] Ajouter vue detail dans Reporting ou route dediee auditable.
-  - [ ] Afficher timeline chainage + liste preuves + synthese des ecarts/contrôles.
+- [x] Integrer surface front de consultation du dossier (AC: 1)
+  - [x] Ajouter service API type `dossier-depense-unifie.service.ts`.
+  - [x] Ajouter vue detail dans Reporting ou route dediee auditable.
+  - [x] Afficher timeline chainage + liste preuves + synthese des ecarts/contrôles.
 
-- [ ] Ajouter export probatoire (AC: 1)
-  - [ ] Export PDF (lecture) et ZIP (preuves + manifest + metadata JSON).
-  - [ ] Verifier permissions avant generation/telechargement.
-  - [ ] Journaliser export avec contexte utilisateur et cible depense.
+- [x] Ajouter export probatoire (AC: 1)
+  - [x] Export PDF (lecture) et ZIP (preuves + manifest + metadata JSON).
+  - [x] Verifier permissions avant generation/telechargement.
+  - [x] Journaliser export avec contexte utilisateur et cible depense.
 
-- [ ] Couvrir les tests critiques (AC: 1)
-  - [ ] Backend: chainage complet, tenant isolation, permissions, depense introuvable.
-  - [ ] Backend: coherence pieces/actions/timeline et robustesse sur donnees partielles.
-  - [ ] Frontend: consultation dossier, navigation timeline, export, erreurs API.
+- [x] Couvrir les tests critiques (AC: 1)
+  - [x] Backend: chainage complet, tenant isolation, permissions, depense introuvable.
+  - [x] Backend: coherence pieces/actions/timeline et robustesse sur donnees partielles.
+  - [x] Frontend: consultation dossier, navigation timeline, export, erreurs API.
 
 ## Dev Notes
 
@@ -147,11 +147,56 @@ GPT-5 Codex
 
 - Story key detectee: `10-2-produire-dossier-de-depense-unifie-avec-preuves`
 - Contexte utilise: sprint-status + epics/prd + services backend chaine depense
+- Implementation backend: module NestJS `dossier-depense-unifie` + endpoints detail/export + DTO filtres scope.
+- Implementation frontend: service/hook/composant dossier + integration onglet Reporting.
+- Validation executee: `pnpm run lint:frontend`, `pnpm --dir backend run lint`, `pnpm exec playwright test tests/dossier-depense-unifie-ui.spec.ts`, `pnpm run test`.
+
+### Implementation Plan
+
+- Composer un dossier unique a partir des tables metier existantes (`depenses`, `depense_factures`, `factures`, `paiements`, `operations_tresorerie`, `ecritures_comptables`, `engagements`, `reservations_credits`, `bons_commande`) sans dupliquer la logique transactionnelle.
+- Exposer un endpoint de consultation auditable avec timeline deterministe, preuves, controles et ecarts.
+- Exposer un endpoint d'export probatoire PDF/ZIP avec manifest machine-readable et metadata d'audit.
+- Integrer une surface front dediee dans Reporting avec filtres, consultation, export et gestion d'erreurs.
+- Verrouiller le comportement avec tests backend unitaires et test UI Playwright.
 
 ### Completion Notes List
 
-- Ultimate context engine analysis completed - comprehensive developer guide created.
+- Module backend `dossier-depense-unifie` implemente avec endpoints detail/export, permission `referentiels:audit:read` et journalisation des exports.
+- Composition de chaine complete reservation -> engagement -> bon de commande -> facture(s) -> depense -> paiement(s), avec timeline ordonnee et actions utilisateurs correlees.
+- Preuves normalisees (reference piece, piece justificative, references paiement), detection explicite des trous de preuve, synthese controles/ecarts.
+- Export probatoire PDF et ZIP implemente (manifest JSON + dossier JSON + preuves.txt).
+- Frontend integre dans Reporting via nouvel onglet `Dossier Depense` avec consultation detaillee et export PDF/ZIP.
+- Tests critiques ajoutes pour backend et frontend; regression complete executee avec succes.
 
 ### File List
 
+- backend/src/app.module.ts
+- backend/src/dossier-depense-unifie/dto/dossier-depense-unifie.dto.ts
+- backend/src/dossier-depense-unifie/dossier-depense-unifie.controller.ts
+- backend/src/dossier-depense-unifie/dossier-depense-unifie.module.ts
+- backend/src/dossier-depense-unifie/dossier-depense-unifie.service.ts
+- backend/src/dossier-depense-unifie/dossier-depense-unifie.service.spec.ts
+- src/components/dossier-depense-unifie/DossierDepenseUnifieReport.tsx
+- src/hooks/useDossierDepenseUnifie.ts
+- src/pages/app/Reporting.tsx
+- src/services/api/dossier-depense-unifie.service.ts
+- src/types/dossier-depense-unifie.types.ts
+- tests/dossier-depense-unifie-ui.spec.ts
 - _bmad-output/implementation-artifacts/10-2-produire-dossier-de-depense-unifie-avec-preuves.md
+- _bmad-output/implementation-artifacts/sprint-status.yaml
+
+## Senior Developer Review (AI)
+
+Date: 2026-03-10
+Reviewer: Max (AI)
+Outcome: Approved
+
+- AC1 validee: chainage reservation -> paiement, timeline, preuves, controles et actions utilisateurs verifies dans le backend + surface frontend.
+- Validation d'execution confirmee: `pnpm --dir backend run lint`, `pnpm --dir backend run test -- dossier-depense-unifie.service.spec.ts`, `pnpm run lint:frontend`, `pnpm exec playwright test tests/dossier-depense-unifie-ui.spec.ts`.
+- Ecart corrige pendant review: ajout de l'affichage d'erreur d'export dans le composant UI pour couvrir explicitement le cas d'echec de telechargement.
+- Ecart documentaire corrige: synchronisation de la File List avec les fichiers reellement modifies (`sprint-status.yaml` inclus).
+
+## Change Log
+
+- 2026-03-10: Implementation complete de la story 10.2 (backend module dossier, front reporting, export probatoire PDF/ZIP, tests backend+frontend, validation lint/typecheck/regression).
+- 2026-03-10: Revue senior AI terminee, ecarts resolus, story passee a `done`.
