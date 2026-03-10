@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { createHmac, randomUUID } from 'crypto';
+import { createHmac, randomUUID, timingSafeEqual } from 'crypto';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { PostgresService } from '../common/postgres.service';
 import type {
@@ -128,6 +128,7 @@ const round2 = (value: number): number => Math.round(value * 100) / 100;
 @Injectable()
 export class ReportingComptableService {
   private readonly exportJobs = new Map<string, ExportJob>();
+  private readonly signingSecret = process.env.EXPORT_SIGNING_SECRET || process.env.JWT_SECRET || randomUUID();
 
   constructor(private readonly postgresService: PostgresService) {}
 
@@ -290,7 +291,14 @@ export class ReportingComptableService {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 50;
 
-    if (query.dateDebut > query.dateFin) {
+    const startTs = Date.parse(query.dateDebut);
+    const endTs = Date.parse(query.dateFin);
+
+    if (Number.isNaN(startTs) || Number.isNaN(endTs)) {
+      throw new BadRequestException('La periode est invalide: dates non parseables');
+    }
+
+    if (startTs > endTs) {
       throw new BadRequestException('La periode est invalide: dateDebut doit etre <= dateFin');
     }
 
@@ -576,7 +584,16 @@ export class ReportingComptableService {
   }
 
   private buildDelimitedText(report: ReportingComptableResponse, view: ReportingComptableView, delimiter: ';' | '\t'): string {
-    const join = (values: Array<string | number>) => values.map((item) => `${item}`).join(delimiter);
+    const escapeDelimitedCell = (value: string | number): string => {
+      const raw = `${value}`;
+      const neutralized = /^[=+\-@]/.test(raw) ? `'${raw}` : raw;
+      const escaped = neutralized.replace(/"/g, '""');
+      if (escaped.includes(delimiter) || escaped.includes('\n') || escaped.includes('\r') || escaped.includes('"')) {
+        return `"${escaped}"`;
+      }
+      return escaped;
+    };
+    const join = (values: Array<string | number>) => values.map((item) => escapeDelimitedCell(item)).join(delimiter);
 
     if (view === 'balance') {
       const lines = [join(['Compte', 'Libelle', 'Debit', 'Credit', 'Solde'])];
@@ -671,7 +688,7 @@ export class ReportingComptableService {
   }
 
   private getSigningSecret(): string {
-    return process.env.EXPORT_SIGNING_SECRET || process.env.JWT_SECRET || 'reporting-comptable-dev-secret';
+    return this.signingSecret;
   }
 
   private signDownloadToken(job: ExportJob): string {
@@ -696,7 +713,9 @@ export class ReportingComptableService {
 
     const expectedSignature = createHmac('sha256', this.getSigningSecret()).update(encodedPayload).digest('base64url');
 
-    if (signature !== expectedSignature) {
+    const providedBuffer = Buffer.from(signature, 'utf-8');
+    const expectedBuffer = Buffer.from(expectedSignature, 'utf-8');
+    if (providedBuffer.length !== expectedBuffer.length || !timingSafeEqual(providedBuffer, expectedBuffer)) {
       throw new BadRequestException('Signature de telechargement invalide');
     }
 
