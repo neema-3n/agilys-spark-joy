@@ -711,4 +711,151 @@ test.describe('tresorerie supervision + audit UI', () => {
     await page.goto(`${UI_BASE_URL}/app/controle-interne`);
     await expect(page.getByText('Erreur dossier')).toBeVisible({ timeout: 15000 });
   });
+
+  test('supervision integration: pagination, remediation et export csv', async ({ page }) => {
+    const accessToken = makeJwt({
+      sub: 'user-5',
+      tenantId: 'client-1',
+      roles: ['auditeur'],
+      email: 'integration@agilys.local',
+      nom: 'Integration',
+      prenom: 'Ops',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    });
+
+    await setupApi(page, accessToken);
+    await page.addInitScript((token: string) => {
+      window.localStorage.setItem('agilys.auth.accessToken', token);
+      window.localStorage.setItem('agilys.auth.refreshToken', 'refresh-token-stub');
+    }, accessToken);
+
+    const events = [
+      {
+        id: 'evt-1',
+        direction: 'outgoing',
+        status: 'failed',
+        severity: 'error',
+        priority: 'P2',
+        treatmentStatus: 'open',
+        tenantId: 'client-1',
+        exerciceId: 'ex-2026',
+        eventType: 'legacy.paiement',
+        correlationId: 'corr-integ-1',
+        sourceType: 'paiement',
+        sourceId: 'pay-1',
+        payload: { montant: 1200 },
+        schemaVersion: '1.0.0',
+        occurredAt: '2026-03-09T09:00:00.000Z',
+        attemptCount: 1,
+        maxAttempts: 5,
+        reasonCode: 'LEGACY_TIMEOUT',
+        reasonMessage: 'Timeout',
+        owner: 'ops@tenant',
+        detectedAt: '2026-03-09T09:05:00.000Z',
+        detectionDelayMs: 300000,
+        recoveryDelayMs: 1200000,
+        atRiskSla: 'breach',
+        createdBy: 'user-5',
+        updatedBy: 'user-5',
+        createdAt: '2026-03-09T09:05:00.000Z',
+        updatedAt: '2026-03-09T09:10:00.000Z',
+      },
+      {
+        id: 'evt-2',
+        direction: 'incoming',
+        status: 'dead_letter',
+        severity: 'critical',
+        priority: 'P1',
+        treatmentStatus: 'triaged',
+        tenantId: 'client-1',
+        exerciceId: 'ex-2026',
+        eventType: 'legacy.ack',
+        correlationId: 'corr-integ-2',
+        sourceType: 'paiement',
+        sourceId: 'pay-2',
+        payload: { montant: 800 },
+        schemaVersion: '1.0.0',
+        occurredAt: '2026-03-09T09:15:00.000Z',
+        attemptCount: 3,
+        maxAttempts: 5,
+        reasonCode: 'DEAD_LETTER',
+        reasonMessage: 'Dead letter',
+        owner: 'n2@tenant',
+        detectedAt: '2026-03-09T09:20:00.000Z',
+        detectionDelayMs: 300000,
+        recoveryDelayMs: 300000,
+        atRiskSla: 'recovery',
+        createdBy: 'user-5',
+        updatedBy: 'user-5',
+        createdAt: '2026-03-09T09:20:00.000Z',
+        updatedAt: '2026-03-09T09:25:00.000Z',
+      },
+    ];
+    const actions: string[] = [];
+    let exportCalled = false;
+
+    await page.route('**://127.0.0.1:3001/integration-legacy/supervision/export**', async (route) => {
+      exportCalled = true;
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/csv; charset=utf-8',
+        headers: {
+          'Content-Disposition': 'attachment; filename="integration-supervision-ex-2026.csv"',
+        },
+        body: 'id,correlationId,status\nevt-1,corr-integ-1,failed\n',
+      });
+    });
+
+    await page.route('**://127.0.0.1:3001/integration-legacy/events/*/remediate', async (route) => {
+      const payload = route.request().postDataJSON() as { action?: string; treatmentStatus?: string; priority?: string };
+      if (payload.action) {
+        actions.push(payload.action);
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ event: events[0] }),
+      });
+    });
+
+    await page.route('**://127.0.0.1:3001/integration-legacy/supervision?**', async (route) => {
+      const url = new URL(route.request().url());
+      const pageParam = Number(url.searchParams.get('page') ?? '1');
+      const pageSize = 1;
+      const start = (pageParam - 1) * pageSize;
+      const slice = events.slice(start, start + pageSize);
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          items: slice,
+          counters: { byStatus: { failed: 1, dead_letter: 1 }, byPriority: { P1: 1, P2: 1 } },
+          pagination: { page: pageParam, pageSize, total: events.length, totalPages: Math.ceil(events.length / pageSize) },
+        }),
+      });
+    });
+
+    await page.goto(`${UI_BASE_URL}/app/controle-interne`);
+    await page.getByRole('tab', { name: 'Intégration' }).click();
+
+    await expect(page.getByText('Supervision divergences d\'intégration')).toBeVisible();
+    await expect(page.getByText('corr-integ-1')).toBeVisible();
+    await expect(page.getByText('Page 1 / 2')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Suivant' }).click();
+    await expect(page.getByText('corr-integ-2')).toBeVisible();
+    await expect(page.getByText('Page 2 / 2')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Précédent' }).click();
+    await expect(page.getByText('corr-integ-1')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Escalader' }).first().click();
+    await page.getByRole('button', { name: 'Réconcilier' }).first().click();
+
+    await page.getByRole('button', { name: 'Exporter CSV' }).click();
+
+    expect(actions).toContain('escalate');
+    expect(actions).toContain('reconcile-manual');
+    expect(exportCalled).toBeTruthy();
+  });
 });

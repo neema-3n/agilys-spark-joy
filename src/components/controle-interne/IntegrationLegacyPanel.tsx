@@ -1,9 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useExercice } from '@/contexts/ExerciceContext';
 import { useIntegrationLegacySupervision, useRemediateIntegrationEvent } from '@/hooks/useIntegrationLegacy';
+import { integrationLegacyService } from '@/services/api/integration-legacy.service';
 import type {
   IntegrationEvent,
   IntegrationEventPriority,
@@ -37,6 +39,9 @@ export const IntegrationLegacyPanel = () => {
   const [treatmentStatus, setTreatmentStatus] = useState<IntegrationTreatmentStatus | ''>('');
   const [owner, setOwner] = useState('');
   const [correlationId, setCorrelationId] = useState('');
+  const [page, setPage] = useState(1);
+  const [isExporting, setIsExporting] = useState(false);
+  const { currentExercice } = useExercice();
 
   const filters = useMemo(
     () => ({
@@ -46,13 +51,31 @@ export const IntegrationLegacyPanel = () => {
       treatmentStatus: treatmentStatus || undefined,
       owner: owner.trim() || undefined,
       correlationId: correlationId.trim() || undefined,
+      page,
       pageSize: 10,
     }),
-    [status, severity, priority, treatmentStatus, owner, correlationId]
+    [status, severity, priority, treatmentStatus, owner, correlationId, page]
   );
 
   const supervisionQuery = useIntegrationLegacySupervision(filters);
   const remediateMutation = useRemediateIntegrationEvent();
+  const totalPages = supervisionQuery.data?.pagination.totalPages ?? 1;
+
+  useEffect(() => {
+    setPage(1);
+  }, [status, severity, priority, treatmentStatus, owner, correlationId]);
+
+  const handleExport = async () => {
+    if (!currentExercice?.id) {
+      return;
+    }
+    setIsExporting(true);
+    try {
+      await integrationLegacyService.downloadSupervisionExport('unused', currentExercice.id, filters);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -118,6 +141,15 @@ export const IntegrationLegacyPanel = () => {
               <span>Correlation ID</span>
               <Input value={correlationId} onChange={(e) => setCorrelationId(e.target.value)} placeholder="corr-..." />
             </label>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="text-xs text-muted-foreground">
+              Page {page} / {totalPages}
+            </div>
+            <Button size="sm" variant="outline" onClick={() => void handleExport()} disabled={isExporting || supervisionQuery.isLoading}>
+              {isExporting ? 'Export...' : 'Exporter CSV'}
+            </Button>
           </div>
 
           <div className="grid gap-3 md:grid-cols-4">
@@ -225,6 +257,19 @@ export const IntegrationLegacyPanel = () => {
                   </div>
                 );
               })}
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>
+                  Précédent
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                >
+                  Suivant
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

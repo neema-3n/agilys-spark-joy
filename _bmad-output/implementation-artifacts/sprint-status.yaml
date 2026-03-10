@@ -53,7 +53,7 @@ development_status:
   epic-8: in-progress
   8-1-mettre-en-place-flux-dintegration-asynchrones: done
   8-2-gerer-mode-degrade-et-reprise-apres-reconnexion: done
-  8-3-superviser-divergences-et-sla-de-rattrapage: review
+  8-3-superviser-divergences-et-sla-de-rattrapage: done
   epic-8-retrospective: optional
   epic-9: in-progress
   9-1-generer-balance-grand-livre-et-fiche-compte: review
