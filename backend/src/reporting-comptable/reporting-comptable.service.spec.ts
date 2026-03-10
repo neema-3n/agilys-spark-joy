@@ -137,4 +137,71 @@ describe('ReportingComptableService', () => {
     expect(file.filename.endsWith('.xlsx')).toBe(true);
     expect(file.content.length).toBeGreaterThan(0);
   });
+
+  it('rejette un token de telechargement altere', async () => {
+    query.mockResolvedValueOnce(makeResult([])).mockResolvedValueOnce(makeResult([{ debit: 0, credit: 0 }]));
+
+    const started = await service.startExport(actor, {
+      dateDebut: '2026-03-01',
+      dateFin: '2026-03-31',
+      view: 'balance',
+      format: 'xlsx'
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    const status = service.getExportStatus(actor, started.exportId);
+    const downloadUrl = status.downloadUrl ?? '';
+    const token = new URL(`http://localhost${downloadUrl}`).searchParams.get('token');
+    expect(token).toBeTruthy();
+
+    const tampered = `${token?.slice(0, -1)}x`;
+    expect(() => service.downloadExport(actor, started.exportId, tampered)).toThrow('Signature de telechargement invalide');
+  });
+
+  it('echappe les cellules CSV sensibles (separateur, guillemets, formules)', async () => {
+    query
+      .mockResolvedValueOnce(
+        makeResult([
+          {
+            ecriture_id: 'e1',
+            date_ecriture: '2026-03-01',
+            numero_piece: 'PC-1',
+            numero_ligne: 1,
+            libelle: '=HYPERLINK(\"http://malicious\")',
+            montant: 100,
+            compte_debit_id: 'c1',
+            compte_debit_numero: '601',
+            compte_debit_libelle: 'Achats;\"A\"',
+            compte_credit_id: 'c2',
+            compte_credit_numero: '401',
+            compte_credit_libelle: 'Fournisseurs',
+            projet_id: null,
+            projet_code: null,
+            projet_nom: null,
+            action_id: null,
+            action_code: null,
+            programme_code: null,
+            section_code: null
+          }
+        ])
+      )
+      .mockResolvedValueOnce(makeResult([{ debit: 0, credit: 0 }]));
+
+    const started = await service.startExport(actor, {
+      dateDebut: '2026-03-01',
+      dateFin: '2026-03-31',
+      view: 'grand-livre',
+      format: 'csv'
+    });
+
+    const status = service.getExportStatus(actor, started.exportId);
+    const downloadUrl = status.downloadUrl ?? '';
+    const token = new URL(`http://localhost${downloadUrl}`).searchParams.get('token');
+    const file = service.downloadExport(actor, started.exportId, token ?? '');
+    const content = file.content.toString('utf-8');
+
+    expect(content).toContain('"601 Achats;""A"""');
+    expect(content).toContain("'=HYPERLINK");
+  });
 });

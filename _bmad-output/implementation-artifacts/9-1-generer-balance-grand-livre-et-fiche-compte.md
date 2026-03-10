@@ -1,6 +1,6 @@
 # Story 9.1: Generer balance, grand livre et fiche compte
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -122,6 +122,9 @@ GPT-5 Codex
 - Tests cibles module reporting comptable passes (`pnpm --dir backend run test -- reporting-comptable.service.spec.ts`)
 - Tests frontend cibles service reporting passes (`pnpm exec playwright test tests/auth-migration.spec.ts --grep reportingComptableService`)
 - Suite backend globale executee avec echec non lie au scope sur `test/budget-referentiels.e2e.spec.ts` (timeouts + table manquante `integration_async_events`)
+- Revue adverse AI: corrections securite signature export (secret non statique + comparaison timing-safe)
+- Revue adverse AI: correction robustesse CSV (echappement delimiters/guillemets + neutralisation formule)
+- Revue adverse AI: ajout test backend d'autorisation controller (`guards` + permission `referentiels:read`)
 
 ### Completion Notes List
 
@@ -137,6 +140,7 @@ GPT-5 Codex
 - backend/src/app.module.ts
 - backend/src/reporting-comptable/dto/reporting-comptable.dto.ts
 - backend/src/reporting-comptable/reporting-comptable.controller.ts
+- backend/src/reporting-comptable/reporting-comptable.controller.spec.ts
 - backend/src/reporting-comptable/reporting-comptable.module.ts
 - backend/src/reporting-comptable/reporting-comptable.service.ts
 - backend/src/reporting-comptable/reporting-comptable.service.spec.ts
@@ -151,3 +155,18 @@ GPT-5 Codex
 ### Change Log
 
 - 2026-03-09: Story 9.1 implementee end-to-end (API reporting comptable, UI consultation, exports securises, tests backend/frontend, passage en review).
+- 2026-03-09: Revue AI adverse appliquee (fixes HIGH/MEDIUM securite export + robustesse CSV, ajout test d'autorisation controller), statut passe a `done`.
+
+### Senior Developer Review (AI)
+
+#### Findings resolves
+
+- HIGH: secret de signature export previsible via fallback statique -> corrige avec secret runtime non statique (env prioritaire, fallback aleatoire process).
+- MEDIUM: verification signature token non timing-safe -> corrige via `timingSafeEqual` avec controle de longueur.
+- MEDIUM: export CSV non protege contre cellules dangereuses et delimiters -> corrige via echappement CSV + neutralisation des formules.
+- MEDIUM: couverture explicite des exigences d'autorisation backend absente dans les tests story -> corrige via spec controller (guards + permission metadata).
+
+#### Validation
+
+- `pnpm --dir backend run test -- src/reporting-comptable/reporting-comptable.service.spec.ts src/reporting-comptable/reporting-comptable.controller.spec.ts` ✅
+- `pnpm --dir backend run lint` ✅
