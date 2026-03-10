@@ -1,6 +1,6 @@
 # Story 9.3: Produire execution budgetaire et tresorerie
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -19,30 +19,30 @@ so that je pilote les arbitrages quotidiens.
 
 ## Tasks / Subtasks
 
-- [ ] Definir le contrat API reporting execution+tresorerie (AC: 1)
-  - [ ] DTO filtres communs: `exerciceId`, `periode`, `entite`, `axeAnalytique`, `seuil`.
-  - [ ] Vue execution budgetaire par ligne/composante/axe.
-  - [ ] Vue tresorerie: journal flux, situation comptes, previsions, alertes, etat paiements, etat rapprochement.
+- [x] Definir le contrat API reporting execution+tresorerie (AC: 1)
+  - [x] DTO filtres communs: `exerciceId`, `periode`, `entite`, `axeAnalytique`, `seuil`.
+  - [x] Vue execution budgetaire par ligne/composante/axe.
+  - [x] Vue tresorerie: journal flux, situation comptes, previsions, alertes, etat paiements, etat rapprochement.
 
-- [ ] Implementer backend avec reutilisation des modules existants (AC: 1)
-  - [ ] Reutiliser `tresorerie`, `paiements`, `rapprochements-bancaires`, `depenses`, `engagements` et agregations budgetaires existantes.
-  - [ ] Calculer comparaison prevision/execution et ecarts de seuil.
-  - [ ] Exposer indicateurs prioritaires sans duplication de logique metier.
+- [x] Implementer backend avec reutilisation des modules existants (AC: 1)
+  - [x] Reutiliser `tresorerie`, `paiements`, `rapprochements-bancaires`, `depenses`, `engagements` et agregations budgetaires existantes.
+  - [x] Calculer comparaison prevision/execution et ecarts de seuil.
+  - [x] Exposer indicateurs prioritaires sans duplication de logique metier.
 
-- [ ] Integrer la surface front dans Reporting (AC: 1)
-  - [ ] Ajouter service API type `reporting-execution-tresorerie.service.ts`.
-  - [ ] Ajouter composants de tableaux/indicateurs dans `Reporting.tsx`.
-  - [ ] Integrer filtres + etats chargement/erreur/empty + rafraichissement React Query.
+- [x] Integrer la surface front dans Reporting (AC: 1)
+  - [x] Ajouter service API type `reporting-execution-tresorerie.service.ts`.
+  - [x] Ajouter composants de tableaux/indicateurs dans `Reporting.tsx`.
+  - [x] Integrer filtres + etats chargement/erreur/empty + rafraichissement React Query.
 
-- [ ] Ajouter export et observabilite (AC: 1)
-  - [ ] Export CSV/XLSX/PDF sur les vues execution+tresorerie.
-  - [ ] Journaliser generation/telechargement exports et correlationId si disponible.
-  - [ ] Verifier droits d'acces avant consultation et export.
+- [x] Ajouter export et observabilite (AC: 1)
+  - [x] Export CSV/XLSX/PDF sur les vues execution+tresorerie.
+  - [x] Journaliser generation/telechargement exports et correlationId si disponible.
+  - [x] Verifier droits d'acces avant consultation et export.
 
-- [ ] Couvrir tests critiques (AC: 1)
-  - [ ] Backend: nominal, erreurs filtres, isolation tenant, permissions.
-  - [ ] Backend: exactitude comparaison prevision/execution et qualif alertes seuil.
-  - [ ] Frontend: consultation, filtres, alertes visibles, journaux/etats paiements-rapprochement, export.
+- [x] Couvrir tests critiques (AC: 1)
+  - [x] Backend: nominal, erreurs filtres, isolation tenant, permissions.
+  - [x] Backend: exactitude comparaison prevision/execution et qualif alertes seuil.
+  - [x] Frontend: consultation, filtres, alertes visibles, journaux/etats paiements-rapprochement, export.
 
 ## Dev Notes
 
@@ -152,11 +152,47 @@ GPT-5 Codex
 
 - Story key detectee: `9-3-produire-execution-budgetaire-et-tresorerie`
 - Contexte utilise: sprint-status, epics, story 9.2, services reporting/tresorerie/paiements
+- Backend: ajout module `reporting-execution-tresorerie` (DTO/controller/service/module + specs) et branchement `AppModule`.
+- Frontend: ajout type/service/hook/composant `reporting-execution-tresorerie` et integration de la nouvelle surface dans `Reporting.tsx`.
+- Validation executee: `pnpm --dir backend run test -- reporting-execution-tresorerie.service.spec.ts reporting-execution-tresorerie.controller.spec.ts`, `pnpm --dir backend run lint`, `pnpm exec eslint ...` (cible fichiers modifies), `pnpm exec playwright test tests/auth-migration.spec.ts --grep "story-9-3|reportingExecutionTresorerieService"`.
+- Revalidation dev-story executee le 2026-03-10 avec succes (backend tests/lint + frontend eslint + Playwright story 9.3).
 
 ### Completion Notes List
 
-- Ultimate context engine analysis completed - comprehensive developer guide created.
+- Implementation complete de la story 9.3: API execution+tresorerie, export async, audit authorization et logs avec correlationId optionnel.
+- Surface Reporting mise a jour avec filtres metier, vue execution prevision/execution, vue tresorerie (journal flux, paiements, rapprochements, alertes) et gestion loading/error/empty.
+- Tests backend dedies ajoutes (service/controller) + tests frontend (scenario UI Story 9.3 + tests service API) passes sur execution ciblee.
+- AC1 valide sur le perimetre story, sans ajout de dependance runtime Supabase.
+- Story basculee en statut `review` apres verification Definition of Done et synchronisation sprint-status.
 
 ### File List
 
 - _bmad-output/implementation-artifacts/9-3-produire-execution-budgetaire-et-tresorerie.md
+- backend/src/app.module.ts
+- backend/src/reporting-comptable/reporting-comptable.service.spec.ts
+- backend/src/reporting-execution-tresorerie/dto/reporting-execution-tresorerie.dto.ts
+- backend/src/reporting-execution-tresorerie/reporting-execution-tresorerie.controller.ts
+- backend/src/reporting-execution-tresorerie/reporting-execution-tresorerie.controller.spec.ts
+- backend/src/reporting-execution-tresorerie/reporting-execution-tresorerie.module.ts
+- backend/src/reporting-execution-tresorerie/reporting-execution-tresorerie.service.ts
+- backend/src/reporting-execution-tresorerie/reporting-execution-tresorerie.service.spec.ts
+- src/components/reporting-execution-tresorerie/ReportingExecutionTresorerieReport.tsx
+- src/hooks/useReportingExecutionTresorerie.ts
+- src/pages/app/Reporting.tsx
+- src/services/api/reporting-execution-tresorerie.service.ts
+- src/types/reporting-execution-tresorerie.types.ts
+- tests/auth-migration.spec.ts
+
+### Change Log
+
+- 2026-03-10: Story 9.3 implementation complete (backend API + frontend integration + exports + tests).
+- 2026-03-10: Revalidation workflow dev-story et passage du statut a review.
+- 2026-03-10: Revue adversariale appliquee: filtres rapprochements alignes, export xlsx/pdf rendu exploitable, correlationId propage jusqu'au telechargement, et fiabilisation du cycle export.
+
+### Senior Developer Review (AI)
+
+- 2026-03-10: Review effectuee et corrections appliquees.
+- HIGH corrige: export xlsx/pdf (generation de contenu coherent avec le format demande).
+- HIGH corrige: filtres `entite`/`axeAnalytique` appliques egalement a l'etat des rapprochements.
+- MEDIUM corrige: `correlationId` conserve et journalise au telechargement export.
+- MEDIUM corrige: suppression des temporisateurs asynchrones fragiles; generation immediate + nettoyage des jobs expires et limitation memoire.

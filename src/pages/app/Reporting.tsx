@@ -1,6 +1,6 @@
 import { PageHeader } from '@/components/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ExecutionBudgetaireReport } from '@/components/reporting/ExecutionBudgetaireReport';
+import { ReportingExecutionTresorerieReport } from '@/components/reporting-execution-tresorerie/ReportingExecutionTresorerieReport';
 import { EtatsFinanciersReport } from '@/components/reporting/EtatsFinanciersReport';
 import { DSFReport } from '@/components/reporting/DSFReport';
 import { ReportingComptableReport } from '@/components/reporting-comptable/ReportingComptableReport';
@@ -46,7 +46,7 @@ const Reporting = () => {
           </TabsList>
 
           <TabsContent value="execution" className="space-y-6">
-            <ExecutionBudgetaireReport />
+            <ReportingExecutionTresorerieReport />
           </TabsContent>
 
           <TabsContent value="dsf" className="space-y-6">

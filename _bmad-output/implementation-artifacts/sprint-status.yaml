@@ -58,7 +58,7 @@ development_status:
   epic-9: in-progress
   9-1-generer-balance-grand-livre-et-fiche-compte: done
   9-2-produire-etat-dettes-fournisseurs-et-avances: done
-  9-3-produire-execution-budgetaire-et-tresorerie: ready-for-dev
+  9-3-produire-execution-budgetaire-et-tresorerie: done
   epic-9-retrospective: optional
   epic-10: backlog
   10-1-offrir-tableaux-croises-et-dashboards-analytiques-avances: ready-for-dev
