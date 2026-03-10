@@ -14,6 +14,7 @@ import { facturesService } from '../src/services/api/factures.service';
 import { createDepenseFromFacture } from '../src/services/api/depenses.service';
 import { reportingComptableService } from '../src/services/api/reporting-comptable.service';
 import { reportingFournisseursService } from '../src/services/api/reporting-fournisseurs.service';
+import { reportingExecutionTresorerieService } from '../src/services/api/reporting-execution-tresorerie.service';
 
 class MockStorage implements StorageLike {
   private readonly store = new Map<string, string>();
@@ -612,8 +613,9 @@ test.describe('auth ui routing flows', () => {
     await page.getByRole('button', { name: 'Se connecter' }).click();
 
     await expect(page).toHaveURL(/\/app\/reporting$/);
-    await expect(page.getByRole('heading', { name: 'Reporting' })).toBeVisible();
-    await page.getByRole('tab', { name: /Dettes & Avances|Fournisseurs/i }).click();
+    const fournisseursTab = page.getByText('Dettes & Avances').first();
+    await expect(fournisseursTab).toBeVisible({ timeout: 20_000 });
+    await fournisseursTab.click();
     await expect(page.getByText('Filtres etat dettes fournisseurs / avances')).toBeVisible();
 
     await page.locator('div.space-y-2', { hasText: 'Aging bucket (dettes)' }).getByRole('combobox').click();
@@ -628,6 +630,292 @@ test.describe('auth ui routing flows', () => {
     await page.getByRole('option', { name: 'J61-90' }).click();
     await expect.poll(() => lastDettesQuery.includes('agingBucket=J61-90')).toBeTruthy();
     await expect(page.getByText('Erreur reporting fournisseurs forcee par test')).toBeVisible({ timeout: 20_000 });
+  });
+
+  test('@migration-reporting @story-9-3 reporting execution+tresorerie supports consultation, filtres, export et alertes', async ({ page }) => {
+    const accessToken = makeJwt({
+      sub: 'user-93',
+      tenantId: 'tenant-1',
+      roles: ['super_admin'],
+      email: 'reporting93@agilys.local',
+      nom: 'Reporting',
+      prenom: 'User',
+      exp: Math.floor(Date.now() / 1000) + 600
+    });
+
+    let exportStatusPollCount = 0;
+    let lastExecutionQuery = '';
+    let exportDownloadCalled = false;
+
+    await page.route('**://127.0.0.1:3001/**', async (route) => {
+      const request = route.request();
+      const requestUrl = new URL(request.url());
+      const { pathname, searchParams } = requestUrl;
+
+      if (pathname === '/auth/login') {
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            accessToken,
+            refreshToken: 'refresh-token-reporting-93'
+          })
+        });
+        return;
+      }
+
+      if (pathname === '/auth/refresh') {
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            accessToken,
+            refreshToken: 'refresh-token-reporting-93'
+          })
+        });
+        return;
+      }
+
+      if (pathname === '/auth/logout') {
+        await route.fulfill({ status: 204 });
+        return;
+      }
+
+      if (pathname === '/budget-referentiels/exercices') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([
+            {
+              id: 'ex-2026',
+              clientId: 'tenant-1',
+              libelle: 'Exercice 2026',
+              code: 'EX2026',
+              dateDebut: '2026-01-01',
+              dateFin: '2026-12-31',
+              statut: 'ouvert'
+            }
+          ])
+        });
+        return;
+      }
+
+      if (pathname === '/reporting-execution-tresorerie/execution-budgetaire') {
+        lastExecutionQuery = requestUrl.search;
+
+        const seuil = Number(searchParams.get('seuil') ?? '0');
+        const ecart = seuil >= 900 ? 1000 : 600;
+
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            view: 'execution-budgetaire',
+            filters: {
+              exerciceId: 'ex-2026',
+              periode: '2026-01-01:2026-12-31',
+              dateDebut: '2026-01-01',
+              dateFin: '2026-12-31',
+              seuil,
+              page: 1,
+              pageSize: 100
+            },
+            summary: {
+              count: 1,
+              totalBudgetModifie: 2000,
+              totalPaye: 1000,
+              totalEcart: ecart,
+              totalAlertes: ecart >= seuil ? 1 : 0
+            },
+            pagination: {
+              total: 1,
+              page: 1,
+              pageSize: 100
+            },
+            rows: [
+              {
+                ligneId: 'lb-1',
+                ligneLibelle: 'Ligne Pilotage',
+                composante: 'SEC-01 / PRG-01 / ACT-01',
+                axeAnalytique: 'Action 1',
+                budgetInitial: 1500,
+                budgetModifie: 2000,
+                engage: 1200,
+                paye: 1000,
+                disponible: 800,
+                ecartPrevisionExecution: ecart,
+                alerteSeuil: ecart >= seuil
+              }
+            ]
+          })
+        });
+        return;
+      }
+
+      if (pathname === '/reporting-execution-tresorerie/tresorerie') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            view: 'tresorerie',
+            filters: {
+              exerciceId: 'ex-2026',
+              periode: '2026-01-01:2026-12-31',
+              dateDebut: '2026-01-01',
+              dateFin: '2026-12-31',
+              seuil: 500,
+              page: 1,
+              pageSize: 100
+            },
+            summary: {
+              positionCourante: 5000,
+              projectionSolde: -300,
+              totalFlux: 1,
+              totalAlertes: 2
+            },
+            journalFlux: [
+              {
+                id: 'op-1',
+                numero: 'OPE000001',
+                dateOperation: '2026-03-15',
+                typeOperation: 'decaissement',
+                libelle: 'Paiement fournisseur',
+                referenceBancaire: 'REF-OP1',
+                compte: '5121 - Banque A',
+                montant: 750,
+                statut: 'validee',
+                rapproche: false
+              }
+            ],
+            situationComptes: [
+              {
+                compteId: 'ct-1',
+                compte: '5121 - Banque A',
+                soldeActuel: 5000,
+                totalEncaissements: 0,
+                totalDecaissements: 750,
+                totalTransferts: 0
+              }
+            ],
+            previsions: [
+              {
+                periode: '2026-04',
+                decaissementsPrevus: 5300,
+                soldeProjection: -300
+              }
+            ],
+            alertes: [
+              {
+                code: 'SEUIL_SOLDE',
+                severity: 'critical',
+                message: 'Projection de tresorerie negative: -300',
+                active: true
+              },
+              {
+                code: 'PENDING_RAPPROCHEMENT',
+                severity: 'medium',
+                message: '1 rapprochement(s) en cours ou a traiter',
+                active: true
+              }
+            ],
+            etatPaiements: [
+              {
+                statut: 'execute',
+                count: 1,
+                montant: 750
+              }
+            ],
+            etatRapprochements: [
+              {
+                statut: 'a_traiter',
+                count: 1,
+                ecartTotal: 50
+              }
+            ]
+          })
+        });
+        return;
+      }
+
+      if (pathname === '/reporting-execution-tresorerie/exports' && request.method() === 'POST') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ exportId: 'exp-et-ui', status: 'pending' })
+        });
+        return;
+      }
+
+      if (pathname === '/reporting-execution-tresorerie/exports/status') {
+        exportStatusPollCount += 1;
+        const status = exportStatusPollCount >= 2 ? 'completed' : 'processing';
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            exportId: 'exp-et-ui',
+            status,
+            downloadUrl: status === 'completed' ? '/reporting-execution-tresorerie/exports/exp-et-ui/download?token=token-ok' : undefined
+          })
+        });
+        return;
+      }
+
+      if (pathname === '/reporting-execution-tresorerie/exports/exp-et-ui/download') {
+        exportDownloadCalled = true;
+        await route.fulfill({
+          status: 200,
+          contentType: 'text/csv',
+          headers: {
+            'Content-Disposition': 'attachment; filename="execution-budgetaire.csv"'
+          },
+          body: 'col1;col2\nx;y'
+        });
+        return;
+      }
+
+      if (request.method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([])
+        });
+        return;
+      }
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({})
+      });
+    });
+
+    await page.addInitScript(() => {
+      window.localStorage.clear();
+    });
+
+    await page.goto(`${UI_BASE_URL}/auth/login?from=%2Fapp%2Freporting`);
+    await page.getByLabel('Email').fill('reporting93@agilys.local');
+    await page.getByLabel('Mot de passe').fill('ChangeMe123!');
+    await page.getByRole('button', { name: 'Se connecter' }).click();
+
+    await expect(page).toHaveURL(/\/app\/reporting$/);
+    await expect(page.getByRole('heading', { name: 'Reporting' })).toBeVisible({ timeout: 20_000 });
+
+    await expect(page.getByText('Filtres execution budgetaire et tresorerie')).toBeVisible();
+    await expect(page.getByText('Ligne Pilotage')).toBeVisible();
+
+    await page.locator('div.space-y-2', { hasText: 'Seuil alerte' }).locator('input').fill('900');
+    await expect.poll(() => lastExecutionQuery.includes('seuil=900')).toBeTruthy();
+
+    await page.getByRole('tab', { name: 'Tresorerie operationnelle' }).click();
+    await expect(page.getByText('SEUIL_SOLDE - Critique')).toBeVisible();
+    await expect(page.getByText('OPE000001')).toBeVisible();
+    await expect(page.getByText('a_traiter')).toBeVisible();
+
+    await page.getByRole('tab', { name: 'Execution budgetaire' }).click();
+    await page.getByRole('button', { name: 'Exporter' }).click();
+    await expect.poll(() => exportDownloadCalled).toBeTruthy();
   });
 
   test('@story-4-3 @depenses-from-facture invalidates depenses and factures queries after creation', async ({ page }) => {
@@ -2355,6 +2643,133 @@ test('reportingFournisseursService.downloadExport remonte une erreur API lisible
     await expect(
       reportingFournisseursService.downloadExport('/reporting-fournisseurs/exports/exp-1/download?token=x', 'fallback.csv')
     ).rejects.toThrow('telechargement export fournisseurs');
+  } finally {
+    httpClient.request = originalRequest;
+  }
+});
+
+test('reportingExecutionTresorerieService.getExecutionBudgetaire charge comparaison prevision execution', async () => {
+  const originalRequest = httpClient.request;
+
+  httpClient.request = (async (url: RequestInfo | URL) => {
+    const requestUrl = typeof url === 'string' ? url : url.toString();
+    expect(requestUrl).toContain('/reporting-execution-tresorerie/execution-budgetaire?');
+    expect(requestUrl).toContain('exerciceId=ex-2026');
+    expect(requestUrl).toContain('seuil=500');
+
+    return new Response(
+      JSON.stringify({
+        view: 'execution-budgetaire',
+        filters: {
+          exerciceId: 'ex-2026',
+          periode: '2026-03-01:2026-03-31',
+          dateDebut: '2026-03-01',
+          dateFin: '2026-03-31',
+          seuil: 500,
+          page: 1,
+          pageSize: 100
+        },
+        summary: {
+          count: 1,
+          totalBudgetModifie: 2000,
+          totalPaye: 1000,
+          totalEcart: 1000,
+          totalAlertes: 1
+        },
+        pagination: {
+          total: 1,
+          page: 1,
+          pageSize: 100
+        },
+        rows: [
+          {
+            ligneId: 'lb-1',
+            ligneLibelle: 'Ligne Pilotage',
+            composante: 'SEC-01 / PRG-01 / ACT-01',
+            axeAnalytique: 'Action 1',
+            budgetInitial: 1500,
+            budgetModifie: 2000,
+            engage: 1200,
+            paye: 1000,
+            disponible: 800,
+            ecartPrevisionExecution: 1000,
+            alerteSeuil: true
+          }
+        ]
+      }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }) as typeof httpClient.request;
+
+  try {
+    const report = await reportingExecutionTresorerieService.getExecutionBudgetaire({
+      exerciceId: 'ex-2026',
+      periode: '2026-03-01:2026-03-31',
+      seuil: 500,
+      page: 1,
+      pageSize: 100
+    });
+
+    expect(report.rows).toHaveLength(1);
+    expect(report.summary.totalAlertes).toBe(1);
+    expect(report.rows[0]?.ecartPrevisionExecution).toBe(1000);
+  } finally {
+    httpClient.request = originalRequest;
+  }
+});
+
+test('reportingExecutionTresorerieService.startExport construit la requete export execution+tresorerie', async () => {
+  const originalRequest = httpClient.request;
+
+  httpClient.request = (async (url: RequestInfo | URL) => {
+    const requestUrl = typeof url === 'string' ? url : url.toString();
+    expect(requestUrl).toContain('/reporting-execution-tresorerie/exports?');
+    expect(requestUrl).toContain('view=tresorerie');
+    expect(requestUrl).toContain('format=xlsx');
+
+    return new Response(
+      JSON.stringify({
+        exportId: 'exp-et-1',
+        status: 'pending'
+      }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }) as typeof httpClient.request;
+
+  try {
+    const result = await reportingExecutionTresorerieService.startExport({
+      exerciceId: 'ex-2026',
+      periode: '2026-03-01:2026-03-31',
+      seuil: 300,
+      view: 'tresorerie',
+      format: 'xlsx'
+    });
+
+    expect(result).toMatchObject({ exportId: 'exp-et-1', status: 'pending' });
+  } finally {
+    httpClient.request = originalRequest;
+  }
+});
+
+test('reportingExecutionTresorerieService.downloadExport remonte une erreur API lisible', async () => {
+  const originalRequest = httpClient.request;
+
+  httpClient.request = (async () =>
+    new Response(JSON.stringify({ message: 'Lien expiré execution+tresorerie' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' }
+    })) as typeof httpClient.request;
+
+  try {
+    await expect(
+      reportingExecutionTresorerieService.downloadExport('/reporting-execution-tresorerie/exports/exp-1/download?token=x', 'fallback.csv')
+    ).rejects.toThrow('telechargement export execution+tresorerie');
   } finally {
     httpClient.request = originalRequest;
   }
