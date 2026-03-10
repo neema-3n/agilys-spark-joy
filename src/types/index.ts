@@ -146,3 +146,6 @@ export * from './engagement.types';
 
 // Export reporting comptable types
 export * from './reporting-comptable.types';
+
+// Export reporting fournisseurs types
+export * from './reporting-fournisseurs.types';

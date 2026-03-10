@@ -13,6 +13,7 @@ import { bonsCommandeService } from '../src/services/api/bonsCommande.service';
 import { facturesService } from '../src/services/api/factures.service';
 import { createDepenseFromFacture } from '../src/services/api/depenses.service';
 import { reportingComptableService } from '../src/services/api/reporting-comptable.service';
+import { reportingFournisseursService } from '../src/services/api/reporting-fournisseurs.service';
 
 class MockStorage implements StorageLike {
   private readonly store = new Map<string, string>();
@@ -346,6 +347,287 @@ test.describe('auth ui routing flows', () => {
     await expect(page.getByText('Ligne budgétaire')).toBeVisible();
     await expect(page.getByLabel('Montant')).toBeVisible();
     await expect(page.getByLabel('Motif')).toBeVisible();
+  });
+
+  test('@migration-reporting @story-9-2 reporting fournisseurs supports consultation, filtres, export et erreur API', async ({ page }) => {
+    const accessToken = makeJwt({
+      sub: 'user-92',
+      tenantId: 'tenant-1',
+      roles: ['super_admin'],
+      email: 'reporting92@agilys.local',
+      nom: 'Reporting',
+      prenom: 'User',
+      exp: Math.floor(Date.now() / 1000) + 600
+    });
+
+    let exportStatusPollCount = 0;
+    let lastDettesQuery = '';
+    let exportDownloadCalled = false;
+
+    await page.route('**://127.0.0.1:3001/**', async (route) => {
+      const request = route.request();
+      const requestUrl = new URL(request.url());
+      const { pathname, searchParams } = requestUrl;
+
+      if (pathname === '/auth/login') {
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            accessToken,
+            refreshToken: 'refresh-token-reporting-92'
+          })
+        });
+        return;
+      }
+
+      if (pathname === '/auth/refresh') {
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            accessToken,
+            refreshToken: 'refresh-token-reporting-92'
+          })
+        });
+        return;
+      }
+
+      if (pathname === '/auth/logout') {
+        await route.fulfill({ status: 204 });
+        return;
+      }
+
+      if (pathname === '/budget-referentiels/exercices') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([
+            {
+              id: 'ex-2026',
+              clientId: 'tenant-1',
+              libelle: 'Exercice 2026',
+              code: 'EX2026',
+              dateDebut: '2026-01-01',
+              dateFin: '2026-12-31',
+              statut: 'ouvert'
+            }
+          ])
+        });
+        return;
+      }
+
+      if (pathname === '/reporting-fournisseurs/etat-dettes-fournisseurs') {
+        lastDettesQuery = requestUrl.search;
+
+        if (searchParams.get('agingBucket') === 'J61-90') {
+          await route.fulfill({
+            status: 500,
+            contentType: 'application/json',
+            body: JSON.stringify({ message: 'Erreur reporting fournisseurs forcee par test' })
+          });
+          return;
+        }
+
+        const agingBucket = searchParams.get('agingBucket');
+        const rows =
+          agingBucket === 'J31-60'
+            ? [
+                {
+                  factureId: 'fac-2',
+                  factureNumero: 'FAC-002',
+                  dateFacture: '2026-03-01',
+                  dateEcheance: '2026-03-05',
+                  fournisseurId: 'fr-2',
+                  fournisseurCode: 'FRN-002',
+                  fournisseurNom: 'Fournisseur B',
+                  statut: 'validee',
+                  agingBucket: 'J31-60',
+                  joursRetard: 35,
+                  montantFacture: 500,
+                  montantLiquide: 300,
+                  montantPaye: 100,
+                  resteAPayer: 400,
+                  ecartRegularisation: 200,
+                  statutRegularisation: 'partielle',
+                  dernierPaiement: '2026-03-10',
+                  nombrePaiements: 1,
+                  ecrituresAssociees: 1
+                }
+              ]
+            : [
+                {
+                  factureId: 'fac-1',
+                  factureNumero: 'FAC-001',
+                  dateFacture: '2026-03-01',
+                  dateEcheance: '2026-03-15',
+                  fournisseurId: 'fr-1',
+                  fournisseurCode: 'FRN-001',
+                  fournisseurNom: 'Fournisseur A',
+                  statut: 'validee',
+                  agingBucket: 'J0-30',
+                  joursRetard: 10,
+                  montantFacture: 1000,
+                  montantLiquide: 700,
+                  montantPaye: 300,
+                  resteAPayer: 700,
+                  ecartRegularisation: 300,
+                  statutRegularisation: 'partielle',
+                  dernierPaiement: '2026-03-12',
+                  nombrePaiements: 2,
+                  ecrituresAssociees: 2
+                }
+              ];
+
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            view: 'etat-dettes-fournisseurs',
+            filters: {
+              periode: '2026-01-01:2026-12-31',
+              dateDebut: '2026-01-01',
+              dateFin: '2026-12-31',
+              page: 1,
+              pageSize: 100
+            },
+            summary: {
+              count: rows.length,
+              totalMontant: rows.reduce((sum, row) => sum + row.montantFacture, 0),
+              totalResteOuEcart: rows.reduce((sum, row) => sum + row.resteAPayer, 0)
+            },
+            pagination: {
+              total: rows.length,
+              page: 1,
+              pageSize: 100
+            },
+            rows
+          })
+        });
+        return;
+      }
+
+      if (pathname === '/reporting-fournisseurs/etat-avances-regularisations') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            view: 'etat-avances-regularisations',
+            filters: {
+              periode: '2026-01-01:2026-12-31',
+              dateDebut: '2026-01-01',
+              dateFin: '2026-12-31',
+              page: 1,
+              pageSize: 100
+            },
+            summary: {
+              count: 1,
+              totalMontant: 800,
+              totalResteOuEcart: 120
+            },
+            pagination: {
+              total: 1,
+              page: 1,
+              pageSize: 100
+            },
+            rows: [
+              {
+                fournisseurId: 'fr-1',
+                fournisseurCode: 'FRN-001',
+                fournisseurNom: 'Fournisseur A',
+                avanceInitiale: 800,
+                consommation: 680,
+                ecart: 120,
+                statutRegularisation: 'a-regulariser',
+                depensesCount: 2,
+                ecrituresAssociees: 1,
+                derniereActivite: '2026-03-12'
+              }
+            ]
+          })
+        });
+        return;
+      }
+
+      if (pathname === '/reporting-fournisseurs/exports' && request.method() === 'POST') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ exportId: 'exp-f-ui', status: 'pending' })
+        });
+        return;
+      }
+
+      if (pathname === '/reporting-fournisseurs/exports/status') {
+        exportStatusPollCount += 1;
+        const status = exportStatusPollCount >= 2 ? 'completed' : 'processing';
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            exportId: 'exp-f-ui',
+            status,
+            downloadUrl: status === 'completed' ? '/reporting-fournisseurs/exports/exp-f-ui/download?token=token-ok' : undefined
+          })
+        });
+        return;
+      }
+
+      if (pathname === '/reporting-fournisseurs/exports/exp-f-ui/download') {
+        exportDownloadCalled = true;
+        await route.fulfill({
+          status: 200,
+          contentType: 'text/csv',
+          headers: {
+            'Content-Disposition': 'attachment; filename="etat-dettes-fournisseurs.csv"'
+          },
+          body: 'col1;col2\nx;y'
+        });
+        return;
+      }
+
+      if (request.method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([])
+        });
+        return;
+      }
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({})
+      });
+    });
+
+    await page.addInitScript(() => {
+      window.localStorage.clear();
+    });
+
+    await page.goto(`${UI_BASE_URL}/auth/login?from=%2Fapp%2Freporting`);
+    await page.getByLabel('Email').fill('reporting92@agilys.local');
+    await page.getByLabel('Mot de passe').fill('ChangeMe123!');
+    await page.getByRole('button', { name: 'Se connecter' }).click();
+
+    await expect(page).toHaveURL(/\/app\/reporting$/);
+    await expect(page.getByRole('heading', { name: 'Reporting' })).toBeVisible();
+    await page.getByRole('tab', { name: /Dettes & Avances|Fournisseurs/i }).click();
+    await expect(page.getByText('Filtres etat dettes fournisseurs / avances')).toBeVisible();
+
+    await page.locator('div.space-y-2', { hasText: 'Aging bucket (dettes)' }).getByRole('combobox').click();
+    await page.getByRole('option', { name: 'J31-60' }).click();
+    await expect.poll(() => lastDettesQuery.includes('agingBucket=J31-60')).toBeTruthy();
+    await expect(page.getByText('FAC-002')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Exporter' }).click();
+    await expect.poll(() => exportDownloadCalled).toBeTruthy();
+
+    await page.locator('div.space-y-2', { hasText: 'Aging bucket (dettes)' }).getByRole('combobox').click();
+    await page.getByRole('option', { name: 'J61-90' }).click();
+    await expect.poll(() => lastDettesQuery.includes('agingBucket=J61-90')).toBeTruthy();
+    await expect(page.getByText('Erreur reporting fournisseurs forcee par test')).toBeVisible({ timeout: 20_000 });
   });
 
   test('@story-4-3 @depenses-from-facture invalidates depenses and factures queries after creation', async ({ page }) => {
@@ -1945,6 +2227,134 @@ test('reportingComptableService.downloadExport remonte une erreur API lisible', 
     await expect(
       reportingComptableService.downloadExport('/reporting-comptable/exports/exp-1/download?token=x', 'fallback.csv')
     ).rejects.toThrow('telechargement export');
+  } finally {
+    httpClient.request = originalRequest;
+  }
+});
+
+test('reportingFournisseursService.getEtatDettesFournisseurs charge aging et reste a payer', async () => {
+  const originalRequest = httpClient.request;
+
+  httpClient.request = (async (url: RequestInfo | URL) => {
+    const requestUrl = typeof url === 'string' ? url : url.toString();
+    expect(requestUrl).toContain('/reporting-fournisseurs/etat-dettes-fournisseurs?');
+    expect(requestUrl).toContain('periode=2026-03-01%3A2026-03-31');
+    expect(requestUrl).toContain('agingBucket=J31-60');
+
+    return new Response(
+      JSON.stringify({
+        view: 'etat-dettes-fournisseurs',
+        filters: {
+          periode: '2026-03-01:2026-03-31',
+          dateDebut: '2026-03-01',
+          dateFin: '2026-03-31',
+          page: 1,
+          pageSize: 100
+        },
+        summary: {
+          count: 1,
+          totalMontant: 1000,
+          totalResteOuEcart: 500
+        },
+        pagination: {
+          total: 1,
+          page: 1,
+          pageSize: 100
+        },
+        rows: [
+          {
+            factureId: 'fac-1',
+            factureNumero: 'FAC-001',
+            dateFacture: '2026-03-01',
+            dateEcheance: '2026-03-05',
+            fournisseurId: 'fr-1',
+            fournisseurCode: 'FRN-001',
+            fournisseurNom: 'Fournisseur A',
+            statut: 'validee',
+            agingBucket: 'J31-60',
+            joursRetard: 35,
+            montantFacture: 1000,
+            montantLiquide: 700,
+            montantPaye: 500,
+            resteAPayer: 500,
+            ecartRegularisation: 300,
+            statutRegularisation: 'partielle',
+            dernierPaiement: '2026-03-15',
+            nombrePaiements: 2,
+            ecrituresAssociees: 1
+          }
+        ]
+      }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }) as typeof httpClient.request;
+
+  try {
+    const report = await reportingFournisseursService.getEtatDettesFournisseurs({
+      periode: '2026-03-01:2026-03-31',
+      agingBucket: 'J31-60',
+      page: 1,
+      pageSize: 100
+    });
+
+    expect(report.rows).toHaveLength(1);
+    expect(report.rows[0]?.resteAPayer).toBe(500);
+    expect(report.rows[0]?.agingBucket).toBe('J31-60');
+  } finally {
+    httpClient.request = originalRequest;
+  }
+});
+
+test('reportingFournisseursService.startExport construit la requete export avec vue fournisseurs', async () => {
+  const originalRequest = httpClient.request;
+
+  httpClient.request = (async (url: RequestInfo | URL) => {
+    const requestUrl = typeof url === 'string' ? url : url.toString();
+    expect(requestUrl).toContain('/reporting-fournisseurs/exports?');
+    expect(requestUrl).toContain('view=etat-avances-regularisations');
+    expect(requestUrl).toContain('format=pdf');
+
+    return new Response(
+      JSON.stringify({
+        exportId: 'exp-f-1',
+        status: 'pending'
+      }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }) as typeof httpClient.request;
+
+  try {
+    const result = await reportingFournisseursService.startExport({
+      periode: '2026-03-01:2026-03-31',
+      view: 'etat-avances-regularisations',
+      format: 'pdf'
+    });
+
+    expect(result).toMatchObject({ exportId: 'exp-f-1', status: 'pending' });
+  } finally {
+    httpClient.request = originalRequest;
+  }
+});
+
+test('reportingFournisseursService.downloadExport remonte une erreur API lisible', async () => {
+  const originalRequest = httpClient.request;
+
+  httpClient.request = (async () =>
+    new Response(JSON.stringify({ message: 'Lien expiré fournisseurs' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' }
+    })) as typeof httpClient.request;
+
+  try {
+    await expect(
+      reportingFournisseursService.downloadExport('/reporting-fournisseurs/exports/exp-1/download?token=x', 'fallback.csv')
+    ).rejects.toThrow('telechargement export fournisseurs');
   } finally {
     httpClient.request = originalRequest;
   }
