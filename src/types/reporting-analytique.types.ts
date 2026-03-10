@@ -13,7 +13,14 @@ export type ReportingAnalytiqueMeasure =
   | 'montant-depense'
   | 'count';
 
-export type ReportingAnalytiqueView = 'tableau-croise' | 'dashboard';
+export type ReportingAnalytiqueCycleStage =
+  | 'reservation-engagement'
+  | 'engagement-bon-commande'
+  | 'bon-commande-facture'
+  | 'facture-depense'
+  | 'depense-paiement';
+
+export type ReportingAnalytiqueView = 'tableau-croise' | 'dashboard' | 'cycle-time';
 export type ReportingAnalytiqueExportFormat = 'csv' | 'xlsx' | 'pdf';
 
 export interface ReportingAnalytiqueFilters {
@@ -24,6 +31,13 @@ export interface ReportingAnalytiqueFilters {
   composanteBudgetaire?: string;
   fournisseurId?: string;
   statut?: string;
+  etape?: ReportingAnalytiqueCycleStage;
+  seuilReservationEngagementHeures?: number;
+  seuilEngagementBonCommandeHeures?: number;
+  seuilBonCommandeFactureHeures?: number;
+  seuilFactureDepenseHeures?: number;
+  seuilDepensePaiementHeures?: number;
+  seuilVariationPct?: number;
   rowDimension?: ReportingAnalytiqueDimension;
   columnDimension?: ReportingAnalytiqueDimension;
   measure?: ReportingAnalytiqueMeasure;
@@ -111,6 +125,54 @@ export interface ReportingAnalytiqueDashboardResponse {
     measure: ReportingAnalytiqueMeasure;
     points: Array<{ key: string; total: number }>;
   };
+}
+
+export interface ReportingAnalytiqueCycleTimeResponse {
+  view: 'cycle-time';
+  filters: {
+    exerciceId: string;
+    periode: string;
+    dateDebut: string;
+    dateFin: string;
+    entite?: string;
+    axeAnalytique?: string;
+    etape?: ReportingAnalytiqueCycleStage;
+    seuilsHeures: Record<ReportingAnalytiqueCycleStage, number>;
+    seuilVariationPct: number;
+    correlationId?: string;
+  };
+  summary: {
+    stages: number;
+    volumeTotal: number;
+    alerts: number;
+  };
+  metrics: Array<{
+    stage: ReportingAnalytiqueCycleStage;
+    stageLabel: string;
+    p50: number;
+    p95: number;
+    volume: number;
+    trend: Array<{
+      period: string;
+      p50: number;
+      p95: number;
+      volume: number;
+    }>;
+    variationPct: number;
+    thresholds: {
+      p95Hours: number;
+      variationPct: number;
+    };
+    alert: {
+      active: boolean;
+      reasons: string[];
+    };
+  }>;
+  alerts: Array<{
+    stage: ReportingAnalytiqueCycleStage;
+    stageLabel: string;
+    reasons: string[];
+  }>;
 }
 
 export interface ReportingAnalytiqueExportRequest extends ReportingAnalytiqueFilters {

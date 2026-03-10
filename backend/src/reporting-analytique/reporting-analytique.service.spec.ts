@@ -132,6 +132,69 @@ describe('ReportingAnalytiqueService', () => {
     ).rejects.toThrow('Periode invalide');
   });
 
+  it('calcule les percentiles cycle-time, tendances et alertes', async () => {
+    query.mockResolvedValueOnce(
+      makeResult([
+        { stage: 'reservation-engagement', duration_hours: 24, period_key: '2026-02' },
+        { stage: 'reservation-engagement', duration_hours: 48, period_key: '2026-03' },
+        { stage: 'reservation-engagement', duration_hours: 72, period_key: '2026-03' },
+        { stage: 'depense-paiement', duration_hours: 96, period_key: '2026-03' }
+      ])
+    );
+
+    const result = await service.getCycleTimeMetrics(actor, {
+      exerciceId: '11111111-1111-4111-8111-111111111111',
+      periode: '2026-03-01:2026-03-31',
+      seuilReservationEngagementHeures: 40,
+      seuilVariationPct: 10
+    });
+
+    expect(result.view).toBe('cycle-time');
+    const reservationMetric = result.metrics.find((metric) => metric.stage === 'reservation-engagement');
+    expect(reservationMetric).toBeDefined();
+    expect(reservationMetric?.p50).toBe(48);
+    expect(reservationMetric?.p95).toBe(69.6);
+    expect(reservationMetric?.alert.active).toBe(true);
+    expect(result.alerts.length).toBeGreaterThan(0);
+  });
+
+  it('isole cycle-time par tenant et etape demandee', async () => {
+    query.mockResolvedValueOnce(makeResult([]));
+
+    await service.getCycleTimeMetrics(actor, {
+      exerciceId: '11111111-1111-4111-8111-111111111111',
+      periode: '2026-03',
+      etape: 'depense-paiement'
+    });
+
+    expect(query).toHaveBeenCalled();
+    const sql = String(query.mock.calls[0]?.[0] ?? '');
+    const values = query.mock.calls[0]?.[1] as unknown[];
+    expect(sql).toContain('FROM public.paiements p');
+    expect(sql).toContain('MAX(p.date_paiement) AS date_paiement');
+    expect(sql).not.toContain('MIN(p.date_paiement)::date');
+    expect(values[0]).toBe(actor.tenantId);
+    expect(values[values.length - 1]).toBe('depense-paiement');
+  });
+
+  it('retourne des metriques nulles quand aucune transition ne correspond', async () => {
+    query.mockResolvedValueOnce(makeResult([]));
+
+    const result = await service.getCycleTimeMetrics(actor, {
+      exerciceId: '11111111-1111-4111-8111-111111111111',
+      periode: '2026-03',
+      etape: 'depense-paiement'
+    });
+
+    expect(result.metrics).toHaveLength(1);
+    expect(result.metrics[0]?.stage).toBe('depense-paiement');
+    expect(result.metrics[0]?.p50).toBe(0);
+    expect(result.metrics[0]?.p95).toBe(0);
+    expect(result.metrics[0]?.volume).toBe(0);
+    expect(result.metrics[0]?.alert.active).toBe(false);
+    expect(result.alerts).toHaveLength(0);
+  });
+
   it('gere le cycle export csv', async () => {
     query.mockResolvedValueOnce(makeResult([]));
 

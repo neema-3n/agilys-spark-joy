@@ -12,7 +12,7 @@ describe('ReportingAnalytiqueController security metadata', () => {
   });
 
   it('exige referentiels:read sur toutes les routes reporting analytique', () => {
-    const methods = ['getTableauCroise', 'getDashboard', 'startExport', 'getExportStatus', 'downloadExport'] as const;
+    const methods = ['getTableauCroise', 'getDashboard', 'getCycleTime', 'startExport', 'getExportStatus', 'downloadExport'] as const;
 
     for (const method of methods) {
       const handler = ReportingAnalytiqueController.prototype[method] as (...args: unknown[]) => unknown;

@@ -26,8 +26,9 @@ export const useReportingAnalytique = (filters: ReportingAnalytiqueFilters | nul
         reportingAnalytiqueService.getTableauCroise(activeFilters),
         reportingAnalytiqueService.getDashboard(activeFilters)
       ]);
+      const cycleTime = await reportingAnalytiqueService.getCycleTime(activeFilters).catch(() => null);
 
-      return { tableau, dashboard };
+      return { tableau, dashboard, cycleTime };
     },
     enabled: Boolean(filters?.exerciceId && filters?.periode)
   });
@@ -89,6 +90,7 @@ export const useReportingAnalytique = (filters: ReportingAnalytiqueFilters | nul
   return {
     tableau: reportQuery.data?.tableau,
     dashboard: reportQuery.data?.dashboard,
+    cycleTime: reportQuery.data?.cycleTime,
     isLoading: reportQuery.isLoading,
     error: reportQuery.error,
     refetch: reportQuery.refetch,
