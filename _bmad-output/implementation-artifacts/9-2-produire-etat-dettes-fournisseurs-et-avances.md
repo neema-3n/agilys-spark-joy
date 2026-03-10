@@ -1,6 +1,6 @@
 # Story 9.2: Produire etat dettes fournisseurs et avances
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -19,30 +19,30 @@ so that je maitrise les engagements a payer.
 
 ## Tasks / Subtasks
 
-- [ ] Definir le contrat API des rapports fournisseurs (AC: 1)
-  - [ ] Ajouter DTO filtres: `periode`, `entite`, `fournisseurId`, `statut`, `agingBucket`
-  - [ ] Definir deux vues API: `etat-dettes-fournisseurs` et `etat-avances-regularisations`
-  - [ ] Definir endpoint export CSV/XLSX/PDF avec verifications tenant/permission
+- [x] Definir le contrat API des rapports fournisseurs (AC: 1)
+  - [x] Ajouter DTO filtres: `periode`, `entite`, `fournisseurId`, `statut`, `agingBucket`
+  - [x] Definir deux vues API: `etat-dettes-fournisseurs` et `etat-avances-regularisations`
+  - [x] Definir endpoint export CSV/XLSX/PDF avec verifications tenant/permission
 
-- [ ] Implementer agregations backend tenant-safe (AC: 1)
-  - [ ] Reutiliser les donnees `factures`, `depenses`, `paiements`, `ecritures_comptables` deja existantes
-  - [ ] Calculer les indicateurs d'anciennete (J0-30, J31-60, J61-90, J90+)
-  - [ ] Calculer reste a payer, avance initiale, consommation, ecart et statut de regularisation
+- [x] Implementer agregations backend tenant-safe (AC: 1)
+  - [x] Reutiliser les donnees `factures`, `depenses`, `paiements`, `ecritures_comptables` deja existantes
+  - [x] Calculer les indicateurs d'anciennete (J0-30, J31-60, J61-90, J90+)
+  - [x] Calculer reste a payer, avance initiale, consommation, ecart et statut de regularisation
 
-- [ ] Integrer la surface front dans Reporting (AC: 1)
-  - [ ] Ajouter service API type `reporting-fournisseurs.service.ts`
-  - [ ] Ajouter vue ou onglet dedie dans `src/pages/app/Reporting.tsx`
-  - [ ] Afficher tableaux + filtres + etats de chargement/erreur/empty
+- [x] Integrer la surface front dans Reporting (AC: 1)
+  - [x] Ajouter service API type `reporting-fournisseurs.service.ts`
+  - [x] Ajouter vue ou onglet dedie dans `src/pages/app/Reporting.tsx`
+  - [x] Afficher tableaux + filtres + etats de chargement/erreur/empty
 
-- [ ] Ajouter exports et garde-fous (AC: 1)
-  - [ ] CSV synchrone petits volumes, XLSX/PDF asynchrone pour gros volumes
-  - [ ] Verifier RBAC/ABAC avant generation et telechargement
-  - [ ] Journaliser le lancement et le telechargement d'export
+- [x] Ajouter exports et garde-fous (AC: 1)
+  - [x] CSV synchrone petits volumes, XLSX/PDF asynchrone pour gros volumes
+  - [x] Verifier RBAC/ABAC avant generation et telechargement
+  - [x] Journaliser le lancement et le telechargement d'export
 
-- [ ] Couvrir les tests critiques (AC: 1)
-  - [ ] Tests backend: nominal, erreurs filtres, isolation tenant, permissions
-  - [ ] Tests backend: justesse calcul anciennete/reste-a-payer/regularisation
-  - [ ] Tests frontend: parcours consultation + filtres + export + erreur API
+- [x] Couvrir les tests critiques (AC: 1)
+  - [x] Tests backend: nominal, erreurs filtres, isolation tenant, permissions
+  - [x] Tests backend: justesse calcul anciennete/reste-a-payer/regularisation
+  - [x] Tests frontend: parcours consultation + filtres + export + erreur API
 
 ## Dev Notes
 
@@ -178,13 +178,57 @@ GPT-5 Codex
 ### Debug Log References
 
 - Story key detectee automatiquement via sprint-status: `9-2-produire-etat-dettes-fournisseurs-et-avances`
-- Fichiers de contexte analyses: epics, PRD, story precedente, project-context, git log
-- Verification versions npm effectuee le 2026-03-09 (registre npm)
+- Module backend ajoute: `reporting-fournisseurs` (controller/service/dto/module + specs)
+- Surface frontend ajoutee: service API + hook React Query + composant `ReportingFournisseursReport`
+- Validations executees:
+  - `pnpm --dir backend run lint` ✅
+  - `pnpm --dir backend run test -- reporting-fournisseurs` ✅
+  - `pnpm exec playwright test tests/auth-migration.spec.ts --grep "reportingFournisseursService"` ✅
+  - `pnpm run lint:frontend` ⚠️ echec sur erreurs ESLint preexistantes dans `backend/src/reporting-comptable/reporting-comptable.service.spec.ts`
+  - `pnpm exec eslint ...` (fichiers modifies) ✅
 
 ### Completion Notes List
 
-- Ultimate context engine analysis completed - comprehensive developer guide created.
+- Contrat API fournisseurs implemente avec filtres `periode`, `entite`, `fournisseurId`, `statut`, `agingBucket`.
+- Deux vues de reporting implementees: dettes fournisseurs et avances/regularisations, avec pagination et resumes.
+- Export CSV synchrone + XLSX/PDF asynchrone avec token de telechargement signe et verification tenant/user.
+- Journalisation des actions export (lancement + telechargement) et audit authorization sur les actions export.
+- Integration frontend complete dans Reporting avec onglet dedie, filtres, tableaux, etats loading/error/empty, et export.
+- Couverture de tests backend et frontend service ajoutee pour scenario nominal, filtres, export et erreurs API.
+- Correctif post-review: suppression du double comptage paiements par facture (allocation proportionnelle par depense facture).
+- Correctif post-review: generation export conforme (vrai XLSX zip OpenXML + vrai PDF), avec tests de signature binaire.
+- Correctif post-review: ajout test UI Playwright pour parcours consultation + filtres + export + erreur API sur reporting fournisseurs.
+
+### Senior Developer Review (AI)
+
+- Revue adversariale executee.
+- Findings HIGH/MEDIUM traites et verifies.
+- Validation finale:
+  - `pnpm --dir backend run test -- reporting-fournisseurs` ✅
+  - `pnpm exec playwright test tests/auth-migration.spec.ts --grep "@story-9-2"` ✅
+  - `pnpm --dir backend run lint` ✅
+  - `pnpm exec eslint tests/auth-migration.spec.ts` ✅
 
 ### File List
 
 - _bmad-output/implementation-artifacts/9-2-produire-etat-dettes-fournisseurs-et-avances.md
+- _bmad-output/implementation-artifacts/sprint-status.yaml
+- backend/src/app.module.ts
+- backend/src/reporting-fournisseurs/dto/reporting-fournisseurs.dto.ts
+- backend/src/reporting-fournisseurs/reporting-fournisseurs.controller.ts
+- backend/src/reporting-fournisseurs/reporting-fournisseurs.controller.spec.ts
+- backend/src/reporting-fournisseurs/reporting-fournisseurs.module.ts
+- backend/src/reporting-fournisseurs/reporting-fournisseurs.service.ts
+- backend/src/reporting-fournisseurs/reporting-fournisseurs.service.spec.ts
+- src/components/reporting-fournisseurs/ReportingFournisseursReport.tsx
+- src/hooks/useReportingFournisseurs.ts
+- src/pages/app/Reporting.tsx
+- src/services/api/reporting-fournisseurs.service.ts
+- src/types/index.ts
+- src/types/reporting-fournisseurs.types.ts
+- tests/auth-migration.spec.ts
+
+## Change Log
+
+- 2026-03-10: Implémentation complète Story 9.2 (API backend + UI Reporting + exports + tests critiques).
+- 2026-03-09: Revue senior appliquee, correctifs HIGH/MEDIUM implementes, story basculee en `done`.

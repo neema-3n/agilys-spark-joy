@@ -30,6 +30,7 @@ import { ControleInterneModule } from './controle-interne/controle-interne.modul
 import { IntegrationLegacyModule } from './integration-legacy/integration-legacy.module';
 import { OfflineSyncModule } from './offline-sync/offline-sync.module';
 import { ReportingComptableModule } from './reporting-comptable/reporting-comptable.module';
+import { ReportingFournisseursModule } from './reporting-fournisseurs/reporting-fournisseurs.module';
 
 @Module({
   imports: [
@@ -63,7 +64,8 @@ import { ReportingComptableModule } from './reporting-comptable/reporting-compta
     ControleInterneModule,
     IntegrationLegacyModule,
     OfflineSyncModule,
-    ReportingComptableModule
+    ReportingComptableModule,
+    ReportingFournisseursModule
   ]
 })
 export class AppModule {}
