@@ -1,6 +1,6 @@
 # Story 10.3: Produire DSF conforme OHADA/SYCEBNL
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -19,30 +19,30 @@ so that les obligations declaratives sont respectees.
 
 ## Tasks / Subtasks
 
-- [ ] Definir contrat de generation DSF (AC: 1)
-  - [ ] DTO entree: exercice, entite, version referentiel, options export.
-  - [ ] DTO sortie: statut validation, erreurs bloquantes, warnings, lien export.
-  - [ ] Contrat de validation pre-export (checklist conformite).
+- [x] Definir contrat de generation DSF (AC: 1)
+  - [x] DTO entree: exercice, entite, version referentiel, options export.
+  - [x] DTO sortie: statut validation, erreurs bloquantes, warnings, lien export.
+  - [x] Contrat de validation pre-export (checklist conformite).
 
-- [ ] Implementer moteur DSF backend conforme (AC: 1)
-  - [ ] Mapper donnees comptables vers structure DSF cible OHADA/SYCEBNL.
-  - [ ] Integrer regles de cohérence et controles bloquants avant emission.
-  - [ ] Produire payload d'export stable (CSV/XLSX/PDF ou format cible DSF défini).
+- [x] Implementer moteur DSF backend conforme (AC: 1)
+  - [x] Mapper donnees comptables vers structure DSF cible OHADA/SYCEBNL.
+  - [x] Integrer regles de cohérence et controles bloquants avant emission.
+  - [x] Produire payload d'export stable (CSV/XLSX/PDF ou format cible DSF défini).
 
-- [ ] Integrer la surface front DSF (AC: 1)
-  - [ ] Etendre `DSFReport` avec etat de validation pre-export.
-  - [ ] Afficher erreurs bloquantes vs warnings avec actions correctives.
-  - [ ] Proposer export uniquement si validation conforme.
+- [x] Integrer la surface front DSF (AC: 1)
+  - [x] Etendre `DSFReport` avec etat de validation pre-export.
+  - [x] Afficher erreurs bloquantes vs warnings avec actions correctives.
+  - [x] Proposer export uniquement si validation conforme.
 
-- [ ] Assurer traçabilité et audit (AC: 1)
-  - [ ] Journaliser lancement, validation, export et utilisateur initiateur.
-  - [ ] Conserver version du référentiel utilisé et hash du livrable.
-  - [ ] Assurer isolation tenant et permissions lecture/export DSF.
+- [x] Assurer traçabilité et audit (AC: 1)
+  - [x] Journaliser lancement, validation, export et utilisateur initiateur.
+  - [x] Conserver version du référentiel utilisé et hash du livrable.
+  - [x] Assurer isolation tenant et permissions lecture/export DSF.
 
-- [ ] Couvrir les tests critiques (AC: 1)
-  - [ ] Backend: cas conforme, cas non conforme bloquant, cas partiel.
-  - [ ] Backend: validité mapping OHADA/SYCEBNL et stabilité des exports.
-  - [ ] Frontend: parcours validation -> correction -> export.
+- [x] Couvrir les tests critiques (AC: 1)
+  - [x] Backend: cas conforme, cas non conforme bloquant, cas partiel.
+  - [x] Backend: validité mapping OHADA/SYCEBNL et stabilité des exports.
+  - [x] Frontend: parcours validation -> correction -> export.
 
 ## Dev Notes
 
@@ -143,8 +143,32 @@ GPT-5 Codex
 
 ### Completion Notes List
 
-- Ultimate context engine analysis completed - comprehensive developer guide created.
+- Implémentation complète d'un module backend `dsf-reporting` (DTO, service, contrôleur, module) avec validation pré-export déterministe et export DSF CSV/XLSX/PDF.
+- Mise en place des diagnostics bloquants/warnings et checklist de conformité actionnable pour le flux fiscal OHADA/SYCEBNL.
+- Ajout de la traçabilité/audit (validation, lancement export, téléchargement), hash SHA-256 du livrable, et isolation stricte tenant/utilisateur sur le cycle d'export.
+- Extension de la surface front `DSFReport` avec état de validation, diagnostics, checklist et blocage strict du bouton d'export tant que non-conforme.
+- Ajout de la couche typée frontend (`types`, `service API`, `hook React Query`) pour orchestrer validation + export + polling téléchargement.
+- Correctif conformité: génération de vrais binaires `XLSX` (ExcelJS) et `PDF` (PDFKit), et validation de comptes dépendante de la version de référentiel (`OHADA-SYCEBNL-2017` vs `OHADA-SYCEBNL-2025`).
+- Couverture tests renforcée: tests backend DSF étendus + test frontend DSF (`tests/dsf-reporting-ui.spec.ts`) couvrant le parcours validation bloquante -> correction -> export.
+- Validation technique exécutée: `pnpm --dir backend test -- dsf-reporting`, `pnpm --dir backend run lint`, `pnpm run lint:frontend`, `pnpm exec playwright test tests/dsf-reporting-ui.spec.ts --grep @story-10-3`.
 
 ### File List
 
 - _bmad-output/implementation-artifacts/10-3-produire-dsf-conforme-ohada-sycebnl.md
+- _bmad-output/implementation-artifacts/sprint-status.yaml
+- backend/src/app.module.ts
+- backend/src/dsf-reporting/dto/dsf-reporting.dto.ts
+- backend/src/dsf-reporting/dsf-reporting.controller.spec.ts
+- backend/src/dsf-reporting/dsf-reporting.controller.ts
+- backend/src/dsf-reporting/dsf-reporting.module.ts
+- backend/src/dsf-reporting/dsf-reporting.service.spec.ts
+- backend/src/dsf-reporting/dsf-reporting.service.ts
+- src/components/reporting/DSFReport.tsx
+- src/hooks/useDsfReporting.ts
+- src/services/api/dsf-reporting.service.ts
+- src/types/dsf-reporting.types.ts
+
+## Change Log
+
+- 2026-03-10: Implémentation story 10.3 terminée (backend + frontend + tests ciblés) avec passage du statut en `review`.
+- 2026-03-10: Correctifs post-review appliqués (exports binaires valides, règles référentiel versionnées, tests frontend DSF) avec passage du statut en `done`.
