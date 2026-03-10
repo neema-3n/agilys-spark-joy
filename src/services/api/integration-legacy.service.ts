@@ -1,3 +1,4 @@
+import { httpClient } from '@/services/api/http-client';
 import { requestJson } from '@/services/api/api-utils';
 import type {
   IntegrationEvent,
@@ -80,6 +81,27 @@ export const integrationLegacyService = {
       { method: 'GET' },
       "Erreur lors du chargement de la supervision d'intégration"
     );
+  },
+
+  async downloadSupervisionExport(_clientId: string, exerciceId: string, filters: IntegrationSupervisionFilters = {}): Promise<void> {
+    const params = buildSupervisionParams(exerciceId, filters);
+    const response = await httpClient.request(`/integration-legacy/supervision/export?${params.toString()}`, { method: 'GET' });
+    if (!response.ok) {
+      throw new Error("Erreur lors de l'export supervision d'intégration");
+    }
+
+    const blob = await response.blob();
+    const href = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    const contentDisposition = response.headers.get('Content-Disposition') || '';
+    const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/i);
+    const filename = filenameMatch?.[1] || `integration-supervision-${exerciceId}.csv`;
+
+    link.href = href;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(href);
   },
 
   async retry(

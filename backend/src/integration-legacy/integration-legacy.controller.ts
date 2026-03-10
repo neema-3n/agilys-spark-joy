@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Res, UseGuards } from '@nestjs/common';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { AuthorizationPolicyGuard } from '../auth/authorization-policy.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -13,6 +13,11 @@ import {
   RetryIntegrationEventDto,
 } from './dto/integration-legacy.dto';
 import { IntegrationLegacyService } from './integration-legacy.service';
+
+interface HttpDownloadResponse {
+  setHeader(name: string, value: string): void;
+  send(body: Buffer): void;
+}
 
 @Controller('integration-legacy')
 @UseGuards(JwtAuthGuard, AuthorizationPolicyGuard)
@@ -41,6 +46,19 @@ export class IntegrationLegacyController {
   @RequirePermissions('referentiels:audit:read')
   getSupervision(@CurrentUser() user: AuthenticatedUser, @Query() query: ListIntegrationEventsQueryDto) {
     return this.integrationLegacyService.getSupervision(user, query);
+  }
+
+  @Get('supervision/export')
+  @RequirePermissions('referentiels:audit:read')
+  async exportSupervision(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: ListIntegrationEventsQueryDto,
+    @Res() response: HttpDownloadResponse
+  ) {
+    const file = await this.integrationLegacyService.exportSupervision(user, query);
+    response.setHeader('Content-Type', file.mimeType);
+    response.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
+    response.send(file.content);
   }
 
   @Post('events/:id/retry')

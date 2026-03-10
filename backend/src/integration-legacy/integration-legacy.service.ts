@@ -238,61 +238,18 @@ export class IntegrationLegacyService implements OnModuleInit, OnModuleDestroy {
 
   async getSupervision(actor: AuthenticatedUser, query: ListIntegrationEventsQueryDto) {
     await this.assertExerciceBelongsToTenant(actor.tenantId, query.exerciceId);
-    const values: unknown[] = [actor.tenantId, query.exerciceId];
-    const where: string[] = ['tenant_id = $1', 'exercice_id = $2'];
-
-    if (query.status) {
-      values.push(query.status);
-      where.push(`status = $${values.length}`);
-    } else {
-      where.push("status IN ('failed', 'dead_letter', 'received', 'processed', 'replayed', 'acked', 'sent')");
-    }
-
-    if (query.severity) {
-      values.push(query.severity);
-      where.push(`severity = $${values.length}`);
-    }
-
-    if (query.priority) {
-      values.push(query.priority);
-      where.push(`priority = $${values.length}`);
-    }
-
-    if (query.treatmentStatus) {
-      values.push(query.treatmentStatus);
-      where.push(`treatment_status = $${values.length}`);
-    }
-
-    if (query.correlationId) {
-      values.push(query.correlationId);
-      where.push(`correlation_id = $${values.length}`);
-    }
-
-    if (query.owner) {
-      values.push(query.owner);
-      where.push(`owner = $${values.length}`);
-    }
-
-    if (query.fromDate) {
-      values.push(query.fromDate);
-      where.push(`created_at >= $${values.length}::timestamptz`);
-    }
-
-    if (query.toDate) {
-      values.push(query.toDate);
-      where.push(`created_at < ($${values.length}::date + interval '1 day')`);
-    }
+    const scope = this.buildSupervisionScope(actor.tenantId, query);
 
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 20;
     const offset = (page - 1) * pageSize;
-    values.push(pageSize, offset);
+    const values = [...scope.values, pageSize, offset];
 
     const result = await this.postgresService.query<IntegrationEventRow>(
       `
         SELECT *, COUNT(*) OVER() AS total_count
         FROM public.integration_async_events
-        WHERE ${where.join(' AND ')}
+        WHERE ${scope.where.join(' AND ')}
         ORDER BY
           CASE priority WHEN 'P1' THEN 1 WHEN 'P2' THEN 2 ELSE 3 END ASC,
           created_at DESC,
@@ -308,10 +265,10 @@ export class IntegrationLegacyService implements OnModuleInit, OnModuleDestroy {
       `
         SELECT status, priority, COUNT(*)::text AS total
         FROM public.integration_async_events
-        WHERE ${where.join(' AND ')}
+        WHERE ${scope.where.join(' AND ')}
         GROUP BY status, priority
       `,
-      values.slice(0, values.length - 2)
+      scope.values
     );
 
     const counters = countersResult.rows.reduce(
@@ -335,6 +292,77 @@ export class IntegrationLegacyService implements OnModuleInit, OnModuleDestroy {
         total,
         totalPages: total === 0 ? 1 : Math.ceil(total / pageSize),
       },
+    };
+  }
+
+  async exportSupervision(actor: AuthenticatedUser, query: ListIntegrationEventsQueryDto) {
+    await this.assertExerciceBelongsToTenant(actor.tenantId, query.exerciceId);
+    const scope = this.buildSupervisionScope(actor.tenantId, query);
+    const result = await this.postgresService.query<IntegrationEventRow>(
+      `
+        SELECT *
+        FROM public.integration_async_events
+        WHERE ${scope.where.join(' AND ')}
+        ORDER BY
+          CASE priority WHEN 'P1' THEN 1 WHEN 'P2' THEN 2 ELSE 3 END ASC,
+          created_at DESC,
+          id DESC
+      `,
+      scope.values
+    );
+
+    const header = [
+      'id',
+      'correlationId',
+      'tenantId',
+      'exerciceId',
+      'eventType',
+      'status',
+      'treatmentStatus',
+      'priority',
+      'severity',
+      'owner',
+      'reasonCode',
+      'detectedAt',
+      'resolvedAt',
+      'detectionDelayMs',
+      'recoveryDelayMs',
+      'atRiskSla',
+      'createdAt',
+      'updatedAt',
+    ];
+    const rows = result.rows.map((row) => {
+      const event = this.mapEvent(row);
+      return [
+        event.id,
+        event.correlationId,
+        event.tenantId,
+        event.exerciceId,
+        event.eventType,
+        event.status,
+        event.treatmentStatus,
+        event.priority,
+        event.severity,
+        event.owner ?? '',
+        event.reasonCode ?? '',
+        event.detectedAt ?? '',
+        event.resolvedAt ?? '',
+        event.detectionDelayMs?.toString() ?? '',
+        event.recoveryDelayMs?.toString() ?? '',
+        event.atRiskSla ?? 'none',
+        event.createdAt,
+        event.updatedAt,
+      ];
+    });
+
+    const csv = [header, ...rows]
+      .map((line) => line.map((value) => this.escapeCsvValue(value)).join(','))
+      .join('\n');
+
+    return {
+      filename: `integration-supervision-${query.exerciceId}-${new Date().toISOString().slice(0, 10)}.csv`,
+      mimeType: 'text/csv; charset=utf-8',
+      content: Buffer.from(csv, 'utf-8'),
     };
   }
 
@@ -433,7 +461,10 @@ export class IntegrationLegacyService implements OnModuleInit, OnModuleDestroy {
           owner = COALESCE($3, owner),
           reason_code = $4,
           reason_message = $5,
-          resolved_at = COALESCE($6::timestamptz, resolved_at),
+          resolved_at = CASE
+            WHEN $2 IN ('resolved', 'closed') THEN COALESCE($6::timestamptz, resolved_at)
+            ELSE NULL
+          END,
           updated_by = $7,
           updated_at = now()
         WHERE id = $8
@@ -994,11 +1025,61 @@ export class IntegrationLegacyService implements OnModuleInit, OnModuleDestroy {
     return result.rows[0] ?? null;
   }
 
+  private buildSupervisionScope(tenantId: string, query: ListIntegrationEventsQueryDto): { values: unknown[]; where: string[] } {
+    const values: unknown[] = [tenantId, query.exerciceId];
+    const where: string[] = ['tenant_id = $1', 'exercice_id = $2'];
+
+    if (query.status) {
+      values.push(query.status);
+      where.push(`status = $${values.length}`);
+    } else {
+      where.push("status IN ('failed', 'dead_letter', 'received', 'processed', 'replayed', 'acked', 'sent')");
+    }
+
+    if (query.severity) {
+      values.push(query.severity);
+      where.push(`severity = $${values.length}`);
+    }
+
+    if (query.priority) {
+      values.push(query.priority);
+      where.push(`priority = $${values.length}`);
+    }
+
+    if (query.treatmentStatus) {
+      values.push(query.treatmentStatus);
+      where.push(`treatment_status = $${values.length}`);
+    }
+
+    if (query.correlationId) {
+      values.push(query.correlationId);
+      where.push(`correlation_id = $${values.length}`);
+    }
+
+    if (query.owner) {
+      values.push(query.owner);
+      where.push(`owner = $${values.length}`);
+    }
+
+    if (query.fromDate) {
+      values.push(query.fromDate);
+      where.push(`created_at >= $${values.length}::timestamptz`);
+    }
+
+    if (query.toDate) {
+      values.push(query.toDate);
+      where.push(`created_at < ($${values.length}::date + interval '1 day')`);
+    }
+
+    return { values, where };
+  }
+
   private mapEvent(row: IntegrationEventRow): IntegrationEventView {
+    const nowIso = new Date().toISOString();
     const detectedAt = row.detected_at ? this.toIso(row.detected_at) : undefined;
     const resolvedAt = row.resolved_at ? this.toIso(row.resolved_at) : undefined;
     const detectionDelayMs = detectedAt ? this.computeDelayMs(row.occurred_at, detectedAt) : undefined;
-    const recoveryDelayMs = detectedAt && resolvedAt ? this.computeDelayMs(detectedAt, resolvedAt) : undefined;
+    const recoveryDelayMs = detectedAt ? this.computeDelayMs(detectedAt, resolvedAt ?? nowIso) : undefined;
     const atRiskSla = this.computeSlaRisk(detectionDelayMs, recoveryDelayMs, row.treatment_status);
 
     return {
@@ -1034,6 +1115,11 @@ export class IntegrationLegacyService implements OnModuleInit, OnModuleDestroy {
       createdAt: this.toIso(row.created_at),
       updatedAt: this.toIso(row.updated_at),
     };
+  }
+
+  private escapeCsvValue(value: string): string {
+    const normalized = value.replaceAll('"', '""');
+    return /[",\n]/.test(normalized) ? `"${normalized}"` : normalized;
   }
 
   private computeDelayMs(start: string | Date, end: string): number {

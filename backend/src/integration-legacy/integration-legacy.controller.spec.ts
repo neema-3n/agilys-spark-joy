@@ -22,6 +22,13 @@ describe('IntegrationLegacyController metadata', () => {
     expect(permissions).toEqual(['referentiels:audit:read']);
   });
 
+  it('protège lexport supervision avec permission audit read', () => {
+    const method = IntegrationLegacyController.prototype.exportSupervision;
+    const permissions = Reflect.getMetadata(PERMISSIONS_KEY, method) as string[];
+
+    expect(permissions).toEqual(['referentiels:audit:read']);
+  });
+
   it('protège le retry avec permission write', () => {
     const method = IntegrationLegacyController.prototype.retryFailed;
     const permissions = Reflect.getMetadata(PERMISSIONS_KEY, method) as string[];

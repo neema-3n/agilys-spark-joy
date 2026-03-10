@@ -235,6 +235,34 @@ describe('IntegrationLegacyService', () => {
     expect(result.counters.byPriority.P1).toBe(1);
   });
 
+  it('supervision calcule un risque de reprise pour divergence non résolue', async () => {
+    query
+      .mockResolvedValueOnce(makeResult([makeScopeRow()]))
+      .mockResolvedValueOnce(
+        makeResult([
+          makeEventRow({
+            status: 'failed',
+            priority: 'P1',
+            treatment_status: 'in_progress',
+            detected_at: '2026-03-09T09:30:00.000Z',
+            resolved_at: null,
+            total_count: 1,
+          }),
+        ])
+      )
+      .mockResolvedValueOnce(makeResult([{ status: 'failed', priority: 'P1', total: '1' }]));
+
+    const result = await service.getSupervision(actor, {
+      exerciceId: '11111111-1111-1111-1111-111111111111',
+      page: 1,
+      pageSize: 20,
+    });
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]?.recoveryDelayMs).toBeDefined();
+    expect(result.items[0]?.atRiskSla).toBe('breach');
+  });
+
   it("rejette l'utilisation d'un exercice hors tenant", async () => {
     query.mockResolvedValueOnce(makeResult([]));
 
@@ -248,6 +276,40 @@ describe('IntegrationLegacyService', () => {
         occurredAt: '2026-03-09T10:00:00.000Z',
       })
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('réouverture remediation nettoie resolvedAt', async () => {
+    query
+      .mockResolvedValueOnce(makeResult([makeScopeRow()]))
+      .mockResolvedValueOnce(
+        makeResult([
+          makeEventRow({
+            status: 'failed',
+            treatment_status: 'resolved',
+            resolved_at: '2026-03-09T10:15:00.000Z',
+          }),
+        ])
+      )
+      .mockResolvedValueOnce(
+        makeResult([
+          makeEventRow({
+            status: 'failed',
+            treatment_status: 'triaged',
+            resolved_at: null,
+            reason_code: 'MANUAL_ESCALATION',
+          }),
+        ])
+      )
+      .mockResolvedValueOnce(makeResult([]));
+
+    const result = await service.remediateEvent(actor, 'evt-1', {
+      exerciceId: '11111111-1111-1111-1111-111111111111',
+      action: 'escalate',
+      treatmentStatus: 'triaged',
+    });
+
+    expect(result.event.treatmentStatus).toBe('triaged');
+    expect(result.event.resolvedAt).toBeUndefined();
   });
 
   it('ingestion entrante: journalise failed en cas erreur de traitement', async () => {

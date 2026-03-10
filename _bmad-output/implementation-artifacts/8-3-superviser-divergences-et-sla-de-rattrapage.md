@@ -1,6 +1,6 @@
 # Story 8.3: Superviser divergences et SLA de rattrapage
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -211,11 +211,15 @@ GPT-5 Codex
 - Ajout migration `20260309200000_story_8_3_integration_supervision_sla.sql` pour schema/index/check constraints.
 - Frontend aligne: types, API service, hooks React Query et panneau supervision integration dans `ControleInterne`.
 - Tests executes avec succes: backend lint+specs integration-legacy, frontend lint, playwright `integration-legacy-client.spec.ts`.
+- Correctifs review: pagination UI reelle (prev/next + page courante), export CSV supervision, et tests UI Playwright du parcours integration.
+- Correctifs review: calcul SLA de reprise sur divergences non resolues + nettoyage `resolved_at` en reouverture pour eviter KPI incoherents.
+- Correctifs review: endpoint backend d'export supervision journalisee (`/integration-legacy/supervision/export`) protege par `referentiels:audit:read`.
 
 ### File List
 
 - backend/src/integration-legacy/integration-legacy.service.ts
 - backend/src/integration-legacy/integration-legacy.service.spec.ts
+- backend/src/integration-legacy/integration-legacy.controller.ts
 - backend/src/integration-legacy/integration-legacy.controller.spec.ts
 - src/types/integration-legacy.types.ts
 - src/services/api/integration-legacy.service.ts
@@ -223,10 +227,23 @@ GPT-5 Codex
 - src/components/controle-interne/IntegrationLegacyPanel.tsx
 - src/pages/app/ControleInterne.tsx
 - tests/integration-legacy-client.spec.ts
+- tests/tresorerie-supervision-ui.spec.ts
 - supabase/migrations/20260309200000_story_8_3_integration_supervision_sla.sql
 - _bmad-output/implementation-artifacts/8-3-superviser-divergences-et-sla-de-rattrapage.md
 - _bmad-output/implementation-artifacts/sprint-status.yaml
 
+### Senior Developer Review (AI)
+
+- Date: 2026-03-09
+- Outcome: Changes applied, findings resolus
+- Fixes verifies:
+  - AC3: pagination supervision exploitable cote UI
+  - AC2/AC3: risque SLA de reprise evaluable sur divergences ouvertes
+  - AC6: export CSV des journaux supervision disponible
+  - Cohesion metier: remise a zero `resolved_at` lors de reouverture
+  - Couverture E2E: test UI supervision integration ajoute (pagination + remediation + export)
+
 ### Change Log
 
 - 2026-03-09: Implementation completee pour Story 8.3 (backend supervision/remediation SLA, front panel supervision, migration SQL, tests backend/frontend).
+- 2026-03-09: Revue senior corrigee (pagination/export/SLA reopen + tests supplementaires), status passe a `done`.
