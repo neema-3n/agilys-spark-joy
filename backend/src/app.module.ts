@@ -34,6 +34,7 @@ import { ReportingFournisseursModule } from './reporting-fournisseurs/reporting-
 import { ReportingExecutionTresorerieModule } from './reporting-execution-tresorerie/reporting-execution-tresorerie.module';
 import { ReportingAnalytiqueModule } from './reporting-analytique/reporting-analytique.module';
 import { DossierDepenseUnifieModule } from './dossier-depense-unifie/dossier-depense-unifie.module';
+import { DsfReportingModule } from './dsf-reporting/dsf-reporting.module';
 
 @Module({
   imports: [
@@ -71,7 +72,8 @@ import { DossierDepenseUnifieModule } from './dossier-depense-unifie/dossier-dep
     ReportingFournisseursModule,
     ReportingExecutionTresorerieModule,
     ReportingAnalytiqueModule,
-    DossierDepenseUnifieModule
+    DossierDepenseUnifieModule,
+    DsfReportingModule
   ]
 })
 export class AppModule {}
