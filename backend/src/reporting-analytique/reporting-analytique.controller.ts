@@ -5,6 +5,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RequirePermissions } from '../auth/permissions.decorator';
 import {
+  ReportingAnalytiqueCycleTimeQueryDto,
   ReportingAnalytiqueExportDownloadQueryDto,
   ReportingAnalytiqueExportRequestDto,
   ReportingAnalytiqueExportStatusQueryDto,
@@ -32,6 +33,12 @@ export class ReportingAnalytiqueController {
   @RequirePermissions('referentiels:read')
   getDashboard(@CurrentUser() user: AuthenticatedUser, @Query() query: ReportingAnalytiqueQueryDto) {
     return this.reportingService.getDashboard(user, query);
+  }
+
+  @Get('cycle-time')
+  @RequirePermissions('referentiels:read')
+  getCycleTime(@CurrentUser() user: AuthenticatedUser, @Query() query: ReportingAnalytiqueCycleTimeQueryDto) {
+    return this.reportingService.getCycleTimeMetrics(user, query);
   }
 
   @Post('exports')

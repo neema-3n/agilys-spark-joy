@@ -1,6 +1,6 @@
 # Story 10.4: Mesurer les temps de traitement par etape
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -17,30 +17,30 @@ so that je reduis les goulots d'etranglement operatoires.
 
 ## Tasks / Subtasks
 
-- [ ] Definir le contrat de mesure cycle-time (AC: 1)
-  - [ ] DTO filtres: exercice, periode, entite, etape, axe analytique.
-  - [ ] DTO metriques: p50, p95, volume, tendance, variation.
-  - [ ] Seuils d'alerte configurables par etape.
+- [x] Definir le contrat de mesure cycle-time (AC: 1)
+  - [x] DTO filtres: exercice, periode, entite, etape, axe analytique.
+  - [x] DTO metriques: p50, p95, volume, tendance, variation.
+  - [x] Seuils d'alerte configurables par etape.
 
-- [ ] Implementer calculs backend des delais (AC: 1)
-  - [ ] Reutiliser les timestamps des transitions reservation/engagement/BC/facture/depense/paiement.
-  - [ ] Calculer p50/p95 par etape et par periode.
-  - [ ] Produire tendances et deltas periodiques.
+- [x] Implementer calculs backend des delais (AC: 1)
+  - [x] Reutiliser les timestamps des transitions reservation/engagement/BC/facture/depense/paiement.
+  - [x] Calculer p50/p95 par etape et par periode.
+  - [x] Produire tendances et deltas periodiques.
 
-- [ ] Integrer visualisation front des temps de traitement (AC: 1)
-  - [ ] Ajouter vue dédiée dans Reporting/Dashboard analytique.
-  - [ ] Afficher metriques, evolution, alertes de depassement seuil.
-  - [ ] Ajouter filtres et export des indicateurs.
+- [x] Integrer visualisation front des temps de traitement (AC: 1)
+  - [x] Ajouter vue dédiée dans Reporting/Dashboard analytique.
+  - [x] Afficher metriques, evolution, alertes de depassement seuil.
+  - [x] Ajouter filtres et export des indicateurs.
 
-- [ ] Ajouter alerting et audit (AC: 1)
-  - [ ] Déclencher signal quand seuil p95 depassé.
-  - [ ] Journaliser calculs, seuils appliqués et exports.
-  - [ ] Assurer isolation tenant et permissions de lecture.
+- [x] Ajouter alerting et audit (AC: 1)
+  - [x] Déclencher signal quand seuil p95 depassé.
+  - [x] Journaliser calculs, seuils appliqués et exports.
+  - [x] Assurer isolation tenant et permissions de lecture.
 
-- [ ] Couvrir tests critiques (AC: 1)
-  - [ ] Backend: exactitude percentile, jeux de donnees limites, isolation tenant.
-  - [ ] Front: rendu metriques/tendances/alertes + filtres.
-  - [ ] Non-regression sur reporting existant.
+- [x] Couvrir tests critiques (AC: 1)
+  - [x] Backend: exactitude percentile, jeux de donnees limites, isolation tenant.
+  - [x] Front: rendu metriques/tendances/alertes + filtres.
+  - [x] Non-regression sur reporting existant.
 
 ## Dev Notes
 
@@ -65,8 +65,49 @@ GPT-5 Codex
 
 ### Completion Notes List
 
-- Ultimate context engine analysis completed - comprehensive developer guide created.
+- Contrat cycle-time ajouté côté backend et frontend (DTO, types, endpoint, export, filtres).
+- Calculs backend implémentés pour 5 transitions avec percentiles p50/p95, tendances mensuelles, variation et alertes de seuil.
+- Visualisation intégrée dans l'onglet Reporting Analytique (synthèse, métriques, tendances, alertes, export cycle-time).
+- Journalisation des calculs cycle-time et maintien des audits export/tenant déjà en place.
+- Validation exécutée: tests Jest ciblés backend + lint/typecheck frontend/backend.
+- Revue adversariale appliquée: correction du calcul `depense->paiement` (dernier paiement retenu), résilience du hook frontend en cas d'échec `cycle-time`, et stabilisation test E2E du libellé filtre.
+- Couverture backend renforcée sur cas limite cycle-time sans transitions et assertion SQL sur l'agrégat de paiement.
 
 ### File List
 
 - _bmad-output/implementation-artifacts/10-4-mesurer-les-temps-de-traitement-par-etape.md
+- _bmad-output/implementation-artifacts/sprint-status.yaml
+- backend/src/reporting-analytique/dto/reporting-analytique.dto.ts
+- backend/src/reporting-analytique/dto/reporting-analytique.dto.spec.ts
+- backend/src/reporting-analytique/reporting-analytique.controller.ts
+- backend/src/reporting-analytique/reporting-analytique.controller.spec.ts
+- backend/src/reporting-analytique/reporting-analytique.service.ts
+- backend/src/reporting-analytique/reporting-analytique.service.spec.ts
+- src/types/reporting-analytique.types.ts
+- src/services/api/reporting-analytique.service.ts
+- src/hooks/useReportingAnalytique.ts
+- src/components/reporting-analytique/ReportingAnalytiqueReport.tsx
+- tests/reporting-analytique-ui.spec.ts
+
+## Change Log
+
+- 2026-03-10: Implémentation complète story 10.4 (cycle-time backend+frontend, alerting, audit, exports, tests).
+- 2026-03-10: Revue senior (AI) traitée, anomalies HIGH/MEDIUM corrigées, tests backend reporting-analytique passés.
+
+## Senior Developer Review (AI)
+
+- Date: 2026-03-10
+- Reviewer: Max (AI)
+- Outcome: ✅ Approved after fixes
+
+### Findings traités
+
+1. HIGH: calcul `depense->paiement` sous-estimé (agrégat premier paiement). Corrigé via agrégat du dernier paiement.
+2. HIGH: régression de résilience frontend (`Promise.all`) pouvant casser les vues existantes sur panne `cycle-time`. Corrigé avec fallback `cycleTime=null`.
+3. MEDIUM: sélecteur E2E obsolète sur le libellé des filtres. Corrigé avec le nouveau texte.
+4. MEDIUM: couverture edge-case backend incomplète. Corrigée avec test dédié `aucune transition`.
+
+### Validation exécutée
+
+- `pnpm --dir backend run test -- reporting-analytique.service.spec.ts reporting-analytique.dto.spec.ts reporting-analytique.controller.spec.ts`
+- Résultat: 3 suites, 15 tests, tous passés.

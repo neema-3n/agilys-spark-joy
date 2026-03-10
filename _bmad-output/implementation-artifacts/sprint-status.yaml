@@ -64,7 +64,7 @@ development_status:
   10-1-offrir-tableaux-croises-et-dashboards-analytiques-avances: done
   10-2-produire-dossier-de-depense-unifie-avec-preuves: done
   10-3-produire-dsf-conforme-ohada-sycebnl: done
-  10-4-mesurer-les-temps-de-traitement-par-etape: ready-for-dev
+  10-4-mesurer-les-temps-de-traitement-par-etape: done
   epic-10-retrospective: optional
   epic-m1: backlog
   m1-1-etablir-linventaire-de-parite-fonctionnelle: done

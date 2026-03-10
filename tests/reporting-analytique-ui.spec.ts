@@ -11,6 +11,7 @@ const makeJwt = (payload: Record<string, unknown>): string => {
 type ReportingRouteState = {
   tableauRequests: string[];
   dashboardRequests: string[];
+  cycleTimeRequests: string[];
   exportStartCount: number;
   exportStatusCount: number;
   exportDownloadCount: number;
@@ -20,6 +21,7 @@ const setupReportingRoutes = async (page: Page): Promise<ReportingRouteState> =>
   const state: ReportingRouteState = {
     tableauRequests: [],
     dashboardRequests: [],
+    cycleTimeRequests: [],
     exportStartCount: 0,
     exportStatusCount: 0,
     exportDownloadCount: 0
@@ -125,6 +127,51 @@ const setupReportingRoutes = async (page: Page): Promise<ReportingRouteState> =>
       return;
     }
 
+    if (url.pathname === '/reporting-analytique/cycle-time') {
+      state.cycleTimeRequests.push(url.search);
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          view: 'cycle-time',
+          filters: {
+            exerciceId: 'ex-2026',
+            periode: '2026-03-01:2026-03-31',
+            dateDebut: '2026-03-01',
+            dateFin: '2026-03-31',
+            seuilsHeures: {
+              'reservation-engagement': 72,
+              'engagement-bon-commande': 120,
+              'bon-commande-facture': 168,
+              'facture-depense': 120,
+              'depense-paiement': 240
+            },
+            seuilVariationPct: 20
+          },
+          summary: {
+            stages: 1,
+            volumeTotal: 2,
+            alerts: 1
+          },
+          metrics: [
+            {
+              stage: 'depense-paiement',
+              stageLabel: 'Depense -> Paiement',
+              p50: 48,
+              p95: 96,
+              volume: 2,
+              trend: [{ period: '2026-03', p50: 48, p95: 96, volume: 2 }],
+              variationPct: 25,
+              thresholds: { p95Hours: 72, variationPct: 20 },
+              alert: { active: true, reasons: ['p95 96h > seuil 72h'] }
+            }
+          ],
+          alerts: [{ stage: 'depense-paiement', stageLabel: 'Depense -> Paiement', reasons: ['p95 96h > seuil 72h'] }]
+        })
+      });
+      return;
+    }
+
     if (request.method() === 'POST' && url.pathname === '/reporting-analytique/exports') {
       state.exportStartCount += 1;
       await route.fulfill({
@@ -225,7 +272,7 @@ test('reporting conserve les onglets existants et affiche analytique avance', as
   await expect(page.getByText('Top lignes')).toBeVisible();
   await expect(page.getByText('ACT-1')).toBeVisible();
 
-  const analytiqueFiltersCard = page.locator('div').filter({ has: page.getByText('Filtres tableau croise et dashboard analytique') }).first();
+  const analytiqueFiltersCard = page.locator('div').filter({ has: page.getByText('Filtres tableau croise, dashboard et cycle-time') }).first();
   await analytiqueFiltersCard.getByRole('combobox').nth(0).click();
   await page.getByRole('option', { name: 'Fournisseur' }).click();
 
@@ -244,4 +291,9 @@ test('reporting conserve les onglets existants et affiche analytique avance', as
   await expect.poll(() => routeState.exportStartCount).toBeGreaterThan(0);
   await expect.poll(() => routeState.exportStatusCount).toBeGreaterThan(0);
   await expect.poll(() => routeState.exportDownloadCount).toBeGreaterThan(0);
+
+  await page.getByRole('tab', { name: 'Cycle-time' }).click();
+  await expect(page.getByText('Metriques cycle-time par etape')).toBeVisible();
+  await expect(page.getByText('Depense -> Paiement')).toBeVisible();
+  await expect.poll(() => routeState.cycleTimeRequests.length).toBeGreaterThan(0);
 });

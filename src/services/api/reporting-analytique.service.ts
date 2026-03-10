@@ -1,6 +1,7 @@
 import { requestJson } from '@/services/api/api-utils';
 import { httpClient } from '@/services/api/http-client';
 import type {
+  ReportingAnalytiqueCycleTimeResponse,
   ReportingAnalytiqueExportRequest,
   ReportingAnalytiqueExportStartResponse,
   ReportingAnalytiqueExportStatusResponse,
@@ -19,6 +20,13 @@ const toQueryString = (filters: ReportingAnalytiqueFilters): string => {
   if (filters.composanteBudgetaire) query.set('composanteBudgetaire', filters.composanteBudgetaire);
   if (filters.fournisseurId) query.set('fournisseurId', filters.fournisseurId);
   if (filters.statut) query.set('statut', filters.statut);
+  if (filters.etape) query.set('etape', filters.etape);
+  if (typeof filters.seuilReservationEngagementHeures === 'number') query.set('seuilReservationEngagementHeures', String(filters.seuilReservationEngagementHeures));
+  if (typeof filters.seuilEngagementBonCommandeHeures === 'number') query.set('seuilEngagementBonCommandeHeures', String(filters.seuilEngagementBonCommandeHeures));
+  if (typeof filters.seuilBonCommandeFactureHeures === 'number') query.set('seuilBonCommandeFactureHeures', String(filters.seuilBonCommandeFactureHeures));
+  if (typeof filters.seuilFactureDepenseHeures === 'number') query.set('seuilFactureDepenseHeures', String(filters.seuilFactureDepenseHeures));
+  if (typeof filters.seuilDepensePaiementHeures === 'number') query.set('seuilDepensePaiementHeures', String(filters.seuilDepensePaiementHeures));
+  if (typeof filters.seuilVariationPct === 'number') query.set('seuilVariationPct', String(filters.seuilVariationPct));
   if (filters.rowDimension) query.set('rowDimension', filters.rowDimension);
   if (filters.columnDimension) query.set('columnDimension', filters.columnDimension);
   if (filters.measure) query.set('measure', filters.measure);
@@ -47,6 +55,16 @@ export const reportingAnalytiqueService = {
       `/reporting-analytique/dashboard?${query}`,
       { method: 'GET' },
       'Erreur lors du chargement du dashboard analytique'
+    );
+  },
+
+  async getCycleTime(filters: ReportingAnalytiqueFilters): Promise<ReportingAnalytiqueCycleTimeResponse> {
+    const query = toQueryString(filters);
+
+    return requestJson<ReportingAnalytiqueCycleTimeResponse>(
+      `/reporting-analytique/cycle-time?${query}`,
+      { method: 'GET' },
+      'Erreur lors du chargement des indicateurs cycle-time'
     );
   },
 

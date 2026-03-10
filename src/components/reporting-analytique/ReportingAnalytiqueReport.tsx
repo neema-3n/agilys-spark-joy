@@ -4,6 +4,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { useExercice } from '@/contexts/ExerciceContext';
 import { useReportingAnalytique } from '@/hooks/useReportingAnalytique';
 import type {
+  ReportingAnalytiqueCycleStage,
   ReportingAnalytiqueDimension,
   ReportingAnalytiqueExportFormat,
   ReportingAnalytiqueMeasure,
@@ -17,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-const STORAGE_KEY = 'reporting-analytique-filters-v1';
+const STORAGE_KEY = 'reporting-analytique-filters-v2';
 
 const DIMENSIONS: Array<{ value: ReportingAnalytiqueDimension; label: string }> = [
   { value: 'periode', label: 'Periode' },
@@ -36,6 +37,14 @@ const MEASURES: Array<{ value: ReportingAnalytiqueMeasure; label: string }> = [
   { value: 'count', label: 'Nombre de lignes' }
 ];
 
+const CYCLE_STAGES: Array<{ value: ReportingAnalytiqueCycleStage; label: string }> = [
+  { value: 'reservation-engagement', label: 'Reservation -> Engagement' },
+  { value: 'engagement-bon-commande', label: 'Engagement -> Bon de commande' },
+  { value: 'bon-commande-facture', label: 'Bon de commande -> Facture' },
+  { value: 'facture-depense', label: 'Facture -> Depense' },
+  { value: 'depense-paiement', label: 'Depense -> Paiement' }
+];
+
 const formatMontant = (value: number): string =>
   new Intl.NumberFormat('fr-FR', {
     style: 'currency',
@@ -43,6 +52,8 @@ const formatMontant = (value: number): string =>
     minimumFractionDigits: 0,
     maximumFractionDigits: 2
   }).format(value);
+
+const formatHours = (value: number): string => `${value.toFixed(2)} h`;
 
 type StoredFilters = {
   rowDimension: ReportingAnalytiqueDimension;
@@ -53,6 +64,13 @@ type StoredFilters = {
   composanteBudgetaire: string;
   fournisseurId: string;
   statut: string;
+  etape: ReportingAnalytiqueCycleStage | 'all';
+  seuilReservationEngagementHeures: number;
+  seuilEngagementBonCommandeHeures: number;
+  seuilBonCommandeFactureHeures: number;
+  seuilFactureDepenseHeures: number;
+  seuilDepensePaiementHeures: number;
+  seuilVariationPct: number;
 };
 
 const getStoredFilters = (): StoredFilters | null => {
@@ -79,7 +97,14 @@ const getStoredFilters = (): StoredFilters | null => {
       axeAnalytique: parsed.axeAnalytique ?? '',
       composanteBudgetaire: parsed.composanteBudgetaire ?? '',
       fournisseurId: parsed.fournisseurId ?? '',
-      statut: parsed.statut ?? ''
+      statut: parsed.statut ?? '',
+      etape: (parsed.etape as StoredFilters['etape']) ?? 'all',
+      seuilReservationEngagementHeures: Number(parsed.seuilReservationEngagementHeures ?? 72),
+      seuilEngagementBonCommandeHeures: Number(parsed.seuilEngagementBonCommandeHeures ?? 120),
+      seuilBonCommandeFactureHeures: Number(parsed.seuilBonCommandeFactureHeures ?? 168),
+      seuilFactureDepenseHeures: Number(parsed.seuilFactureDepenseHeures ?? 120),
+      seuilDepensePaiementHeures: Number(parsed.seuilDepensePaiementHeures ?? 240),
+      seuilVariationPct: Number(parsed.seuilVariationPct ?? 20)
     };
   } catch {
     return null;
@@ -88,7 +113,6 @@ const getStoredFilters = (): StoredFilters | null => {
 
 export const ReportingAnalytiqueReport = () => {
   const { currentExercice } = useExercice();
-
   const stored = getStoredFilters();
 
   const [dateDebut, setDateDebut] = useState('');
@@ -98,6 +122,13 @@ export const ReportingAnalytiqueReport = () => {
   const [composanteBudgetaire, setComposanteBudgetaire] = useState(stored?.composanteBudgetaire ?? '');
   const [fournisseurId, setFournisseurId] = useState(stored?.fournisseurId ?? '');
   const [statut, setStatut] = useState(stored?.statut ?? '');
+  const [etape, setEtape] = useState<ReportingAnalytiqueCycleStage | 'all'>(stored?.etape ?? 'all');
+  const [seuilReservationEngagementHeures, setSeuilReservationEngagementHeures] = useState(stored?.seuilReservationEngagementHeures ?? 72);
+  const [seuilEngagementBonCommandeHeures, setSeuilEngagementBonCommandeHeures] = useState(stored?.seuilEngagementBonCommandeHeures ?? 120);
+  const [seuilBonCommandeFactureHeures, setSeuilBonCommandeFactureHeures] = useState(stored?.seuilBonCommandeFactureHeures ?? 168);
+  const [seuilFactureDepenseHeures, setSeuilFactureDepenseHeures] = useState(stored?.seuilFactureDepenseHeures ?? 120);
+  const [seuilDepensePaiementHeures, setSeuilDepensePaiementHeures] = useState(stored?.seuilDepensePaiementHeures ?? 240);
+  const [seuilVariationPct, setSeuilVariationPct] = useState(stored?.seuilVariationPct ?? 20);
   const [rowDimension, setRowDimension] = useState<ReportingAnalytiqueDimension>(stored?.rowDimension ?? 'axe-analytique');
   const [columnDimension, setColumnDimension] = useState<ReportingAnalytiqueDimension>(stored?.columnDimension ?? 'periode');
   const [measure, setMeasure] = useState<ReportingAnalytiqueMeasure>(stored?.measure ?? 'montant-depense');
@@ -131,11 +162,34 @@ export const ReportingAnalytiqueReport = () => {
       axeAnalytique,
       composanteBudgetaire,
       fournisseurId,
-      statut
+      statut,
+      etape,
+      seuilReservationEngagementHeures,
+      seuilEngagementBonCommandeHeures,
+      seuilBonCommandeFactureHeures,
+      seuilFactureDepenseHeures,
+      seuilDepensePaiementHeures,
+      seuilVariationPct
     };
 
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  }, [axeAnalytique, columnDimension, composanteBudgetaire, entite, fournisseurId, measure, rowDimension, statut]);
+  }, [
+    axeAnalytique,
+    columnDimension,
+    composanteBudgetaire,
+    entite,
+    etape,
+    fournisseurId,
+    measure,
+    rowDimension,
+    seuilBonCommandeFactureHeures,
+    seuilDepensePaiementHeures,
+    seuilEngagementBonCommandeHeures,
+    seuilFactureDepenseHeures,
+    seuilReservationEngagementHeures,
+    seuilVariationPct,
+    statut
+  ]);
 
   const filters = useMemo(() => {
     if (!currentExercice || !dateDebut || !dateFin) {
@@ -150,15 +204,41 @@ export const ReportingAnalytiqueReport = () => {
       composanteBudgetaire: composanteBudgetaire.trim() || undefined,
       fournisseurId: fournisseurId.trim() || undefined,
       statut: statut.trim() || undefined,
+      etape: etape === 'all' ? undefined : etape,
+      seuilReservationEngagementHeures,
+      seuilEngagementBonCommandeHeures,
+      seuilBonCommandeFactureHeures,
+      seuilFactureDepenseHeures,
+      seuilDepensePaiementHeures,
+      seuilVariationPct,
       rowDimension,
       columnDimension,
       measure,
       page: 1,
       pageSize: 100
     };
-  }, [axeAnalytique, columnDimension, composanteBudgetaire, currentExercice, dateDebut, dateFin, entite, fournisseurId, measure, rowDimension, statut]);
+  }, [
+    axeAnalytique,
+    columnDimension,
+    composanteBudgetaire,
+    currentExercice,
+    dateDebut,
+    dateFin,
+    entite,
+    etape,
+    fournisseurId,
+    measure,
+    rowDimension,
+    seuilBonCommandeFactureHeures,
+    seuilDepensePaiementHeures,
+    seuilEngagementBonCommandeHeures,
+    seuilFactureDepenseHeures,
+    seuilReservationEngagementHeures,
+    seuilVariationPct,
+    statut
+  ]);
 
-  const { tableau, dashboard, isLoading, error, launchExport, isExporting, exportState } = useReportingAnalytique(filters);
+  const { tableau, dashboard, cycleTime, isLoading, error, launchExport, isExporting, exportState } = useReportingAnalytique(filters);
 
   const onExport = async () => {
     if (!filters) {
@@ -172,7 +252,7 @@ export const ReportingAnalytiqueReport = () => {
     });
   };
 
-  const hasData = Boolean((tableau?.rows.length ?? 0) > 0 || (dashboard?.topRows.length ?? 0) > 0);
+  const hasData = Boolean((tableau?.rows.length ?? 0) > 0 || (dashboard?.topRows.length ?? 0) > 0 || (cycleTime?.summary.volumeTotal ?? 0) > 0);
 
   const chartData = dashboard?.chart.points.map((point) => ({
     label: point.key,
@@ -183,7 +263,7 @@ export const ReportingAnalytiqueReport = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Filtres tableau croise et dashboard analytique</CardTitle>
+          <CardTitle>Filtres tableau croise, dashboard et cycle-time</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-3">
           <div className="space-y-2">
@@ -263,6 +343,46 @@ export const ReportingAnalytiqueReport = () => {
               </SelectContent>
             </Select>
           </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Etape cycle-time</label>
+            <Select value={etape} onValueChange={(value) => setEtape(value as ReportingAnalytiqueCycleStage | 'all')}>
+              <SelectTrigger>
+                <SelectValue placeholder="Etape" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes les etapes</SelectItem>
+                {CYCLE_STAGES.map((stage) => (
+                  <SelectItem key={stage.value} value={stage.value}>
+                    {stage.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Seuil p95 Reservation vers Engagement (h)</label>
+            <Input type="number" min={0} value={seuilReservationEngagementHeures} onChange={(event) => setSeuilReservationEngagementHeures(Number(event.target.value || 0))} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Seuil p95 Engagement vers BC (h)</label>
+            <Input type="number" min={0} value={seuilEngagementBonCommandeHeures} onChange={(event) => setSeuilEngagementBonCommandeHeures(Number(event.target.value || 0))} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Seuil p95 BC vers Facture (h)</label>
+            <Input type="number" min={0} value={seuilBonCommandeFactureHeures} onChange={(event) => setSeuilBonCommandeFactureHeures(Number(event.target.value || 0))} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Seuil p95 Facture vers Depense (h)</label>
+            <Input type="number" min={0} value={seuilFactureDepenseHeures} onChange={(event) => setSeuilFactureDepenseHeures(Number(event.target.value || 0))} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Seuil p95 Depense vers Paiement (h)</label>
+            <Input type="number" min={0} value={seuilDepensePaiementHeures} onChange={(event) => setSeuilDepensePaiementHeures(Number(event.target.value || 0))} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Seuil variation (%)</label>
+            <Input type="number" min={0} value={seuilVariationPct} onChange={(event) => setSeuilVariationPct(Number(event.target.value || 0))} />
+          </div>
           <div className="space-y-2 md:col-span-3">
             <label className="text-sm font-medium">Export</label>
             <div className="flex flex-wrap gap-2">
@@ -273,6 +393,7 @@ export const ReportingAnalytiqueReport = () => {
                 <SelectContent>
                   <SelectItem value="tableau-croise">Tableau croise</SelectItem>
                   <SelectItem value="dashboard">Dashboard</SelectItem>
+                  <SelectItem value="cycle-time">Cycle-time</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as ReportingAnalytiqueExportFormat)}>
@@ -344,10 +465,11 @@ export const ReportingAnalytiqueReport = () => {
       ) : null}
 
       <Tabs defaultValue="tableau" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="tableau">Tableau croise</TabsTrigger>
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="anomalies">Anomalies</TabsTrigger>
+          <TabsTrigger value="cycle-time">Cycle-time</TabsTrigger>
         </TabsList>
 
         <TabsContent value="tableau">
@@ -451,6 +573,93 @@ export const ReportingAnalytiqueReport = () => {
                       <TableCell className="text-right">{formatMontant(item.ecart)}</TableCell>
                     </TableRow>
                   ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="cycle-time" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">Etapes mesurees</CardTitle>
+              </CardHeader>
+              <CardContent className="text-xl font-semibold">{cycleTime?.summary.stages ?? 0}</CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">Volume transitions</CardTitle>
+              </CardHeader>
+              <CardContent className="text-xl font-semibold">{cycleTime?.summary.volumeTotal ?? 0}</CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">Alertes actives</CardTitle>
+              </CardHeader>
+              <CardContent className="text-xl font-semibold">{cycleTime?.summary.alerts ?? 0}</CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Metriques cycle-time par etape</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Etape</TableHead>
+                    <TableHead className="text-right">p50</TableHead>
+                    <TableHead className="text-right">p95</TableHead>
+                    <TableHead className="text-right">Volume</TableHead>
+                    <TableHead className="text-right">Variation</TableHead>
+                    <TableHead>Alertes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(cycleTime?.metrics ?? []).map((metric) => (
+                    <TableRow key={metric.stage}>
+                      <TableCell>{metric.stageLabel}</TableCell>
+                      <TableCell className="text-right">{formatHours(metric.p50)}</TableCell>
+                      <TableCell className="text-right">{formatHours(metric.p95)}</TableCell>
+                      <TableCell className="text-right">{metric.volume}</TableCell>
+                      <TableCell className="text-right">{metric.variationPct.toFixed(2)}%</TableCell>
+                      <TableCell>{metric.alert.active ? metric.alert.reasons.join(' | ') : 'OK'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Tendances periodiques</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Etape</TableHead>
+                    <TableHead>Periode</TableHead>
+                    <TableHead className="text-right">p50</TableHead>
+                    <TableHead className="text-right">p95</TableHead>
+                    <TableHead className="text-right">Volume</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(cycleTime?.metrics ?? []).flatMap((metric) =>
+                    metric.trend.map((point) => (
+                      <TableRow key={`${metric.stage}-${point.period}`}>
+                        <TableCell>{metric.stageLabel}</TableCell>
+                        <TableCell>{point.period}</TableCell>
+                        <TableCell className="text-right">{formatHours(point.p50)}</TableCell>
+                        <TableCell className="text-right">{formatHours(point.p95)}</TableCell>
+                        <TableCell className="text-right">{point.volume}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>

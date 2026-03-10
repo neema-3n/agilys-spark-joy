@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { plainToInstance } from 'class-transformer';
 import { validateSync } from 'class-validator';
 import {
+  ReportingAnalytiqueCycleTimeQueryDto,
   ReportingAnalytiqueExportRequestDto,
   ReportingAnalytiqueQueryDto
 } from './reporting-analytique.dto';
@@ -41,5 +42,18 @@ describe('ReportingAnalytique DTO validation', () => {
     const errors = validateSync(dto);
     const hasFormatError = errors.some((error) => error.property === 'format');
     expect(hasFormatError).toBe(true);
+  });
+
+  it('accepte un filtre cycle-time avec seuils par etape', () => {
+    const dto = plainToInstance(ReportingAnalytiqueCycleTimeQueryDto, {
+      exerciceId: '11111111-1111-4111-8111-111111111111',
+      periode: '2026-03',
+      etape: 'depense-paiement',
+      seuilDepensePaiementHeures: 72,
+      seuilVariationPct: 15
+    });
+
+    const errors = validateSync(dto);
+    expect(errors).toHaveLength(0);
   });
 });

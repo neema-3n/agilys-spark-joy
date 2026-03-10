@@ -4,6 +4,8 @@ import { AuthorizationAuditService } from '../auth/authorization-audit.service';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { PostgresService } from '../common/postgres.service';
 import type {
+  ReportingAnalytiqueCycleStage,
+  ReportingAnalytiqueCycleTimeQueryDto,
   ReportingAnalytiqueDimension,
   ReportingAnalytiqueExportFormat,
   ReportingAnalytiqueExportRequestDto,
@@ -71,6 +73,25 @@ interface PivotFilters {
   correlationId?: string;
 }
 
+interface CycleTimeQueryFilters {
+  exerciceId: string;
+  periode: string;
+  dateDebut: string;
+  dateFin: string;
+  entite?: string;
+  axeAnalytique?: string;
+  etape?: ReportingAnalytiqueCycleStage;
+  seuilsHeures: Record<ReportingAnalytiqueCycleStage, number>;
+  seuilVariationPct: number;
+  correlationId?: string;
+}
+
+interface CycleDurationRow {
+  stage: ReportingAnalytiqueCycleStage;
+  durationHours: number;
+  periodKey: string;
+}
+
 interface ExportJob {
   exportId: string;
   tenantId: string;
@@ -89,6 +110,21 @@ type ExportStatus = 'completed';
 
 const round2 = (value: number): number => Math.round(value * 100) / 100;
 const EMPTY_KEY = 'Non renseigne';
+const CYCLE_STAGE_LABELS: Record<ReportingAnalytiqueCycleStage, string> = {
+  'reservation-engagement': 'Reservation -> Engagement',
+  'engagement-bon-commande': 'Engagement -> Bon de commande',
+  'bon-commande-facture': 'Bon de commande -> Facture',
+  'facture-depense': 'Facture -> Depense',
+  'depense-paiement': 'Depense -> Paiement'
+};
+const DEFAULT_CYCLE_THRESHOLDS_HOURS: Record<ReportingAnalytiqueCycleStage, number> = {
+  'reservation-engagement': 72,
+  'engagement-bon-commande': 120,
+  'bon-commande-facture': 168,
+  'facture-depense': 120,
+  'depense-paiement': 240
+};
+const DEFAULT_CYCLE_VARIATION_THRESHOLD_PCT = 20;
 
 const CRC32_TABLE = (() => {
   const table = new Uint32Array(256);
@@ -201,10 +237,122 @@ export class ReportingAnalytiqueService {
     };
   }
 
+  async getCycleTimeMetrics(actor: AuthenticatedUser, query: ReportingAnalytiqueCycleTimeQueryDto) {
+    const filters = this.normalizeCycleTimeQuery(query);
+    const durations = await this.loadCycleDurations(actor, filters);
+    const stageMetricsMap = new Map<ReportingAnalytiqueCycleStage, { durations: number[]; trendMap: Map<string, number[]> }>();
+
+    for (const row of durations) {
+      const metric = stageMetricsMap.get(row.stage) ?? { durations: [], trendMap: new Map<string, number[]>() };
+      metric.durations.push(row.durationHours);
+      const trendBucket = metric.trendMap.get(row.periodKey) ?? [];
+      trendBucket.push(row.durationHours);
+      metric.trendMap.set(row.periodKey, trendBucket);
+      stageMetricsMap.set(row.stage, metric);
+    }
+
+    const selectedStages: ReportingAnalytiqueCycleStage[] = filters.etape
+      ? [filters.etape]
+      : [
+          'reservation-engagement',
+          'engagement-bon-commande',
+          'bon-commande-facture',
+          'facture-depense',
+          'depense-paiement'
+        ];
+
+    const metrics = selectedStages.map((stage) => {
+      const dataset = stageMetricsMap.get(stage);
+      const sortedDurations = (dataset?.durations ?? []).sort((left, right) => left - right);
+      const p50 = this.computePercentile(sortedDurations, 50);
+      const p95 = this.computePercentile(sortedDurations, 95);
+      const volume = sortedDurations.length;
+
+      const trend = Array.from(dataset?.trendMap.entries() ?? [])
+        .sort((left, right) => left[0].localeCompare(right[0]))
+        .map(([periodKey, values]) => {
+          const sorted = [...values].sort((left, right) => left - right);
+          return {
+            period: periodKey,
+            p50: this.computePercentile(sorted, 50),
+            p95: this.computePercentile(sorted, 95),
+            volume: sorted.length
+          };
+        });
+
+      const latest = trend[trend.length - 1];
+      const previous = trend[trend.length - 2];
+      const variation = latest && previous && previous.p95 > 0 ? round2(((latest.p95 - previous.p95) / previous.p95) * 100) : 0;
+      const thresholdHours = filters.seuilsHeures[stage];
+      const alertReasons: string[] = [];
+      if (p95 > thresholdHours) {
+        alertReasons.push(`p95 ${round2(p95)}h > seuil ${thresholdHours}h`);
+      }
+      if (Math.abs(variation) >= filters.seuilVariationPct && trend.length >= 2) {
+        alertReasons.push(`variation ${variation}% >= seuil ${filters.seuilVariationPct}%`);
+      }
+
+      return {
+        stage,
+        stageLabel: CYCLE_STAGE_LABELS[stage],
+        p50: round2(p50),
+        p95: round2(p95),
+        volume,
+        trend,
+        variationPct: variation,
+        thresholds: {
+          p95Hours: thresholdHours,
+          variationPct: filters.seuilVariationPct
+        },
+        alert: {
+          active: alertReasons.length > 0,
+          reasons: alertReasons
+        }
+      };
+    });
+
+    const activeAlerts = metrics.filter((metric) => metric.alert.active).map((metric) => ({
+      stage: metric.stage,
+      stageLabel: metric.stageLabel,
+      reasons: metric.alert.reasons
+    }));
+
+    this.logger.log(
+      JSON.stringify({
+        event: 'reporting_analytique_cycle_time_calculated',
+        tenantId: actor.tenantId,
+        userId: actor.sub,
+        correlationId: filters.correlationId ?? null,
+        etape: filters.etape ?? null,
+        seuilsHeures: filters.seuilsHeures,
+        seuilVariationPct: filters.seuilVariationPct,
+        volumeTotal: durations.length,
+        alerts: activeAlerts.length,
+        timestamp: new Date().toISOString()
+      })
+    );
+
+    return {
+      view: 'cycle-time' as const,
+      filters,
+      summary: {
+        stages: metrics.length,
+        volumeTotal: metrics.reduce((sum, metric) => sum + metric.volume, 0),
+        alerts: activeAlerts.length
+      },
+      metrics,
+      alerts: activeAlerts
+    };
+  }
+
   async startExport(actor: AuthenticatedUser, query: ReportingAnalytiqueExportRequestDto): Promise<{ exportId: string; status: ExportStatus }> {
     this.cleanupExpiredExportJobs();
 
-    const report = query.view === 'tableau-croise' ? await this.getTableauCroise(actor, query) : await this.getDashboard(actor, query);
+    const report = query.view === 'tableau-croise'
+      ? await this.getTableauCroise(actor, query)
+      : query.view === 'dashboard'
+        ? await this.getDashboard(actor, query)
+        : await this.getCycleTimeMetrics(actor, query);
 
     const exportId = randomUUID();
     const filename = this.buildFilename(query.view, query.format);
@@ -328,6 +476,193 @@ export class ReportingAnalytiqueService {
       pageSize,
       correlationId: query.correlationId
     };
+  }
+
+  private normalizeCycleTimeQuery(query: ReportingAnalytiqueCycleTimeQueryDto): CycleTimeQueryFilters {
+    const periodBounds = this.resolvePeriodBounds(query.periode);
+    return {
+      exerciceId: query.exerciceId,
+      periode: query.periode,
+      dateDebut: periodBounds.dateDebut,
+      dateFin: periodBounds.dateFin,
+      entite: query.entite,
+      axeAnalytique: query.axeAnalytique,
+      etape: query.etape,
+      seuilsHeures: {
+        'reservation-engagement': query.seuilReservationEngagementHeures ?? DEFAULT_CYCLE_THRESHOLDS_HOURS['reservation-engagement'],
+        'engagement-bon-commande': query.seuilEngagementBonCommandeHeures ?? DEFAULT_CYCLE_THRESHOLDS_HOURS['engagement-bon-commande'],
+        'bon-commande-facture': query.seuilBonCommandeFactureHeures ?? DEFAULT_CYCLE_THRESHOLDS_HOURS['bon-commande-facture'],
+        'facture-depense': query.seuilFactureDepenseHeures ?? DEFAULT_CYCLE_THRESHOLDS_HOURS['facture-depense'],
+        'depense-paiement': query.seuilDepensePaiementHeures ?? DEFAULT_CYCLE_THRESHOLDS_HOURS['depense-paiement']
+      },
+      seuilVariationPct: query.seuilVariationPct ?? DEFAULT_CYCLE_VARIATION_THRESHOLD_PCT,
+      correlationId: query.correlationId
+    };
+  }
+
+  private async loadCycleDurations(actor: AuthenticatedUser, filters: CycleTimeQueryFilters): Promise<CycleDurationRow[]> {
+    const params: unknown[] = [actor.tenantId, filters.exerciceId, filters.dateDebut, filters.dateFin];
+    const scopedFilters = [
+      filters.entite ? ` AND scope.projet_id = $5` : '',
+      filters.axeAnalytique ? ` AND scope.action_id = $${filters.entite ? 6 : 5}` : ''
+    ].join('');
+    if (filters.entite) {
+      params.push(filters.entite);
+    }
+    if (filters.axeAnalytique) {
+      params.push(filters.axeAnalytique);
+    }
+
+    const stageFilterParamIndex = params.length + 1;
+    params.push(filters.etape ?? null);
+
+    const result = await this.postgresService.query<{
+      stage: ReportingAnalytiqueCycleStage;
+      duration_hours: string | number;
+      period_key: string;
+    }>(
+      `
+        WITH successful_paiements AS (
+          SELECT
+            p.depense_id,
+            MAX(p.date_paiement) AS date_paiement
+          FROM public.paiements p
+          WHERE p.client_id = $1
+            AND p.exercice_id = $2
+            AND p.statut IN ('execute', 'reconcilie')
+          GROUP BY p.depense_id
+        ),
+        reservation_engagement AS (
+          SELECT
+            'reservation-engagement'::text AS stage,
+            EXTRACT(EPOCH FROM (e.date_creation::timestamp - r.date_reservation::timestamp)) / 3600.0 AS duration_hours,
+            to_char(e.date_creation::date, 'YYYY-MM') AS period_key,
+            e.projet_id,
+            lb.action_id
+          FROM public.engagements e
+          INNER JOIN public.reservations_credits r ON r.id = e.reservation_credit_id AND r.client_id = e.client_id
+          LEFT JOIN public.lignes_budgetaires lb ON lb.id = e.ligne_budgetaire_id
+          WHERE e.client_id = $1
+            AND e.exercice_id = $2
+            AND e.date_creation >= $3::date
+            AND e.date_creation <= $4::date
+            AND e.date_creation >= r.date_reservation
+        ),
+        engagement_bon_commande AS (
+          SELECT
+            'engagement-bon-commande'::text AS stage,
+            EXTRACT(EPOCH FROM (bc.date_commande::timestamp - e.date_creation::timestamp)) / 3600.0 AS duration_hours,
+            to_char(bc.date_commande::date, 'YYYY-MM') AS period_key,
+            COALESCE(bc.projet_id, e.projet_id) AS projet_id,
+            COALESCE(lb_bc.action_id, lb_e.action_id) AS action_id
+          FROM public.bons_commande bc
+          INNER JOIN public.engagements e ON e.id = bc.engagement_id AND e.client_id = bc.client_id
+          LEFT JOIN public.lignes_budgetaires lb_bc ON lb_bc.id = bc.ligne_budgetaire_id
+          LEFT JOIN public.lignes_budgetaires lb_e ON lb_e.id = e.ligne_budgetaire_id
+          WHERE bc.client_id = $1
+            AND bc.exercice_id = $2
+            AND bc.date_commande >= $3::date
+            AND bc.date_commande <= $4::date
+            AND bc.date_commande >= e.date_creation::date
+        ),
+        bon_commande_facture AS (
+          SELECT
+            'bon-commande-facture'::text AS stage,
+            EXTRACT(EPOCH FROM (f.date_facture::timestamp - bc.date_commande::timestamp)) / 3600.0 AS duration_hours,
+            to_char(f.date_facture::date, 'YYYY-MM') AS period_key,
+            COALESCE(f.projet_id, bc.projet_id) AS projet_id,
+            COALESCE(lb_f.action_id, lb_bc.action_id) AS action_id
+          FROM public.factures f
+          INNER JOIN public.bons_commande bc ON bc.id = f.bon_commande_id AND bc.client_id = f.client_id
+          LEFT JOIN public.lignes_budgetaires lb_f ON lb_f.id = f.ligne_budgetaire_id
+          LEFT JOIN public.lignes_budgetaires lb_bc ON lb_bc.id = bc.ligne_budgetaire_id
+          WHERE f.client_id = $1
+            AND f.exercice_id = $2
+            AND f.date_facture >= $3::date
+            AND f.date_facture <= $4::date
+            AND f.date_facture >= bc.date_commande
+        ),
+        facture_depense AS (
+          SELECT
+            'facture-depense'::text AS stage,
+            EXTRACT(EPOCH FROM (d.date_depense::timestamp - f.date_facture::timestamp)) / 3600.0 AS duration_hours,
+            to_char(d.date_depense::date, 'YYYY-MM') AS period_key,
+            COALESCE(d.projet_id, f.projet_id) AS projet_id,
+            COALESCE(lb_d.action_id, lb_f.action_id) AS action_id
+          FROM public.depenses d
+          INNER JOIN public.factures f ON f.id = d.facture_id AND f.client_id = d.client_id
+          LEFT JOIN public.lignes_budgetaires lb_d ON lb_d.id = d.ligne_budgetaire_id
+          LEFT JOIN public.lignes_budgetaires lb_f ON lb_f.id = f.ligne_budgetaire_id
+          WHERE d.client_id = $1
+            AND d.exercice_id = $2
+            AND d.date_depense >= $3::date
+            AND d.date_depense <= $4::date
+            AND d.date_depense >= f.date_facture
+        ),
+        depense_paiement AS (
+          SELECT
+            'depense-paiement'::text AS stage,
+            EXTRACT(EPOCH FROM (sp.date_paiement::timestamp - d.date_depense::timestamp)) / 3600.0 AS duration_hours,
+            to_char(sp.date_paiement::date, 'YYYY-MM') AS period_key,
+            d.projet_id,
+            lb.action_id
+          FROM public.depenses d
+          INNER JOIN successful_paiements sp ON sp.depense_id = d.id
+          LEFT JOIN public.lignes_budgetaires lb ON lb.id = d.ligne_budgetaire_id
+          WHERE d.client_id = $1
+            AND d.exercice_id = $2
+            AND sp.date_paiement::date >= $3::date
+            AND sp.date_paiement::date <= $4::date
+            AND sp.date_paiement >= d.date_depense
+        ),
+        all_transitions AS (
+          SELECT * FROM reservation_engagement
+          UNION ALL
+          SELECT * FROM engagement_bon_commande
+          UNION ALL
+          SELECT * FROM bon_commande_facture
+          UNION ALL
+          SELECT * FROM facture_depense
+          UNION ALL
+          SELECT * FROM depense_paiement
+        )
+        SELECT
+          scope.stage::text AS stage,
+          scope.duration_hours::numeric AS duration_hours,
+          scope.period_key
+        FROM all_transitions scope
+        WHERE scope.duration_hours IS NOT NULL
+          AND scope.duration_hours >= 0
+          ${scopedFilters}
+          AND ($${stageFilterParamIndex}::text IS NULL OR scope.stage = $${stageFilterParamIndex})
+        ORDER BY scope.period_key ASC, scope.stage ASC
+      `,
+      params
+    );
+
+    return result.rows.map((row) => ({
+      stage: row.stage,
+      durationHours: round2(Number(row.duration_hours ?? 0)),
+      periodKey: row.period_key
+    }));
+  }
+
+  private computePercentile(sortedValues: number[], percentile: number): number {
+    if (sortedValues.length === 0) {
+      return 0;
+    }
+
+    if (sortedValues.length === 1) {
+      return sortedValues[0] ?? 0;
+    }
+
+    const rank = (percentile / 100) * (sortedValues.length - 1);
+    const lowerIndex = Math.floor(rank);
+    const upperIndex = Math.ceil(rank);
+    const lowerValue = sortedValues[lowerIndex] ?? 0;
+    const upperValue = sortedValues[upperIndex] ?? lowerValue;
+    const weight = rank - lowerIndex;
+    return lowerValue + (upperValue - lowerValue) * weight;
   }
 
   private resolvePeriodBounds(periode: string): { dateDebut: string; dateFin: string } {
@@ -567,7 +902,10 @@ export class ReportingAnalytiqueService {
   }
 
   private buildExportContent(
-    report: Awaited<ReturnType<ReportingAnalytiqueService['getTableauCroise']>> | Awaited<ReturnType<ReportingAnalytiqueService['getDashboard']>>,
+    report:
+      | Awaited<ReturnType<ReportingAnalytiqueService['getTableauCroise']>>
+      | Awaited<ReturnType<ReportingAnalytiqueService['getDashboard']>>
+      | Awaited<ReturnType<ReportingAnalytiqueService['getCycleTimeMetrics']>>,
     view: ReportingAnalytiqueView,
     format: ReportingAnalytiqueExportFormat
   ): Buffer {
@@ -583,7 +921,10 @@ export class ReportingAnalytiqueService {
   }
 
   private buildCsv(
-    report: Awaited<ReturnType<ReportingAnalytiqueService['getTableauCroise']>> | Awaited<ReturnType<ReportingAnalytiqueService['getDashboard']>>,
+    report:
+      | Awaited<ReturnType<ReportingAnalytiqueService['getTableauCroise']>>
+      | Awaited<ReturnType<ReportingAnalytiqueService['getDashboard']>>
+      | Awaited<ReturnType<ReportingAnalytiqueService['getCycleTimeMetrics']>>,
     view: ReportingAnalytiqueView
   ): Buffer {
     if (view === 'tableau-croise') {
@@ -600,6 +941,44 @@ export class ReportingAnalytiqueService {
       lines.push('');
       lines.push(`# Meta,rowDimension=${tableReport.filters.rowDimension},columnDimension=${tableReport.filters.columnDimension},measure=${tableReport.filters.measure}`);
       lines.push(`# Meta,periode=${tableReport.filters.periode},dateDebut=${tableReport.filters.dateDebut},dateFin=${tableReport.filters.dateFin}`);
+      return Buffer.from(lines.join('\n'), 'utf-8');
+    }
+
+    if (view === 'cycle-time') {
+      const cycleReport = report as Awaited<ReturnType<ReportingAnalytiqueService['getCycleTimeMetrics']>>;
+      const lines = [
+        'etape,p50_heures,p95_heures,volume,variation_pct,seuil_p95_heures,seuil_variation_pct,alerte,raisons'
+      ];
+
+      for (const metric of cycleReport.metrics) {
+        lines.push(
+          [
+            this.escapeCsvCell(metric.stageLabel),
+            metric.p50,
+            metric.p95,
+            metric.volume,
+            metric.variationPct,
+            metric.thresholds.p95Hours,
+            metric.thresholds.variationPct,
+            metric.alert.active,
+            this.escapeCsvCell(metric.alert.reasons.join(' | '))
+          ].join(',')
+        );
+      }
+
+      lines.push('');
+      lines.push('# Tendances,etape,periode,p50,p95,volume');
+      for (const metric of cycleReport.metrics) {
+        for (const point of metric.trend) {
+          lines.push(`${this.escapeCsvCell(metric.stageLabel)},${point.period},${point.p50},${point.p95},${point.volume}`);
+        }
+      }
+
+      lines.push('');
+      lines.push(`# Meta,periode=${cycleReport.filters.periode},dateDebut=${cycleReport.filters.dateDebut},dateFin=${cycleReport.filters.dateFin}`);
+      lines.push(
+        `# Meta,etape=${cycleReport.filters.etape ?? 'all'},seuilVariationPct=${cycleReport.filters.seuilVariationPct},volumeTotal=${cycleReport.summary.volumeTotal},alerts=${cycleReport.summary.alerts}`
+      );
       return Buffer.from(lines.join('\n'), 'utf-8');
     }
 
@@ -632,7 +1011,10 @@ export class ReportingAnalytiqueService {
   }
 
   private buildXlsx(
-    report: Awaited<ReturnType<ReportingAnalytiqueService['getTableauCroise']>> | Awaited<ReturnType<ReportingAnalytiqueService['getDashboard']>>,
+    report:
+      | Awaited<ReturnType<ReportingAnalytiqueService['getTableauCroise']>>
+      | Awaited<ReturnType<ReportingAnalytiqueService['getDashboard']>>
+      | Awaited<ReturnType<ReportingAnalytiqueService['getCycleTimeMetrics']>>,
     view: ReportingAnalytiqueView
   ): Buffer {
     const rows = this.buildTabularRows(report, view);
@@ -681,7 +1063,10 @@ export class ReportingAnalytiqueService {
   }
 
   private buildPdf(
-    report: Awaited<ReturnType<ReportingAnalytiqueService['getTableauCroise']>> | Awaited<ReturnType<ReportingAnalytiqueService['getDashboard']>>,
+    report:
+      | Awaited<ReturnType<ReportingAnalytiqueService['getTableauCroise']>>
+      | Awaited<ReturnType<ReportingAnalytiqueService['getDashboard']>>
+      | Awaited<ReturnType<ReportingAnalytiqueService['getCycleTimeMetrics']>>,
     view: ReportingAnalytiqueView
   ): Buffer {
     const lines = view === 'tableau-croise'
@@ -697,7 +1082,8 @@ export class ReportingAnalytiqueService {
             `Nombre colonnes: ${tableReport.summary.totalColumns}`
           ];
         })()
-      : (() => {
+      : view === 'dashboard'
+        ? (() => {
           const dashboardReport = report as Awaited<ReturnType<ReportingAnalytiqueService['getDashboard']>>;
           return [
             'Reporting analytique - Dashboard',
@@ -707,7 +1093,20 @@ export class ReportingAnalytiqueService {
             `Total mesure: ${dashboardReport.kpis.totalMesure}`,
             `Volume lignes: ${dashboardReport.kpis.volumeLignes}`
           ];
-        })();
+          })()
+        : (() => {
+            const cycleReport = report as Awaited<ReturnType<ReportingAnalytiqueService['getCycleTimeMetrics']>>;
+            return [
+              'Reporting analytique - Cycle time',
+              `Periode: ${cycleReport.filters.dateDebut} -> ${cycleReport.filters.dateFin}`,
+              `Etape: ${cycleReport.filters.etape ?? 'Toutes'}`,
+              `Volume total: ${cycleReport.summary.volumeTotal}`,
+              `Alertes: ${cycleReport.summary.alerts}`,
+              ...cycleReport.metrics.slice(0, 10).map(
+                (metric) => `${metric.stageLabel}: p50=${metric.p50}h p95=${metric.p95}h volume=${metric.volume}`
+              )
+            ];
+          })();
 
     const contentLines = lines.map((line, index) => `BT /F1 12 Tf 72 ${760 - index * 18} Td (${this.escapePdfText(line)}) Tj ET`);
     const contentStream = contentLines.join('\n');
@@ -830,7 +1229,10 @@ export class ReportingAnalytiqueService {
   }
 
   private buildTabularRows(
-    report: Awaited<ReturnType<ReportingAnalytiqueService['getTableauCroise']>> | Awaited<ReturnType<ReportingAnalytiqueService['getDashboard']>>,
+    report:
+      | Awaited<ReturnType<ReportingAnalytiqueService['getTableauCroise']>>
+      | Awaited<ReturnType<ReportingAnalytiqueService['getDashboard']>>
+      | Awaited<ReturnType<ReportingAnalytiqueService['getCycleTimeMetrics']>>,
     view: ReportingAnalytiqueView
   ): string[][] {
     if (view === 'tableau-croise') {
@@ -856,6 +1258,51 @@ export class ReportingAnalytiqueService {
         `dateFin=${tableReport.filters.dateFin}`
       ]);
 
+      return rows;
+    }
+
+    if (view === 'cycle-time') {
+      const cycleReport = report as Awaited<ReturnType<ReportingAnalytiqueService['getCycleTimeMetrics']>>;
+      const rows: string[][] = [
+        [
+          'etape',
+          'p50_heures',
+          'p95_heures',
+          'volume',
+          'variation_pct',
+          'seuil_p95_heures',
+          'seuil_variation_pct',
+          'alerte',
+          'raisons'
+        ],
+        ...cycleReport.metrics.map((metric) => [
+          metric.stageLabel,
+          String(metric.p50),
+          String(metric.p95),
+          String(metric.volume),
+          String(metric.variationPct),
+          String(metric.thresholds.p95Hours),
+          String(metric.thresholds.variationPct),
+          String(metric.alert.active),
+          metric.alert.reasons.join(' | ')
+        ]),
+        [],
+        ['tendances', 'etape', 'periode', 'p50', 'p95', 'volume']
+      ];
+
+      for (const metric of cycleReport.metrics) {
+        rows.push(...metric.trend.map((point) => [metric.stageLabel, point.period, String(point.p50), String(point.p95), String(point.volume)]));
+      }
+
+      rows.push([]);
+      rows.push(['# Meta', `periode=${cycleReport.filters.periode}`, `dateDebut=${cycleReport.filters.dateDebut}`, `dateFin=${cycleReport.filters.dateFin}`]);
+      rows.push([
+        '# Meta',
+        `etape=${cycleReport.filters.etape ?? 'all'}`,
+        `seuilVariationPct=${cycleReport.filters.seuilVariationPct}`,
+        `volumeTotal=${cycleReport.summary.volumeTotal}`,
+        `alerts=${cycleReport.summary.alerts}`
+      ]);
       return rows;
     }
 
