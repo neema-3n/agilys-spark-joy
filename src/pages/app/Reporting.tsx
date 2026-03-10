@@ -6,7 +6,8 @@ import { DSFReport } from '@/components/reporting/DSFReport';
 import { ReportingComptableReport } from '@/components/reporting-comptable/ReportingComptableReport';
 import { ReportingFournisseursReport } from '@/components/reporting-fournisseurs/ReportingFournisseursReport';
 import { ReportingAnalytiqueReport } from '@/components/reporting-analytique/ReportingAnalytiqueReport';
-import { FileText, TrendingUp, DollarSign, BookOpen, HandCoins, Grid3X3 } from 'lucide-react';
+import { DossierDepenseUnifieReport } from '@/components/dossier-depense-unifie/DossierDepenseUnifieReport';
+import { FileText, TrendingUp, DollarSign, BookOpen, HandCoins, Grid3X3, FolderSearch } from 'lucide-react';
 
 const Reporting = () => {
   return (
@@ -18,7 +19,7 @@ const Reporting = () => {
       
       <div className="px-4 md:px-6">
         <Tabs defaultValue="execution" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="execution" className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
               <span className="hidden sm:inline">Exécution Budgétaire</span>
@@ -49,6 +50,11 @@ const Reporting = () => {
               <span className="hidden sm:inline">Analytique Avancé</span>
               <span className="sm:hidden">Analytique</span>
             </TabsTrigger>
+            <TabsTrigger value="dossier-depense" className="flex items-center gap-2">
+              <FolderSearch className="h-4 w-4" />
+              <span className="hidden sm:inline">Dossier Dépense</span>
+              <span className="sm:hidden">Dossier</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="execution" className="space-y-6">
@@ -73,6 +79,10 @@ const Reporting = () => {
 
           <TabsContent value="analytique" className="space-y-6">
             <ReportingAnalytiqueReport />
+          </TabsContent>
+
+          <TabsContent value="dossier-depense" className="space-y-6">
+            <DossierDepenseUnifieReport />
           </TabsContent>
         </Tabs>
       </div>
