@@ -1,4 +1,5 @@
 import { tokenStorage, TokenStorage } from '@/services/auth/token-storage';
+import { isDevelopmentAppEnv, resolvePublicRuntimeEnv } from '@/config/runtime-env';
 
 export interface TokenPairResponse {
   accessToken: string;
@@ -32,18 +33,12 @@ const createNetworkErrorResponse = (): Response => new Response(
 );
 
 const resolveBaseUrl = (baseUrl?: string): string => {
-  const fromEnv =
-    baseUrl ??
-    process.env.NEXT_PUBLIC_API_BASE_URL ??
-    process.env.VITE_API_BASE_URL ??
-    '';
-  const fromApiPort =
-    process.env.NEXT_PUBLIC_API_PORT ??
-    process.env.VITE_API_PORT ??
-    '';
+  const runtimeEnv = resolvePublicRuntimeEnv();
+  const fromEnv = baseUrl ?? runtimeEnv.apiBaseUrl;
+  const fromApiPort = runtimeEnv.apiPort;
 
   let resolved = fromEnv;
-  if (!resolved && typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+  if (!resolved && typeof window !== 'undefined' && isDevelopmentAppEnv(runtimeEnv.appEnv)) {
     const protocol = window.location.protocol;
     const hostname = window.location.hostname;
     const apiPort = String(fromApiPort || '3001').trim();

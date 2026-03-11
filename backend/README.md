@@ -78,6 +78,7 @@ Errors:
 
 ## Variables d'environnement
 
+- `APP_ENV` (`development`, `preview`, `staging`, `production`; default runtime fallback: `development`)
 - `PORT` (default: `3001`)
 - `AUTH_STORAGE_MODE` (`postgres` par defaut, `memory` pour tests locaux rapides)
 - `JWT_ACCESS_SECRET` (required)
@@ -91,6 +92,22 @@ Errors:
 - `POSTGRES_DB` (default: `agilys`)
 - `POSTGRES_USER` (default: `agilys_app`)
 - `POSTGRES_PASSWORD` (default: `change-me-local-only`)
+
+## Correspondance non-production
+
+Le backend suit la meme convention que le frontend:
+
+- `preview` -> `APP_ENV=preview`
+- `staging` -> `APP_ENV=staging`
+- `production` -> `APP_ENV=production`
+
+Si le backend est pilote par deploy hooks GitHub Actions, utiliser:
+
+- `BACKEND_PREVIEW_DEPLOY_HOOK_URL`
+- `BACKEND_STAGING_DEPLOY_HOOK_URL`
+- `BACKEND_PRODUCTION_DEPLOY_HOOK_URL`
+
+Le repo ne fixe pas encore le provider backend definitif. Les workflows frontend peuvent donc declencher un hook backend sans imposer de blueprint IaC.
 
 ## Prerequis PostgreSQL pour les refresh tokens persistants (Story 2.5)
 
