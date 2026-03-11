@@ -511,7 +511,9 @@ export const RapprochementBancaireWorkspace = () => {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         pending={createPending}
-        onSubmit={(data) => createRapprochement(data)}
+        onSubmit={async (data) => {
+          await createRapprochement(data);
+        }}
       />
     </div>
   );

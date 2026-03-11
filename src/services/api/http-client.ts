@@ -32,11 +32,18 @@ const createNetworkErrorResponse = (): Response => new Response(
 );
 
 const resolveBaseUrl = (baseUrl?: string): string => {
-  const fromEnv = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) || '';
-  const fromApiPort = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_PORT) || '';
+  const fromEnv =
+    baseUrl ??
+    process.env.NEXT_PUBLIC_API_BASE_URL ??
+    process.env.VITE_API_BASE_URL ??
+    '';
+  const fromApiPort =
+    process.env.NEXT_PUBLIC_API_PORT ??
+    process.env.VITE_API_PORT ??
+    '';
 
-  let resolved = baseUrl ?? fromEnv ?? '';
-  if (!resolved && typeof window !== 'undefined' && typeof import.meta !== 'undefined' && import.meta.env?.DEV) {
+  let resolved = fromEnv;
+  if (!resolved && typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
     const protocol = window.location.protocol;
     const hostname = window.location.hostname;
     const apiPort = String(fromApiPort || '3001').trim();

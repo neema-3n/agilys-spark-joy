@@ -1,0 +1,1 @@
+self.__REACT_LOADABLE_MANIFEST='{"components/depenses/DepenseDialog.tsx -> @/hooks/use-toast":{"id":53836,"files":[]},"route-components/app/Factures.tsx -> @/services/api/factures.service":{"id":55854,"files":[]}}';

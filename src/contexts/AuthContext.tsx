@@ -1,19 +1,26 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, ReactNode } from 'react';
 import { AuthContextType, User, AppRole } from '@/types';
 import { authService } from '@/services/api/auth.service';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router';
 import { buildRequestedPath, normalizeRedirectPath } from '@/services/auth/auth-routing';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
-  const location = useLocation();
   const navigateRef = useRef(navigate);
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<{ accessTokenExpiresAt: number | null } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const mountedRef = useRef(true);
+
+  const getCurrentPath = () => {
+    if (typeof window === 'undefined') {
+      return '/app/dashboard';
+    }
+
+    return buildRequestedPath(window.location.pathname, window.location.search, window.location.hash);
+  };
 
   useEffect(() => {
     navigateRef.current = navigate;
@@ -101,11 +108,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = async () => {
-    const from = buildRequestedPath(location.pathname, location.search, location.hash);
+    const from = getCurrentPath();
     setUser(null);
     setSession(null);
 
-    if (location.pathname !== '/auth/login') {
+    if (typeof window === 'undefined' || window.location.pathname !== '/auth/login') {
       navigate('/auth/login', { replace: true, state: { from } });
     }
 
@@ -134,7 +141,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signup,
       logout
     }),
-    [user, session, isAuthenticated, isLoading, location.pathname, location.search, location.hash]
+    [user, session, isAuthenticated, isLoading]
   );
 
   if (isLoading) {

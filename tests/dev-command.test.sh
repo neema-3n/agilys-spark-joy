@@ -31,7 +31,7 @@ baseline_output="$(WEB_PORT=18080 API_PORT=13001 DB_PORT=15432 DEV_VALIDATE_ONLY
 assert_contains "${baseline_output}" "WEB_PORT=18080"
 assert_contains "${baseline_output}" "API_PORT=13001"
 assert_contains "${baseline_output}" "DB_PORT=15432"
-assert_contains "${baseline_output}" "VITE_API_BASE_URL=http://localhost:13001"
+assert_contains "${baseline_output}" "NEXT_PUBLIC_API_BASE_URL=http://localhost:13001"
 
 custom_output="$(WEB_PORT=8181 API_PORT=3100 DB_PORT=55432 DEV_VALIDATE_ONLY=1 bash ./scripts/dev.sh)"
 assert_contains "${custom_output}" "WEB_PORT=8181"

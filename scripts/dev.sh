@@ -9,7 +9,7 @@ DB_PORT="${DB_PORT:-${POSTGRES_PORT:-5432}}"
 POSTGRES_DB="${POSTGRES_DB:-agilys}"
 POSTGRES_USER="${POSTGRES_USER:-agilys_app}"
 POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-change-me-local-only}"
-API_BASE_URL="${VITE_API_BASE_URL:-http://localhost:${API_PORT}}"
+API_BASE_URL="${NEXT_PUBLIC_API_BASE_URL:-${VITE_API_BASE_URL:-http://localhost:${API_PORT}}}"
 JWT_ACCESS_SECRET="${JWT_ACCESS_SECRET:-dev-access-secret}"
 JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET:-dev-refresh-secret}"
 JWT_ACCESS_TTL_SECONDS="${JWT_ACCESS_TTL_SECONDS:-900}"
@@ -75,7 +75,7 @@ if [[ "${DEV_VALIDATE_ONLY:-0}" == "1" ]]; then
   echo "WEB_PORT=${WEB_PORT}"
   echo "API_PORT=${API_PORT}"
   echo "DB_PORT=${DB_PORT}"
-  echo "VITE_API_BASE_URL=${API_BASE_URL}"
+  echo "NEXT_PUBLIC_API_BASE_URL=${API_BASE_URL}"
   echo "docker_compose_port_binding=${DB_PORT}:5432"
   exit 0
 fi
@@ -126,8 +126,8 @@ JWT_REFRESH_TTL_SECONDS="${JWT_REFRESH_TTL_SECONDS}" \
   pnpm --dir backend run start:dev &
 API_PID=$!
 
-echo "[dev] Demarrage Frontend Vite (WEB_PORT=${WEB_PORT}, API=${API_BASE_URL})..."
-VITE_API_BASE_URL="${API_BASE_URL}" pnpm exec vite --host :: --port "${WEB_PORT}" &
+echo "[dev] Demarrage Frontend Next.js (WEB_PORT=${WEB_PORT}, API=${API_BASE_URL})..."
+NEXT_PUBLIC_API_BASE_URL="${API_BASE_URL}" pnpm exec next dev --hostname 0.0.0.0 --port "${WEB_PORT}" &
 WEB_PID=$!
 
 echo "[dev] Stack locale active"

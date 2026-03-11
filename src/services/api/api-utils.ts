@@ -63,7 +63,7 @@ const extractRiskDecision = (payload: ApiErrorPayload): CashRiskDecision | undef
   if (!isRecord(payload.riskDecision)) {
     return undefined;
   }
-  return payload.riskDecision as CashRiskDecision;
+  return payload.riskDecision as unknown as CashRiskDecision;
 };
 
 const buildApiError = (payload: unknown, fallbackError: string, responseStatusCode: number): ApiError => {

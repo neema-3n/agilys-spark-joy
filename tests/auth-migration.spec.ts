@@ -39,8 +39,11 @@ const makeJwt = (payload: Record<string, unknown>): string => {
 };
 
 const UI_BASE_URL = 'http://127.0.0.1:45173';
-const UI_SERVER_START_TIMEOUT_MS = 60_000;
+const UI_SERVER_START_TIMEOUT_MS = 90_000;
+const DEV_LOGIN_EMAIL = 'dev.superadmin@agilys.local';
+const DEV_LOGIN_PASSWORD = 'DevLogin123!';
 let uiServerProcess: ChildProcess | null = null;
+const NEXT_BIN = './node_modules/next/dist/bin/next';
 
 const setupMigrationBudgetApiStubs = async (page: Page) => {
   await page.route('**/budget-referentiels/**', async (route) => {
@@ -131,8 +134,7 @@ const waitForUiServer = async (timeoutMs: number): Promise<void> => {
   while (Date.now() - startedAt < timeoutMs) {
     try {
       const response = await fetch(UI_BASE_URL);
-      const html = await response.text();
-      if (response.ok && html.includes('id="root"')) {
+      if (response.ok) {
         return;
       }
     } catch {
@@ -158,11 +160,16 @@ test.describe('auth ui routing flows', () => {
     test.setTimeout(120_000);
 
     uiServerProcess = spawn(
-      'pnpm',
-      ['exec', 'vite', '--host', '127.0.0.1', '--port', '45173'],
+      process.execPath,
+      [NEXT_BIN, 'dev', '--hostname', '127.0.0.1', '--port', '45173'],
       {
         cwd: '/Volumes/mySD1.5/projects/agilys-spark-joy',
-        stdio: 'ignore'
+        stdio: 'ignore',
+        env: {
+          ...process.env,
+          NEXT_PUBLIC_DEV_LOGIN_EMAIL: DEV_LOGIN_EMAIL,
+          NEXT_PUBLIC_DEV_LOGIN_PASSWORD: DEV_LOGIN_PASSWORD,
+        }
       }
     );
 
@@ -209,6 +216,49 @@ test.describe('auth ui routing flows', () => {
     await page.getByRole('button', { name: 'Se connecter' }).click();
 
     await expect(page).toHaveURL(/\/app\/dashboard\?fromSpec=1$/);
+  });
+
+  test('@migration-auth login dev reste pré-rempli, éditable et soumet les valeurs modifiées', async ({ page }) => {
+    let submittedEmail = '';
+    let submittedPassword = '';
+
+    await page.route('**/auth/login', async (route) => {
+      const payload = route.request().postDataJSON() as { email?: string; password?: string };
+      submittedEmail = payload.email ?? '';
+      submittedPassword = payload.password ?? '';
+
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          accessToken: makeJwt({
+            sub: 'user-dev-login',
+            tenantId: 'tenant-1',
+            roles: ['admin_client'],
+            email: submittedEmail,
+            nom: 'Dev',
+            prenom: 'Login',
+            exp: Math.floor(Date.now() / 1000) + 600
+          }),
+          refreshToken: 'refresh-token-dev-login'
+        })
+      });
+    });
+
+    await page.addInitScript(() => {
+      window.localStorage.clear();
+    });
+    await page.goto(`${UI_BASE_URL}/auth/login?from=%2Fapp%2Fdashboard`);
+
+    await expect(page.getByLabel('Email')).toHaveValue(DEV_LOGIN_EMAIL);
+    await expect(page.getByLabel('Mot de passe')).toHaveValue(DEV_LOGIN_PASSWORD);
+
+    await page.getByLabel('Email').fill('edited.superadmin@agilys.local');
+    await page.getByLabel('Mot de passe').fill('EditedLogin123!');
+    await page.getByRole('button', { name: 'Se connecter' }).click();
+
+    expect(submittedEmail).toBe('edited.superadmin@agilys.local');
+    expect(submittedPassword).toBe('EditedLogin123!');
   });
 
   test('@migration-auth @ac1 @flux-AUTH-03 logout redirects to login and clears local tokens', async ({ page }) => {

@@ -7,7 +7,7 @@ export default defineConfig({
   workers: 1,
   timeout: 120_000,
   webServer: {
-    command: 'pnpm exec vite --host 127.0.0.1 --port 45177',
+    command: 'pnpm exec next dev --hostname 127.0.0.1 --port 45177',
     url: 'http://127.0.0.1:45177',
     timeout: 180_000,
     reuseExistingServer: true,

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from '@/lib/router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { PaginatedResponse, PaginationParams } from '@/types/facture.types';
 

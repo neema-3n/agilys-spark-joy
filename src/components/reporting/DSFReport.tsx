@@ -66,7 +66,7 @@ export const DSFReport = () => {
         <CardContent className="grid gap-4 md:grid-cols-3">
           <div className="space-y-2">
             <label className="text-sm font-medium">Exercice courant</label>
-            <Input value={currentExercice?.label || 'Aucun exercice actif'} readOnly />
+            <Input value={currentExercice?.libelle || 'Aucun exercice actif'} readOnly />
           </div>
 
           <div className="space-y-2">

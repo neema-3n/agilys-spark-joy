@@ -83,7 +83,6 @@ export const useAnalysesFinancieres = (filters: AnalysesFilters) => {
     (actionsQuery.error as Error | null) ||
     (reservationsQuery.error as Error | null) ||
     (engagementsQuery.error as Error | null) ||
-    (facturesQuery.error as Error | null) ||
     (structuresQuery.error as Error | null) ||
     null;
 

@@ -17,6 +17,20 @@ interface CompteNode extends Compte {
   children: CompteNode[];
 }
 
+type CompteFormData = {
+  numero: string;
+  libelle: string;
+  type: Compte['type'];
+  categorie: Compte['categorie'];
+  parentId?: string;
+  niveau: number;
+  statut?: Compte['statut'];
+  versionStatus: Compte['versionStatus'];
+  effectiveStartDate?: string;
+  effectiveEndDate?: string;
+  changeReason?: string;
+};
+
 const PlanComptableManager = () => {
   const scrollButtonRef = useRef<HTMLButtonElement | null>(null);
   const topMarkerRef = useRef<HTMLDivElement | null>(null);
@@ -160,15 +174,16 @@ const PlanComptableManager = () => {
     }
   };
 
-  const handleCreate = async (data: CreateCompteInput) => {
+  const handleCreate = async (data: CompteFormData) => {
     if (!currentClient) return;
 
     try {
       setSubmitError(null);
-      await comptesService.create({
+      const payload: CreateCompteInput = {
         ...data,
         clientId: currentClient.id
-      });
+      };
+      await comptesService.create(payload);
       
       toast({
         title: 'Succès',
