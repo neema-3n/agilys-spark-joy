@@ -11,6 +11,11 @@ concurrency:
 jobs:
   preview-deploy:
     runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      BACKEND_PREVIEW_DEPLOY_HOOK_URL: ${{ secrets.BACKEND_PREVIEW_DEPLOY_HOOK_URL }}
 
     steps:
       - name: Checkout
@@ -37,33 +42,19 @@ jobs:
         run: pnpm run build:frontend
 
       - name: Print preview environment summary
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-          BACKEND_PREVIEW_DEPLOY_HOOK_URL: ${{ secrets.BACKEND_PREVIEW_DEPLOY_HOOK_URL }}
         run: pnpm run env:summary -- --environment preview --services frontend,backend
 
       - name: Verify preview deploy secrets
-        if: ${{ secrets.VERCEL_TOKEN != '' && secrets.VERCEL_ORG_ID != '' && secrets.VERCEL_PROJECT_ID != '' }}
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        if: ${{ env.VERCEL_TOKEN != '' && env.VERCEL_ORG_ID != '' && env.VERCEL_PROJECT_ID != '' }}
         run: pnpm run env:verify -- --environment preview --services frontend
 
       - name: Deploy preview frontend
-        if: ${{ secrets.VERCEL_TOKEN != '' && secrets.VERCEL_ORG_ID != '' && secrets.VERCEL_PROJECT_ID != '' }}
+        if: ${{ env.VERCEL_TOKEN != '' && env.VERCEL_ORG_ID != '' && env.VERCEL_PROJECT_ID != '' }}
         id: deploy_preview
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-          BACKEND_PREVIEW_DEPLOY_HOOK_URL: ${{ secrets.BACKEND_PREVIEW_DEPLOY_HOOK_URL }}
         run: pnpm run deploy:preview
 
       - name: Preview deploy skipped
-        if: ${{ secrets.VERCEL_TOKEN == '' || secrets.VERCEL_ORG_ID == '' || secrets.VERCEL_PROJECT_ID == '' }}
+        if: ${{ env.VERCEL_TOKEN == '' || env.VERCEL_ORG_ID == '' || env.VERCEL_PROJECT_ID == '' }}
         run: echo "Preview deploy skipped because Vercel secrets are not configured."
 
       - name: Publish deployment summary
