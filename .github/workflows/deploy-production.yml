@@ -16,6 +16,11 @@ jobs:
   production-deploy:
     runs-on: ubuntu-latest
     environment: production
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      BACKEND_PRODUCTION_DEPLOY_HOOK_URL: ${{ secrets.BACKEND_PRODUCTION_DEPLOY_HOOK_URL }}
 
     steps:
       - name: Checkout
@@ -44,27 +49,13 @@ jobs:
         run: pnpm run build:frontend
 
       - name: Verify production deploy secrets
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: pnpm run env:verify -- --environment production --services frontend
 
       - name: Print production environment summary
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-          BACKEND_PRODUCTION_DEPLOY_HOOK_URL: ${{ secrets.BACKEND_PRODUCTION_DEPLOY_HOOK_URL }}
         run: pnpm run env:summary -- --environment production --services frontend,backend
 
       - name: Deploy production frontend
         id: deploy_production
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-          BACKEND_PRODUCTION_DEPLOY_HOOK_URL: ${{ secrets.BACKEND_PRODUCTION_DEPLOY_HOOK_URL }}
         run: pnpm run deploy:production
 
       - name: Publish deployment summary
