@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { CalendarDays, Briefcase, Building2, BookOpen, Users, Settings as SettingsIcon, Database, Menu, Layers, Calculator } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from '@/lib/router';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ExercicesManager } from '@/components/parametres/ExercicesManager';
 import { EnveloppesManager } from '@/components/parametres/EnveloppesManager';

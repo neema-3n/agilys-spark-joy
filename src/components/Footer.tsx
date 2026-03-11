@@ -1,5 +1,5 @@
 import { Building2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "@/lib/router";
 
 const publicLinks = [
   { to: "/", label: "Accueil" },

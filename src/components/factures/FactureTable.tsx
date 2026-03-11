@@ -32,7 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useListSelection } from '@/hooks/useListSelection';
 import { formatCurrency } from '@/lib/utils';

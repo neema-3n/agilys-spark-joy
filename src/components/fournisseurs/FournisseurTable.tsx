@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router';
 import { Fournisseur } from '@/types/fournisseur.types';
 import { ListTable, ListColumn } from '@/components/lists/ListTable';
 import { ListToolbar } from '@/components/lists/ListToolbar';

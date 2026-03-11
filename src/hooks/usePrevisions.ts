@@ -3,7 +3,7 @@ import { previsionsService } from '@/services/api/previsions.service';
 import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
 import {
-  EcartsPrevisionExecution,
+  EcartPrevisionExecution,
   EcartsPrevisionFilters,
   GenerationParams,
   LignePrevision,
@@ -140,7 +140,7 @@ export const buildEcartsPrevisionQueryKey = (
 export function useEcartsPrevisionExecution(
   filters?: Omit<EcartsPrevisionFilters, 'exerciceId'>
 ): {
-  ecarts: EcartsPrevisionExecution[];
+  ecarts: EcartPrevisionExecution[];
   totaux: {
     montantPrevu: number;
     montantExecute: number;

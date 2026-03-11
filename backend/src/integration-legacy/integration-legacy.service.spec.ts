@@ -1,6 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import type { QueryResult, QueryResultRow } from 'pg';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
+import type { SchemaPrerequisiteCheckResult } from '../common/postgres.service';
 import type { PostgresService } from '../common/postgres.service';
 import type { IntegrationLegacyTransport } from './integration-legacy.transport';
 import { IntegrationLegacyService } from './integration-legacy.service';
@@ -56,14 +57,56 @@ const makeEventRow = (overrides: Record<string, unknown> = {}) => ({
 
 describe('IntegrationLegacyService', () => {
   const query = jest.fn();
-  const postgresService = { query } as unknown as PostgresService;
+  const assertSchemaPrerequisites = jest.fn<Promise<SchemaPrerequisiteCheckResult>, [unknown]>();
+  const postgresService = { query, assertSchemaPrerequisites } as unknown as PostgresService;
   const transport = { send: jest.fn() } as unknown as IntegrationLegacyTransport;
   const service = new IntegrationLegacyService(postgresService, transport);
 
   beforeEach(() => {
     query.mockReset();
     query.mockImplementation(async () => makeResult([]));
+    assertSchemaPrerequisites.mockReset();
+    assertSchemaPrerequisites.mockResolvedValue({
+      missingRelations: [],
+      missingColumns: [],
+    });
     (transport.send as jest.Mock).mockReset();
+  });
+
+  it('échoue au démarrage si integration_async_events est absente', async () => {
+    assertSchemaPrerequisites.mockResolvedValue({
+      missingRelations: ['public.integration_async_events'],
+      missingColumns: [],
+    });
+
+    await expect(service.onModuleInit()).rejects.toThrow(
+      'Integration schema prerequisites missing: public.integration_async_events. Apply integration schema migrations before starting the backend.'
+    );
+  });
+
+  it('échoue au démarrage si integration_async_event_attempts est absente', async () => {
+    assertSchemaPrerequisites.mockResolvedValue({
+      missingRelations: ['public.integration_async_event_attempts'],
+      missingColumns: [],
+    });
+
+    await expect(service.onModuleInit()).rejects.toThrow(
+      'Integration schema prerequisites missing: public.integration_async_event_attempts. Apply integration schema migrations before starting the backend.'
+    );
+  });
+
+  it('échoue au démarrage si des colonnes critiques 8.3 sont absentes', async () => {
+    assertSchemaPrerequisites.mockResolvedValue({
+      missingRelations: [],
+      missingColumns: [
+        { table: 'public.integration_async_events', column: 'owner' },
+        { table: 'public.integration_async_events', column: 'priority' },
+      ],
+    });
+
+    await expect(service.onModuleInit()).rejects.toThrow(
+      'Integration schema prerequisites missing: public.integration_async_events.owner, public.integration_async_events.priority. Apply integration schema migrations before starting the backend.'
+    );
   });
 
   it('place un événement sortant en outbox avec correlationId', async () => {

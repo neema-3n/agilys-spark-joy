@@ -1,5 +1,5 @@
 import type { LigneBudgetaire } from '@/types/budget.types';
-import type { EcartsPrevisionExecution } from '@/types/prevision.types';
+import type { EcartPrevisionExecution } from '@/types/prevision.types';
 import type { TresorerieAlertSeverity, TresorerieSupervision } from '@/types/tresorerie.types';
 
 export interface DashboardBudgetaireFilters {
@@ -51,7 +51,7 @@ const matchesFilter = (actualValue: string | undefined, expectedValue: string) =
   return (actualValue ?? '').toLowerCase() === expectedValue;
 };
 
-export const buildAxeLabel = (item: EcartsPrevisionExecution) => {
+export const buildAxeLabel = (item: EcartPrevisionExecution) => {
   const labels = [
     item.axe.sectionCode ? `SEC:${item.axe.sectionCode}` : null,
     item.axe.programmeCode ? `PRG:${item.axe.programmeCode}` : null,
@@ -66,7 +66,7 @@ export const filterLignesBudgetaires = (
   lignes: LigneBudgetaire[],
   filters: DashboardBudgetaireFilters,
   metadata: DashboardFilterMetadata,
-  ecarts: EcartsPrevisionExecution[] = []
+  ecarts: EcartPrevisionExecution[] = []
 ) => {
   const sectionCodeFilter = sanitizeFilterValue(filters.sectionCode);
   const programmeCodeFilter = sanitizeFilterValue(filters.programmeCode);
@@ -128,7 +128,7 @@ export const computeDashboardKpis = (lignes: LigneBudgetaire[]) => {
   );
 };
 
-export const buildEcartsByPeriode = (ecarts: EcartsPrevisionExecution[]) => {
+export const buildEcartsByPeriode = (ecarts: EcartPrevisionExecution[]) => {
   const grouped = new Map<string, { periode: string; prevu: number; execute: number; ecart: number }>();
 
   ecarts.forEach((item) => {
@@ -149,7 +149,7 @@ export const buildEcartsByPeriode = (ecarts: EcartsPrevisionExecution[]) => {
   return Array.from(grouped.values()).sort((left, right) => left.periode.localeCompare(right.periode));
 };
 
-export const buildAxesSousTension = (ecarts: EcartsPrevisionExecution[]): DashboardAxeTension[] => {
+export const buildAxesSousTension = (ecarts: EcartPrevisionExecution[]): DashboardAxeTension[] => {
   return [...ecarts]
     .sort((left, right) => Math.abs(right.ecartMontant) - Math.abs(left.ecartMontant))
     .slice(0, 5)
@@ -164,7 +164,7 @@ export const buildAxesSousTension = (ecarts: EcartsPrevisionExecution[]): Dashbo
 
 export const buildDashboardSignals = (input: {
   supervision?: TresorerieSupervision;
-  ecarts: EcartsPrevisionExecution[];
+  ecarts: EcartPrevisionExecution[];
 }): DashboardSignal[] => {
   const supervisionSignals: DashboardSignal[] = (input.supervision?.alerts ?? []).map((alert) => ({
     id: `supervision-${alert.key}`,

@@ -8,7 +8,7 @@ const Hero = () => {
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
         <img 
-          src={heroBackground} 
+          src={heroBackground.src} 
           alt="Système de gestion budgétaire moderne pour collectivités publiques" 
           width="1504"
           height="846"

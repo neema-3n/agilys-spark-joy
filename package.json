@@ -1,5 +1,5 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "agilys-spark-joy",
   "private": true,
   "version": "0.0.0",
   "packageManager": "pnpm@9.12.0",
@@ -7,12 +7,12 @@
   "scripts": {
     "preinstall": "node -e \"const ua=process.env.npm_config_user_agent||''; if(!ua.includes('pnpm')){console.error('This repository uses pnpm. Run: corepack enable && pnpm install'); process.exit(1)}\"",
     "dev": "bash ./scripts/dev.sh",
-    "dev:frontend": "vite",
+    "dev:frontend": "next dev --hostname 0.0.0.0 --port 8080",
     "dev:backend": "pnpm --dir backend run start:dev",
     "build": "pnpm run build:frontend && pnpm run build:backend",
-    "build:frontend": "vite build",
+    "build:frontend": "next build",
     "build:backend": "pnpm --dir backend run build",
-    "build:dev": "vite build --mode development",
+    "build:dev": "next build",
     "lint": "pnpm run lint:frontend && pnpm run lint:backend",
     "lint:frontend": "eslint .",
     "lint:backend": "pnpm --dir backend run lint",
@@ -22,7 +22,8 @@
     "test:frontend:depenses": "pnpm exec playwright test --config playwright.depenses.config.ts",
     "test:frontend:paiements": "pnpm exec playwright test --config playwright.paiements.config.ts",
     "test:backend": "pnpm --dir backend run test",
-    "preview": "vite preview",
+    "preview": "next start --hostname 0.0.0.0 --port 8080",
+    "start": "next start --hostname 0.0.0.0 --port 8080",
     "db:migrate": "bash ./scripts/db-migrate.sh",
     "db:reset": "bash ./scripts/db-reset.sh",
     "db:seed": "bash ./scripts/db-seed.sh",
@@ -76,12 +77,12 @@
     "input-otp": "^1.4.2",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
+    "next": "^15.3.1",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.61.1",
     "react-resizable-panels": "^2.1.9",
-    "react-router-dom": "^6.30.1",
     "recharts": "^2.15.4",
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.6.0",
@@ -96,7 +97,6 @@
     "@types/node": "^22.16.5",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
-    "@vitejs/plugin-react-swc": "^3.11.0",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.32.0",
     "eslint-plugin-react-hooks": "^5.2.0",
@@ -107,7 +107,6 @@
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.38.0",
-    "vite": "^5.4.19"
+    "typescript-eslint": "^8.38.0"
   }
 }

@@ -100,7 +100,7 @@ export const startPublicWebVitalsTracking = (path: string): (() => void) => {
     return () => {};
   }
 
-  const observerSafe = (entryType: string, callback: (entries: PerformanceEntryList) => void): void => {
+  const observerSafe = (entryType: string, callback: (entries: PerformanceObserverEntryList) => void): void => {
     try {
       const observer = new PerformanceObserver((list) => callback(list));
       observer.observe({ type: entryType, buffered: true });

@@ -36,7 +36,7 @@ const Dashboard = () => {
 
           <Card className="p-4 shadow-primary border-border overflow-hidden">
             <img 
-              src={dashboardPreview} 
+              src={dashboardPreview.src} 
               alt="Tableau de bord intelligent avec visualisations et analyses budgétaires en temps réel" 
               width="768"
               height="480"

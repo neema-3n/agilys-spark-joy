@@ -5,6 +5,16 @@ interface SqlExecutor {
   query<T extends QueryResultRow = QueryResultRow>(text: string, values?: unknown[]): Promise<QueryResult<T>>;
 }
 
+export interface SchemaPrerequisiteColumn {
+  table: string;
+  column: string;
+}
+
+export interface SchemaPrerequisiteCheckResult {
+  missingRelations: string[];
+  missingColumns: SchemaPrerequisiteColumn[];
+}
+
 @Injectable()
 export class PostgresService implements OnModuleDestroy {
   private pool: Pool | null = null;
@@ -55,6 +65,55 @@ export class PostgresService implements OnModuleDestroy {
     } finally {
       client.release();
     }
+  }
+
+  async assertSchemaPrerequisites(input: {
+    relations: string[];
+    columns: SchemaPrerequisiteColumn[];
+  }): Promise<SchemaPrerequisiteCheckResult> {
+    const missingRelationsResult = await this.query<{ relation_name: string }>(
+      `
+        SELECT relation_name
+        FROM unnest($1::text[]) AS relation_name
+        WHERE to_regclass(relation_name) IS NULL
+        ORDER BY relation_name ASC
+      `,
+      [input.relations]
+    );
+
+    const requiredColumns = input.columns.map(({ table, column }) => `${table}.${column}`);
+    const missingColumnsResult = requiredColumns.length === 0
+      ? { rows: [] as Array<{ table_name: string; column_name: string }> }
+      : await this.query<{ table_name: string; column_name: string }>(
+          `
+            WITH required AS (
+              SELECT
+                split_part(item, '.', 1) AS table_schema,
+                split_part(item, '.', 2) AS table_name,
+                split_part(item, '.', 3) AS column_name
+              FROM unnest($1::text[]) AS item
+            )
+            SELECT
+              CONCAT(required.table_schema, '.', required.table_name) AS table_name,
+              required.column_name
+            FROM required
+            LEFT JOIN information_schema.columns columns
+              ON columns.table_schema = required.table_schema
+             AND columns.table_name = required.table_name
+             AND columns.column_name = required.column_name
+            WHERE columns.column_name IS NULL
+            ORDER BY table_name ASC, required.column_name ASC
+          `,
+          [requiredColumns]
+        );
+
+    return {
+      missingRelations: missingRelationsResult.rows.map((row) => row.relation_name),
+      missingColumns: missingColumnsResult.rows.map((row) => ({
+        table: row.table_name,
+        column: row.column_name,
+      })),
+    };
   }
 
   async onModuleDestroy(): Promise<void> {

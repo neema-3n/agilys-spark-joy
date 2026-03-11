@@ -84,10 +84,6 @@ export const useDashboardBudgetaire = (filters: DashboardBudgetaireFilters) => {
 
   const error = lignesQuery.error
     || ecartsQuery.error
-    || sections.error
-    || programmes.error
-    || actions.error
-    || enveloppes.error
     || (supervisionQuery.error as Error | null)
     || null;
 

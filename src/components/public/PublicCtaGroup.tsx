@@ -1,5 +1,5 @@
 import { type MouseEventHandler, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "@/lib/router";
 import { Button, type ButtonProps } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {

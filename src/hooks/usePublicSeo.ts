@@ -15,7 +15,7 @@ const resolveSeoBaseUrl = (): string => {
     return normalizeSiteUrl(window.location.origin);
   }
 
-  const configuredSiteUrl = import.meta.env.VITE_PUBLIC_SITE_URL?.trim();
+  const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || process.env.VITE_PUBLIC_SITE_URL?.trim();
   if (configuredSiteUrl) {
     return normalizeSiteUrl(configuredSiteUrl);
   }

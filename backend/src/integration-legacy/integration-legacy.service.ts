@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
+import type { SchemaPrerequisiteColumn } from '../common/postgres.service';
 import { PostgresService } from '../common/postgres.service';
 import {
   ConsumeIncomingIntegrationEventDto,
@@ -60,6 +61,19 @@ interface IntegrationCounterRow {
   total: string;
 }
 
+const INTEGRATION_REQUIRED_RELATIONS = [
+  'public.integration_async_event_attempts',
+  'public.integration_async_events',
+] as const;
+
+const INTEGRATION_REQUIRED_COLUMNS: readonly SchemaPrerequisiteColumn[] = [
+  { table: 'public.integration_async_events', column: 'detected_at' },
+  { table: 'public.integration_async_events', column: 'owner' },
+  { table: 'public.integration_async_events', column: 'priority' },
+  { table: 'public.integration_async_events', column: 'resolved_at' },
+  { table: 'public.integration_async_events', column: 'treatment_status' },
+] as const;
+
 @Injectable()
 export class IntegrationLegacyService implements OnModuleInit, OnModuleDestroy {
   private static readonly DISPATCH_WORKER_USER = 'integration-legacy-worker';
@@ -73,11 +87,13 @@ export class IntegrationLegacyService implements OnModuleInit, OnModuleDestroy {
     private readonly transport: IntegrationLegacyTransport
   ) {}
 
-  onModuleInit(): void {
+  async onModuleInit(): Promise<void> {
     const intervalMs = this.resolveWorkerIntervalMs();
     if (intervalMs <= 0) {
       return;
     }
+
+    await this.assertIntegrationSchemaReady();
 
     this.dispatchWorkerTimer = setInterval(() => {
       void this.drainQueuedEventsWorker();
@@ -899,6 +915,27 @@ export class IntegrationLegacyService implements OnModuleInit, OnModuleDestroy {
     }
 
     return Math.floor(parsed);
+  }
+
+  private async assertIntegrationSchemaReady(): Promise<void> {
+    const prerequisiteCheck = await this.postgresService.assertSchemaPrerequisites({
+      relations: [...INTEGRATION_REQUIRED_RELATIONS],
+      columns: [...INTEGRATION_REQUIRED_COLUMNS],
+    });
+
+    const missingItems = [
+      ...prerequisiteCheck.missingRelations,
+      ...prerequisiteCheck.missingColumns.map(({ table, column }) => `${table}.${column}`),
+    ];
+
+    if (missingItems.length === 0) {
+      return;
+    }
+
+    throw new Error(
+      `Integration schema prerequisites missing: ${missingItems.join(', ')}. `
+      + 'Apply integration schema migrations before starting the backend.'
+    );
   }
 
   private async assertExerciceBelongsToTenant(tenantId: string, exerciceId: string): Promise<void> {

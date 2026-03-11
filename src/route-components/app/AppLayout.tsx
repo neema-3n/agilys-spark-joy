@@ -1,16 +1,16 @@
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import { type ReactNode, useState, useEffect, useRef } from 'react';
+import { NavLink, useLocation } from '@/lib/router';
 import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { Button } from '@/components/ui/button';
 import { LayoutDashboard, Wallet, FileText, Receipt, BarChart3, Settings, ChevronLeft, ChevronRight, ChevronDown, Users, CreditCard, Wallet2, ShieldCheck, LineChart, TrendingUp, BookmarkCheck, ShoppingCart, DollarSign, FolderKanban, Layers, PlayCircle, Target, BookOpen } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AppHeader } from '@/components/app/AppHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { trackAppLandingViewIfPending } from '@/services/analytics/tracker';
 
-const AppLayout = () => {
+const AppLayout = ({ children }: { children?: ReactNode }) => {
   const { isLoading: clientLoading, hasLoaded: clientLoaded, currentClient } = useClient();
   const { isLoading: exerciceLoading, hasLoaded: exerciceLoaded } = useExercice();
   const location = useLocation();
@@ -278,13 +278,13 @@ const AppLayout = () => {
       } bg-card border-r border-sidebar-border transition-all duration-300 flex flex-col h-screen`}>
         {/* Header Sidebar - Style AirBooks */}
         <div className="flex-shrink-0 p-4 border-b border-sidebar-border flex items-center justify-between bg-primary">
-          {sidebarOpen && <div className="flex items-center gap-2">
+          {sidebarOpen && <div data-testid="app-shell-brand" className="flex items-center gap-2">
               <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-md">
                 <span className="text-sm font-bold text-primary">A</span>
               </div>
               <span className="font-bold text-lg text-white">AGILYS</span>
             </div>}
-          {!sidebarOpen && <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-md mx-auto">
+          {!sidebarOpen && <div data-testid="app-shell-brand" className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-md mx-auto">
             <span className="text-sm font-bold text-primary">A</span>
           </div>}
         </div>
@@ -464,7 +464,7 @@ const AppLayout = () => {
               <div className="h-10 w-10 animate-spin rounded-full border-2 border-muted-foreground border-t-primary" />
             </div>
           ) : (
-            <Outlet />
+            children
           )}
         </main>
       </div>

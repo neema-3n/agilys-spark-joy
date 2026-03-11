@@ -1,5 +1,6 @@
 import { requestJson } from '@/services/api/api-utils';
 import type {
+  Condition,
   CreateRegleComptableInput,
   RegleComptable,
   TypeOperation,
@@ -50,7 +51,7 @@ const mapFromApi = (row: RegleComptableApiModel): RegleComptable => ({
   dateFin: row.dateFin,
   permanente: row.permanente,
   typeOperation: row.typeOperation,
-  conditions: row.conditions || [],
+  conditions: (row.conditions || []) as Condition[],
   compteDebitId: row.compteDebitId,
   compteCreditId: row.compteCreditId,
   actif: row.actif,

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from '@/lib/router';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Lock, Mail, User } from 'lucide-react';
 import { z } from 'zod';
 import { resolveLoginRedirect } from '@/services/auth/auth-routing';
+import { resolveDevLoginDefaults } from '@/services/auth/dev-login-defaults';
 import {
   markPendingAppLandingView,
   trackAuthPageView,
@@ -35,8 +36,9 @@ const signupSchema = z.object({
 const signupUnavailableMessage = "L'inscription en libre-service n'est pas disponible actuellement. Contactez un administrateur.";
 
 const Login = () => {
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
+  const devLoginDefaults = resolveDevLoginDefaults();
+  const [loginEmail, setLoginEmail] = useState(() => devLoginDefaults?.email ?? '');
+  const [loginPassword, setLoginPassword] = useState(() => devLoginDefaults?.password ?? '');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -51,7 +53,6 @@ const Login = () => {
   const { toast } = useToast();
 
   const from = resolveLoginRedirect({
-    stateFrom: (location.state as { from?: string } | null)?.from,
     search: location.search
   });
 

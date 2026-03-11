@@ -1,4 +1,4 @@
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation } from '@/lib/router';
 import { useAuth } from '@/contexts/AuthContext';
 import { ReactNode, useEffect } from 'react';
 import { buildRequestedPath } from '@/services/auth/auth-routing';

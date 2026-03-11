@@ -193,32 +193,33 @@ const buildProjetRows = (input: {
     factureByProjet.set(item.projetId, (factureByProjet.get(item.projetId) ?? 0) + Number(item.montantLiquide || item.montantTTC || 0));
   });
 
-  return projects
-    .filter((projet) => !filters.projetId || projet.id === filters.projetId)
-    .filter((projet) => !allowedProjetIds || allowedProjetIds.has(projet.id))
-    .map((projet) => {
-      const structure = detectStructureForProjet(projet, structuresCentreCout);
-      if (filters.structureId && structure?.id !== filters.structureId) {
-        return null;
-      }
+  return (
+    projects
+      .filter((projet) => !filters.projetId || projet.id === filters.projetId)
+      .filter((projet) => !allowedProjetIds || allowedProjetIds.has(projet.id))
+      .map((projet) => {
+        const structure = detectStructureForProjet(projet, structuresCentreCout);
+        if (filters.structureId && structure?.id !== filters.structureId) {
+          return null;
+        }
 
-      const metrics = computeRowMetrics(
-        Number(projet.budgetAlloue || 0),
-        engagementByProjet.get(projet.id) ?? 0,
-        factureByProjet.get(projet.id) ?? 0
-      );
+        const metrics = computeRowMetrics(
+          Number(projet.budgetAlloue || 0),
+          engagementByProjet.get(projet.id) ?? 0,
+          factureByProjet.get(projet.id) ?? 0
+        );
 
-      return {
-        id: `projet-${projet.id}`,
-        dimensionType: 'projet' as const,
-        dimensionLabel: `${projet.code} - ${projet.nom}`,
-        projetLabel: projet.nom,
-        structureLabel: structure ? `${structure.code} - ${structure.nom}` : 'Non rattachee',
-        ...metrics,
-      };
-    })
-    .filter((row): row is AnalyseRow => row !== null)
-    .sort((left, right) => right.budgetAlloue - left.budgetAlloue);
+        return {
+          id: `projet-${projet.id}`,
+          dimensionType: 'projet' as const,
+          dimensionLabel: `${projet.code} - ${projet.nom}`,
+          projetLabel: projet.nom,
+          structureLabel: structure ? `${structure.code} - ${structure.nom}` : 'Non rattachee',
+          ...metrics,
+        };
+      })
+      .filter((row) => row !== null) as AnalyseRow[]
+  ).sort((left, right) => right.budgetAlloue - left.budgetAlloue);
 };
 
 const buildStructureRows = (projetRows: AnalyseRow[], structuresCentreCout: Structure[]): AnalyseRow[] => {
