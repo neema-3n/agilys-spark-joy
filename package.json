@@ -36,13 +36,13 @@
     "test:supabase:runtime-gate": "node ./scripts/supabase-runtime-gate.mjs",
     "test:hypercare:gate": "node ./scripts/hypercare-gate.mjs",
     "build:migration:audit": "node ./scripts/build-migration-audit-dossier.mjs",
-    "test:migration:audit": "node --test ./tests/migration-audit-dossier.test.mjs"
-    ,"env:resolve": "node ./scripts/env/resolve-app-env.mjs"
-    ,"env:verify": "node ./scripts/env/verify-required-env.mjs"
-    ,"env:summary": "node ./scripts/env/print-env-summary.mjs"
-    ,"deploy:preview": "node ./scripts/deploy/deploy-preview.mjs"
-    ,"deploy:staging": "node ./scripts/deploy/deploy-staging.mjs"
-    ,"deploy:production": "node ./scripts/deploy/deploy-production.mjs"
+    "test:migration:audit": "node --test ./tests/migration-audit-dossier.test.mjs",
+    "env:resolve": "node ./scripts/env/resolve-app-env.mjs",
+    "env:verify": "node ./scripts/env/verify-required-env.mjs",
+    "env:summary": "node ./scripts/env/print-env-summary.mjs",
+    "deploy:preview": "node ./scripts/deploy/deploy-preview.mjs",
+    "deploy:staging": "node ./scripts/deploy/deploy-staging.mjs",
+    "deploy:production": "node ./scripts/deploy/deploy-production.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -82,8 +82,8 @@
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.462.0",
-    "next-themes": "^0.3.0",
     "next": "^15.3.1",
+    "next-themes": "^0.3.0",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
@@ -98,6 +98,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
+    "@next/eslint-plugin-next": "^15.3.1",
     "@playwright/test": "^1.45.0",
     "@tailwindcss/typography": "^0.5.16",
     "@types/node": "^22.16.5",
