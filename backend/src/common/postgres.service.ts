@@ -1,5 +1,6 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
+import { resolvePostgresRuntimeConfig } from '../config/runtime-env';
 
 interface SqlExecutor {
   query<T extends QueryResultRow = QueryResultRow>(text: string, values?: unknown[]): Promise<QueryResult<T>>;
@@ -20,11 +21,7 @@ export class PostgresService implements OnModuleDestroy {
   private pool: Pool | null = null;
 
   private createPool(): Pool {
-    const host = process.env.POSTGRES_HOST ?? '127.0.0.1';
-    const port = Number(process.env.POSTGRES_PORT ?? 5432);
-    const database = process.env.POSTGRES_DB ?? 'agilys';
-    const user = process.env.POSTGRES_USER ?? 'agilys_app';
-    const password = process.env.POSTGRES_PASSWORD ?? 'change-me-local-only';
+    const { host, port, database, user, password } = resolvePostgresRuntimeConfig();
 
     return new Pool({
       host,

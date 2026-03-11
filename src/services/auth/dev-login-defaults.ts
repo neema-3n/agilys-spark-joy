@@ -1,3 +1,5 @@
+import { isDevelopmentAppEnv, resolveAppEnv } from '@/config/runtime-env';
+
 export interface DevLoginDefaults {
   email: string;
   password: string;
@@ -17,6 +19,8 @@ const readPreferredValue = (primary?: string, fallback?: string): string => {
 export const resolveDevLoginDefaults = (env: PublicEnv = process.env): DevLoginDefaults | null => {
   const runtimeEnv = env === process.env
     ? {
+        APP_ENV: process.env.APP_ENV,
+        NEXT_PUBLIC_APP_ENV: process.env.NEXT_PUBLIC_APP_ENV,
         NODE_ENV: process.env.NODE_ENV,
         NEXT_PUBLIC_DEV_LOGIN_EMAIL: process.env.NEXT_PUBLIC_DEV_LOGIN_EMAIL,
         NEXT_PUBLIC_DEV_LOGIN_PASSWORD: process.env.NEXT_PUBLIC_DEV_LOGIN_PASSWORD,
@@ -25,7 +29,7 @@ export const resolveDevLoginDefaults = (env: PublicEnv = process.env): DevLoginD
       }
     : env;
 
-  if (runtimeEnv.NODE_ENV !== 'development') {
+  if (!isDevelopmentAppEnv(resolveAppEnv(runtimeEnv))) {
     return null;
   }
 

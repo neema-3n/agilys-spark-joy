@@ -1,0 +1,78 @@
+name: Deploy Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to promote to production
+        required: true
+        default: main
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  production-deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint backend
+        run: pnpm --dir backend run lint
+
+      - name: Build frontend
+        run: pnpm run build:frontend
+
+      - name: Verify production deploy secrets
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: pnpm run env:verify -- --environment production --services frontend
+
+      - name: Print production environment summary
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          BACKEND_PRODUCTION_DEPLOY_HOOK_URL: ${{ secrets.BACKEND_PRODUCTION_DEPLOY_HOOK_URL }}
+        run: pnpm run env:summary -- --environment production --services frontend,backend
+
+      - name: Deploy production frontend
+        id: deploy_production
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          BACKEND_PRODUCTION_DEPLOY_HOOK_URL: ${{ secrets.BACKEND_PRODUCTION_DEPLOY_HOOK_URL }}
+        run: pnpm run deploy:production
+
+      - name: Publish deployment summary
+        run: |
+          {
+            echo "## Production Deployment"
+            echo
+            echo "- Git ref: ${{ inputs.ref }}"
+            echo "- Frontend URL: ${{ steps.deploy_production.outputs.frontend_url }}"
+            echo "- Backend hook triggered: ${{ steps.deploy_production.outputs.backend_triggered }}"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -2,27 +2,16 @@ import 'reflect-metadata';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { applyResolvedAppEnv, resolveBackendRuntimeEnv } from './config/runtime-env';
 
 const applyRuntimeEnvDefaults = (): void => {
-  const isProd = (process.env.NODE_ENV ?? '').trim().toLowerCase() === 'production';
-  if (isProd) {
+  const appEnv = applyResolvedAppEnv();
+  if (appEnv !== 'development') {
     return;
   }
 
   process.env.JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET ?? 'dev-access-secret';
   process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET ?? 'dev-refresh-secret';
-};
-
-const parseCorsOrigins = (): string[] => {
-  const rawOrigins = process.env.CORS_ORIGINS;
-  if (!rawOrigins) {
-    return [];
-  }
-
-  return rawOrigins
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter((origin) => origin.length > 0);
 };
 
 const isAllowedLocalOrigin = (origin: string): boolean => {
@@ -37,11 +26,12 @@ const isAllowedLanOrigin = (origin: string): boolean => {
 
 async function bootstrap(): Promise<void> {
   applyRuntimeEnvDefaults();
+  const runtimeEnv = resolveBackendRuntimeEnv();
 
   const app = await NestFactory.create(AppModule);
 
-  const explicitOrigins = parseCorsOrigins();
-  const allowLanInDev = process.env.NODE_ENV !== 'production';
+  const explicitOrigins = runtimeEnv.corsOrigins;
+  const allowLanInDev = runtimeEnv.isDevelopment;
   app.enableCors({
     origin: (origin, callback) => {
       if (!origin) {
@@ -70,8 +60,7 @@ async function bootstrap(): Promise<void> {
     })
   );
 
-  const port = Number(process.env.PORT ?? 3001);
-  await app.listen(port);
+  await app.listen(runtimeEnv.port);
 }
 
 void bootstrap();

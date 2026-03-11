@@ -1,0 +1,77 @@
+name: Preview Deploy
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint backend
+        run: pnpm --dir backend run lint
+
+      - name: Build frontend
+        run: pnpm run build:frontend
+
+      - name: Print preview environment summary
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          BACKEND_PREVIEW_DEPLOY_HOOK_URL: ${{ secrets.BACKEND_PREVIEW_DEPLOY_HOOK_URL }}
+        run: pnpm run env:summary -- --environment preview --services frontend,backend
+
+      - name: Verify preview deploy secrets
+        if: ${{ secrets.VERCEL_TOKEN != '' && secrets.VERCEL_ORG_ID != '' && secrets.VERCEL_PROJECT_ID != '' }}
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: pnpm run env:verify -- --environment preview --services frontend
+
+      - name: Deploy preview frontend
+        if: ${{ secrets.VERCEL_TOKEN != '' && secrets.VERCEL_ORG_ID != '' && secrets.VERCEL_PROJECT_ID != '' }}
+        id: deploy_preview
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          BACKEND_PREVIEW_DEPLOY_HOOK_URL: ${{ secrets.BACKEND_PREVIEW_DEPLOY_HOOK_URL }}
+        run: pnpm run deploy:preview
+
+      - name: Preview deploy skipped
+        if: ${{ secrets.VERCEL_TOKEN == '' || secrets.VERCEL_ORG_ID == '' || secrets.VERCEL_PROJECT_ID == '' }}
+        run: echo "Preview deploy skipped because Vercel secrets are not configured."
+
+      - name: Publish deployment summary
+        if: ${{ steps.deploy_preview.outputs.frontend_url != '' }}
+        run: |
+          {
+            echo "## Preview Deployment"
+            echo
+            echo "- Frontend URL: ${{ steps.deploy_preview.outputs.frontend_url }}"
+            echo "- Backend hook triggered: ${{ steps.deploy_preview.outputs.backend_triggered }}"
+          } >> "$GITHUB_STEP_SUMMARY"

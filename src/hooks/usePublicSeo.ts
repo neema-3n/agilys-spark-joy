@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { trackSeoAudit } from '@/services/analytics/tracker';
+import { resolvePublicRuntimeEnv } from '@/config/runtime-env';
 
 type PublicSeoConfig = {
   title: string;
@@ -15,7 +16,7 @@ const resolveSeoBaseUrl = (): string => {
     return normalizeSiteUrl(window.location.origin);
   }
 
-  const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || process.env.VITE_PUBLIC_SITE_URL?.trim();
+  const configuredSiteUrl = resolvePublicRuntimeEnv().siteUrl;
   if (configuredSiteUrl) {
     return normalizeSiteUrl(configuredSiteUrl);
   }

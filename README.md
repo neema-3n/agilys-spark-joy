@@ -20,7 +20,7 @@ http://localhost:8080
 `pnpm dev` démarre la stack locale complète:
 - PostgreSQL (Docker Compose)
 - API NestJS
-- Frontend Vite
+- Frontend Next.js
 
 Variables supportées (sans modifier le code):
 
@@ -38,6 +38,22 @@ WEB_PORT=8181 API_PORT=3100 DB_PORT=55432 pnpm dev
 
 Runbook détaillé: `docs/runbooks/local-dev-command-and-ports.md`
 
+## Environnements non-production
+
+La convention cible de ce repo est:
+
+- `local` -> `APP_ENV=development`
+- `preview` -> deploy PR Vercel
+- `staging` -> pre-production stable
+- `production` -> promotion protegee
+
+Documents de reference:
+
+- `docs/architecture/environment-matrix.md`
+- `docs/runbooks/preview-deploy.md`
+- `docs/runbooks/staging-deploy.md`
+- `docs/runbooks/rollback.md`
+
 ## 🔐 Configuration Auth Frontend (Story 2.4)
 
 Le frontend d'authentification utilise maintenant l'API NestJS (`/auth/login`, `/auth/refresh`, `/auth/logout`) avec stockage local des tokens.
@@ -46,11 +62,14 @@ L'inscription en libre-service n'est pas exposee par l'API actuelle; la page fro
 Variables frontend (fichier `.env`) :
 
 ```bash
-VITE_API_BASE_URL="http://localhost:3001"
+APP_ENV="development"
+NEXT_PUBLIC_APP_ENV="development"
+NEXT_PUBLIC_API_BASE_URL="http://localhost:3001"
 ```
 
 Notes:
-- Si `VITE_API_BASE_URL` est absent, le client frontend utilise des chemins relatifs (`/auth/*`) vers le même host.
+- Compatibilite transitoire preservee: `VITE_API_BASE_URL` et `VITE_PUBLIC_SITE_URL` restent lus en fallback tant que la migration frontend n'est pas totalement nettoyee.
+- Si `NEXT_PUBLIC_API_BASE_URL` et `VITE_API_BASE_URL` sont absents, le client frontend utilise des chemins relatifs (`/auth/*`) vers le même host.
 - Les variables `AUTH_TEST_USER_EMAIL` et `AUTH_TEST_USER_PASSWORD` se configurent côté backend (voir `backend/README.md`).
 - Si le frontend tourne sur un port différent de l'API (`localhost:8082` par exemple), définir `CORS_ORIGINS` côté backend (ex: `CORS_ORIGINS=http://localhost:8080,http://localhost:8082`).
 - Le backend auth utilise PostgreSQL local par défaut (`AUTH_STORAGE_MODE=postgres`). Pour les tests backend rapides, basculer en `AUTH_STORAGE_MODE=memory`.
@@ -236,7 +255,7 @@ DELETE /api/budgets/:id
 
 - **React 18** - Library UI
 - **TypeScript** - Type safety
-- **Vite** - Build tool
+- **Next.js 15 (cible Next.js 16)** - Framework frontend
 - **Tailwind CSS** - Styling
 - **shadcn/ui** - Composants UI
 - **React Router** - Navigation
@@ -260,6 +279,9 @@ pnpm run db:seed     # Peupler donnees de base rejouables
 pnpm run db:verify   # Verification complete migrate/reset/seed
 pnpm run db:import:remote # Import donnees Supabase (public) vers local
 pnpm run db:snapshot:local # Sauver l'etat local comme dataset de seed
+pnpm run env:resolve -- --environment staging
+pnpm run env:summary -- --environment preview --services frontend,backend
+pnpm run deploy:preview
 ```
 
 ## 🎨 Design System
