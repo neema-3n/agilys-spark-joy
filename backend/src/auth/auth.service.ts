@@ -7,7 +7,7 @@ import { AuthLoggerService } from './auth-logger.service';
 import type { AccessTokenClaims, AuthResponse, RefreshTokenClaims } from './auth.types';
 import { RefreshTokenStore } from './refresh-token.store';
 import { hasIncompatibleRoleCombination } from './authorization.types';
-import { UsersService } from '../users/users.service';
+import { TenantSummary, UsersService } from '../users/users.service';
 
 @Injectable()
 export class AuthService {
@@ -138,6 +138,10 @@ export class AuthService {
         message: 'Utilisateur de test present/active.'
       }))
     };
+  }
+
+  async listAccessibleTenants(actor: AuthenticatedUser): Promise<TenantSummary[]> {
+    return this.usersService.listTenantsByActor(actor);
   }
 
   private async issueTokenPair(claims: AccessTokenClaims, rotateFromJti?: string): Promise<AuthResponse> {

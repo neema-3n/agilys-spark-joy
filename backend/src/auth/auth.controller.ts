@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import type { AuthenticatedUser } from './authenticated-user.interface';
 import { AuthorizationPolicyGuard } from './authorization-policy.guard';
 import { AuthService } from './auth.service';
@@ -36,6 +36,12 @@ export class AuthController {
   @RequirePermissions('roles:manage')
   async initTestUsers() {
     return this.authService.initTestUsers();
+  }
+
+  @Get('tenants')
+  @UseGuards(JwtAuthGuard)
+  async listAccessibleTenants(@CurrentUser() currentUser: AuthenticatedUser) {
+    return this.authService.listAccessibleTenants(currentUser);
   }
 
   @Patch('users/:userId/roles/assign')
