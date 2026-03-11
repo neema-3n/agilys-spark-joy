@@ -1,3 +1,4 @@
+import Image from "next/image";
 import dashboardPreview from "@/assets/dashboard-preview.jpg";
 import { Card } from "@/components/ui/card";
 import { CheckCircle2 } from "lucide-react";
@@ -35,12 +36,13 @@ const Dashboard = () => {
           </div>
 
           <Card className="p-4 shadow-primary border-border overflow-hidden">
-            <img 
-              src={dashboardPreview.src} 
-              alt="Tableau de bord intelligent avec visualisations et analyses budgétaires en temps réel" 
-              width="768"
-              height="480"
+            <Image
+              src={dashboardPreview}
+              alt="Tableau de bord intelligent avec visualisations et analyses budgétaires en temps réel"
+              width={768}
+              height={480}
               className="w-full h-auto rounded-lg"
+              sizes="(min-width: 1024px) 50vw, 100vw"
             />
           </Card>
         </div>

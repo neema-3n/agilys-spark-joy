@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import heroBackground from "@/assets/hero-background.jpg";
 import PublicCtaGroup from "@/components/public/PublicCtaGroup";
@@ -7,12 +8,13 @@ const Hero = () => {
     <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
-        <img 
-          src={heroBackground.src} 
-          alt="Système de gestion budgétaire moderne pour collectivités publiques" 
-          width="1504"
-          height="846"
+        <Image
+          src={heroBackground}
+          alt="Système de gestion budgétaire moderne pour collectivités publiques"
+          fill
           className="w-full h-full object-cover"
+          sizes="100vw"
+          priority
         />
         <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-accent/80 to-primary/90" />
       </div>
