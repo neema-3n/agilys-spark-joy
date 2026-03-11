@@ -12,7 +12,10 @@ const parseAuthError = async (response: Response): Promise<string> => {
   const payload = await response.json().catch(() => null);
   const message = payload && typeof payload === 'object' ? Reflect.get(payload, 'message') : null;
   if (typeof message === 'string' && message.trim().length > 0) {
-    return message;
+    const normalized = message.trim().toLowerCase();
+    if (normalized !== 'network error') {
+      return message;
+    }
   }
   if (Array.isArray(message) && message.length > 0) {
     const firstMessage = message.find((entry) => typeof entry === 'string');

@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { hashSync } from 'bcryptjs';
 import type { DatabaseError } from 'pg';
 import { resolveAuthStorageMode } from '../auth/auth-storage-mode';
+import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { PostgresService } from '../common/postgres.service';
 
 export interface UserRecord {
@@ -16,6 +17,12 @@ export interface SeededUserSummary {
   email: string;
   tenantId: string;
   roles: string[];
+}
+
+export interface TenantSummary {
+  id: string;
+  displayName: string;
+  isActive: boolean;
 }
 
 @Injectable()
@@ -276,6 +283,16 @@ export class UsersService implements OnModuleInit {
     return this.rowToUserRecord(result.rows[0]);
   }
 
+  async listTenantsByActor(actor: AuthenticatedUser): Promise<TenantSummary[]> {
+    const isSuperAdmin = actor.roles.includes('super_admin');
+    if (this.storageMode === 'memory') {
+      return this.listTenantsFromMemory(isSuperAdmin ? null : actor.tenantId);
+    }
+
+    await this.ensurePostgresReady();
+    return this.listTenantsFromPostgres(isSuperAdmin ? null : actor.tenantId);
+  }
+
   private rowToUserRecord(
     row:
       | {
@@ -324,6 +341,94 @@ export class UsersService implements OnModuleInit {
 
       throw error;
     }
+  }
+
+  private listTenantsFromMemory(tenantId: string | null): TenantSummary[] {
+    const uniqueByTenantId = new Map<string, TenantSummary>();
+    for (const user of this.users) {
+      if (tenantId && user.tenantId !== tenantId) {
+        continue;
+      }
+
+      if (!uniqueByTenantId.has(user.tenantId)) {
+        uniqueByTenantId.set(user.tenantId, {
+          id: user.tenantId,
+          displayName: user.tenantId,
+          isActive: true
+        });
+      }
+    }
+
+    return [...uniqueByTenantId.values()];
+  }
+
+  private async listTenantsFromPostgres(tenantId: string | null): Promise<TenantSummary[]> {
+    const fromCatalog = await this.listTenantsFromCatalog(tenantId);
+    if (fromCatalog !== null) {
+      return fromCatalog;
+    }
+
+    return this.listTenantsFromAuthUsers(tenantId);
+  }
+
+  private async listTenantsFromCatalog(tenantId: string | null): Promise<TenantSummary[] | null> {
+    try {
+      const values: unknown[] = [];
+      const where = tenantId ? 'WHERE id = $1' : '';
+      if (tenantId) {
+        values.push(tenantId);
+      }
+
+      const result = await this.postgresService.query<{ id: string; display_name: string | null; is_active: boolean }>(
+        `
+          SELECT id, display_name, is_active
+          FROM public.tenants
+          ${where}
+          ORDER BY id ASC
+        `,
+        values
+      );
+
+      return result.rows
+        .filter((row) => row.is_active)
+        .map((row) => ({
+          id: row.id,
+          displayName: row.display_name?.trim() || row.id,
+          isActive: row.is_active
+        }));
+    } catch (error) {
+      const dbError = error as DatabaseError;
+      if (dbError.code === '42P01') {
+        return null;
+      }
+
+      throw error;
+    }
+  }
+
+  private async listTenantsFromAuthUsers(tenantId: string | null): Promise<TenantSummary[]> {
+    const values: unknown[] = [];
+    const where = tenantId ? 'AND tenant_id = $1' : '';
+    if (tenantId) {
+      values.push(tenantId);
+    }
+
+    const result = await this.runPostgresQuery<{ tenant_id: string }>(
+      `
+        SELECT DISTINCT tenant_id
+        FROM public.auth_users
+        WHERE is_active = true
+        ${where}
+        ORDER BY tenant_id ASC
+      `,
+      values
+    );
+
+    return result.rows.map((row) => ({
+      id: row.tenant_id,
+      displayName: row.tenant_id,
+      isActive: true
+    }));
   }
 
   private async runPostgresQuery<T extends object>(

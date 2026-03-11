@@ -109,7 +109,7 @@ Mettre a jour le dataset seed depuis l'etat local courant:
 pnpm run db:snapshot:local
 ```
 
-## 🧪 Comptes de Test (Phase 0 - Mock Authentication)
+## 🧪 Comptes de Test (API réelle)
 
 ### Super Admin
 - **Email:** `super@agilys.com`
@@ -143,7 +143,7 @@ pnpm run db:snapshot:local
 - Mode sombre/clair
 - Lien vers connexion
 
-### ✅ Authentification Mock
+### ✅ Authentification API
 - Login avec validation Zod
 - Interface d'inscription (UI ready)
 - Gestion des rôles et permissions
@@ -196,11 +196,6 @@ src/
 │   ├── api/
 │   │   ├── auth.service.ts
 │   │   └── clients.service.ts
-│   └── mockData/
-│       ├── users.mock.ts
-│       ├── clients.mock.ts
-│       ├── exercices.mock.ts
-│       └── engagements.mock.ts
 └── types/
     └── index.ts         # Types TypeScript
 ```
@@ -216,13 +211,9 @@ POST   /auth/logout
 POST   /auth/refresh
 ```
 
-### Clients
-```
-GET    /api/clients
-GET    /api/clients/:id
-POST   /api/clients
-PUT    /api/clients/:id
-DELETE /api/clients/:id
+### Tenants / Clients
+``` 
+GET    /auth/tenants
 ```
 
 ### Exercices
