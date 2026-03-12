@@ -76,6 +76,17 @@ const readPreferredValue = (...values: Array<string | undefined>): string => {
 
 const trimTrailingSlash = (value: string): string => value.replace(/\/+$/, '');
 
+const getPublicProcessEnv = (): PublicEnv => ({
+  APP_ENV: process.env.APP_ENV,
+  NEXT_PUBLIC_APP_ENV: process.env.NEXT_PUBLIC_APP_ENV,
+  VERCEL_ENV: process.env.VERCEL_ENV,
+  NODE_ENV: process.env.NODE_ENV,
+  NEXT_PUBLIC_API_PORT: process.env.NEXT_PUBLIC_API_PORT,
+  PORT: process.env.PORT,
+  NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
+  NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL
+});
+
 export interface PublicRuntimeEnv {
   appEnv: AppEnv;
   apiBaseUrl: string;
@@ -84,22 +95,26 @@ export interface PublicRuntimeEnv {
 }
 
 export const resolveAppEnv = (env: PublicEnv = process.env): AppEnv => {
-  return readExplicitAppEnv(env) ?? readVercelAppEnv(env) ?? readNodeAppEnv(env);
+  const runtimeEnv = env === process.env ? getPublicProcessEnv() : env;
+  return readExplicitAppEnv(runtimeEnv) ?? readVercelAppEnv(runtimeEnv) ?? readNodeAppEnv(runtimeEnv);
 };
 
 export const isDevelopmentAppEnv = (appEnv: AppEnv): boolean => appEnv === 'development';
 
 export const resolveApiPort = (env: PublicEnv = process.env): string => {
-  return readPreferredValue(env.NEXT_PUBLIC_API_PORT, env.PORT) || '3001';
+  const runtimeEnv = env === process.env ? getPublicProcessEnv() : env;
+  return readPreferredValue(runtimeEnv.NEXT_PUBLIC_API_PORT, runtimeEnv.PORT) || '3001';
 };
 
 export const resolvePublicApiBaseUrl = (env: PublicEnv = process.env): string => {
-  const configured = readPreferredValue(env.NEXT_PUBLIC_API_BASE_URL);
+  const runtimeEnv = env === process.env ? getPublicProcessEnv() : env;
+  const configured = readPreferredValue(runtimeEnv.NEXT_PUBLIC_API_BASE_URL);
   return configured ? trimTrailingSlash(configured) : '';
 };
 
 export const resolvePublicSiteUrl = (env: PublicEnv = process.env): string => {
-  const configured = readPreferredValue(env.NEXT_PUBLIC_SITE_URL);
+  const runtimeEnv = env === process.env ? getPublicProcessEnv() : env;
+  const configured = readPreferredValue(runtimeEnv.NEXT_PUBLIC_SITE_URL);
   return configured ? trimTrailingSlash(configured) : '';
 };
 
