@@ -24,6 +24,8 @@ describe('IntegrationLegacyService bootstrap', () => {
     jest.restoreAllMocks();
     jest.useRealTimers();
     delete process.env.INTEGRATION_LEGACY_DISPATCH_INTERVAL_MS;
+    delete process.env.APP_ENV;
+    delete process.env.POSTGRES_PASSWORD;
   });
 
   it('ne lance aucun timer quand le schéma critique est incomplet', async () => {
@@ -44,6 +46,8 @@ describe('IntegrationLegacyService bootstrap', () => {
   it('programme un unique timer quand le schéma critique est complet', async () => {
     const service = new IntegrationLegacyService(postgresService, transport);
     process.env.INTEGRATION_LEGACY_DISPATCH_INTERVAL_MS = '2500';
+    process.env.APP_ENV = 'preview';
+    process.env.POSTGRES_PASSWORD = 'preview-secret';
 
     await service.onModuleInit();
 
@@ -52,6 +56,17 @@ describe('IntegrationLegacyService bootstrap', () => {
     expect(jest.getTimerCount()).toBe(1);
 
     service.onModuleDestroy();
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  it('n initiale pas le worker sans configuration postgres en preview', async () => {
+    const service = new IntegrationLegacyService(postgresService, transport);
+    process.env.APP_ENV = 'preview';
+
+    await service.onModuleInit();
+
+    expect(assertSchemaPrerequisites).not.toHaveBeenCalled();
+    expect(setInterval).not.toHaveBeenCalled();
     expect(jest.getTimerCount()).toBe(0);
   });
 });

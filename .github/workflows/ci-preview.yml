@@ -3,6 +3,12 @@ name: Preview Deploy
 on:
   pull_request:
   workflow_dispatch:
+    inputs:
+      deploy_backend:
+        description: Trigger backend preview deploy hook
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: preview-${{ github.event.pull_request.number || github.ref }}
@@ -15,11 +21,33 @@ jobs:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-      BACKEND_PREVIEW_DEPLOY_HOOK_URL: ${{ secrets.BACKEND_PREVIEW_DEPLOY_HOOK_URL }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Detect backend changes
+        id: backend_changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+
+      - name: Resolve backend preview hook
+        id: backend_hook
+        env:
+          BACKEND_PREVIEW_DEPLOY_HOOK_SECRET: ${{ secrets.BACKEND_PREVIEW_DEPLOY_HOOK_URL }}
+        run: |
+          hook_url=""
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.deploy_backend }}" == "true" ]]; then
+            hook_url="${BACKEND_PREVIEW_DEPLOY_HOOK_SECRET}"
+          elif [[ "${{ steps.backend_changes.outputs.backend }}" == "true" ]]; then
+            hook_url="${BACKEND_PREVIEW_DEPLOY_HOOK_SECRET}"
+          fi
+
+          echo "hook_url=${hook_url}" >> "$GITHUB_OUTPUT"
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -51,6 +79,8 @@ jobs:
       - name: Deploy preview frontend
         if: ${{ env.VERCEL_TOKEN != '' && env.VERCEL_ORG_ID != '' && env.VERCEL_PROJECT_ID != '' }}
         id: deploy_preview
+        env:
+          BACKEND_PREVIEW_DEPLOY_HOOK_URL: ${{ steps.backend_hook.outputs.hook_url }}
         run: pnpm run deploy:preview
 
       - name: Preview deploy skipped

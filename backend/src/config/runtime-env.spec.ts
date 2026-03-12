@@ -1,4 +1,9 @@
-import { applyResolvedAppEnv, resolveAppEnv, resolvePostgresRuntimeConfig } from './runtime-env';
+import {
+  applyResolvedAppEnv,
+  hasConfiguredPostgresRuntime,
+  resolveAppEnv,
+  resolvePostgresRuntimeConfig
+} from './runtime-env';
 
 describe('runtime-env', () => {
   it('prioritizes explicit APP_ENV over NODE_ENV', () => {
@@ -23,6 +28,17 @@ describe('runtime-env', () => {
         POSTGRES_USER: 'agilys_app'
       })
     ).toThrow('Missing required environment variable: POSTGRES_PASSWORD');
+  });
+
+  it('treats preview without postgres password as an unconfigured postgres runtime', () => {
+    expect(
+      hasConfiguredPostgresRuntime({
+        APP_ENV: 'preview',
+        POSTGRES_HOST: 'db.example.internal',
+        POSTGRES_DB: 'agilys_preview',
+        POSTGRES_USER: 'agilys_app'
+      })
+    ).toBe(false);
   });
 
   it('normalizes APP_ENV into process.env for downstream services', () => {

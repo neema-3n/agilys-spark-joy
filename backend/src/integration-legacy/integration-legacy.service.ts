@@ -1,8 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import type { SchemaPrerequisiteColumn } from '../common/postgres.service';
 import { PostgresService } from '../common/postgres.service';
+import { hasConfiguredPostgresRuntime } from '../config/runtime-env';
 import {
   ConsumeIncomingIntegrationEventDto,
   CreateOutgoingIntegrationEventDto,
@@ -79,6 +80,7 @@ export class IntegrationLegacyService implements OnModuleInit, OnModuleDestroy {
   private static readonly DISPATCH_WORKER_USER = 'integration-legacy-worker';
   private static readonly DETECTION_SLA_MS = 5 * 60 * 1000; // NFR23
   private static readonly RECOVERY_SLA_MS = 15 * 60 * 1000; // NFR22
+  private readonly logger = new Logger(IntegrationLegacyService.name);
   private dispatchWorkerTimer: NodeJS.Timeout | null = null;
   private dispatchWorkerRunning = false;
 
@@ -90,6 +92,13 @@ export class IntegrationLegacyService implements OnModuleInit, OnModuleDestroy {
   async onModuleInit(): Promise<void> {
     const intervalMs = this.resolveWorkerIntervalMs();
     if (intervalMs <= 0) {
+      return;
+    }
+
+    if (!hasConfiguredPostgresRuntime()) {
+      this.logger.warn(
+        'Skipping integration legacy bootstrap because PostgreSQL runtime is not configured.'
+      );
       return;
     }
 
