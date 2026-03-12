@@ -22,6 +22,19 @@ http://localhost:8080
 - API NestJS
 - Frontend Next.js
 
+Configuration locale recommandée:
+
+```bash
+cp .env.local.example .env.local
+cp backend/.env.example backend/.env
+```
+
+Compatibilité conservée:
+- `.env.local` pilote le frontend et les ports locaux
+- `backend/.env` pilote l'API NestJS
+- `.env` racine reste lu en fallback pour les setups plus anciens
+- les variables d'environnement exportées dans le shell gardent la priorité
+
 Variables supportées (sans modifier le code):
 
 ```bash
@@ -59,7 +72,7 @@ Documents de reference:
 Le frontend d'authentification utilise maintenant l'API NestJS (`/auth/login`, `/auth/refresh`, `/auth/logout`) avec stockage local des tokens.
 L'inscription en libre-service n'est pas exposee par l'API actuelle; la page frontend l'indique donc comme indisponible.
 
-Variables frontend (fichier `.env`) :
+Variables frontend (fichier `.env.local`) :
 
 ```bash
 APP_ENV="development"
@@ -68,8 +81,7 @@ NEXT_PUBLIC_API_BASE_URL="http://localhost:3001"
 ```
 
 Notes:
-- Compatibilite transitoire preservee: `VITE_API_BASE_URL` et `VITE_PUBLIC_SITE_URL` restent lus en fallback tant que la migration frontend n'est pas totalement nettoyee.
-- Si `NEXT_PUBLIC_API_BASE_URL` et `VITE_API_BASE_URL` sont absents, le client frontend utilise des chemins relatifs (`/auth/*`) vers le même host.
+- Si `NEXT_PUBLIC_API_BASE_URL` est absent, le client frontend reconstruit automatiquement une URL locale en mode `development` avec l'hôte courant et `API_PORT`.
 - Les variables `AUTH_TEST_USER_EMAIL` et `AUTH_TEST_USER_PASSWORD` se configurent côté backend (voir `backend/README.md`).
 - Si le frontend tourne sur un port différent de l'API (`localhost:8082` par exemple), définir `CORS_ORIGINS` côté backend (ex: `CORS_ORIGINS=http://localhost:8080,http://localhost:8082`).
 - Le backend auth utilise PostgreSQL local par défaut (`AUTH_STORAGE_MODE=postgres`). Pour les tests backend rapides, basculer en `AUTH_STORAGE_MODE=memory`.
@@ -82,7 +94,8 @@ La base locale PostgreSQL est fournie via `docker compose` (pas d'installation S
 Initialisation variables locales:
 
 ```bash
-cp .env.example .env
+cp .env.local.example .env.local
+cp backend/.env.example backend/.env
 ```
 
 ```bash
@@ -267,7 +280,7 @@ DELETE /api/budgets/:id
 
 ```bash
 pnpm dev             # Demarrage stack locale (DB + API + Front)
-pnpm run dev:frontend # Frontend seul (Vite)
+pnpm run dev:frontend # Frontend Next.js seul
 pnpm run dev:backend  # API seule (NestJS)
 pnpm run build       # Build production
 pnpm run preview     # Preview du build

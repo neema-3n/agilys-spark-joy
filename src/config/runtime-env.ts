@@ -90,16 +90,16 @@ export const resolveAppEnv = (env: PublicEnv = process.env): AppEnv => {
 export const isDevelopmentAppEnv = (appEnv: AppEnv): boolean => appEnv === 'development';
 
 export const resolveApiPort = (env: PublicEnv = process.env): string => {
-  return readPreferredValue(env.NEXT_PUBLIC_API_PORT, env.VITE_API_PORT, env.PORT) || '3001';
+  return readPreferredValue(env.NEXT_PUBLIC_API_PORT, env.PORT) || '3001';
 };
 
 export const resolvePublicApiBaseUrl = (env: PublicEnv = process.env): string => {
-  const configured = readPreferredValue(env.NEXT_PUBLIC_API_BASE_URL, env.VITE_API_BASE_URL);
+  const configured = readPreferredValue(env.NEXT_PUBLIC_API_BASE_URL);
   return configured ? trimTrailingSlash(configured) : '';
 };
 
 export const resolvePublicSiteUrl = (env: PublicEnv = process.env): string => {
-  const configured = readPreferredValue(env.NEXT_PUBLIC_SITE_URL, env.VITE_PUBLIC_SITE_URL);
+  const configured = readPreferredValue(env.NEXT_PUBLIC_SITE_URL);
   return configured ? trimTrailingSlash(configured) : '';
 };
 

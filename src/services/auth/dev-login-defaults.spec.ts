@@ -2,31 +2,16 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { resolveDevLoginDefaults } from './dev-login-defaults.ts';
 
-test('retient les variables NEXT_PUBLIC en priorité sur VITE', () => {
+test('retient les variables NEXT_PUBLIC en développement', () => {
   const defaults = resolveDevLoginDefaults({
     NODE_ENV: 'development',
     NEXT_PUBLIC_DEV_LOGIN_EMAIL: 'next@agilys.local',
     NEXT_PUBLIC_DEV_LOGIN_PASSWORD: 'NextPublic123!',
-    VITE_DEV_LOGIN_EMAIL: 'vite@agilys.local',
-    VITE_DEV_LOGIN_PASSWORD: 'Vite123!',
   });
 
   assert.deepEqual(defaults, {
     email: 'next@agilys.local',
     password: 'NextPublic123!',
-  });
-});
-
-test('fallback sur VITE si NEXT_PUBLIC est absent', () => {
-  const defaults = resolveDevLoginDefaults({
-    NODE_ENV: 'development',
-    VITE_DEV_LOGIN_EMAIL: 'vite@agilys.local',
-    VITE_DEV_LOGIN_PASSWORD: 'Vite123!',
-  });
-
-  assert.deepEqual(defaults, {
-    email: 'vite@agilys.local',
-    password: 'Vite123!',
   });
 });
 
@@ -54,7 +39,6 @@ test('ignore les valeurs vides après trim', () => {
     NODE_ENV: 'development',
     NEXT_PUBLIC_DEV_LOGIN_EMAIL: '  ',
     NEXT_PUBLIC_DEV_LOGIN_PASSWORD: '  ',
-    VITE_DEV_LOGIN_EMAIL: 'vite@agilys.local',
   });
 
   assert.equal(defaults, null);

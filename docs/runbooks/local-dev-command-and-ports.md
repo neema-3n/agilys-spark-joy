@@ -6,7 +6,7 @@ Démarrer la stack locale complète avec une seule commande:
 
 - PostgreSQL local via Docker Compose
 - API NestJS
-- Frontend Vite
+- Frontend Next.js
 
 ## Prérequis
 
@@ -58,7 +58,8 @@ Sortie attendue:
 DEV_VALIDATE_ONLY=1 pnpm dev
 ```
 
-La commande affiche les ports résolus et vérifie l'absence de conflit.
+La commande affiche les ports résolus et valide la configuration statique
+(valeurs, ports distincts, mapping PostgreSQL) sans démarrer les services.
 
 ## Erreurs courantes
 
