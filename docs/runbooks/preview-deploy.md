@@ -13,3 +13,6 @@ Notes:
 
 - The workflow prints an environment summary before deploy.
 - If Vercel secrets are missing, the preview deployment is skipped explicitly.
+- On pull requests, the backend preview hook is triggered only when files under `backend/**` change.
+- On manual runs (`workflow_dispatch`), you can force the backend preview hook with `deploy_backend=true`.
+- The backend now exposes a public `GET /health` endpoint that returns `200 OK` for Render reachability checks.

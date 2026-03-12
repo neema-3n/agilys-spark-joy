@@ -35,6 +35,7 @@ import { ReportingExecutionTresorerieModule } from './reporting-execution-tresor
 import { ReportingAnalytiqueModule } from './reporting-analytique/reporting-analytique.module';
 import { DossierDepenseUnifieModule } from './dossier-depense-unifie/dossier-depense-unifie.module';
 import { DsfReportingModule } from './dsf-reporting/dsf-reporting.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -68,6 +69,7 @@ import { DsfReportingModule } from './dsf-reporting/dsf-reporting.module';
     ControleInterneModule,
     IntegrationLegacyModule,
     OfflineSyncModule,
+    HealthModule,
     ReportingComptableModule,
     ReportingFournisseursModule,
     ReportingExecutionTresorerieModule,

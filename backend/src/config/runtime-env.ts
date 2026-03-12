@@ -130,6 +130,15 @@ export const resolveBackendRuntimeEnv = (env: NodeJS.ProcessEnv = process.env): 
   };
 };
 
+export const hasConfiguredPostgresRuntime = (env: NodeJS.ProcessEnv = process.env): boolean => {
+  const appEnv = resolveAppEnv(env);
+  if (isDevelopmentAppEnv(appEnv)) {
+    return true;
+  }
+
+  return Boolean(env.POSTGRES_PASSWORD?.trim());
+};
+
 export const resolvePostgresRuntimeConfig = (
   env: NodeJS.ProcessEnv = process.env
 ): PostgresRuntimeConfig => {
