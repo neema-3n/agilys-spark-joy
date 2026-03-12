@@ -6,7 +6,8 @@ Ce runbook permet de demarrer PostgreSQL localement sans installation SGBD nativ
 
 - Docker Desktop (ou Docker Engine) installe et demarre
 - Commande `docker compose` disponible
-- Variables PostgreSQL definies dans `.env` (voir `.env.example`)
+- Variables PostgreSQL definies dans `backend/.env` (voir `backend/.env.example`)
+- Les ports locaux frontend/API peuvent rester dans `.env.local`
 
 ## Demarrage
 
@@ -75,7 +76,7 @@ Verification reproductible automatisee:
 
 Prerequis:
 - Avoir `pnpm` installe
-- Avoir initialise les variables PostgreSQL locales (`.env.example` -> `.env`)
+- Avoir initialise les variables PostgreSQL locales (`backend/.env.example` -> `backend/.env`)
 
 Ordre recommande:
 
@@ -100,7 +101,7 @@ pnpm run db:verify
 Cette procedure importe les donnees `public` de Supabase vers PostgreSQL local.
 
 Variables attendues:
-- `SUPABASE_DB_PASSWORD` (deja present dans `.env` actuel)
+- `SUPABASE_DB_PASSWORD` (a definir dans l'environnement shell local si necessaire)
 - Optionnel `SUPABASE_REMOTE_DB_URL` (sinon auto-resolution via `supabase/.temp/pooler-url`)
 
 Execution standard (recommandee):

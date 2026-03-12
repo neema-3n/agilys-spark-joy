@@ -78,6 +78,12 @@ Errors:
 
 ## Variables d'environnement
 
+Template local recommande:
+
+```bash
+cp backend/.env.example backend/.env
+```
+
 - `APP_ENV` (`development`, `preview`, `staging`, `production`; default runtime fallback: `development`)
 - `PORT` (default: `3001`)
 - `AUTH_STORAGE_MODE` (`postgres` par defaut, `memory` pour tests locaux rapides)
