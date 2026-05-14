@@ -91,7 +91,7 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Tableau de Bord"
+        title="Tableau de Bord TESTO"
         description={`${currentClient?.nom} - ${currentExercice?.libelle}`}
       />
 
