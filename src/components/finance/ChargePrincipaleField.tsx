@@ -66,6 +66,11 @@ export const ChargePrincipaleField = ({
     {mode === 'nature' ? (
       <div className="space-y-2">
         <Label className="text-xs text-muted-foreground">Nature de compte</Label>
+        {naturesCompte.length > 0 && naturesCompte.every((nature) => nature.isFallback) ? (
+          <p className="text-xs text-amber-700">
+            Aucune nature de compte n'est encore paramétrée. Les comptes de charge actifs sont proposés en repli.
+          </p>
+        ) : null}
         <Select value={natureCompteId || ''} onValueChange={(value) => onNatureCompteIdChange(value || undefined)}>
           <SelectTrigger>
             <SelectValue placeholder="Selectionner une nature de compte" />

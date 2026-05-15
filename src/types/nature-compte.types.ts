@@ -12,3 +12,15 @@ export interface NatureCompte {
   compteDefaut?: Pick<Compte, 'id' | 'numero' | 'libelle' | 'type' | 'categorie'>;
   isFallback?: boolean;
 }
+
+export interface CreateNatureCompteInput {
+  clientId: string;
+  code: string;
+  libelle: string;
+  description?: string;
+  compteDefautId?: string;
+  ordre: number;
+  actif: boolean;
+}
+
+export type UpdateNatureCompteInput = Partial<Omit<CreateNatureCompteInput, 'clientId'>>;

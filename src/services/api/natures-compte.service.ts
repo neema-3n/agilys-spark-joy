@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import type { NatureCompte } from '@/types/nature-compte.types';
+import type { CreateNatureCompteInput, NatureCompte, UpdateNatureCompteInput } from '@/types/nature-compte.types';
 import type { Compte } from '@/types/compte.types';
 
 const mapNatureCompte = (row: any): NatureCompte => ({
@@ -41,24 +41,34 @@ const mapFallbackNature = (compte: Compte): NatureCompte => ({
 });
 
 export const naturesCompteService = {
-  async getAll(clientId: string): Promise<NatureCompte[]> {
-    const { data, error } = await supabase
+  async getAll(
+    clientId: string,
+    options: { actifOnly?: boolean; includeFallback?: boolean } = {}
+  ): Promise<NatureCompte[]> {
+    const { actifOnly = true, includeFallback = true } = options;
+
+    let query = supabase
       .from('natures_compte')
       .select(`
         *,
         compte_defaut:comptes!compte_defaut_id(id, numero, libelle, type, categorie)
       `)
       .eq('client_id', clientId)
-      .eq('actif', true)
       .order('ordre', { ascending: true })
       .order('libelle', { ascending: true });
+
+    if (actifOnly) {
+      query = query.eq('actif', true);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       throw error;
     }
 
     const natures = (data || []).map(mapNatureCompte);
-    if (natures.length > 0) {
+    if (natures.length > 0 || !includeFallback) {
       return natures;
     }
 
@@ -89,5 +99,68 @@ export const naturesCompteService = {
         updatedAt: compte.updated_at,
       })
     );
+  },
+
+  async create(input: CreateNatureCompteInput): Promise<NatureCompte> {
+    const { data, error } = await supabase
+      .from('natures_compte')
+      .insert({
+        client_id: input.clientId,
+        code: input.code,
+        libelle: input.libelle,
+        description: input.description ?? null,
+        compte_defaut_id: input.compteDefautId ?? null,
+        ordre: input.ordre,
+        actif: input.actif,
+      })
+      .select(`
+        *,
+        compte_defaut:comptes!compte_defaut_id(id, numero, libelle, type, categorie)
+      `)
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return mapNatureCompte(data);
+  },
+
+  async update(id: string, input: UpdateNatureCompteInput): Promise<NatureCompte> {
+    const payload = {
+      ...(input.code !== undefined ? { code: input.code } : {}),
+      ...(input.libelle !== undefined ? { libelle: input.libelle } : {}),
+      ...(input.description !== undefined ? { description: input.description || null } : {}),
+      ...(input.compteDefautId !== undefined ? { compte_defaut_id: input.compteDefautId || null } : {}),
+      ...(input.ordre !== undefined ? { ordre: input.ordre } : {}),
+      ...(input.actif !== undefined ? { actif: input.actif } : {}),
+    };
+
+    const { data, error } = await supabase
+      .from('natures_compte')
+      .update(payload)
+      .eq('id', id)
+      .select(`
+        *,
+        compte_defaut:comptes!compte_defaut_id(id, numero, libelle, type, categorie)
+      `)
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return mapNatureCompte(data);
+  },
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('natures_compte')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      throw error;
+    }
   },
 };
