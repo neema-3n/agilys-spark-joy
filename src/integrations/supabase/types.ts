@@ -289,6 +289,211 @@ export type Database = {
         }
         Relationships: []
       }
+      modeles_fiscaux: {
+        Row: {
+          actif: boolean
+          client_id: string
+          code: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          libelle: string
+          ordre: number
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          client_id: string
+          code: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          libelle: string
+          ordre?: number
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          client_id?: string
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          libelle?: string
+          ordre?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      modele_fiscal_lignes: {
+        Row: {
+          created_at: string
+          id: string
+          modele_fiscal_id: string
+          montant_defaut_override: number | null
+          ordre: number
+          taux_defaut_override: number | null
+          taxe_fiscale_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          modele_fiscal_id: string
+          montant_defaut_override?: number | null
+          ordre?: number
+          taux_defaut_override?: number | null
+          taxe_fiscale_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          modele_fiscal_id?: string
+          montant_defaut_override?: number | null
+          ordre?: number
+          taux_defaut_override?: number | null
+          taxe_fiscale_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "modele_fiscal_lignes_modele_fiscal_id_fkey"
+            columns: ["modele_fiscal_id"]
+            isOneToOne: false
+            referencedRelation: "modeles_fiscaux"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "modele_fiscal_lignes_taxe_fiscale_id_fkey"
+            columns: ["taxe_fiscale_id"]
+            isOneToOne: false
+            referencedRelation: "taxes_fiscales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      natures_compte: {
+        Row: {
+          actif: boolean
+          client_id: string
+          code: string
+          compte_defaut_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          libelle: string
+          ordre: number
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          client_id: string
+          code: string
+          compte_defaut_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          libelle: string
+          ordre?: number
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          client_id?: string
+          code?: string
+          compte_defaut_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          libelle?: string
+          ordre?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "natures_compte_compte_defaut_id_fkey"
+            columns: ["compte_defaut_id"]
+            isOneToOne: false
+            referencedRelation: "comptes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      taxes_fiscales: {
+        Row: {
+          actif: boolean
+          client_id: string
+          code: string
+          compte_comptable_id: string | null
+          created_at: string
+          created_by: string | null
+          date_debut_validite: string | null
+          date_fin_validite: string | null
+          description: string | null
+          id: string
+          libelle: string
+          montant_fixe_defaut: number | null
+          nature: string
+          ordre: number
+          sens_defaut: string
+          taux_defaut: number | null
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          client_id: string
+          code: string
+          compte_comptable_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_debut_validite?: string | null
+          date_fin_validite?: string | null
+          description?: string | null
+          id?: string
+          libelle: string
+          montant_fixe_defaut?: number | null
+          nature: string
+          ordre?: number
+          sens_defaut: string
+          taux_defaut?: number | null
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          client_id?: string
+          code?: string
+          compte_comptable_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_debut_validite?: string | null
+          date_fin_validite?: string | null
+          description?: string | null
+          id?: string
+          libelle?: string
+          montant_fixe_defaut?: number | null
+          nature?: string
+          ordre?: number
+          sens_defaut?: string
+          taux_defaut?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "taxes_fiscales_compte_comptable_id_fkey"
+            columns: ["compte_comptable_id"]
+            isOneToOne: false
+            referencedRelation: "comptes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       depenses: {
         Row: {
           beneficiaire: string | null

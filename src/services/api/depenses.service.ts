@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Depense, DepenseFormData } from '@/types/depense.types';
+import type { FinancialVentilation } from '@/types/financial.types';
 
 // Conversion helpers
 const toCamelCase = (obj: any): any => {
@@ -38,6 +39,8 @@ const cleanData = (obj: any): any => {
   return cleaned;
 };
 
+const parseVentilations = (value: any): FinancialVentilation[] => (Array.isArray(value) ? value : []);
+
 export const getDepenses = async (exerciceId: string, clientId: string): Promise<Depense[]> => {
   const { data, error } = await supabase
     .from('depenses')
@@ -60,7 +63,19 @@ export const getDepenses = async (exerciceId: string, clientId: string): Promise
   const depensesWithCount = (data || []).map(dep => {
     const ecrituresCount = dep.ecritures_comptables?.[0]?.count || 0;
     const { ecritures_comptables, ...depenseData } = dep;
-    return { ...depenseData, ecritures_count: ecrituresCount };
+    return {
+      ...depenseData,
+      ecritures_count: ecrituresCount,
+      montant_ht: dep.montant_ht ?? dep.montant,
+      montant_ttc: dep.montant_ttc ?? dep.montant,
+      montant_net_paye: dep.montant_net_paye ?? dep.montant,
+      total_ajouts: dep.total_ajouts ?? 0,
+      total_retraits: dep.total_retraits ?? 0,
+      charge_principale_mode: dep.charge_principale_mode ?? 'nature',
+      nature_compte_charge_id: dep.nature_compte_charge_id ?? null,
+      compte_charge_id: dep.compte_charge_id ?? null,
+      ventilations: parseVentilations(dep.ventilations),
+    };
   });
   
   return toCamelCase(depensesWithCount) as Depense[];
@@ -156,7 +171,16 @@ export const updateDepense = async (
     .single();
 
   if (error) throw error;
-  return toCamelCase(data) as Depense;
+  return toCamelCase({
+    ...data,
+    montant_ht: data.montant_ht ?? data.montant,
+    montant_ttc: data.montant_ttc ?? data.montant,
+    montant_net_paye: data.montant_net_paye ?? data.montant,
+    total_ajouts: data.total_ajouts ?? 0,
+    total_retraits: data.total_retraits ?? 0,
+    charge_principale_mode: data.charge_principale_mode ?? 'nature',
+    ventilations: parseVentilations(data.ventilations),
+  }) as Depense;
 };
 
 export const validerDepense = async (id: string): Promise<Depense> => {

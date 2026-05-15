@@ -18,17 +18,18 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useReglesComptables } from '@/hooks/useReglesComptables';
 import { RegleComptableDialog } from './RegleComptableDialog';
-import { TYPE_OPERATION_LABELS, OPERATEUR_LABELS } from '@/lib/regles-comptables-fields';
+import {
+  NATURE_VENTILATION_LABELS,
+  OPERATEUR_LABELS,
+  POINT_COMPTABLE_LABELS,
+  ROLE_LIGNE_LABELS,
+  SOURCE_COMPTE_LABELS,
+  SOURCE_MONTANT_LABELS,
+  TYPE_OPERATION_LABELS,
+} from '@/lib/regles-comptables-fields';
 import type { TypeOperation, RegleComptable } from '@/types/regle-comptable.types';
 
-const TYPE_OPERATIONS: TypeOperation[] = [
-  'reservation',
-  'engagement',
-  'bon_commande',
-  'facture',
-  'depense',
-  'paiement'
-];
+const TYPE_OPERATIONS: TypeOperation[] = ['facture', 'depense', 'paiement'];
 
 export const ReglesComptablesManager = () => {
   const [activeTab, setActiveTab] = useState<TypeOperation>('reservation');
@@ -55,6 +56,13 @@ export const ReglesComptablesManager = () => {
       dateDebut: regle.dateDebut,
       dateFin: regle.dateFin,
       typeOperation: regle.typeOperation,
+      pointComptable: regle.pointComptable,
+      roleLigne: regle.roleLigne,
+      sourceMontant: regle.sourceMontant,
+      debitSource: regle.debitSource,
+      creditSource: regle.creditSource,
+      sensVentilation: regle.sensVentilation,
+      natureVentilation: regle.natureVentilation,
       conditions: regle.conditions,
       compteDebitId: regle.compteDebitId,
       compteCreditId: regle.compteCreditId,
@@ -226,6 +234,13 @@ export const ReglesComptablesManager = () => {
 
                           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 text-sm items-start">
                             <div className="flex flex-wrap items-center gap-1">
+                              <span className="font-medium">Moteur:</span>
+                              <span className="text-muted-foreground">
+                                {POINT_COMPTABLE_LABELS[regle.pointComptable]} / {ROLE_LIGNE_LABELS[regle.roleLigne]}
+                              </span>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-1">
                               <span className="font-medium">Période:</span>
                               <span className="text-muted-foreground">
                                 {regle.permanente ? 'Permanente' : `${regle.dateDebut} → ${regle.dateFin}`}
@@ -269,21 +284,43 @@ export const ReglesComptablesManager = () => {
                             </div>
 
                             <div className="flex flex-wrap items-center gap-1">
+                              <span className="font-medium">Montant:</span>
+                              <span className="text-muted-foreground">
+                                {SOURCE_MONTANT_LABELS[regle.sourceMontant]}
+                                {regle.roleLigne === 'ventilation' && regle.natureVentilation
+                                  ? ` / ${NATURE_VENTILATION_LABELS[regle.natureVentilation]}`
+                                  : ''}
+                              </span>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-1">
                               <span className="font-medium">Comptes:</span>
                               <HoverCard>
                                 <HoverCardTrigger asChild>
                                   <button className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
-                                    {regle.compteDebit?.numero} → {regle.compteCredit?.numero}
+                                    {regle.debitSource === 'compte_fixe'
+                                      ? regle.compteDebit?.numero || '...'
+                                      : SOURCE_COMPTE_LABELS[regle.debitSource]}
+                                    {' → '}
+                                    {regle.creditSource === 'compte_fixe'
+                                      ? regle.compteCredit?.numero || '...'
+                                      : SOURCE_COMPTE_LABELS[regle.creditSource]}
                                     <Info className="h-3 w-3" />
                                   </button>
                                 </HoverCardTrigger>
                                 <HoverCardContent side="top" className="max-w-md">
                                   <div className="space-y-1">
                                     <p className="text-xs">
-                                      <span className="font-semibold">Débit:</span> {regle.compteDebit?.numero} - {regle.compteDebit?.libelle}
+                                      <span className="font-semibold">Débit:</span>{' '}
+                                      {regle.debitSource === 'compte_fixe'
+                                        ? `${regle.compteDebit?.numero || '-'} - ${regle.compteDebit?.libelle || 'Compte fixe à paramétrer'}`
+                                        : SOURCE_COMPTE_LABELS[regle.debitSource]}
                                     </p>
                                     <p className="text-xs">
-                                      <span className="font-semibold">Crédit:</span> {regle.compteCredit?.numero} - {regle.compteCredit?.libelle}
+                                      <span className="font-semibold">Crédit:</span>{' '}
+                                      {regle.creditSource === 'compte_fixe'
+                                        ? `${regle.compteCredit?.numero || '-'} - ${regle.compteCredit?.libelle || 'Compte fixe à paramétrer'}`
+                                        : SOURCE_COMPTE_LABELS[regle.creditSource]}
                                     </p>
                                   </div>
                                 </HoverCardContent>

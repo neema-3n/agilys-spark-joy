@@ -1,25 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { format } from 'date-fns';
+import { AlertCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Select,
   SelectContent,
@@ -28,10 +19,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Facture, CreateFactureInput } from '@/types/facture.types';
-import { format } from 'date-fns';
-import { supabase } from '@/integrations/supabase/client';
-import { AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ChargePrincipaleField } from '@/components/finance/ChargePrincipaleField';
+import { VentilationEditor } from '@/components/finance/VentilationEditor';
+import { useComptes } from '@/hooks/useComptes';
+import { useNaturesCompte } from '@/hooks/useNaturesCompte';
+import { resolveChargePrincipale } from '@/lib/charge-principale-utils';
+import { computeFinancialBreakdown, getCoherenceErrors, sumTaxVentilations } from '@/lib/financial-utils';
+import type { ChargePrincipaleMode, FinancialVentilation } from '@/types/financial.types';
 
 const factureSchema = z.object({
   numero: z.string().min(1, 'Le numéro est requis'),
@@ -42,11 +36,11 @@ const factureSchema = z.object({
   engagementId: z.string().optional(),
   ligneBudgetaireId: z.string().optional(),
   projetId: z.string().optional(),
-  objet: z.string().min(1, 'L\'objet est requis'),
+  objet: z.string().min(1, "L'objet est requis"),
   numeroFactureFournisseur: z.string().optional(),
-  montantHT: z.string().min(1, 'Le montant HT est requis'),
-  montantTVA: z.string().min(1, 'Le montant TVA est requis'),
-  montantTTC: z.string().min(1, 'Le montant TTC est requis'),
+  montantHT: z.coerce.number().positive('Le montant HT est requis'),
+  montantTTC: z.coerce.number().positive('Le montant TTC est requis'),
+  montantNetPaye: z.coerce.number().positive('Le montant net paye est requis'),
   observations: z.string().optional(),
 });
 
@@ -56,9 +50,9 @@ interface FactureDialogProps {
   facture?: Facture;
   onSubmit: (data: CreateFactureInput) => Promise<void>;
   fournisseurs: Array<{ id: string; nom: string; code: string }>;
-  bonsCommande: Array<{ 
-    id: string; 
-    numero: string; 
+  bonsCommande: Array<{
+    id: string;
+    numero: string;
     statut: string;
     fournisseur_id?: string;
     engagement_id?: string;
@@ -91,17 +85,22 @@ export const FactureDialog = ({
   onGenererNumero,
   initialBonCommandeId,
 }: FactureDialogProps) => {
-  const isReadOnly = facture && (facture.statut === 'payee' || facture.statut === 'annulee');
+  const { comptes } = useComptes();
+  const { naturesCompte } = useNaturesCompte();
+  const comptesCharge = useMemo(() => comptes.filter((compte) => compte.type === 'charge' && compte.statut === 'actif'), [comptes]);
 
-  const [montantDisponibleBC, setMontantDisponibleBC] = useState<number | null>(null);
-  const [montantBC, setMontantBC] = useState<number | null>(null);
-  const [montantDejaFacture, setMontantDejaFacture] = useState<number>(0);
+  const [ventilations, setVentilations] = useState<FinancialVentilation[]>([]);
+  const [chargePrincipaleMode, setChargePrincipaleMode] = useState<ChargePrincipaleMode>('nature');
+  const [natureCompteChargeId, setNatureCompteChargeId] = useState<string>();
+  const [compteChargeId, setCompteChargeId] = useState<string>();
+  const initializedRef = useRef(false);
 
   const form = useForm<z.infer<typeof factureSchema>>({
     resolver: zodResolver(factureSchema),
     defaultValues: {
       numero: '',
       dateFacture: format(new Date(), 'yyyy-MM-dd'),
+      dateEcheance: '',
       fournisseurId: '',
       bonCommandeId: 'none',
       engagementId: 'none',
@@ -109,45 +108,24 @@ export const FactureDialog = ({
       projetId: 'none',
       objet: '',
       numeroFactureFournisseur: '',
-      montantHT: '',
-      montantTVA: '',
-      montantTTC: '',
-      dateEcheance: '',
+      montantHT: 0,
+      montantTTC: 0,
+      montantNetPaye: 0,
       observations: '',
     },
   });
-  const bonCommandeId = form.watch('bonCommandeId');
 
   useEffect(() => {
-    if (open && !facture) {
-      onGenererNumero().then((numero) => {
-        // Pré-remplir depuis un BC si fourni
-        const selectedBC = initialBonCommandeId 
-          ? bonsCommande.find(bc => bc.id === initialBonCommandeId)
-          : undefined;
+    if (!open) {
+      initializedRef.current = false;
+      return;
+    }
 
-        const montantHT = selectedBC?.montant ? (selectedBC.montant / 1.2).toFixed(2) : '';
-        const montantTVA = selectedBC?.montant ? ((selectedBC.montant / 1.2) * 0.2).toFixed(2) : '';
-        const montantTTC = selectedBC?.montant?.toFixed(2) || '';
+    if (initializedRef.current) return;
 
-        form.reset({
-          numero: numero,
-          dateFacture: format(new Date(), 'yyyy-MM-dd'),
-          fournisseurId: selectedBC?.fournisseur_id || '',
-          bonCommandeId: selectedBC?.id || 'none',
-          engagementId: selectedBC?.engagement_id || 'none',
-          ligneBudgetaireId: selectedBC?.ligne_budgetaire_id || 'none',
-          projetId: selectedBC?.projet_id || 'none',
-          objet: selectedBC?.objet || '',
-          numeroFactureFournisseur: '',
-        montantHT,
-        montantTVA,
-        montantTTC,
-        dateEcheance: '',
-        observations: '',
-        });
-      });
-    } else if (open && facture) {
+    if (!facture && initialBonCommandeId && bonsCommande.length === 0) return;
+
+    if (facture) {
       form.reset({
         numero: facture.numero,
         dateFacture: facture.dateFacture,
@@ -159,362 +137,280 @@ export const FactureDialog = ({
         projetId: facture.projetId || 'none',
         objet: facture.objet,
         numeroFactureFournisseur: facture.numeroFactureFournisseur || '',
-        montantHT: facture.montantHT.toString(),
-        montantTVA: facture.montantTVA.toString(),
-        montantTTC: facture.montantTTC.toString(),
+        montantHT: facture.montantHT,
+        montantTTC: facture.montantTTC,
+        montantNetPaye: facture.montantNetPaye || facture.montantTTC,
         observations: facture.observations || '',
       });
+      setVentilations(facture.ventilations || []);
+      setChargePrincipaleMode(facture.chargePrincipaleMode || 'nature');
+      setNatureCompteChargeId(facture.natureCompteChargeId);
+      setCompteChargeId(facture.compteChargeId);
+      initializedRef.current = true;
+      return;
     }
-  }, [open, facture, onGenererNumero, initialBonCommandeId]);
+
+    onGenererNumero().then((numero) => {
+      const selectedBC = initialBonCommandeId
+        ? bonsCommande.find((bc) => bc.id === initialBonCommandeId)
+        : undefined;
+      const montantTTC = selectedBC?.montant || 0;
+      const montantHT = montantTTC > 0 ? Number((montantTTC / 1.2).toFixed(2)) : 0;
+
+      form.reset({
+        numero,
+        dateFacture: format(new Date(), 'yyyy-MM-dd'),
+        dateEcheance: '',
+        fournisseurId: selectedBC?.fournisseur_id || '',
+        bonCommandeId: selectedBC?.id || 'none',
+        engagementId: selectedBC?.engagement_id || 'none',
+        ligneBudgetaireId: selectedBC?.ligne_budgetaire_id || 'none',
+        projetId: selectedBC?.projet_id || 'none',
+        objet: selectedBC?.objet || '',
+        numeroFactureFournisseur: '',
+        montantHT,
+        montantTTC,
+        montantNetPaye: montantTTC,
+        observations: '',
+      });
+      initializedRef.current = true;
+    });
+
+    setVentilations([]);
+    setChargePrincipaleMode('nature');
+    setNatureCompteChargeId(undefined);
+    setCompteChargeId(undefined);
+  }, [open, facture, onGenererNumero, initialBonCommandeId, bonsCommande, form]);
+
+  useEffect(() => {
+    if (chargePrincipaleMode !== 'nature' || !natureCompteChargeId) return;
+    const nature = naturesCompte.find((item) => item.id === natureCompteChargeId);
+    if (nature?.compteDefautId) {
+      setCompteChargeId(nature.compteDefautId);
+    }
+  }, [chargePrincipaleMode, natureCompteChargeId, naturesCompte]);
+
+  const breakdown = computeFinancialBreakdown(
+    form.watch('montantHT') || 0,
+    form.watch('montantTTC') || 0,
+    form.watch('montantNetPaye') || 0,
+    ventilations
+  );
+  const coherenceErrors = getCoherenceErrors(breakdown);
 
   const handleSubmit = async (values: z.infer<typeof factureSchema>) => {
-    try {
-      const factureData: CreateFactureInput = {
-        clientId: currentClientId,
-        exerciceId: currentExerciceId,
-        numero: values.numero,
-        dateFacture: values.dateFacture,
-        dateEcheance: values.dateEcheance || undefined,
-        fournisseurId: values.fournisseurId,
-        bonCommandeId: values.bonCommandeId && values.bonCommandeId !== 'none' ? values.bonCommandeId : undefined,
-        engagementId: values.engagementId && values.engagementId !== 'none' ? values.engagementId : undefined,
-        ligneBudgetaireId: values.ligneBudgetaireId && values.ligneBudgetaireId !== 'none' ? values.ligneBudgetaireId : undefined,
-        projetId: values.projetId && values.projetId !== 'none' ? values.projetId : undefined,
-        objet: values.objet,
-        numeroFactureFournisseur: values.numeroFactureFournisseur || undefined,
-        montantHT: parseFloat(values.montantHT),
-        montantTVA: parseFloat(values.montantTVA),
-        montantTTC: parseFloat(values.montantTTC),
-        montantLiquide: facture ? facture.montantLiquide : 0,
-        statut: 'brouillon',
-        observations: values.observations || undefined,
-      };
+    const resolvedChargePrincipale = resolveChargePrincipale({
+      mode: chargePrincipaleMode,
+      natureCompteId: natureCompteChargeId,
+      compteChargeId,
+      naturesCompte,
+    });
 
-      await onSubmit(factureData);
-      // Fermer le dialog seulement si la création a réussi
-      onOpenChange(false);
-    } catch (error) {
-      // L'erreur est gérée par le hook useFactures qui affiche le message détaillé
-      // Le dialog reste ouvert pour permettre la correction
-      console.error('Erreur lors de la soumission:', error);
+    if (resolvedChargePrincipale.error) {
+      form.setError('objet', { type: 'manual', message: resolvedChargePrincipale.error });
+      return;
     }
+
+    if (coherenceErrors.length > 0) {
+      form.setError('montantNetPaye', { type: 'manual', message: coherenceErrors[0] });
+      return;
+    }
+
+    const payload: CreateFactureInput = {
+      clientId: currentClientId,
+      exerciceId: currentExerciceId,
+      numero: values.numero,
+      dateFacture: values.dateFacture,
+      dateEcheance: values.dateEcheance || undefined,
+      fournisseurId: values.fournisseurId,
+      bonCommandeId: values.bonCommandeId !== 'none' ? values.bonCommandeId : undefined,
+      engagementId: values.engagementId !== 'none' ? values.engagementId : undefined,
+      ligneBudgetaireId: values.ligneBudgetaireId !== 'none' ? values.ligneBudgetaireId : undefined,
+      projetId: values.projetId !== 'none' ? values.projetId : undefined,
+      objet: values.objet,
+      numeroFactureFournisseur: values.numeroFactureFournisseur || undefined,
+      montantHT: values.montantHT,
+      montantTVA: sumTaxVentilations(ventilations),
+      montantTTC: values.montantTTC,
+      montantNetPaye: values.montantNetPaye,
+      totalAjouts: breakdown.totalAjouts,
+      totalRetraits: breakdown.totalRetraits,
+      montantLiquide: facture?.montantLiquide || 0,
+      chargePrincipaleMode: resolvedChargePrincipale.chargePrincipaleMode,
+      natureCompteChargeId: resolvedChargePrincipale.natureCompteChargeId,
+      compteChargeId: resolvedChargePrincipale.compteChargeId,
+      ventilations,
+      statut: facture?.statut || 'brouillon',
+      observations: values.observations || undefined,
+    };
+
+    await onSubmit(payload);
+    onOpenChange(false);
   };
-
-  // Calculer automatiquement le montant TTC
-  const watchMontantHT = form.watch('montantHT');
-  const watchMontantTVA = form.watch('montantTVA');
-
-  useEffect(() => {
-    const ht = parseFloat(watchMontantHT) || 0;
-    const tva = parseFloat(watchMontantTVA) || 0;
-    const ttc = ht + tva;
-    const ttcFormatted = ttc.toFixed(2);
-    
-    // Only update if the value has actually changed to avoid infinite loops
-    const currentValue = form.getValues('montantTTC');
-    if (!isNaN(ttc) && currentValue !== ttcFormatted) {
-      form.setValue('montantTTC', ttcFormatted, { 
-        shouldValidate: true,
-        shouldDirty: false,
-        shouldTouch: false
-      });
-    }
-  }, [watchMontantHT, watchMontantTVA]);
-
-  // Calculer le montant disponible sur le BC
-  useEffect(() => {
-    let isActive = true;
-
-    if (!bonCommandeId || bonCommandeId === 'none') {
-      setMontantDisponibleBC(null);
-      setMontantBC(null);
-      setMontantDejaFacture(0);
-      return;
-    }
-
-    const bc = bonsCommande.find((b) => b.id === bonCommandeId);
-    if (!bc || !bc.montant) {
-      setMontantDisponibleBC(null);
-      setMontantBC(null);
-      setMontantDejaFacture(0);
-      return;
-    }
-
-    const fetchMontantDejaFacture = async () => {
-      const { data, error } = await supabase
-        .from('factures')
-        .select('id, montant_ttc, statut')
-        .eq('bon_commande_id', bonCommandeId)
-        .neq('statut', 'annulee');
-
-      if (error) {
-        console.error('Erreur récupération factures BC:', error);
-        return;
-      }
-
-      const dejaFacture = (data || [])
-        .filter((f) => f.id !== (facture?.id || '00000000-0000-0000-0000-000000000000'))
-        .reduce((sum, f) => sum + parseFloat(f.montant_ttc.toString()), 0);
-
-      if (!isActive) return;
-
-      setMontantBC(bc.montant);
-      setMontantDejaFacture(dejaFacture);
-      setMontantDisponibleBC(bc.montant - dejaFacture);
-    };
-
-    fetchMontantDejaFacture();
-
-    return () => {
-      isActive = false;
-    };
-  }, [bonCommandeId, bonsCommande, facture?.id]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
-        <DialogHeader className="flex-shrink-0">
-          <DialogTitle>
-            {facture ? 'Modifier la facture' : 'Nouvelle facture'}
-          </DialogTitle>
+      <DialogContent className="max-h-[90vh] max-w-4xl overflow-hidden">
+        <DialogHeader>
+          <DialogTitle>{facture ? 'Modifier la facture' : 'Nouvelle facture'}</DialogTitle>
         </DialogHeader>
-        
-        <div className="flex-1 overflow-y-auto px-4 min-h-0">
-          <Form {...form}>
-          <form className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="numero"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Numéro</FormLabel>
-                    <FormControl>
-                      <Input {...field} disabled />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="dateFacture"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date de facture</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} disabled={isReadOnly} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)}>
+            <ScrollArea className="h-[72vh] pr-4">
+              <div className="space-y-6">
+                <section className="space-y-4 rounded-md border p-4">
+                  <div className="space-y-1">
+                    <h3 className="font-medium">Bloc 1 - Noyau de saisie</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Identification de la piece, reference budgetaire, charge principale et montants pivots.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <FormField control={form.control} name="numero" render={({ field }) => (
+                      <FormItem><FormLabel>Numero AGILYS</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="numeroFactureFournisseur" render={({ field }) => (
+                      <FormItem><FormLabel>Numero facture fournisseur</FormLabel><FormControl><Input {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="dateFacture" render={({ field }) => (
+                      <FormItem><FormLabel>Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="dateEcheance" render={({ field }) => (
+                      <FormItem><FormLabel>Echeance</FormLabel><FormControl><Input type="date" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="fournisseurId" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Fournisseur</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Selectionner un fournisseur" /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            {fournisseurs.map((item) => <SelectItem key={item.id} value={item.id}>{item.nom} - {item.code}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="objet" render={({ field }) => (
+                      <FormItem><FormLabel>Objet</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="bonCommandeId" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bon de commande</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Aucun bon de commande" /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">Aucun</SelectItem>
+                            {bonsCommande.map((item) => <SelectItem key={item.id} value={item.id}>{item.numero}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="engagementId" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Engagement</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Aucun engagement" /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">Aucun</SelectItem>
+                            {engagements.map((item) => <SelectItem key={item.id} value={item.id}>{item.numero}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="ligneBudgetaireId" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Ligne budgetaire</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Aucune ligne budgetaire" /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">Aucune</SelectItem>
+                            {lignesBudgetaires.map((item) => <SelectItem key={item.id} value={item.id}>{item.libelle}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="projetId" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Projet</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Aucun projet" /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">Aucun</SelectItem>
+                            {projets.map((item) => <SelectItem key={item.id} value={item.id}>{item.code} - {item.nom}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+
+                  <ChargePrincipaleField
+                    mode={chargePrincipaleMode}
+                    onModeChange={setChargePrincipaleMode}
+                    natureCompteId={natureCompteChargeId}
+                    onNatureCompteIdChange={setNatureCompteChargeId}
+                    compteChargeId={compteChargeId}
+                    onCompteChargeIdChange={setCompteChargeId}
+                    naturesCompte={naturesCompte}
+                    comptesCharge={comptesCharge}
+                  />
+
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <FormField control={form.control} name="montantHT" render={({ field }) => (
+                      <FormItem><FormLabel>Montant HT</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="montantTTC" render={({ field }) => (
+                      <FormItem><FormLabel>Montant TTC</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="montantNetPaye" render={({ field }) => (
+                      <FormItem><FormLabel>Montant net paye</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                  </div>
+                </section>
+
+                <section className="space-y-4">
+                  <VentilationEditor ventilations={ventilations} onChange={setVentilations} />
+
+                  <div className="grid gap-3 rounded-md border p-4 text-sm md:grid-cols-3">
+                    <div>Total ajouts : {breakdown.totalAjouts.toFixed(2)}</div>
+                    <div>Total retraits : {breakdown.totalRetraits.toFixed(2)}</div>
+                    <div>TVA legacy : {sumTaxVentilations(ventilations).toFixed(2)}</div>
+                  </div>
+
+                  {coherenceErrors.length > 0 ? (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{coherenceErrors[0]}</AlertDescription>
+                    </Alert>
+                  ) : (
+                    <Alert>
+                      <AlertDescription>Montants coherents.</AlertDescription>
+                    </Alert>
+                  )}
+                </section>
+
+                <section className="space-y-4 rounded-md border p-4">
+                  <div className="space-y-1">
+                    <h3 className="font-medium">Bloc 3 - Informations annexes</h3>
+                  </div>
+                  <FormField control={form.control} name="observations" render={({ field }) => (
+                    <FormItem><FormLabel>Observations</FormLabel><FormControl><Textarea rows={4} {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                </section>
+              </div>
+            </ScrollArea>
+
+            <div className="mt-4 flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
+              <Button type="submit">{facture ? 'Enregistrer' : 'Creer la facture'}</Button>
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="fournisseurId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Fournisseur *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner un fournisseur" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {fournisseurs.map((f) => (
-                          <SelectItem key={f.id} value={f.id}>
-                            {f.code} - {f.nom}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="numeroFactureFournisseur"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>N° facture fournisseur</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Ex: F-2025-001" disabled={isReadOnly} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="bonCommandeId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Bon de commande</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner un BC" />
-                        </SelectTrigger>
-                      </FormControl>
-                  <SelectContent>
-                    <SelectItem value="none">-- Aucun --</SelectItem>
-                    {bonsCommande.map((bc) => (
-                      <SelectItem key={bc.id} value={bc.id}>
-                        {bc.numero}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                {montantDisponibleBC !== null && (
-                  <Alert className={montantDisponibleBC <= 0 ? 'border-destructive' : 'border-primary'}>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      <div className="space-y-1 text-sm">
-                        <div className="flex justify-between">
-                          <span className="font-medium">Montant du BC :</span>
-                          <span>{montantBC?.toLocaleString('fr-FR')} €</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="font-medium">Déjà facturé :</span>
-                          <span>{montantDejaFacture.toLocaleString('fr-FR')} €</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className={`font-semibold ${montantDisponibleBC <= 0 ? 'text-destructive' : 'text-primary'}`}>
-                            Disponible :
-                          </span>
-                          <span className={`font-semibold ${montantDisponibleBC <= 0 ? 'text-destructive' : 'text-primary'}`}>
-                            {montantDisponibleBC.toLocaleString('fr-FR')} €
-                          </span>
-                        </div>
-                        {montantDisponibleBC <= 0 && (
-                          <p className="mt-2 text-xs text-destructive font-medium">
-                            ⚠️ Ce bon de commande est entièrement facturé
-                          </p>
-                        )}
-                      </div>
-                    </AlertDescription>
-                  </Alert>
-                )}
-                
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-              <FormField
-                control={form.control}
-                name="dateEcheance"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date d'échéance</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} disabled={isReadOnly} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="objet"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Objet *</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Description de la facture" disabled={isReadOnly} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-3 gap-4">
-                <FormField
-                control={form.control}
-                name="montantHT"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Montant HT *</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="0.01" {...field} disabled={isReadOnly} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="montantTVA"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Montant TVA *</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="0.01" {...field} disabled={isReadOnly} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="montantTTC"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Montant TTC *</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="0.01" {...field} disabled />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-            />
-          </div>
-
-            <FormField
-              control={form.control}
-              name="observations"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Observations</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} rows={3} disabled={isReadOnly} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            </form>
-          </Form>
-        </div>
-        
-        <div className="flex justify-end gap-2 flex-shrink-0 pt-4 border-t">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
-            {isReadOnly ? 'Fermer' : 'Annuler'}
-          </Button>
-          {!isReadOnly && (
-            <Button 
-              type="button"
-              onClick={form.handleSubmit(handleSubmit)}
-            >
-              {facture ? 'Mettre à jour' : 'Créer'}
-            </Button>
-          )}
-        </div>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

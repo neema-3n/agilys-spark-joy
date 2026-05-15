@@ -1,4 +1,11 @@
-import type { TypeOperation } from '@/types/regle-comptable.types';
+import type {
+  NatureVentilation,
+  PointComptable,
+  RoleLigneComptable,
+  SourceCompteComptable,
+  SourceMontantComptable,
+  TypeOperation,
+} from '@/types/regle-comptable.types';
 
 export interface FieldDefinition {
   value: string;
@@ -29,11 +36,15 @@ export const OPERATION_FIELDS: Record<TypeOperation, FieldDefinition[]> = {
     { value: 'statut', label: 'Statut', type: 'select', options: ['brouillon', 'validee', 'payee', 'annulee'] },
     { value: 'montant_ht', label: 'Montant HT', type: 'number' },
     { value: 'montant_ttc', label: 'Montant TTC', type: 'number' },
+    { value: 'montant_net_paye', label: 'Montant net payé', type: 'number' },
     { value: 'objet', label: 'Objet', type: 'text' },
   ],
   depense: [
     { value: 'statut', label: 'Statut', type: 'select', options: ['brouillon', 'validee', 'ordonnancee', 'payee', 'annulee'] },
     { value: 'montant', label: 'Montant', type: 'number' },
+    { value: 'montant_ht', label: 'Montant HT', type: 'number' },
+    { value: 'montant_ttc', label: 'Montant TTC', type: 'number' },
+    { value: 'montant_net_paye', label: 'Montant net payé', type: 'number' },
     { value: 'beneficiaire', label: 'Bénéficiaire', type: 'text' },
     { value: 'objet', label: 'Objet', type: 'text' },
     { value: 'mode_paiement', label: 'Mode de paiement', type: 'select', options: ['virement', 'cheque', 'especes', 'carte', 'autre'] },
@@ -41,6 +52,9 @@ export const OPERATION_FIELDS: Record<TypeOperation, FieldDefinition[]> = {
   paiement: [
     { value: 'statut', label: 'Statut', type: 'select', options: ['valide', 'annule'] },
     { value: 'montant', label: 'Montant', type: 'number' },
+    { value: 'montant_ht', label: 'Montant HT', type: 'number' },
+    { value: 'montant_ttc', label: 'Montant TTC', type: 'number' },
+    { value: 'montant_net_paye', label: 'Montant net payé', type: 'number' },
     { value: 'mode_paiement', label: 'Mode de paiement', type: 'select', options: ['virement', 'cheque', 'especes', 'carte', 'autre'] },
     { value: 'reference_paiement', label: 'Référence', type: 'text' },
   ],
@@ -53,6 +67,37 @@ export const TYPE_OPERATION_LABELS: Record<TypeOperation, string> = {
   facture: 'Facture',
   depense: 'Dépense',
   paiement: 'Paiement',
+};
+
+export const POINT_COMPTABLE_LABELS: Record<PointComptable, string> = {
+  constatation: 'Constater la charge / dette',
+  reglement: 'Régler en trésorerie',
+};
+
+export const ROLE_LIGNE_LABELS: Record<RoleLigneComptable, string> = {
+  charge_principale: 'Charge principale',
+  ventilation: 'Ventilation',
+  reglement_tresorerie: 'Règlement trésorerie',
+};
+
+export const SOURCE_MONTANT_LABELS: Record<SourceMontantComptable, string> = {
+  montant_ht: 'Montant HT',
+  montant_ttc: 'Montant TTC',
+  montant_net_paye: 'Montant net payé',
+  ventilation_montant: 'Montant de ventilation',
+};
+
+export const SOURCE_COMPTE_LABELS: Record<SourceCompteComptable, string> = {
+  compte_fixe: 'Compte fixe',
+  charge_principale: 'Charge principale',
+};
+
+export const NATURE_VENTILATION_LABELS: Record<NatureVentilation, string> = {
+  taxe: 'Taxe',
+  retenue: 'Retenue',
+  redevance: 'Redevance',
+  frais: 'Frais',
+  autre: 'Autre',
 };
 
 export const OPERATEUR_LABELS: Record<string, string> = {

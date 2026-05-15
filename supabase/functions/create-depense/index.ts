@@ -26,6 +26,11 @@ Deno.serve(async (req) => {
       client_id,
       objet,
       montant,
+      montant_ht,
+      montant_ttc,
+      montant_net_paye,
+      total_ajouts,
+      total_retraits,
       date_depense,
       engagement_id,
       reservation_credit_id,
@@ -36,6 +41,10 @@ Deno.serve(async (req) => {
       projet_id,
       mode_paiement,
       reference_paiement,
+      charge_principale_mode,
+      nature_compte_charge_id,
+      compte_charge_id,
+      ventilations,
       observations,
       user_id,
     } = await req.json();
@@ -117,32 +126,65 @@ Deno.serve(async (req) => {
 
     console.log('Depense created successfully:', data);
 
-    // Generate accounting entries automatically
-    try {
-      console.log('create-depense: Generating ecritures comptables');
-      
-      const { error: ecrituresError } = await supabase.functions.invoke(
-        'generate-ecritures-comptables',
-        {
-          body: {
-            typeOperation: 'depense',
-            sourceId: data.id,
-            clientId: client_id,
-            exerciceId: exercice_id
-          }
-        }
-      );
-      
-      if (ecrituresError) {
-        console.error('create-depense: Error generating ecritures', ecrituresError);
-      } else {
-        console.log('create-depense: Ecritures generated successfully');
-      }
-    } catch (ecrituresError) {
-      console.error('create-depense: Exception generating ecritures', ecrituresError);
+    const { error: patchError } = await supabase
+      .from('depenses')
+      .update({
+        montant_ht: montant_ht ?? montant,
+        montant_ttc: montant_ttc ?? montant,
+        montant_net_paye: montant_net_paye ?? montant,
+        total_ajouts: total_ajouts ?? 0,
+        total_retraits: total_retraits ?? 0,
+        charge_principale_mode: charge_principale_mode ?? 'nature',
+        nature_compte_charge_id: nature_compte_charge_id || null,
+        compte_charge_id: compte_charge_id || null,
+        ventilations: ventilations || [],
+      })
+      .eq('id', data.id);
+
+    if (patchError) {
+      console.error('create-depense: Error updating extended fields', patchError);
+      throw new Error(patchError.message);
     }
 
-    return new Response(JSON.stringify(data), {
+    console.log('create-depense: Generating ecritures comptables');
+
+    const { data: ecrituresResult, error: ecrituresError } = await supabase.functions.invoke(
+      'generate-ecritures-comptables',
+      {
+        body: {
+          typeOperation: 'depense',
+          sourceId: data.id,
+          clientId: client_id,
+          exerciceId: exercice_id
+        }
+      }
+    );
+
+    if (ecrituresError) {
+      console.error('create-depense: Error generating ecritures', ecrituresError);
+      throw new Error('La depense a ete creee mais la generation des ecritures comptables a echoue.');
+    }
+
+    if (!ecrituresResult?.success) {
+      const comptaError = ecrituresResult?.error || 'Generation des ecritures comptables incomplete.';
+      console.error('create-depense: Incomplete accounting generation', ecrituresResult);
+      throw new Error(comptaError);
+    }
+
+    console.log('create-depense: Ecritures generated successfully');
+
+    return new Response(JSON.stringify({
+      ...data,
+      montant_ht: montant_ht ?? montant,
+      montant_ttc: montant_ttc ?? montant,
+      montant_net_paye: montant_net_paye ?? montant,
+      total_ajouts: total_ajouts ?? 0,
+      total_retraits: total_retraits ?? 0,
+      charge_principale_mode: charge_principale_mode ?? 'nature',
+      nature_compte_charge_id: nature_compte_charge_id || null,
+      compte_charge_id: compte_charge_id || null,
+      ventilations: ventilations || [],
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { PaiementStats } from '@/components/paiements/PaiementStats';
 import { PaiementTable } from '@/components/paiements/PaiementTable';
+import { PaiementDialog } from '@/components/paiements/PaiementDialog';
 import { usePaiements } from '@/hooks/usePaiements';
 import { Button } from '@/components/ui/button';
 import { ListLayout } from '@/components/lists/ListLayout';
@@ -30,6 +31,7 @@ export default function Paiements() {
   const { paiements, isLoading, annulerPaiement } = usePaiements();
   const [search, setSearch] = useState('');
   const [statutFilter, setStatutFilter] = useState<'tous' | 'valide' | 'annule'>('tous');
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
   const [selectedPaiementId, setSelectedPaiementId] = useState<string | null>(null);
   const [motifAnnulation, setMotifAnnulation] = useState('');
@@ -44,7 +46,9 @@ export default function Paiements() {
           p.numero.toLowerCase().includes(searchLower) ||
           p.depense?.numero.toLowerCase().includes(searchLower) ||
           p.referencePaiement?.toLowerCase().includes(searchLower) ||
-          p.depense?.fournisseur?.nom?.toLowerCase().includes(searchLower)
+          p.depense?.fournisseur?.nom?.toLowerCase().includes(searchLower) ||
+          p.beneficiaire?.toLowerCase().includes(searchLower) ||
+          p.objet?.toLowerCase().includes(searchLower)
       )
       .sort((a, b) => new Date(b.datePaiement).getTime() - new Date(a.datePaiement).getTime());
   }, [paiements, search, statutFilter]);
@@ -79,7 +83,16 @@ export default function Paiements() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Historique des Paiements" description="Consultation de tous les paiements effectués" sticky={false} />
+      <PageHeader
+        title="Historique des Paiements"
+        description="Consultation de tous les paiements effectués"
+        sticky={false}
+        actions={
+          <Button onClick={() => setCreateDialogOpen(true)}>
+            Nouveau paiement direct
+          </Button>
+        }
+      />
 
       <div className="px-8 space-y-6">
         <PaiementStats paiements={paiements} />
@@ -154,6 +167,11 @@ export default function Paiements() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PaiementDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+      />
     </div>
   );
 }
