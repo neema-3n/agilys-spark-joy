@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Paiement, PaiementFormData } from "@/types/paiement.types";
+import type { FinancialVentilation } from '@/types/financial.types';
 
 // Utility functions
 const toCamelCase = (obj: any): any => {
@@ -27,6 +28,8 @@ const toSnakeCase = (obj: any): any => {
   }
   return obj;
 };
+
+const parseVentilations = (value: any): FinancialVentilation[] => (Array.isArray(value) ? value : []);
 
 // Récupérer tous les paiements d'un exercice
 export const getPaiements = async (exerciceId: string, clientId: string): Promise<Paiement[]> => {
@@ -59,7 +62,19 @@ export const getPaiements = async (exerciceId: string, clientId: string): Promis
   const paiementsWithCount = (data || []).map(paie => {
     const ecrituresCount = paie.ecritures_comptables?.[0]?.count || 0;
     const { ecritures_comptables, ...paiementData } = paie;
-    return { ...paiementData, ecritures_count: ecrituresCount };
+    return {
+      ...paiementData,
+      ecritures_count: ecrituresCount,
+      montant_ht: paie.montant_ht ?? paie.montant,
+      montant_ttc: paie.montant_ttc ?? paie.montant,
+      montant_net_paye: paie.montant_net_paye ?? paie.montant,
+      total_ajouts: paie.total_ajouts ?? 0,
+      total_retraits: paie.total_retraits ?? 0,
+      charge_principale_mode: paie.charge_principale_mode ?? 'nature',
+      nature_compte_charge_id: paie.nature_compte_charge_id ?? null,
+      compte_charge_id: paie.compte_charge_id ?? null,
+      ventilations: parseVentilations(paie.ventilations),
+    };
   });
 
   return toCamelCase(paiementsWithCount);
@@ -78,7 +93,18 @@ export const getPaiementsByDepense = async (depenseId: string): Promise<Paiement
     throw error;
   }
 
-  return toCamelCase(data || []);
+  return toCamelCase(
+    (data || []).map((paiement) => ({
+      ...paiement,
+      montant_ht: paiement.montant_ht ?? paiement.montant,
+      montant_ttc: paiement.montant_ttc ?? paiement.montant,
+      montant_net_paye: paiement.montant_net_paye ?? paiement.montant,
+      total_ajouts: paiement.total_ajouts ?? 0,
+      total_retraits: paiement.total_retraits ?? 0,
+      charge_principale_mode: paiement.charge_principale_mode ?? 'nature',
+      ventilations: parseVentilations(paiement.ventilations),
+    }))
+  );
 };
 
 // Créer un paiement via l'edge function
@@ -89,7 +115,12 @@ export const createPaiement = async (
   userId: string
 ): Promise<Paiement> => {
   const { data, error } = await supabase.functions.invoke('create-paiement', {
-    body: toSnakeCase(paiement)
+    body: {
+      ...toSnakeCase(paiement),
+      exercice_id: exerciceId,
+      client_id: clientId,
+      user_id: userId,
+    }
   });
 
   if (error) {

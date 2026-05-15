@@ -10,11 +10,24 @@ interface CreateFactureRequest {
   montantHT: number;
   montantTVA: number;
   montantTTC: number;
+  montantNetPaye?: number;
+  totalAjouts?: number;
+  totalRetraits?: number;
   numeroFactureFournisseur?: string;
   bonCommandeId?: string;
   engagementId?: string;
   ligneBudgetaireId?: string;
   projetId?: string;
+  chargePrincipaleMode?: 'nature' | 'compte_expert';
+  natureCompteChargeId?: string;
+  compteChargeId?: string;
+  ventilations?: Array<{
+    id: string;
+    libelle: string;
+    nature: string;
+    montant: number;
+    sens: string;
+  }>;
   observations?: string;
 }
 
@@ -137,6 +150,24 @@ Deno.serve(async (req) => {
 
     console.log('create-facture: Facture created successfully:', data.id);
 
+    const { error: patchError } = await supabaseAdmin
+      .from('factures')
+      .update({
+        montant_net_paye: body.montantNetPaye ?? body.montantTTC,
+        total_ajouts: body.totalAjouts ?? body.montantTVA ?? 0,
+        total_retraits: body.totalRetraits ?? 0,
+        charge_principale_mode: body.chargePrincipaleMode ?? 'nature',
+        nature_compte_charge_id: body.natureCompteChargeId || null,
+        compte_charge_id: body.compteChargeId || null,
+        ventilations: body.ventilations || [],
+      })
+      .eq('id', data.id);
+
+    if (patchError) {
+      console.error('create-facture: Error updating extended fields', patchError);
+      throw new Error(patchError.message);
+    }
+
     // Generate accounting entries automatically
     try {
       console.log('create-facture: Generating ecritures comptables');
@@ -175,7 +206,16 @@ Deno.serve(async (req) => {
       }, {} as any);
     };
 
-    const result = toCamelCase(data);
+    const result = toCamelCase({
+      ...data,
+      montant_net_paye: body.montantNetPaye ?? body.montantTTC,
+      total_ajouts: body.totalAjouts ?? body.montantTVA ?? 0,
+      total_retraits: body.totalRetraits ?? 0,
+      charge_principale_mode: body.chargePrincipaleMode ?? 'nature',
+      nature_compte_charge_id: body.natureCompteChargeId || null,
+      compte_charge_id: body.compteChargeId || null,
+      ventilations: body.ventilations || [],
+    });
 
     console.log('Facture created successfully:', result.id);
 

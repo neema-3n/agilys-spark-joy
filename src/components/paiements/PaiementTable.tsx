@@ -56,8 +56,13 @@ export const PaiementTable = ({
       },
       {
         id: 'depense',
-        header: 'Dépense',
-        render: (paiement) => paiement.depense?.numero || '-',
+        header: 'Source',
+        render: (paiement) => paiement.depense?.numero || paiement.objet || 'Paiement direct',
+      },
+      {
+        id: 'beneficiaire',
+        header: 'Bénéficiaire',
+        render: (paiement) => paiement.depense?.fournisseur?.nom || paiement.beneficiaire || '-',
       },
       {
         id: 'montant',

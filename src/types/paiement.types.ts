@@ -1,3 +1,5 @@
+import type { ChargePrincipaleMode, FinancialVentilation } from './financial.types';
+
 export type StatutPaiement = 'valide' | 'annule';
 export type ModePaiement = 'virement' | 'cheque' | 'especes' | 'carte' | 'autre';
 
@@ -8,10 +10,25 @@ export interface Paiement {
   numero: string;
   
   // Source
-  depenseId: string;
+  depenseId?: string;
+  engagementId?: string;
+  ligneBudgetaireId?: string;
+  fournisseurId?: string;
+  beneficiaire?: string;
+  projetId?: string;
+  objet?: string;
   
   // Montant
   montant: number;
+  montantHT: number;
+  montantTTC: number;
+  montantNetPaye: number;
+  totalAjouts: number;
+  totalRetraits: number;
+  chargePrincipaleMode: ChargePrincipaleMode;
+  natureCompteChargeId?: string;
+  compteChargeId?: string;
+  ventilations: FinancialVentilation[];
   
   // Détails paiement
   datePaiement: string;
@@ -45,12 +62,27 @@ export interface Paiement {
 }
 
 export interface PaiementFormData {
-  depenseId: string;
+  depenseId?: string;
+  engagementId?: string;
+  ligneBudgetaireId?: string;
+  fournisseurId?: string;
+  beneficiaire?: string;
+  projetId?: string;
+  objet?: string;
   montant: number;
+  montantHT?: number;
+  montantTTC?: number;
+  montantNetPaye?: number;
+  totalAjouts?: number;
+  totalRetraits?: number;
   datePaiement: string;
   modePaiement: ModePaiement;
   referencePaiement?: string;
   observations?: string;
+  chargePrincipaleMode?: ChargePrincipaleMode;
+  natureCompteChargeId?: string;
+  compteChargeId?: string;
+  ventilations?: FinancialVentilation[];
 }
 
 export interface PaiementStats {

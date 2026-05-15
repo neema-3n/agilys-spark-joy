@@ -1,5 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Facture, CreateFactureInput, UpdateFactureInput, PaginatedResponse, PaginationParams } from '@/types/facture.types';
+import type { FinancialVentilation } from '@/types/financial.types';
+
+const parseVentilations = (value: any): FinancialVentilation[] => (Array.isArray(value) ? value : []);
 
 function mapFactureFromDB(data: any): Facture {
   return {
@@ -19,7 +22,14 @@ function mapFactureFromDB(data: any): Facture {
     montantHT: parseFloat(data.montant_ht) || 0,
     montantTVA: parseFloat(data.montant_tva) || 0,
     montantTTC: parseFloat(data.montant_ttc) || 0,
+    montantNetPaye: parseFloat(data.montant_net_paye) || 0,
+    totalAjouts: parseFloat(data.total_ajouts) || 0,
+    totalRetraits: parseFloat(data.total_retraits) || 0,
     montantLiquide: parseFloat(data.montant_liquide) || 0,
+    chargePrincipaleMode: data.charge_principale_mode || 'nature',
+    natureCompteChargeId: data.nature_compte_charge_id || undefined,
+    compteChargeId: data.compte_charge_id || undefined,
+    ventilations: parseVentilations(data.ventilations),
     statut: data.statut,
     dateValidation: data.date_validation,
     observations: data.observations,
@@ -77,6 +87,13 @@ function mapFactureToDB(data: CreateFactureInput | UpdateFactureInput) {
   if (data.montantHT !== undefined) result.montant_ht = data.montantHT;
   if (data.montantTVA !== undefined) result.montant_tva = data.montantTVA;
   if (data.montantTTC !== undefined) result.montant_ttc = data.montantTTC;
+  if ('montantNetPaye' in data && data.montantNetPaye !== undefined) result.montant_net_paye = data.montantNetPaye;
+  if ('totalAjouts' in data && data.totalAjouts !== undefined) result.total_ajouts = data.totalAjouts;
+  if ('totalRetraits' in data && data.totalRetraits !== undefined) result.total_retraits = data.totalRetraits;
+  if ('chargePrincipaleMode' in data && data.chargePrincipaleMode !== undefined) result.charge_principale_mode = data.chargePrincipaleMode;
+  if ('natureCompteChargeId' in data && data.natureCompteChargeId !== undefined) result.nature_compte_charge_id = data.natureCompteChargeId || null;
+  if ('compteChargeId' in data && data.compteChargeId !== undefined) result.compte_charge_id = data.compteChargeId || null;
+  if ('ventilations' in data && data.ventilations !== undefined) result.ventilations = data.ventilations;
   if ('montantLiquide' in data && data.montantLiquide !== undefined) result.montant_liquide = data.montantLiquide;
   
   return result;
@@ -210,11 +227,18 @@ export const facturesService = {
           montantHT: facture.montantHT,
           montantTVA: facture.montantTVA,
           montantTTC: facture.montantTTC,
+          montantNetPaye: facture.montantNetPaye,
+          totalAjouts: facture.totalAjouts,
+          totalRetraits: facture.totalRetraits,
           numeroFactureFournisseur: facture.numeroFactureFournisseur,
           bonCommandeId: facture.bonCommandeId,
           engagementId: facture.engagementId,
           ligneBudgetaireId: facture.ligneBudgetaireId,
           projetId: facture.projetId,
+          chargePrincipaleMode: facture.chargePrincipaleMode,
+          natureCompteChargeId: facture.natureCompteChargeId,
+          compteChargeId: facture.compteChargeId,
+          ventilations: facture.ventilations,
           observations: facture.observations,
         }
       });

@@ -6,12 +6,33 @@ const corsHeaders = {
 };
 
 interface PaiementRequest {
-  depenseId: string;
+  depenseId?: string;
+  engagementId?: string;
+  ligneBudgetaireId?: string;
+  fournisseurId?: string;
+  beneficiaire?: string;
+  projetId?: string;
+  objet?: string;
   montant: number;
+  montantHT?: number;
+  montantTTC?: number;
+  montantNetPaye?: number;
+  totalAjouts?: number;
+  totalRetraits?: number;
   datePaiement: string;
   modePaiement: string;
   referencePaiement?: string;
   observations?: string;
+  chargePrincipaleMode?: string;
+  natureCompteChargeId?: string;
+  compteChargeId?: string;
+  ventilations?: Array<{
+    id: string;
+    libelle: string;
+    nature: string;
+    montant: number;
+    sens: string;
+  }>;
 }
 
 Deno.serve(async (req) => {
@@ -42,9 +63,33 @@ Deno.serve(async (req) => {
     const body: any = await req.json();
     console.log('Creating paiement:', { userId: user.id, ...body });
 
-    const { depense_id, montant, date_paiement, mode_paiement, reference_paiement, observations } = body;
+    const {
+      depense_id,
+      engagement_id,
+      ligne_budgetaire_id,
+      fournisseur_id,
+      beneficiaire,
+      projet_id,
+      objet,
+      montant,
+      montant_ht,
+      montant_ttc,
+      montant_net_paye,
+      total_ajouts,
+      total_retraits,
+      date_paiement,
+      mode_paiement,
+      reference_paiement,
+      observations,
+      charge_principale_mode,
+      nature_compte_charge_id,
+      compte_charge_id,
+      ventilations,
+      client_id,
+      exercice_id,
+    } = body;
 
-    if (!depense_id || !montant || !date_paiement || !mode_paiement) {
+    if ((!depense_id && !engagement_id && !ligne_budgetaire_id) || !montant || !date_paiement || !mode_paiement) {
       return new Response(
         JSON.stringify({ error: 'Paramètres manquants' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -78,54 +123,161 @@ Deno.serve(async (req) => {
       userClientId = profile.client_id;
     }
 
-    // Récupérer l'exercice_id de la dépense
-    const { data: depense, error: depenseError } = await supabase
-      .from('depenses')
-      .select('exercice_id, client_id')
-      .eq('id', depense_id)
-      .single();
+    let paiement: any;
+    let resolvedClientId = client_id || null;
+    let resolvedExerciceId = exercice_id || null;
 
-    if (depenseError || !depense) {
-      console.error('Depense error:', depenseError);
-      return new Response(
-        JSON.stringify({ error: 'Dépense introuvable' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    if (depense_id) {
+      const { data: depense, error: depenseError } = await supabase
+        .from('depenses')
+        .select('exercice_id, client_id')
+        .eq('id', depense_id)
+        .single();
 
-    // Vérifier que la dépense appartient au même client (sauf pour super_admin)
-    if (!isSuperAdmin && depense.client_id !== userClientId) {
-      return new Response(
-        JSON.stringify({ error: 'Accès non autorisé à cette dépense' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Appeler la fonction DB pour créer le paiement avec numéro automatique
-    const { data: paiement, error: paiementError } = await supabase.rpc(
-      'create_paiement_with_numero',
-      {
-        p_client_id: depense.client_id,
-        p_exercice_id: depense.exercice_id,
-        p_depense_id: depense_id,
-        p_montant: montant,
-        p_date_paiement: date_paiement,
-        p_mode_paiement: mode_paiement,
-        p_reference_paiement: reference_paiement || null,
-        p_observations: observations || null,
-        p_user_id: user.id,
+      if (depenseError || !depense) {
+        console.error('Depense error:', depenseError);
+        return new Response(
+          JSON.stringify({ error: 'Dépense introuvable' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
-    );
 
-    if (paiementError) {
-      console.error('Error creating paiement:', paiementError);
-      return new Response(
-        JSON.stringify({ error: paiementError.message }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      if (!isSuperAdmin && depense.client_id !== userClientId) {
+        return new Response(
+          JSON.stringify({ error: 'Accès non autorisé à cette dépense' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      resolvedClientId = depense.client_id;
+      resolvedExerciceId = depense.exercice_id;
+
+      const { data, error: paiementError } = await supabase.rpc(
+        'create_paiement_with_numero',
+        {
+          p_client_id: depense.client_id,
+          p_exercice_id: depense.exercice_id,
+          p_depense_id: depense_id,
+          p_montant: montant,
+          p_date_paiement: date_paiement,
+          p_mode_paiement: mode_paiement,
+          p_reference_paiement: reference_paiement || null,
+          p_observations: observations || null,
+          p_user_id: user.id,
+        }
       );
+
+      if (paiementError) {
+        console.error('Error creating paiement:', paiementError);
+        return new Response(
+          JSON.stringify({ error: paiementError.message }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      paiement = data;
+    } else {
+      if (!resolvedClientId || !resolvedExerciceId) {
+        return new Response(
+          JSON.stringify({ error: 'Client et exercice requis pour un paiement direct' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (!isSuperAdmin && resolvedClientId !== userClientId) {
+        return new Response(
+          JSON.stringify({ error: 'Accès non autorisé à ce client' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const { data: lastPaiement } = await supabase
+        .from('paiements')
+        .select('numero')
+        .eq('client_id', resolvedClientId)
+        .order('numero', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const nextNumber = lastPaiement?.numero
+        ? Number((lastPaiement.numero.match(/PAY(\d+)$/) || [])[1] || 0) + 1
+        : 1;
+
+      const numero = `PAY${String(nextNumber).padStart(6, '0')}`;
+
+      const { data, error: paiementError } = await supabase
+        .from('paiements')
+        .insert({
+          client_id: resolvedClientId,
+          exercice_id: resolvedExerciceId,
+          numero,
+          depense_id: null,
+          engagement_id: engagement_id || null,
+          ligne_budgetaire_id: ligne_budgetaire_id || null,
+          fournisseur_id: fournisseur_id || null,
+          beneficiaire: beneficiaire || null,
+          projet_id: projet_id || null,
+          objet: objet || null,
+          montant,
+          montant_ht: montant_ht ?? montant,
+          montant_ttc: montant_ttc ?? montant,
+          montant_net_paye: montant_net_paye ?? montant,
+          total_ajouts: total_ajouts ?? 0,
+          total_retraits: total_retraits ?? 0,
+          date_paiement,
+          mode_paiement,
+          reference_paiement: reference_paiement || null,
+          observations: observations || null,
+          charge_principale_mode: charge_principale_mode ?? 'nature',
+          nature_compte_charge_id: nature_compte_charge_id || null,
+          compte_charge_id: compte_charge_id || null,
+          ventilations: ventilations || [],
+          created_by: user.id,
+        })
+        .select()
+        .single();
+
+      if (paiementError) {
+        console.error('Error creating direct paiement:', paiementError);
+        return new Response(
+          JSON.stringify({ error: paiementError.message }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      paiement = data;
     }
 
     console.log('Paiement created successfully:', paiement);
+
+    const { error: patchError } = await supabase
+      .from('paiements')
+      .update({
+        engagement_id: engagement_id || null,
+        ligne_budgetaire_id: ligne_budgetaire_id || null,
+        fournisseur_id: fournisseur_id || null,
+        beneficiaire: beneficiaire || null,
+        projet_id: projet_id || null,
+        objet: objet || null,
+        montant_ht: montant_ht ?? montant,
+        montant_ttc: montant_ttc ?? montant,
+        montant_net_paye: montant_net_paye ?? montant,
+        total_ajouts: total_ajouts ?? 0,
+        total_retraits: total_retraits ?? 0,
+        charge_principale_mode: charge_principale_mode ?? 'nature',
+        nature_compte_charge_id: nature_compte_charge_id || null,
+        compte_charge_id: compte_charge_id || null,
+        ventilations: ventilations || [],
+      })
+      .eq('id', paiement.id);
+
+    if (patchError) {
+      console.error('Error patching paiement:', patchError);
+      return new Response(
+        JSON.stringify({ error: patchError.message }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Generate accounting entries automatically
     try {
@@ -142,8 +294,8 @@ Deno.serve(async (req) => {
           body: {
             typeOperation: 'paiement',
             sourceId: paiement.id,
-            clientId: depense.client_id,
-            exerciceId: depense.exercice_id
+            clientId: resolvedClientId,
+            exerciceId: resolvedExerciceId
           }
         }
       );
@@ -158,7 +310,24 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify(paiement),
+      JSON.stringify({
+        ...paiement,
+        engagement_id: engagement_id || null,
+        ligne_budgetaire_id: ligne_budgetaire_id || null,
+        fournisseur_id: fournisseur_id || null,
+        beneficiaire: beneficiaire || null,
+        projet_id: projet_id || null,
+        objet: objet || null,
+        montant_ht: montant_ht ?? montant,
+        montant_ttc: montant_ttc ?? montant,
+        montant_net_paye: montant_net_paye ?? montant,
+        total_ajouts: total_ajouts ?? 0,
+        total_retraits: total_retraits ?? 0,
+        charge_principale_mode: charge_principale_mode ?? 'nature',
+        nature_compte_charge_id: nature_compte_charge_id || null,
+        compte_charge_id: compte_charge_id || null,
+        ventilations: ventilations || [],
+      }),
       { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
