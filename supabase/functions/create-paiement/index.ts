@@ -279,35 +279,37 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Generate accounting entries automatically
-    try {
-      console.log('create-paiement: Generating ecritures comptables');
-      
-      const supabaseAdmin = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-      );
-      
-      const { error: ecrituresError } = await supabaseAdmin.functions.invoke(
-        'generate-ecritures-comptables',
-        {
-          body: {
-            typeOperation: 'paiement',
-            sourceId: paiement.id,
-            clientId: resolvedClientId,
-            exerciceId: resolvedExerciceId
-          }
+    console.log('create-paiement: Generating ecritures comptables');
+
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const { data: ecrituresResult, error: ecrituresError } = await supabaseAdmin.functions.invoke(
+      'generate-ecritures-comptables',
+      {
+        body: {
+          typeOperation: 'paiement',
+          sourceId: paiement.id,
+          clientId: resolvedClientId,
+          exerciceId: resolvedExerciceId
         }
-      );
-      
-      if (ecrituresError) {
-        console.error('create-paiement: Error generating ecritures', ecrituresError);
-      } else {
-        console.log('create-paiement: Ecritures generated successfully');
       }
-    } catch (ecrituresError) {
-      console.error('create-paiement: Exception generating ecritures', ecrituresError);
+    );
+
+    if (ecrituresError) {
+      console.error('create-paiement: Error generating ecritures', ecrituresError);
+      throw new Error('Le paiement a ete cree mais la generation des ecritures comptables a echoue.');
     }
+
+    if (!ecrituresResult?.success) {
+      const comptaError = ecrituresResult?.error || 'Generation des ecritures comptables incomplete.';
+      console.error('create-paiement: Incomplete accounting generation', ecrituresResult);
+      throw new Error(comptaError);
+    }
+
+    console.log('create-paiement: Ecritures generated successfully');
 
     return new Response(
       JSON.stringify({

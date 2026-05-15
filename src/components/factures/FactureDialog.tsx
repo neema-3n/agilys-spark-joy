@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -23,7 +23,8 @@ import { ChargePrincipaleField } from '@/components/finance/ChargePrincipaleFiel
 import { VentilationEditor } from '@/components/finance/VentilationEditor';
 import { useComptes } from '@/hooks/useComptes';
 import { useNaturesCompte } from '@/hooks/useNaturesCompte';
-import { computeFinancialBreakdown, createEmptyVentilation, getCoherenceErrors, sumTaxVentilations } from '@/lib/financial-utils';
+import { resolveChargePrincipale } from '@/lib/charge-principale-utils';
+import { computeFinancialBreakdown, getCoherenceErrors, sumTaxVentilations } from '@/lib/financial-utils';
 import type { ChargePrincipaleMode, FinancialVentilation } from '@/types/financial.types';
 
 const factureSchema = z.object({
@@ -69,16 +70,6 @@ interface FactureDialogProps {
   initialBonCommandeId?: string;
 }
 
-const MODEL_PRESETS: Record<string, FinancialVentilation[]> = {
-  none: [],
-  taxe: [{ ...createEmptyVentilation(), libelle: 'TVA', nature: 'taxe', sens: 'ajout' }],
-  retenue: [{ ...createEmptyVentilation(), libelle: 'Retenue', nature: 'retenue', sens: 'retrait' }],
-  mixte: [
-    { ...createEmptyVentilation(), libelle: 'TVA', nature: 'taxe', sens: 'ajout' },
-    { ...createEmptyVentilation(), libelle: 'Retenue', nature: 'retenue', sens: 'retrait' },
-  ],
-};
-
 export const FactureDialog = ({
   open,
   onOpenChange,
@@ -102,6 +93,7 @@ export const FactureDialog = ({
   const [chargePrincipaleMode, setChargePrincipaleMode] = useState<ChargePrincipaleMode>('nature');
   const [natureCompteChargeId, setNatureCompteChargeId] = useState<string>();
   const [compteChargeId, setCompteChargeId] = useState<string>();
+  const initializedRef = useRef(false);
 
   const form = useForm<z.infer<typeof factureSchema>>({
     resolver: zodResolver(factureSchema),
@@ -124,7 +116,14 @@ export const FactureDialog = ({
   });
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      initializedRef.current = false;
+      return;
+    }
+
+    if (initializedRef.current) return;
+
+    if (!facture && initialBonCommandeId && bonsCommande.length === 0) return;
 
     if (facture) {
       form.reset({
@@ -147,6 +146,7 @@ export const FactureDialog = ({
       setChargePrincipaleMode(facture.chargePrincipaleMode || 'nature');
       setNatureCompteChargeId(facture.natureCompteChargeId);
       setCompteChargeId(facture.compteChargeId);
+      initializedRef.current = true;
       return;
     }
 
@@ -173,6 +173,7 @@ export const FactureDialog = ({
         montantNetPaye: montantTTC,
         observations: '',
       });
+      initializedRef.current = true;
     });
 
     setVentilations([]);
@@ -197,13 +198,16 @@ export const FactureDialog = ({
   );
   const coherenceErrors = getCoherenceErrors(breakdown);
 
-  const applyModel = (model: keyof typeof MODEL_PRESETS) => {
-    setVentilations(MODEL_PRESETS[model].map((item) => ({ ...item, id: globalThis.crypto?.randomUUID?.() ?? item.id })));
-  };
-
   const handleSubmit = async (values: z.infer<typeof factureSchema>) => {
-    if (!natureCompteChargeId && !compteChargeId) {
-      form.setError('objet', { type: 'manual', message: 'La charge principale est requise.' });
+    const resolvedChargePrincipale = resolveChargePrincipale({
+      mode: chargePrincipaleMode,
+      natureCompteId: natureCompteChargeId,
+      compteChargeId,
+      naturesCompte,
+    });
+
+    if (resolvedChargePrincipale.error) {
+      form.setError('objet', { type: 'manual', message: resolvedChargePrincipale.error });
       return;
     }
 
@@ -232,9 +236,9 @@ export const FactureDialog = ({
       totalAjouts: breakdown.totalAjouts,
       totalRetraits: breakdown.totalRetraits,
       montantLiquide: facture?.montantLiquide || 0,
-      chargePrincipaleMode,
-      natureCompteChargeId,
-      compteChargeId,
+      chargePrincipaleMode: resolvedChargePrincipale.chargePrincipaleMode,
+      natureCompteChargeId: resolvedChargePrincipale.natureCompteChargeId,
+      compteChargeId: resolvedChargePrincipale.compteChargeId,
       ventilations,
       statut: facture?.statut || 'brouillon',
       observations: values.observations || undefined,
@@ -370,13 +374,6 @@ export const FactureDialog = ({
                 </section>
 
                 <section className="space-y-4">
-                  <div className="flex flex-wrap gap-2">
-                    <Button type="button" size="sm" variant="outline" onClick={() => applyModel('none')}>Aucune taxe</Button>
-                    <Button type="button" size="sm" variant="outline" onClick={() => applyModel('taxe')}>Taxe simple</Button>
-                    <Button type="button" size="sm" variant="outline" onClick={() => applyModel('retenue')}>Retenue simple</Button>
-                    <Button type="button" size="sm" variant="outline" onClick={() => applyModel('mixte')}>Taxe + retenue</Button>
-                  </div>
-
                   <VentilationEditor ventilations={ventilations} onChange={setVentilations} />
 
                   <div className="grid gap-3 rounded-md border p-4 text-sm md:grid-cols-3">

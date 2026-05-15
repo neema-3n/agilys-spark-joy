@@ -9,6 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useTaxesFiscales } from '@/hooks/useTaxesFiscales';
+import { useModelesFiscaux } from '@/hooks/useModelesFiscaux';
 import type { FinancialVentilation, VentilationNature } from '@/types/financial.types';
 import {
   createEmptyVentilation,
@@ -23,6 +25,8 @@ interface VentilationEditorProps {
 }
 
 export const VentilationEditor = ({ ventilations, onChange }: VentilationEditorProps) => {
+  const { taxesFiscales } = useTaxesFiscales();
+  const { modelesFiscaux } = useModelesFiscaux();
   const addLine = () => onChange([...ventilations, createEmptyVentilation()]);
 
   const updateLine = (id: string, updates: Partial<FinancialVentilation>) => {
@@ -40,6 +44,32 @@ export const VentilationEditor = ({ ventilations, onChange }: VentilationEditorP
 
   const removeLine = (id: string) => onChange(ventilations.filter((item) => item.id !== id));
 
+  const applyModeleFiscal = (modeleId: string) => {
+    if (modeleId === 'none') {
+      onChange([]);
+      return;
+    }
+
+    const modele = modelesFiscaux.find((item) => item.id === modeleId);
+    if (!modele) return;
+
+    onChange(
+      modele.lignes.map((ligne) => {
+        const taxe = taxesFiscales.find((item) => item.id === ligne.taxeFiscaleId) || ligne.taxeFiscale;
+
+        return {
+          id: globalThis.crypto?.randomUUID?.() ?? `vent-${Date.now()}-${Math.random()}`,
+          taxeFiscaleId: ligne.taxeFiscaleId,
+          libelle: taxe?.libelle || '',
+          nature: taxe?.nature || 'taxe',
+          sens: taxe?.sensDefaut || DEFAULT_SENS_BY_NATURE[(taxe?.nature || 'taxe') as VentilationNature],
+          montant: ligne.montantDefautOverride ?? taxe?.montantFixeDefaut ?? 0,
+          taux: ligne.tauxDefautOverride ?? taxe?.tauxDefaut,
+        };
+      })
+    );
+  };
+
   return (
     <div className="space-y-3 rounded-md border p-4">
       <div className="flex items-center justify-between">
@@ -55,6 +85,17 @@ export const VentilationEditor = ({ ventilations, onChange }: VentilationEditorP
         </Button>
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" size="sm" variant="outline" onClick={() => applyModeleFiscal('none')}>
+          Aucune taxe
+        </Button>
+        {modelesFiscaux.map((modele) => (
+          <Button key={modele.id} type="button" size="sm" variant="outline" onClick={() => applyModeleFiscal(modele.id)}>
+            {modele.libelle}
+          </Button>
+        ))}
+      </div>
+
       <div className="space-y-3">
         {ventilations.length === 0 ? (
           <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
@@ -62,8 +103,48 @@ export const VentilationEditor = ({ ventilations, onChange }: VentilationEditorP
           </div>
         ) : null}
 
-        {ventilations.map((item) => (
-          <div key={item.id} className="grid gap-3 rounded-md border p-3 md:grid-cols-[2fr_1.4fr_1fr_1.1fr_auto]">
+        {ventilations.map((item) => {
+          const taxeSelectionnee = taxesFiscales.find((taxe) => taxe.id === item.taxeFiscaleId);
+
+          return (
+          <div key={item.id} className="grid gap-3 rounded-md border p-3 md:grid-cols-[1.6fr_1.8fr_1.2fr_1fr_1.1fr_auto]">
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Référentiel fiscal</Label>
+              <Select
+                value={item.taxeFiscaleId || 'none'}
+                onValueChange={(value) => {
+                  if (value === 'none') {
+                    updateLine(item.id, { taxeFiscaleId: undefined });
+                    return;
+                  }
+
+                  const taxe = taxesFiscales.find((entry) => entry.id === value);
+                  if (!taxe) return;
+
+                  updateLine(item.id, {
+                    taxeFiscaleId: taxe.id,
+                    libelle: taxe.libelle,
+                    nature: taxe.nature,
+                    sens: taxe.sensDefaut,
+                    montant: item.montant > 0 ? item.montant : taxe.montantFixeDefaut || 0,
+                    taux: taxe.tauxDefaut,
+                  });
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Aucune référence" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Aucune référence</SelectItem>
+                  {taxesFiscales.map((taxe) => (
+                    <SelectItem key={taxe.id} value={taxe.id}>
+                      {taxe.libelle}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Libelle</Label>
               <Input
@@ -127,8 +208,15 @@ export const VentilationEditor = ({ ventilations, onChange }: VentilationEditorP
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
+            {taxeSelectionnee ? (
+              <div className="md:col-span-6 text-xs text-muted-foreground">
+                {taxeSelectionnee.tauxDefaut !== undefined ? `Taux suggéré : ${taxeSelectionnee.tauxDefaut}%` : null}
+                {taxeSelectionnee.tauxDefaut !== undefined && taxeSelectionnee.montantFixeDefaut !== undefined ? ' · ' : null}
+                {taxeSelectionnee.montantFixeDefaut !== undefined ? `Montant suggéré : ${taxeSelectionnee.montantFixeDefaut}` : null}
+              </div>
+            ) : null}
           </div>
-        ))}
+        )})}
       </div>
     </div>
   );

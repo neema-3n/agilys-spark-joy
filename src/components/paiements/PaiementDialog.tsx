@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -27,6 +27,7 @@ import { useNaturesCompte } from '@/hooks/useNaturesCompte';
 import { PaiementFormData } from '@/types/paiement.types';
 import { ChargePrincipaleField } from '@/components/finance/ChargePrincipaleField';
 import { VentilationEditor } from '@/components/finance/VentilationEditor';
+import { resolveChargePrincipale } from '@/lib/charge-principale-utils';
 import { computeFinancialBreakdown, getCoherenceErrors } from '@/lib/financial-utils';
 import type { ChargePrincipaleMode, FinancialVentilation } from '@/types/financial.types';
 
@@ -79,6 +80,7 @@ export const PaiementDialog = ({
   const [chargePrincipaleMode, setChargePrincipaleMode] = useState<ChargePrincipaleMode>('nature');
   const [natureCompteChargeId, setNatureCompteChargeId] = useState<string>();
   const [compteChargeId, setCompteChargeId] = useState<string>();
+  const initializedRef = useRef(false);
 
   const selectedDepense = useMemo(() => depenses.find((item) => item.id === depenseId), [depenses, depenseId]);
 
@@ -103,7 +105,14 @@ export const PaiementDialog = ({
   });
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      initializedRef.current = false;
+      return;
+    }
+
+    if (initializedRef.current) return;
+    if (depenseId && !selectedDepense) return;
+
     setModeSource(depenseId ? 'depense' : 'direct');
     if (depenseId && selectedDepense) {
       form.reset({
@@ -126,6 +135,7 @@ export const PaiementDialog = ({
       setChargePrincipaleMode(selectedDepense.chargePrincipaleMode || 'nature');
       setNatureCompteChargeId(selectedDepense.natureCompteChargeId);
       setCompteChargeId(selectedDepense.compteChargeId);
+      initializedRef.current = true;
       return;
     }
 
@@ -149,6 +159,7 @@ export const PaiementDialog = ({
     setChargePrincipaleMode('nature');
     setNatureCompteChargeId(undefined);
     setCompteChargeId(undefined);
+    initializedRef.current = true;
   }, [open, depenseId, montantRestant, selectedDepense, form]);
 
   useEffect(() => {
@@ -168,8 +179,15 @@ export const PaiementDialog = ({
   const coherenceErrors = getCoherenceErrors(breakdown);
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!natureCompteChargeId && !compteChargeId) {
-      form.setError('objet', { type: 'manual', message: 'La charge principale est requise.' });
+    const resolvedChargePrincipale = resolveChargePrincipale({
+      mode: chargePrincipaleMode,
+      natureCompteId: natureCompteChargeId,
+      compteChargeId,
+      naturesCompte,
+    });
+
+    if (resolvedChargePrincipale.error) {
+      form.setError('objet', { type: 'manual', message: resolvedChargePrincipale.error });
       return;
     }
 
@@ -196,9 +214,9 @@ export const PaiementDialog = ({
       modePaiement: values.modePaiement,
       referencePaiement: values.referencePaiement || undefined,
       observations: values.observations || undefined,
-      chargePrincipaleMode,
-      natureCompteChargeId,
-      compteChargeId,
+      chargePrincipaleMode: resolvedChargePrincipale.chargePrincipaleMode,
+      natureCompteChargeId: resolvedChargePrincipale.natureCompteChargeId,
+      compteChargeId: resolvedChargePrincipale.compteChargeId,
       ventilations,
     };
 

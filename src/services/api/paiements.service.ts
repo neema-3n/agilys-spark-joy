@@ -125,7 +125,20 @@ export const createPaiement = async (
 
   if (error) {
     console.error('Error creating paiement:', error);
-    throw error;
+    let errorMessage = error.message;
+
+    if (error.context) {
+      try {
+        const errorBody = await error.context.json();
+        if (errorBody && errorBody.error) {
+          errorMessage = errorBody.error;
+        }
+      } catch (parseError) {
+        console.error('Impossible de parser l\'erreur create-paiement:', parseError);
+      }
+    }
+
+    throw new Error(errorMessage);
   }
 
   return toCamelCase(data);

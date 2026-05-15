@@ -4,10 +4,12 @@ export type ChargePrincipaleMode = 'nature' | 'compte_expert';
 
 export interface FinancialVentilation {
   id: string;
+  taxeFiscaleId?: string;
   libelle: string;
   nature: VentilationNature;
   montant: number;
   sens: VentilationSens;
+  taux?: number;
 }
 
 export interface FinancialBreakdown {

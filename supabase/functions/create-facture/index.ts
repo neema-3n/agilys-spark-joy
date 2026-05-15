@@ -168,30 +168,32 @@ Deno.serve(async (req) => {
       throw new Error(patchError.message);
     }
 
-    // Generate accounting entries automatically
-    try {
-      console.log('create-facture: Generating ecritures comptables');
-      
-      const { error: ecrituresError } = await supabaseAdmin.functions.invoke(
-        'generate-ecritures-comptables',
-        {
-          body: {
-            typeOperation: 'facture',
-            sourceId: data.id,
-            clientId: body.clientId,
-            exerciceId: body.exerciceId
-          }
+    console.log('create-facture: Generating ecritures comptables');
+
+    const { data: ecrituresResult, error: ecrituresError } = await supabaseAdmin.functions.invoke(
+      'generate-ecritures-comptables',
+      {
+        body: {
+          typeOperation: 'facture',
+          sourceId: data.id,
+          clientId: body.clientId,
+          exerciceId: body.exerciceId
         }
-      );
-      
-      if (ecrituresError) {
-        console.error('create-facture: Error generating ecritures', ecrituresError);
-      } else {
-        console.log('create-facture: Ecritures generated successfully');
       }
-    } catch (ecrituresError) {
-      console.error('create-facture: Exception generating ecritures', ecrituresError);
+    );
+
+    if (ecrituresError) {
+      console.error('create-facture: Error generating ecritures', ecrituresError);
+      throw new Error('La facture a ete creee mais la generation des ecritures comptables a echoue.');
     }
+
+    if (!ecrituresResult?.success) {
+      const comptaError = ecrituresResult?.error || 'Generation des ecritures comptables incomplete.';
+      console.error('create-facture: Incomplete accounting generation', ecrituresResult);
+      throw new Error(comptaError);
+    }
+
+    console.log('create-facture: Ecritures generated successfully');
 
     // Convert snake_case to camelCase
     const toCamelCase = (obj: any): any => {

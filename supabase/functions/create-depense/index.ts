@@ -146,30 +146,32 @@ Deno.serve(async (req) => {
       throw new Error(patchError.message);
     }
 
-    // Generate accounting entries automatically
-    try {
-      console.log('create-depense: Generating ecritures comptables');
-      
-      const { error: ecrituresError } = await supabase.functions.invoke(
-        'generate-ecritures-comptables',
-        {
-          body: {
-            typeOperation: 'depense',
-            sourceId: data.id,
-            clientId: client_id,
-            exerciceId: exercice_id
-          }
+    console.log('create-depense: Generating ecritures comptables');
+
+    const { data: ecrituresResult, error: ecrituresError } = await supabase.functions.invoke(
+      'generate-ecritures-comptables',
+      {
+        body: {
+          typeOperation: 'depense',
+          sourceId: data.id,
+          clientId: client_id,
+          exerciceId: exercice_id
         }
-      );
-      
-      if (ecrituresError) {
-        console.error('create-depense: Error generating ecritures', ecrituresError);
-      } else {
-        console.log('create-depense: Ecritures generated successfully');
       }
-    } catch (ecrituresError) {
-      console.error('create-depense: Exception generating ecritures', ecrituresError);
+    );
+
+    if (ecrituresError) {
+      console.error('create-depense: Error generating ecritures', ecrituresError);
+      throw new Error('La depense a ete creee mais la generation des ecritures comptables a echoue.');
     }
+
+    if (!ecrituresResult?.success) {
+      const comptaError = ecrituresResult?.error || 'Generation des ecritures comptables incomplete.';
+      console.error('create-depense: Incomplete accounting generation', ecrituresResult);
+      throw new Error(comptaError);
+    }
+
+    console.log('create-depense: Ecritures generated successfully');
 
     return new Response(JSON.stringify({
       ...data,
