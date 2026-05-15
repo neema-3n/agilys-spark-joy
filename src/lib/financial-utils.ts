@@ -40,9 +40,13 @@ export const computeFinancialBreakdown = (
   montantNetPaye: number,
   ventilations: FinancialVentilation[]
 ): FinancialBreakdown => {
+  const safeMontantHT = Number.isFinite(Number(montantHT)) ? Number(montantHT) : 0;
+  const safeMontantTTC = Number.isFinite(Number(montantTTC)) ? Number(montantTTC) : 0;
+  const safeMontantNetPaye = Number.isFinite(Number(montantNetPaye)) ? Number(montantNetPaye) : 0;
+
   const safeVentilations = ventilations.map((item) => ({
     ...item,
-    montant: Number.isFinite(item.montant) ? item.montant : 0,
+    montant: Number.isFinite(Number(item.montant)) ? Number(item.montant) : 0,
   }));
 
   const totalAjouts = safeVentilations
@@ -54,9 +58,9 @@ export const computeFinancialBreakdown = (
     .reduce((sum, item) => sum + item.montant, 0);
 
   return {
-    montantHT,
-    montantTTC,
-    montantNetPaye,
+    montantHT: safeMontantHT,
+    montantTTC: safeMontantTTC,
+    montantNetPaye: safeMontantNetPaye,
     totalAjouts,
     totalRetraits,
     ventilations: safeVentilations,
