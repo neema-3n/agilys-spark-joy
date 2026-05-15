@@ -29,14 +29,7 @@ import {
 } from '@/lib/regles-comptables-fields';
 import type { TypeOperation, RegleComptable } from '@/types/regle-comptable.types';
 
-const TYPE_OPERATIONS: TypeOperation[] = [
-  'reservation',
-  'engagement',
-  'bon_commande',
-  'facture',
-  'depense',
-  'paiement'
-];
+const TYPE_OPERATIONS: TypeOperation[] = ['facture', 'depense', 'paiement'];
 
 export const ReglesComptablesManager = () => {
   const [activeTab, setActiveTab] = useState<TypeOperation>('reservation');

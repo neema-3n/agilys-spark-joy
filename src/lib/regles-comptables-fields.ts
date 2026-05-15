@@ -70,8 +70,8 @@ export const TYPE_OPERATION_LABELS: Record<TypeOperation, string> = {
 };
 
 export const POINT_COMPTABLE_LABELS: Record<PointComptable, string> = {
-  constatation: 'Constatation',
-  reglement: 'Règlement',
+  constatation: 'Constater la charge / dette',
+  reglement: 'Régler en trésorerie',
 };
 
 export const ROLE_LIGNE_LABELS: Record<RoleLigneComptable, string> = {

@@ -39,6 +39,8 @@ interface RegleComptableDialogProps {
   initialValues?: Partial<RegleComptable>;
 }
 
+const ACCOUNTING_OPERATION_TYPES: TypeOperation[] = ['facture', 'depense', 'paiement'];
+
 const SENS_LABELS: Record<SensVentilation, string> = {
   ajout: 'Ajout',
   retrait: 'Retrait',
@@ -239,14 +241,14 @@ export const RegleComptableDialog = ({
                 <Select value={typeOperation} onValueChange={(value: TypeOperation) => setTypeOperation(value)} disabled={!!regle}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {Object.entries(TYPE_OPERATION_LABELS).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>{label}</SelectItem>
+                    {ACCOUNTING_OPERATION_TYPES.map((value) => (
+                      <SelectItem key={value} value={value}>{TYPE_OPERATION_LABELS[value]}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>Point comptable *</Label>
+                <Label>Moment comptable *</Label>
                 <Select value={pointComptable} onValueChange={(value: PointComptable) => setPointComptable(value)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
