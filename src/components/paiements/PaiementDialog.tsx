@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { usePaiements } from '@/hooks/usePaiements';
 import { useDepenses } from '@/hooks/useDepenses';
 import { useEngagements } from '@/hooks/useEngagements';
@@ -223,108 +224,110 @@ export const PaiementDialog = ({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <div className="space-y-6">
-              <section className="space-y-4 rounded-md border p-4">
-                <div className="space-y-1">
-                  <h3 className="font-medium">Bloc 1 - Noyau de saisie</h3>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <FormLabel>Mode</FormLabel>
-                    <Select value={modeSource} onValueChange={(value) => setModeSource(value as typeof modeSource)} disabled={!!depenseId}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="depense">Paiement sur depense</SelectItem>
-                        <SelectItem value="direct">Paiement direct</SelectItem>
-                      </SelectContent>
-                    </Select>
+            <ScrollArea className="h-[72vh] pr-4">
+              <div className="space-y-6">
+                <section className="space-y-4 rounded-md border p-4">
+                  <div className="space-y-1">
+                    <h3 className="font-medium">Bloc 1 - Noyau de saisie</h3>
                   </div>
 
-                  {modeSource === 'depense' ? (
-                    <FormField control={form.control} name="depenseId" render={({ field }) => (
-                      <FormItem><FormLabel>Depense</FormLabel><Select onValueChange={field.onChange} value={field.value || depenseId || ''} disabled={!!depenseId}><FormControl><SelectTrigger><SelectValue placeholder="Selectionner une depense" /></SelectTrigger></FormControl><SelectContent>{depenses.filter((item) => item.statut === 'ordonnancee' || item.statut === 'payee').map((item) => <SelectItem key={item.id} value={item.id}>{item.numero}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <FormLabel>Mode</FormLabel>
+                      <Select value={modeSource} onValueChange={(value) => setModeSource(value as typeof modeSource)} disabled={!!depenseId}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="depense">Paiement sur depense</SelectItem>
+                          <SelectItem value="direct">Paiement direct</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {modeSource === 'depense' ? (
+                      <FormField control={form.control} name="depenseId" render={({ field }) => (
+                        <FormItem><FormLabel>Depense</FormLabel><Select onValueChange={field.onChange} value={field.value || depenseId || ''} disabled={!!depenseId}><FormControl><SelectTrigger><SelectValue placeholder="Selectionner une depense" /></SelectTrigger></FormControl><SelectContent>{depenses.filter((item) => item.statut === 'ordonnancee' || item.statut === 'payee').map((item) => <SelectItem key={item.id} value={item.id}>{item.numero}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                      )} />
+                    ) : (
+                      <FormField control={form.control} name="engagementId" render={({ field }) => (
+                        <FormItem><FormLabel>Engagement minimal</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selectionner un engagement" /></SelectTrigger></FormControl><SelectContent>{engagements.map((item) => <SelectItem key={item.id} value={item.id}>{item.numero}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                      )} />
+                    )}
+
+                    <FormField control={form.control} name="ligneBudgetaireId" render={({ field }) => (
+                      <FormItem><FormLabel>Ligne budgetaire</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selectionner une ligne budgetaire" /></SelectTrigger></FormControl><SelectContent>{lignesBudgetaires.map((item) => <SelectItem key={item.id} value={item.id}>{item.libelle}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
                     )} />
-                  ) : (
-                    <FormField control={form.control} name="engagementId" render={({ field }) => (
-                      <FormItem><FormLabel>Engagement minimal</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selectionner un engagement" /></SelectTrigger></FormControl><SelectContent>{engagements.map((item) => <SelectItem key={item.id} value={item.id}>{item.numero}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+
+                    <FormField control={form.control} name="fournisseurId" render={({ field }) => (
+                      <FormItem><FormLabel>Fournisseur</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selectionner un fournisseur" /></SelectTrigger></FormControl><SelectContent>{fournisseurs.map((item) => <SelectItem key={item.id} value={item.id}>{item.nom} - {item.code}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
                     )} />
-                  )}
 
-                  <FormField control={form.control} name="ligneBudgetaireId" render={({ field }) => (
-                    <FormItem><FormLabel>Ligne budgetaire</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selectionner une ligne budgetaire" /></SelectTrigger></FormControl><SelectContent>{lignesBudgetaires.map((item) => <SelectItem key={item.id} value={item.id}>{item.libelle}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
-                  )} />
+                    <FormField control={form.control} name="beneficiaire" render={({ field }) => (
+                      <FormItem><FormLabel>Beneficiaire libre</FormLabel><FormControl><Input {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
+                    )} />
 
-                  <FormField control={form.control} name="fournisseurId" render={({ field }) => (
-                    <FormItem><FormLabel>Fournisseur</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selectionner un fournisseur" /></SelectTrigger></FormControl><SelectContent>{fournisseurs.map((item) => <SelectItem key={item.id} value={item.id}>{item.nom} - {item.code}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
-                  )} />
+                    <FormField control={form.control} name="projetId" render={({ field }) => (
+                      <FormItem><FormLabel>Projet</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selectionner un projet" /></SelectTrigger></FormControl><SelectContent>{projets.map((item) => <SelectItem key={item.id} value={item.id}>{item.code} - {item.nom}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                    )} />
 
-                  <FormField control={form.control} name="beneficiaire" render={({ field }) => (
-                    <FormItem><FormLabel>Beneficiaire libre</FormLabel><FormControl><Input {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
-                  )} />
+                    <FormField control={form.control} name="objet" render={({ field }) => (
+                      <FormItem className="md:col-span-2"><FormLabel>Objet</FormLabel><FormControl><Input {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                  </div>
 
-                  <FormField control={form.control} name="projetId" render={({ field }) => (
-                    <FormItem><FormLabel>Projet</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selectionner un projet" /></SelectTrigger></FormControl><SelectContent>{projets.map((item) => <SelectItem key={item.id} value={item.id}>{item.code} - {item.nom}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
-                  )} />
+                  <ChargePrincipaleField
+                    mode={chargePrincipaleMode}
+                    onModeChange={setChargePrincipaleMode}
+                    natureCompteId={natureCompteChargeId}
+                    onNatureCompteIdChange={setNatureCompteChargeId}
+                    compteChargeId={compteChargeId}
+                    onCompteChargeIdChange={setCompteChargeId}
+                    naturesCompte={naturesCompte}
+                    comptesCharge={comptesCharge}
+                  />
 
-                  <FormField control={form.control} name="objet" render={({ field }) => (
-                    <FormItem className="md:col-span-2"><FormLabel>Objet</FormLabel><FormControl><Input {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                </div>
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <FormField control={form.control} name="montantHT" render={({ field }) => (
+                      <FormItem><FormLabel>Montant HT</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="montantTTC" render={({ field }) => (
+                      <FormItem><FormLabel>Montant TTC</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="montantNetPaye" render={({ field }) => (
+                      <FormItem><FormLabel>Montant net paye</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                  </div>
+                </section>
 
-                <ChargePrincipaleField
-                  mode={chargePrincipaleMode}
-                  onModeChange={setChargePrincipaleMode}
-                  natureCompteId={natureCompteChargeId}
-                  onNatureCompteIdChange={setNatureCompteChargeId}
-                  compteChargeId={compteChargeId}
-                  onCompteChargeIdChange={setCompteChargeId}
-                  naturesCompte={naturesCompte}
-                  comptesCharge={comptesCharge}
-                />
+                <VentilationEditor ventilations={ventilations} onChange={setVentilations} />
 
-                <div className="grid gap-4 md:grid-cols-3">
-                  <FormField control={form.control} name="montantHT" render={({ field }) => (
-                    <FormItem><FormLabel>Montant HT</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="montantTTC" render={({ field }) => (
-                    <FormItem><FormLabel>Montant TTC</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="montantNetPaye" render={({ field }) => (
-                    <FormItem><FormLabel>Montant net paye</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                </div>
-              </section>
+                {coherenceErrors.length > 0 ? (
+                  <Alert variant="destructive"><AlertDescription>{coherenceErrors[0]}</AlertDescription></Alert>
+                ) : (
+                  <Alert><AlertDescription>Montants coherents.</AlertDescription></Alert>
+                )}
 
-              <VentilationEditor ventilations={ventilations} onChange={setVentilations} />
+                <section className="space-y-4 rounded-md border p-4">
+                  <div className="space-y-1">
+                    <h3 className="font-medium">Bloc 3 - Informations annexes</h3>
+                  </div>
 
-              {coherenceErrors.length > 0 ? (
-                <Alert variant="destructive"><AlertDescription>{coherenceErrors[0]}</AlertDescription></Alert>
-              ) : (
-                <Alert><AlertDescription>Montants coherents.</AlertDescription></Alert>
-              )}
-
-              <section className="space-y-4 rounded-md border p-4">
-                <div className="space-y-1">
-                  <h3 className="font-medium">Bloc 3 - Informations annexes</h3>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <FormField control={form.control} name="datePaiement" render={({ field }) => (
-                    <FormItem><FormLabel>Date de paiement</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="modePaiement" render={({ field }) => (
-                    <FormItem><FormLabel>Mode de paiement</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="virement">Virement</SelectItem><SelectItem value="cheque">Cheque</SelectItem><SelectItem value="especes">Especes</SelectItem><SelectItem value="carte">Carte</SelectItem><SelectItem value="autre">Autre</SelectItem></SelectContent></Select><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="referencePaiement" render={({ field }) => (
-                    <FormItem><FormLabel>Reference</FormLabel><FormControl><Input {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="observations" render={({ field }) => (
-                    <FormItem className="md:col-span-2"><FormLabel>Observations</FormLabel><FormControl><Textarea rows={4} {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                </div>
-              </section>
-            </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <FormField control={form.control} name="datePaiement" render={({ field }) => (
+                      <FormItem><FormLabel>Date de paiement</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="modePaiement" render={({ field }) => (
+                      <FormItem><FormLabel>Mode de paiement</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="virement">Virement</SelectItem><SelectItem value="cheque">Cheque</SelectItem><SelectItem value="especes">Especes</SelectItem><SelectItem value="carte">Carte</SelectItem><SelectItem value="autre">Autre</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="referencePaiement" render={({ field }) => (
+                      <FormItem><FormLabel>Reference</FormLabel><FormControl><Input {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="observations" render={({ field }) => (
+                      <FormItem className="md:col-span-2"><FormLabel>Observations</FormLabel><FormControl><Textarea rows={4} {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                  </div>
+                </section>
+              </div>
+            </ScrollArea>
 
             <DialogFooter className="mt-4">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
