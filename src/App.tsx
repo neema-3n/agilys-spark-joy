@@ -9,8 +9,6 @@ import { ClientProvider } from "@/contexts/ClientContext";
 import { ExerciceProvider } from "@/contexts/ExerciceContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
-// Public pages
-const Index = lazy(() => import("./pages/Index"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Auth pages
@@ -72,8 +70,8 @@ const App = () => (
                 }
               >
                 <Routes>
-                  {/* Public routes */}
-                  <Route path="/" element={<Index />} />
+                  {/* Root entrypoint */}
+                  <Route path="/" element={<Navigate to="/auth/login" replace />} />
 
                   {/* Auth routes */}
                   <Route path="/auth/login" element={<Login />} />
