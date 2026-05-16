@@ -32,6 +32,7 @@ export const createEmptyVentilation = (): FinancialVentilation => ({
   nature: 'taxe',
   montant: 0,
   sens: 'ajout',
+  impacteNetPaye: true,
 });
 
 export const computeFinancialBreakdown = (
@@ -47,6 +48,7 @@ export const computeFinancialBreakdown = (
   const safeVentilations = ventilations.map((item) => ({
     ...item,
     montant: Number.isFinite(Number(item.montant)) ? Number(item.montant) : 0,
+    impacteNetPaye: item.impacteNetPaye ?? true,
   }));
 
   const totalAjouts = safeVentilations
@@ -70,14 +72,21 @@ export const computeFinancialBreakdown = (
 export const getCoherenceErrors = (breakdown: FinancialBreakdown, tolerance = 0.01): string[] => {
   const errors: string[] = [];
   const expectedTTC = breakdown.montantHT + breakdown.totalAjouts;
-  const expectedNet = breakdown.montantTTC - breakdown.totalRetraits;
+  const netVentilations = breakdown.ventilations.filter((item) => item.impacteNetPaye);
+  const totalAjoutsNet = netVentilations
+    .filter((item) => item.sens === 'ajout')
+    .reduce((sum, item) => sum + item.montant, 0);
+  const totalRetraitsNet = netVentilations
+    .filter((item) => item.sens === 'retrait')
+    .reduce((sum, item) => sum + item.montant, 0);
+  const expectedNet = breakdown.montantHT + totalAjoutsNet - totalRetraitsNet;
 
   if (Math.abs(expectedTTC - breakdown.montantTTC) > tolerance) {
     errors.push('Le TTC ne correspond pas au HT et aux ajouts.');
   }
 
   if (Math.abs(expectedNet - breakdown.montantNetPaye) > tolerance) {
-    errors.push('Le net paye ne correspond pas au TTC et aux retraits.');
+    errors.push("Le net paye ne correspond pas au HT et aux ajustements pris en compte dans le net.");
   }
 
   return errors;

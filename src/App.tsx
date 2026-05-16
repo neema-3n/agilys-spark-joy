@@ -53,6 +53,12 @@ const Mandats = lazy(() => import("./pages/app/Mandats"));
 
 const queryClient = new QueryClient();
 
+const FullScreenLoader = () => (
+  <div className="flex min-h-screen items-center justify-center">
+    <div className="h-10 w-10 animate-spin rounded-full border-2 border-muted-foreground border-t-primary" />
+  </div>
+);
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
@@ -62,92 +68,95 @@ const App = () => (
             <TooltipProvider>
               <Toaster />
               <Sonner />
-              <Suspense
-                fallback={
-                  <div className="flex min-h-screen items-center justify-center">
-                    <div className="h-10 w-10 animate-spin rounded-full border-2 border-muted-foreground border-t-primary" />
-                  </div>
-                }
-              >
-                <Routes>
-                  {/* Root entrypoint */}
-                  <Route path="/" element={<Navigate to="/auth/login" replace />} />
+              <Routes>
+                {/* Root entrypoint */}
+                <Route path="/" element={<Navigate to="/auth/login" replace />} />
 
-                  {/* Auth routes */}
-                  <Route path="/auth/login" element={<Login />} />
-                  <Route path="/auth/init-test-users" element={<InitTestUsers />} />
+                {/* Auth routes */}
+                <Route path="/auth/login" element={<Suspense fallback={<FullScreenLoader />}><Login /></Suspense>} />
+                <Route path="/auth/init-test-users" element={<Suspense fallback={<FullScreenLoader />}><InitTestUsers /></Suspense>} />
 
-                  {/* Protected app routes */}
-                  <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-                    <Route path="dashboard" element={<Dashboard />} />
+                {/* Protected app routes */}
+                <Route
+                  path="/app"
+                  element={
+                    <ProtectedRoute>
+                      <Suspense fallback={<FullScreenLoader />}>
+                        <AppLayout />
+                      </Suspense>
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route path="dashboard" element={<Dashboard />} />
 
-                    {/* Budget & Finance */}
-                    <Route path="budgets">
-                      <Route index element={<Budgets />} />
-                      <Route path=":ligneId" element={<Budgets />} />
-                    </Route>
-                    <Route path="enveloppes" element={<Enveloppes />} />
-                    <Route path="previsions" element={<Previsions />} />
-                    <Route path="reservations">
-                      <Route index element={<Reservations />} />
-                      <Route path=":reservationId" element={<Reservations />} />
-                    </Route>
-                    <Route path="engagements">
-                      <Route index element={<Engagements />} />
-                      <Route path=":engagementId" element={<Engagements />} />
-                    </Route>
-                    <Route path="bons-commande">
-                      <Route index element={<BonsCommande />} />
-                      <Route path=":bonCommandeId" element={<BonsCommande />} />
-                    </Route>
-                    <Route path="depenses">
-                      <Route index element={<Depenses />} />
-                      <Route path=":depenseId" element={<Depenses />} />
-                    </Route>
-                    <Route path="factures">
-                      <Route index element={<Factures />} />
-                      <Route path=":factureId" element={<Factures />} />
-                    </Route>
-                    <Route path="paiements" element={<Paiements />} />
-                    <Route path="tresorerie">
-                      <Route index element={<Navigate to="comptes" replace />} />
-                      <Route path="comptes" element={<TresorerieComptes />} />
-                      <Route path="recettes" element={<TresorerieRecettes />} />
-                      <Route path="operations" element={<TresorerieOperations />} />
-                      <Route path="rapprochements" element={<TresorerieRapprochements />} />
-                    </Route>
-
-                    {/* Administration */}
-                    <Route path="fournisseurs">
-                      <Route index element={<Fournisseurs />} />
-                      <Route path=":fournisseurId" element={<Fournisseurs />} />
-                    </Route>
-                    <Route path="projets" element={<Projets />} />
-                    <Route path="structure" element={<Structure />} />
-                    <Route path="parametres">
-                      <Route index element={<Parametres />} />
-                      <Route path=":sectionId" element={<Parametres />} />
-                    </Route>
-                    <Route path="plan-comptable" element={<PlanComptable />} />
-
-                    {/* Reporting & Analysis */}
-                    <Route path="reporting">
-                      <Route index element={<Navigate to="budgetaire" replace />} />
-                      <Route path=":reportType" element={<Reporting />} />
-                    </Route>
-                    <Route path="analyses" element={<Analyses />} />
-                    <Route path="journal-comptable" element={<JournalComptable />} />
-                    <Route path="journal-tresorerie" element={<JournalTresorerie />} />
-                    <Route path="controle-interne" element={<ControleInterne />} />
-
-                    {/* Legacy routes (to be reviewed) */}
-                    <Route path="mandats" element={<Mandats />} />
+                  {/* Budget & Finance */}
+                  <Route path="budgets">
+                    <Route index element={<Budgets />} />
+                    <Route path=":ligneId" element={<Budgets />} />
+                  </Route>
+                  <Route path="enveloppes" element={<Enveloppes />} />
+                  <Route path="previsions" element={<Previsions />} />
+                  <Route path="reservations">
+                    <Route index element={<Reservations />} />
+                    <Route path=":reservationId" element={<Reservations />} />
+                  </Route>
+                  <Route path="engagements">
+                    <Route index element={<Engagements />} />
+                    <Route path=":engagementId" element={<Engagements />} />
+                  </Route>
+                  <Route path="bons-commande">
+                    <Route index element={<BonsCommande />} />
+                    <Route path=":bonCommandeId" element={<BonsCommande />} />
+                  </Route>
+                  <Route path="depenses">
+                    <Route index element={<Depenses />} />
+                    <Route path=":depenseId" element={<Depenses />} />
+                  </Route>
+                  <Route path="factures">
+                    <Route index element={<Factures />} />
+                    <Route path="create" element={<Factures />} />
+                    <Route path=":factureId/edit" element={<Factures />} />
+                    <Route path=":factureId" element={<Factures />} />
+                  </Route>
+                  <Route path="paiements" element={<Paiements />} />
+                  <Route path="tresorerie">
+                    <Route index element={<Navigate to="comptes" replace />} />
+                    <Route path="comptes" element={<TresorerieComptes />} />
+                    <Route path="recettes" element={<TresorerieRecettes />} />
+                    <Route path="operations" element={<TresorerieOperations />} />
+                    <Route path="rapprochements" element={<TresorerieRapprochements />} />
                   </Route>
 
-                  {/* Catch-all route */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
+                  {/* Administration */}
+                  <Route path="fournisseurs">
+                    <Route index element={<Fournisseurs />} />
+                    <Route path=":fournisseurId" element={<Fournisseurs />} />
+                  </Route>
+                  <Route path="projets" element={<Projets />} />
+                  <Route path="structure" element={<Structure />} />
+                  <Route path="parametres">
+                    <Route index element={<Parametres />} />
+                    <Route path=":sectionId" element={<Parametres />} />
+                  </Route>
+                  <Route path="plan-comptable" element={<PlanComptable />} />
+
+                  {/* Reporting & Analysis */}
+                  <Route path="reporting">
+                    <Route index element={<Navigate to="budgetaire" replace />} />
+                    <Route path=":reportType" element={<Reporting />} />
+                  </Route>
+                  <Route path="analyses" element={<Analyses />} />
+                  <Route path="journal-comptable" element={<JournalComptable />} />
+                  <Route path="journal-tresorerie" element={<JournalTresorerie />} />
+                  <Route path="controle-interne" element={<ControleInterne />} />
+
+                  {/* Legacy routes (to be reviewed) */}
+                  <Route path="mandats" element={<Mandats />} />
+                </Route>
+
+                {/* Catch-all route */}
+                <Route path="*" element={<Suspense fallback={<FullScreenLoader />}><NotFound /></Suspense>} />
+              </Routes>
             </TooltipProvider>
           </ExerciceProvider>
         </ClientProvider>
