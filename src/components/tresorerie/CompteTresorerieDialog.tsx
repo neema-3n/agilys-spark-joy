@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -51,6 +52,22 @@ export const CompteTresorerieDialog = ({
       observations: initialData?.observations || '',
     },
   });
+
+  useEffect(() => {
+    if (!open) return;
+
+    form.reset({
+      code: initialData?.code || '',
+      libelle: initialData?.libelle || '',
+      type: initialData?.type || 'banque',
+      banque: initialData?.banque || '',
+      numeroCompte: initialData?.numeroCompte || '',
+      devise: initialData?.devise || 'XOF',
+      soldeInitial: initialData?.soldeInitial || 0,
+      dateOuverture: initialData?.dateOuverture || new Date().toISOString().split('T')[0],
+      observations: initialData?.observations || '',
+    });
+  }, [form, initialData, open]);
 
   const typeCompte = form.watch('type');
 

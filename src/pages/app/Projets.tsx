@@ -107,7 +107,7 @@ const Projets = () => {
 
   if (isLoading) {
     return (
-      <div className="p-8">
+      <div>
         <div className="text-center text-muted-foreground">
           Chargement des projets...
         </div>
@@ -129,7 +129,7 @@ const Projets = () => {
           ) : undefined
         }
       />
-      <div className="px-8">
+      <div>
 
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>

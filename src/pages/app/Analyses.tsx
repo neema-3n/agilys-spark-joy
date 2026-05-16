@@ -10,7 +10,7 @@ const Analyses = () => {
         description="Analyses avancées et indicateurs de performance"
       />
       
-      <div className="px-8">
+      <div>
         <Card>
           <CardContent className="py-12">
             <div className="text-center space-y-4">

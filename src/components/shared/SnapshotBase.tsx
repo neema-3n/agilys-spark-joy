@@ -38,23 +38,21 @@ export const SnapshotBase = ({
 
   return (
     <div className="min-h-screen">
-      {/* En-tête du snapshot - sticky */}
-      <div className="sticky top-0 z-20 bg-background border-b border-border">
-        <div className="py-4">
-          <div className="px-4 md:px-6 space-y-4">
-            {/* Ligne 1: Titre et Navigation */}
+      <div className="sticky top-0 z-20 -mx-4 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:-mx-5 sm:px-5 lg:-mx-8 lg:px-8">
+        <div className="py-5">
+          <div className="space-y-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <h2 className="text-2xl font-bold truncate">{title}</h2>
+                <div className="mb-2 h-1 w-10 rounded-full bg-primary" />
+                <h2 className="truncate text-[28px] font-semibold leading-9">{title}</h2>
                 {subtitle && (
-                  <p className="text-sm text-muted-foreground mt-1 truncate">{subtitle}</p>
+                  <p className="mt-1 truncate text-sm text-muted-foreground">{subtitle}</p>
                 )}
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="mt-1 text-sm text-muted-foreground">
                   Élément {currentIndex + 1} sur {totalCount}
                 </p>
               </div>
 
-              {/* Navigation et fermeture à l'extrême droite */}
               <div className="flex items-center gap-2 flex-shrink-0">
                 <Button
                   variant="outline"
@@ -74,7 +72,7 @@ export const SnapshotBase = ({
                 </Button>
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="icon"
                   onClick={onClose}
                 >
                   <X className="h-4 w-4" />
@@ -82,9 +80,8 @@ export const SnapshotBase = ({
               </div>
             </div>
 
-            {/* Ligne 2: Actions (si présentes) */}
             {actions && (
-              <div className="flex items-center gap-2 pt-2 border-t">
+              <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
                 {actions}
               </div>
             )}
@@ -92,9 +89,8 @@ export const SnapshotBase = ({
         </div>
       </div>
 
-      {/* Contenu du snapshot */}
       <div className="py-6">
-        <div className="px-4 md:px-6 space-y-6">
+        <div className="space-y-6">
           {children}
         </div>
       </div>

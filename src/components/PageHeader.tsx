@@ -22,11 +22,11 @@ export const PageHeader = ({
   const zIndex = 10;
 
   return (
-    <div
+    <section
       className={
         sticky
-          ? 'sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border transition-all duration-200 ease-out'
-          : 'bg-background border-b border-border'
+          ? '-mt-5 sticky top-0 z-20 -mx-4 mb-5 border-b border-border bg-background/95 px-4 backdrop-blur transition-all duration-200 ease-out supports-[backdrop-filter]:bg-background/80 sm:-mx-5 sm:px-5 lg:-mt-7 lg:-mx-8 lg:px-8'
+          : '-mt-5 mb-5 border-b border-border bg-background lg:-mt-7'
       }
       style={
         sticky
@@ -40,17 +40,22 @@ export const PageHeader = ({
           : undefined
       }
     >
-      <div className="px-4 md:px-6 py-3 md:py-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold mb-1">{title}</h1>
+      <div className="py-5 md:py-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="min-w-0 space-y-2">
+            <div className="h-1 w-10 rounded-full bg-primary" />
+            <h1 className="truncate text-2xl font-semibold tracking-normal md:text-[28px]">
+              {title}
+            </h1>
             {description && (
-              <p className="text-sm md:text-base text-muted-foreground">{description}</p>
+              <p className="max-w-3xl text-sm text-muted-foreground md:text-base">
+                {description}
+              </p>
             )}
           </div>
-          {actions && <div className="flex gap-2">{actions}</div>}
+          {actions && <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>}
         </div>
       </div>
-    </div>
+    </section>
   );
 };

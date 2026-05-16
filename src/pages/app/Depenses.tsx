@@ -304,12 +304,13 @@ const Depenses = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <>
       <style>{CTA_REVEAL_STYLES}</style>
+      <div className="space-y-6">
       {!isSnapshotOpen && pageHeaderContent}
 
       {isSnapshotOpen && snapshotDepense ? (
-        <div className="px-8 space-y-6">
+        <div className="space-y-6">
           <DepenseSnapshot
             depense={snapshotDepense}
             paiements={paiementsDepense}
@@ -330,10 +331,10 @@ const Depenses = () => {
           />
         </div>
       ) : isSnapshotOpen && isSnapshotLoading ? (
-        <div className="px-8 py-12 text-center text-muted-foreground">Chargement du snapshot...</div>
+        <div className="py-12 text-center text-muted-foreground">Chargement du snapshot...</div>
       ) : (
         <>
-          <div className="px-8 space-y-6">
+          <div className="space-y-6">
             <DepenseStatsCards depenses={depenses} />
             <ListLayout
               title="Liste des dépenses"
@@ -490,7 +491,8 @@ const Depenses = () => {
           />
         ) : null;
       })()}
-    </div>
+      </div>
+    </>
   );
 };
 

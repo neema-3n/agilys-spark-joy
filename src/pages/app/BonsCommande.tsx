@@ -309,11 +309,12 @@ const BonsCommande = () => {
   const activeStatutLabel = statutOptions.find((option) => option.value === statutFilter)?.label || 'Tous';
 
   return (
-    <div className="space-y-6">
+    <>
       <style>{CTA_REVEAL_STYLES}</style>
+      <div className="space-y-6">
       {!isSnapshotOpen && pageHeaderContent}
 
-      <div className="px-8 space-y-6">
+      <div className="space-y-6">
         {isSnapshotOpen && snapshotBonCommande ? (
           <BonCommandeSnapshot
             bonCommande={snapshotBonCommande}
@@ -436,7 +437,8 @@ const BonsCommande = () => {
         onGenererNumero={handleGenererNumeroFacture}
         initialBonCommandeId={factureBonCommandeId}
       />
-    </div>
+      </div>
+    </>
   );
 };
 

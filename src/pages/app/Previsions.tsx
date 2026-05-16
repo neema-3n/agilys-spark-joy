@@ -107,7 +107,7 @@ const Previsions = () => {
           </Button>
         }
       />
-      <div className="px-8">
+      <div>
 
       <Tabs defaultValue="brouillon" className="space-y-6">
         <TabsList>

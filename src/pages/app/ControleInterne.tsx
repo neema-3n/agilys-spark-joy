@@ -10,7 +10,7 @@ const ControleInterne = () => {
         description="Audits, workflows d'approbation et traçabilité"
       />
       
-      <div className="px-8">
+      <div>
         <Card>
           <CardContent className="py-12">
             <div className="text-center space-y-4">

@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ClientProvider } from "@/contexts/ClientContext";
 import { ExerciceProvider } from "@/contexts/ExerciceContext";
@@ -18,7 +18,7 @@ const Login = lazy(() => import("./pages/auth/Login"));
 const InitTestUsers = lazy(() => import("./pages/auth/InitTestUsers"));
 
 // App layout and main pages
-const AppLayout = lazy(() => import("./pages/app/AppLayout"));
+const AppLayout = lazy(() => import("./pages/app/AppLayoutTailAdmin"));
 const Dashboard = lazy(() => import("./pages/app/Dashboard"));
 
 // Budget & Finance pages
@@ -28,7 +28,10 @@ const Depenses = lazy(() => import("./pages/app/Depenses"));
 const Factures = lazy(() => import("./pages/app/Factures"));
 const BonsCommande = lazy(() => import("./pages/app/BonsCommande"));
 const Paiements = lazy(() => import("./pages/app/Paiements"));
-const Tresorerie = lazy(() => import("./pages/app/Tresorerie"));
+const TresorerieComptes = lazy(() => import("./pages/app/TresorerieComptes"));
+const TresorerieRecettes = lazy(() => import("./pages/app/TresorerieRecettes"));
+const TresorerieOperations = lazy(() => import("./pages/app/TresorerieOperations"));
+const TresorerieRapprochements = lazy(() => import("./pages/app/TresorerieRapprochements"));
 const Previsions = lazy(() => import("./pages/app/Previsions"));
 const Reservations = lazy(() => import("./pages/app/Reservations"));
 const Enveloppes = lazy(() => import("./pages/app/Enveloppes"));
@@ -44,6 +47,7 @@ const PlanComptable = lazy(() => import("./pages/app/PlanComptable"));
 const Reporting = lazy(() => import("./pages/app/Reporting"));
 const Analyses = lazy(() => import("./pages/app/Analyses"));
 const JournalComptable = lazy(() => import("./pages/app/JournalComptable"));
+const JournalTresorerie = lazy(() => import("./pages/app/JournalTresorerie"));
 const ControleInterne = lazy(() => import("./pages/app/ControleInterne"));
 
 // Legacy pages (to be reviewed)
@@ -107,7 +111,13 @@ const App = () => (
                       <Route path=":factureId" element={<Factures />} />
                     </Route>
                     <Route path="paiements" element={<Paiements />} />
-                    <Route path="tresorerie" element={<Tresorerie />} />
+                    <Route path="tresorerie">
+                      <Route index element={<Navigate to="comptes" replace />} />
+                      <Route path="comptes" element={<TresorerieComptes />} />
+                      <Route path="recettes" element={<TresorerieRecettes />} />
+                      <Route path="operations" element={<TresorerieOperations />} />
+                      <Route path="rapprochements" element={<TresorerieRapprochements />} />
+                    </Route>
 
                     {/* Administration */}
                     <Route path="fournisseurs">
@@ -123,9 +133,13 @@ const App = () => (
                     <Route path="plan-comptable" element={<PlanComptable />} />
 
                     {/* Reporting & Analysis */}
-                    <Route path="reporting" element={<Reporting />} />
+                    <Route path="reporting">
+                      <Route index element={<Navigate to="budgetaire" replace />} />
+                      <Route path=":reportType" element={<Reporting />} />
+                    </Route>
                     <Route path="analyses" element={<Analyses />} />
                     <Route path="journal-comptable" element={<JournalComptable />} />
+                    <Route path="journal-tresorerie" element={<JournalTresorerie />} />
                     <Route path="controle-interne" element={<ControleInterne />} />
 
                     {/* Legacy routes (to be reviewed) */}

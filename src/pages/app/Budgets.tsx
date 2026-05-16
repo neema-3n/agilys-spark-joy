@@ -434,7 +434,7 @@ const Budgets = () => {
       )}
 
       {/* CONTENU */}
-      <div className={`px-8 ${isSnapshotOpen ? 'pt-0' : 'pt-6'} space-y-6`}>
+      <div className={`${isSnapshotOpen ? 'pt-0' : 'pt-2'} space-y-6`}>
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         {!isSnapshotOpen && (
           <TabsList>
