@@ -93,36 +93,36 @@ export const LigneBudgetaireSnapshot = ({
             Synthèse budgétaire
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <div className="space-y-1">
+        <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-1">
             <p className="text-sm text-muted-foreground">Montant initial</p>
             <p className="text-xl font-semibold">{formatMontant(ligne.montantInitial)}</p>
           </div>
-          <div className="space-y-1">
+          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-1">
             <p className="text-sm text-muted-foreground">Montant modifié</p>
             <p className="text-xl font-semibold text-primary">{formatMontant(ligne.montantModifie)}</p>
           </div>
-          <div className="space-y-1">
+          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-1">
             <p className="text-sm text-muted-foreground">Réservé</p>
             <p className="text-lg font-medium text-orange-600">{formatMontant(ligne.montantReserve || 0)}</p>
           </div>
-          <div className="space-y-1">
+          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-1">
             <p className="text-sm text-muted-foreground">Engagé</p>
             <p className="text-lg font-medium text-red-600">{formatMontant(ligne.montantEngage)}</p>
           </div>
-          <div className="space-y-1">
+          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-1">
             <p className="text-sm text-muted-foreground">Liquidé</p>
             <p className="text-lg font-medium text-blue-600">{formatMontant(ligne.montantLiquide)}</p>
           </div>
-          <div className="space-y-1">
+          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-1">
             <p className="text-sm text-muted-foreground">Payé</p>
             <p className="text-lg font-medium text-green-600">{formatMontant(ligne.montantPaye)}</p>
           </div>
-          <div className="space-y-1">
+          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-1">
             <p className="text-sm text-muted-foreground">Disponible</p>
             <p className="text-xl font-semibold text-primary">{formatMontant(ligne.disponible)}</p>
           </div>
-          <div className="space-y-1">
+          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-2">
             <p className="text-sm text-muted-foreground">Taux d'exécution</p>
             <div className="flex items-center gap-2">
               <Badge variant="outline">{tauxExecution}%</Badge>
@@ -131,11 +131,11 @@ export const LigneBudgetaireSnapshot = ({
               </div>
             </div>
           </div>
-          <div className="space-y-1">
+          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-1">
             <p className="text-sm text-muted-foreground">Statut</p>
             <BudgetStatusBadge status={ligne.statut} />
           </div>
-          <div className="space-y-1">
+          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-1">
             <p className="text-sm text-muted-foreground">Créée le</p>
             <p className="text-sm font-medium">{formatDate(ligne.dateCreation)}</p>
           </div>

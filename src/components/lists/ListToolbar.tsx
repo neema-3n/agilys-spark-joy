@@ -25,7 +25,7 @@ export const ListToolbar = ({
           value={searchValue}
           onChange={(event) => onSearchChange(event.target.value)}
           placeholder={searchPlaceholder}
-          className="pl-10 pr-10"
+          className="bg-background pl-10 pr-10"
           aria-label="Rechercher dans la liste"
         />
         {searchValue && (

@@ -10,7 +10,7 @@ const PlanComptable = () => {
         description="Import et structuration hiérarchique du plan comptable"
       />
       
-      <div className="px-8">
+      <div>
         <PlanComptableManager />
       </div>
     </div>

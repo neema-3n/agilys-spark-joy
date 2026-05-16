@@ -30,7 +30,7 @@ const TresoreriePro = () => {
         description="Suivi professionnel des comptes bancaires et caisses"
       />
       
-      <div className="px-8 space-y-6">
+      <div className="space-y-6">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatsCard
             title="Solde Total"

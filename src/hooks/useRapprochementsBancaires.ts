@@ -1,13 +1,13 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useExercice } from '@/contexts/ExerciceContext';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useClient } from '@/contexts/ClientContext';
+import { useExercice } from '@/contexts/ExerciceContext';
 import { rapprochementsBancairesService } from '@/services/api/rapprochements-bancaires.service';
 import type { RapprochementBancaireFormData } from '@/types/rapprochement-bancaire.types';
 import { toast } from 'sonner';
 
 export const useRapprochementsBancaires = () => {
-  const { currentExercice } = useExercice();
   const { currentClient } = useClient();
+  const { currentExercice } = useExercice();
   const queryClient = useQueryClient();
 
   const clientId = currentClient?.id || '';
@@ -24,22 +24,22 @@ export const useRapprochementsBancaires = () => {
       rapprochementsBancairesService.create(clientId, exerciceId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rapprochements-bancaires'] });
+      queryClient.invalidateQueries({ queryKey: ['operations-tresorerie-v2'] });
       toast.success('Rapprochement créé avec succès');
     },
-    onError: () => {
-      toast.error('Erreur lors de la création du rapprochement');
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erreur lors de la création du rapprochement');
     },
   });
 
-  const validerMutation = useMutation({
+  const validateMutation = useMutation({
     mutationFn: (id: string) => rapprochementsBancairesService.valider(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rapprochements-bancaires'] });
-      queryClient.invalidateQueries({ queryKey: ['operations-tresorerie'] });
       toast.success('Rapprochement validé');
     },
     onError: () => {
-      toast.error('Erreur lors de la validation');
+      toast.error('Erreur lors de la validation du rapprochement');
     },
   });
 
@@ -49,6 +49,6 @@ export const useRapprochementsBancaires = () => {
     error,
     refetch,
     createRapprochement: createMutation.mutateAsync,
-    validerRapprochement: validerMutation.mutateAsync,
+    validateRapprochement: validateMutation.mutateAsync,
   };
 };

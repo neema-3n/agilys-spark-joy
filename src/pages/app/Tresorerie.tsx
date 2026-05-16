@@ -61,7 +61,7 @@ const Tresorerie = () => {
           title="Gestion de Trésorerie"
           description="Suivi des comptes, recettes, opérations et rapprochements bancaires"
         />
-        <div className="px-8 flex items-center justify-center py-12">
+        <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       </div>
@@ -75,7 +75,7 @@ const Tresorerie = () => {
         description="Suivi des comptes, recettes, opérations et rapprochements bancaires"
       />
       
-      <div className="px-8 space-y-6">
+      <div className="space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList>
             <TabsTrigger value="comptes">

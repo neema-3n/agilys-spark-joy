@@ -158,17 +158,17 @@ const Parametres = () => {
   );
 
   return (
-    <div className="flex h-full flex-col md:flex-row">
+    <div className="-mx-4 -my-5 flex min-h-[calc(100vh-76px-40px)] flex-col bg-background sm:-mx-5 lg:-mx-8 lg:-my-7 md:flex-row">
       {/* Desktop: Sidebar normale */}
       {!isMobile && (
-        <aside className="w-72 border-r border-border bg-card/50">
-          <div className="p-6 border-b border-border">
+        <aside className="w-80 shrink-0 border-r border-border bg-card">
+          <div className="border-b border-border px-8 py-8">
             <h1 className="text-2xl font-bold">Paramètres</h1>
             <p className="text-sm text-muted-foreground mt-1">
               Configuration de l'application
             </p>
           </div>
-          <ScrollArea className="h-[calc(100vh-120px)]">
+          <ScrollArea className="h-[calc(100vh-76px-105px)]">
             <NavigationContent />
           </ScrollArea>
         </aside>
@@ -176,7 +176,7 @@ const Parametres = () => {
 
       {/* Mobile: En-tête avec bouton Sheet */}
       {isMobile && (
-        <div className="p-4 border-b border-border bg-card/50 flex items-center gap-4">
+        <div className="flex items-center gap-4 border-b border-border bg-card px-4 py-4">
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon">
@@ -205,8 +205,8 @@ const Parametres = () => {
       )}
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        <div className="p-4 md:p-8">
+      <main className="min-w-0 flex-1 overflow-auto bg-muted/30">
+        <div className="p-4 md:p-6 lg:p-8">
           {activeContent}
         </div>
       </main>

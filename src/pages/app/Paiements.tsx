@@ -94,7 +94,7 @@ export default function Paiements() {
         }
       />
 
-      <div className="px-8 space-y-6">
+      <div className="space-y-6">
         <PaiementStats paiements={paiements} />
 
         <ListLayout

@@ -10,7 +10,7 @@ const Enveloppes = () => {
         description="Sources de financement par bailleur, projet et ligne"
       />
       
-      <div className="px-8">
+      <div>
         <Card>
           <CardContent className="py-12">
             <div className="text-center space-y-4">

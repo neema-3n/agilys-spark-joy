@@ -373,12 +373,13 @@ const Reservations = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <>
       <style>{CTA_REVEAL_STYLES}</style>
+      <div className="space-y-6">
       {!isSnapshotOpen && pageHeaderContent}
 
       {isSnapshotOpen && snapshotReservation ? (
-        <div className="px-8 space-y-6">
+        <div className="space-y-6">
           <ReservationSnapshot
             reservation={snapshotReservation}
             onClose={handleCloseSnapshot}
@@ -394,9 +395,9 @@ const Reservations = () => {
           />
         </div>
       ) : isSnapshotOpen && isSnapshotLoading ? (
-        <div className="px-8 py-12 text-center text-muted-foreground">Chargement du snapshot...</div>
+        <div className="py-12 text-center text-muted-foreground">Chargement du snapshot...</div>
       ) : (
-        <div className="px-8 space-y-6">
+        <div className="space-y-6">
           <ReservationStats reservations={reservations} />
 
           <ListLayout
@@ -602,7 +603,8 @@ const Reservations = () => {
           }
         }}
       />
-    </div>
+      </div>
+    </>
   );
 };
 
