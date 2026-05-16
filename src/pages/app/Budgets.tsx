@@ -424,32 +424,31 @@ const Budgets = () => {
 
   return (
     <div className="space-y-6">
-      {!isSnapshotOpen && (
-        <PageHeader
-          title="Gestion des Budgets"
-          description="Plan budgétaire, modifications et suivi d'exécution"
-          scrollProgress={scrollProgress}
-          sticky={false}
-        />
-      )}
-
-      {/* CONTENU */}
-      <div className={`${isSnapshotOpen ? 'pt-0' : 'pt-2'} space-y-6`}>
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         {!isSnapshotOpen && (
-          <TabsList>
-            <TabsTrigger value="lignes">Lignes Budgétaires</TabsTrigger>
-            <TabsTrigger value="modifications">
-              Modifications Budgétaires
-              {modifications.filter(m => m.statut === 'en_attente').length > 0 && (
-                <Badge variant="warning" className="ml-2">
-                  {modifications.filter(m => m.statut === 'en_attente').length}
-                </Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
+          <PageHeader
+            title="Gestion des Budgets"
+            description="Plan budgétaire, modifications et suivi d'exécution"
+            actions={
+              <TabsList>
+                <TabsTrigger value="lignes">Lignes Budgétaires</TabsTrigger>
+                <TabsTrigger value="modifications">
+                  Modifications Budgétaires
+                  {modifications.filter(m => m.statut === 'en_attente').length > 0 && (
+                    <Badge variant="warning" className="ml-2">
+                      {modifications.filter(m => m.statut === 'en_attente').length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+            }
+            scrollProgress={scrollProgress}
+            sticky={false}
+          />
         )}
 
+        {/* CONTENU */}
+        <div className={`${isSnapshotOpen ? 'pt-0' : 'pt-0'} space-y-4`}>
         <TabsContent value="lignes" className="space-y-4">
           {isSnapshotOpen && snapshotLigne && snapshotContext ? (
             <LigneBudgetaireSnapshot
@@ -479,93 +478,94 @@ const Budgets = () => {
           ) : isSnapshotOpen && isSnapshotLoading ? (
             <div className="py-12 text-center text-muted-foreground">Chargement du snapshot...</div>
           ) : (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Plan Budgétaire {currentExercice?.libelle}</CardTitle>
-                <Button onClick={() => setLigneDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nouvelle ligne
-                </Button>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Panneau de recherche multi-critères */}
-                <BudgetSearchPanel
-                  filters={filters}
-                  onFilterChange={setFilter}
-                  onResetFilters={resetFilters}
-                  activeFiltersCount={activeFiltersCount}
-                  sections={sections}
-                  programmes={availableProgrammes}
-                  actions={availableActions}
-                  comptes={comptes}
-                  enveloppes={enveloppes}
-                />
+            <div className="space-y-4">
+              <SearchResultsSummary
+                totals={totals}
+                resultCount={filteredLignes.length}
+              />
 
-                {/* Barre des filtres actifs */}
-                <ActiveFiltersBar
-                  filters={filters}
-                  onRemoveFilter={resetFilter}
-                  onClearAll={resetFilters}
-                  resultCount={filteredLignes.length}
-                  totalCount={lignes.length}
-                  sections={sections}
-                  programmes={programmes}
-                  actions={actions}
-                  comptes={comptes}
-                  enveloppes={enveloppes}
-                />
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Plan Budgétaire {currentExercice?.libelle}</CardTitle>
+                  <Button onClick={() => setLigneDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nouvelle ligne
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Panneau de recherche multi-critères */}
+                  <BudgetSearchPanel
+                    filters={filters}
+                    onFilterChange={setFilter}
+                    onResetFilters={resetFilters}
+                    activeFiltersCount={activeFiltersCount}
+                    sections={sections}
+                    programmes={availableProgrammes}
+                    actions={availableActions}
+                    comptes={comptes}
+                    enveloppes={enveloppes}
+                  />
 
-                {/* Résumé avec totaux */}
-                <SearchResultsSummary
-                  totals={totals}
-                  resultCount={filteredLignes.length}
-                />
+                  {/* Barre des filtres actifs */}
+                  <ActiveFiltersBar
+                    filters={filters}
+                    onRemoveFilter={resetFilter}
+                    onClearAll={resetFilters}
+                    resultCount={filteredLignes.length}
+                    totalCount={lignes.length}
+                    sections={sections}
+                    programmes={programmes}
+                    actions={actions}
+                    comptes={comptes}
+                    enveloppes={enveloppes}
+                  />
 
-                {/* Tableau */}
-                <BudgetTable
-                  clientId={currentClient?.id || ''}
-                  exerciceId={currentExercice?.id || ''}
-                  sections={sections}
-                  programmes={programmes}
-                  actions={actions}
-                  lignes={filteredLignes}
-                  comptes={comptes}
-                  enveloppes={enveloppes}
-                  onEdit={(ligne) => {
-                    setSelectedLigne(ligne);
-                    setLigneDialogOpen(true);
-                  }}
-                  onDelete={(id) => {
-                    setLigneToDelete(id);
-                    setDeleteDialogOpen(true);
-                  }}
-                  onReserver={handleReserverCredit}
-                  onCreateModification={handleCreateModificationFromLigne}
-                  onViewDetails={(ligne) => openLigneSnapshot(ligne.id)}
-                />
+                  {/* Tableau */}
+                  <BudgetTable
+                    clientId={currentClient?.id || ''}
+                    exerciceId={currentExercice?.id || ''}
+                    sections={sections}
+                    programmes={programmes}
+                    actions={actions}
+                    lignes={filteredLignes}
+                    comptes={comptes}
+                    enveloppes={enveloppes}
+                    onEdit={(ligne) => {
+                      setSelectedLigne(ligne);
+                      setLigneDialogOpen(true);
+                    }}
+                    onDelete={(id) => {
+                      setLigneToDelete(id);
+                      setDeleteDialogOpen(true);
+                    }}
+                    onReserver={handleReserverCredit}
+                    onCreateModification={handleCreateModificationFromLigne}
+                    onViewDetails={(ligne) => openLigneSnapshot(ligne.id)}
+                  />
 
-                {/* Barre d'export */}
-                <ExportResultsBar
-                  resultCount={filteredLignes.length}
-                  onExportCSV={() => exportBudgetToCSV(
-                    filteredLignes,
-                    { sections, programmes, actions, comptes, enveloppes },
-                    `budget_${currentExercice?.code}_${new Date().toISOString().split('T')[0]}.csv`
-                  )}
-                  onExportPDF={() => exportBudgetToPDF(
-                    filteredLignes,
-                    { sections, programmes, actions, comptes, enveloppes },
-                    `budget_${currentExercice?.code}_${new Date().toISOString().split('T')[0]}.pdf`
-                  )}
-                  onPrint={() => printBudgetResults(
-                    filteredLignes,
-                    { sections, programmes, actions, comptes, enveloppes },
-                    `Plan Budgétaire ${currentExercice?.libelle}`,
-                    totals
-                  )}
-                />
-              </CardContent>
-            </Card>
+                  {/* Barre d'export */}
+                  <ExportResultsBar
+                    resultCount={filteredLignes.length}
+                    onExportCSV={() => exportBudgetToCSV(
+                      filteredLignes,
+                      { sections, programmes, actions, comptes, enveloppes },
+                      `budget_${currentExercice?.code}_${new Date().toISOString().split('T')[0]}.csv`
+                    )}
+                    onExportPDF={() => exportBudgetToPDF(
+                      filteredLignes,
+                      { sections, programmes, actions, comptes, enveloppes },
+                      `budget_${currentExercice?.code}_${new Date().toISOString().split('T')[0]}.pdf`
+                    )}
+                    onPrint={() => printBudgetResults(
+                      filteredLignes,
+                      { sections, programmes, actions, comptes, enveloppes },
+                      `Plan Budgétaire ${currentExercice?.libelle}`,
+                      totals
+                    )}
+                  />
+                </CardContent>
+              </Card>
+            </div>
           )}
         </TabsContent>
 
@@ -689,8 +689,8 @@ const Budgets = () => {
             </CardContent>
           </Card>
         </TabsContent>
+        </div>
       </Tabs>
-      </div>
 
       <LigneBudgetaireDialog
         open={ligneDialogOpen}

@@ -9,6 +9,7 @@ export interface FinancialVentilation {
   nature: VentilationNature;
   montant: number;
   sens: VentilationSens;
+  impacteNetPaye?: boolean;
   taux?: number;
 }
 

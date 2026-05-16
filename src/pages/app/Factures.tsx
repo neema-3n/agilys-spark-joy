@@ -1,8 +1,8 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
-import { Plus, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { showNavigationToast } from '@/lib/navigation-toast';
 import { useFacturesPaginated } from '@/hooks/useFactures';
@@ -17,7 +17,7 @@ import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { FactureStats } from '@/components/factures/FactureStats';
 import { FactureTable } from '@/components/factures/FactureTable';
-import { FactureDialog } from '@/components/factures/FactureDialog';
+import { FactureForm } from '@/components/factures/FactureForm';
 import { FactureSnapshot } from '@/components/factures/FactureSnapshot';
 import { CreateDepenseFromFactureDialog } from '@/components/depenses/CreateDepenseFromFactureDialog';
 import { CreateFactureInput, Facture, StatutFacture } from '@/types/facture.types';
@@ -49,17 +49,21 @@ import {
 import { useListSelection } from '@/hooks/useListSelection';
 import { CTA_REVEAL_STYLES, useHeaderCtaReveal } from '@/hooks/useHeaderCtaReveal';
 import { testDataService } from '@/services/api/test-data.service';
+import { facturesService } from '@/services/api/factures.service';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default function Factures() {
   const navigate = useNavigate();
   const { factureId } = useParams<{ factureId: string }>();
+  const createMatch = useMatch('/app/factures/create');
+  const editMatch = useMatch('/app/factures/:factureId/edit');
   const { currentClient } = useClient();
   const { currentExercice } = useExercice();
+  const isCreateMode = !!createMatch;
+  const routeEditFactureId = editMatch?.params.factureId;
+  const isEditMode = !!routeEditFactureId;
+  const isEditorMode = isCreateMode || isEditMode;
   
-  // États basés sur les IDs uniquement
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingFactureId, setEditingFactureId] = useState<string | undefined>();
-  const [selectedBonCommandeId, setSelectedBonCommandeId] = useState<string | undefined>();
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
   const [annulationFactureId, setAnnulationFactureId] = useState<string | undefined>();
   const [selectedFactureForDepense, setSelectedFactureForDepense] = useState<Facture | null>(null);
@@ -107,11 +111,18 @@ export default function Factures() {
   const { lignes: lignesBudgetaires } = useLignesBudgetaires();
   const { engagements } = useEngagements();
 
-  // Helper pour récupérer la facture depuis l'ID (source unique de vérité)
-  const editingFacture = useMemo(
-    () => factures.find(f => f.id === editingFactureId),
-    [factures, editingFactureId]
+  const routeEditingFactureFromList = useMemo(
+    () => factures.find((facture) => facture.id === routeEditFactureId),
+    [factures, routeEditFactureId]
   );
+
+  const { data: routeEditingFacture, isLoading: isRouteEditingFactureLoading } = useQuery({
+    queryKey: ['facture-editor', routeEditFactureId],
+    queryFn: () => facturesService.getById(routeEditFactureId!),
+    enabled: !!routeEditFactureId && !routeEditingFactureFromList,
+  });
+
+  const editorFacture = routeEditingFactureFromList || routeEditingFacture;
 
   // Synchroniser filtres avec le hook de pagination
   useEffect(() => {
@@ -234,31 +245,23 @@ export default function Factures() {
 
   // Callbacks stables avec dépendances minimales
   const handleCreate = useCallback(() => {
-    setEditingFactureId(undefined);
-    setSelectedBonCommandeId(undefined);
-    setDialogOpen(true);
-  }, []);
-
-  const handleDialogClose = useCallback((open: boolean) => {
-    setDialogOpen(open);
-    if (!open) {
-      setEditingFactureId(undefined);
-      setSelectedBonCommandeId(undefined);
-    }
-  }, []);
+    navigate('/app/factures/create');
+  }, [navigate]);
 
   const handleEdit = useCallback((id: string) => {
-    setEditingFactureId(id);
-    setDialogOpen(true);
-  }, []);
+    navigate(`/app/factures/${id}/edit`);
+  }, [navigate]);
 
-  const handleSubmit = useCallback(async (data: CreateFactureInput) => {
-    if (editingFactureId) {
-      await updateFacture({ id: editingFactureId, facture: data });
-    } else {
-      await createFacture({ facture: data });
+  const handleSingleSubmit = useCallback(async (data: CreateFactureInput) => {
+    if (editorFacture) {
+      const updated = await updateFacture({ id: editorFacture.id, facture: data });
+      navigate(`/app/factures/${updated.id}`);
+      return;
     }
-  }, [editingFactureId, updateFacture, createFacture]);
+
+    const created = await createFacture({ facture: data });
+    navigate(`/app/factures/${created.id}`);
+  }, [editorFacture, updateFacture, createFacture, navigate]);
 
   const handleGenererNumero = useCallback(async () => {
     if (!currentClient || !currentExercice) return '';
@@ -346,6 +349,24 @@ export default function Factures() {
     );
   }
 
+  const handleSingleCancel = () => {
+    if (routeEditFactureId) {
+      navigate(`/app/factures/${routeEditFactureId}`);
+      return;
+    }
+    navigate('/app/factures');
+  };
+
+  const editorHeader = isCreateMode
+    ? {
+        title: 'Nouvelle facture',
+        description: 'Créez une facture fournisseur dans un espace de travail dédié.',
+      }
+    : {
+        title: editorFacture ? `Modifier ${editorFacture.numero}` : 'Modifier la facture',
+        description: 'Éditez la facture dans l’outlet sans revenir à la liste.',
+      };
+
   const pageHeaderContent = (
     <PageHeader
       title="Gestion des Factures"
@@ -392,6 +413,56 @@ export default function Factures() {
     <>
       <style>{CTA_REVEAL_STYLES}</style>
       <div className="space-y-6">
+      {isEditorMode ? (
+        <>
+          <PageHeader
+            title={editorHeader.title}
+            description={editorHeader.description}
+            sticky={false}
+            actions={
+              <Button variant="outline" onClick={handleSingleCancel}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Retour aux factures
+              </Button>
+            }
+          />
+
+          {isEditMode && !editorFacture && isRouteEditingFactureLoading ? (
+            <div className="py-12 text-center text-muted-foreground">Chargement de la facture...</div>
+          ) : isEditMode && !editorFacture ? (
+            <div className="rounded-xl border border-dashed p-8 text-center">
+              <p className="text-sm text-muted-foreground">
+                Cette facture est introuvable ou n’est plus accessible depuis la page courante.
+              </p>
+              <Button variant="outline" className="mt-4" onClick={() => navigate('/app/factures')}>
+                Retour à la liste
+              </Button>
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="pt-6">
+                <FactureForm
+                  key={`${isCreateMode ? 'create' : routeEditFactureId || 'unknown'}`}
+                  facture={editorFacture}
+                  onSubmit={handleSingleSubmit}
+                  onCancel={handleSingleCancel}
+                  fournisseurs={fournisseurs}
+                  bonsCommande={bonsCommande}
+                  engagements={engagements.filter(e => e.statut === 'valide')}
+                  lignesBudgetaires={lignesBudgetaires.filter(lb => lb.statut === 'actif')}
+                  projets={projets}
+                  currentClientId={currentClient?.id || ''}
+                  currentExerciceId={currentExercice?.id || ''}
+                  onGenererNumero={handleGenererNumero}
+                  submitLabel={editorFacture ? 'Enregistrer' : 'Créer la facture'}
+                  useScrollArea={false}
+                />
+              </CardContent>
+            </Card>
+          )}
+        </>
+      ) : (
+        <>
       {!isSnapshotOpen && pageHeaderContent}
 
       <div className="space-y-6">
@@ -516,22 +587,6 @@ export default function Factures() {
         )}
       </div>
 
-      <FactureDialog
-        open={dialogOpen}
-        onOpenChange={handleDialogClose}
-        facture={editingFacture}
-        onSubmit={handleSubmit}
-        fournisseurs={fournisseurs}
-        bonsCommande={bonsCommande}
-        engagements={engagements.filter(e => e.statut === 'valide')}
-        lignesBudgetaires={lignesBudgetaires.filter(lb => lb.statut === 'actif')}
-        projets={projets}
-        currentClientId={currentClient?.id || ''}
-        currentExerciceId={currentExercice?.id || ''}
-        onGenererNumero={handleGenererNumero}
-        initialBonCommandeId={selectedBonCommandeId}
-      />
-
       <AlertDialog open={annulerDialogOpen} onOpenChange={setAnnulerDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -588,6 +643,8 @@ export default function Factures() {
           }
         }}
       />
+      </>
+      )}
       </div>
     </>
   );

@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeftRight,
   BarChart3,
@@ -41,6 +41,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Collapsible,
   CollapsibleContent,
@@ -234,6 +235,62 @@ const getInitialOpenSections = (pathname: string) =>
     return acc;
   }, {});
 
+const OutletContentSkeleton = () => (
+  <div className="space-y-6">
+    <div className="space-y-3 border-b border-border pb-5">
+      <Skeleton className="h-1.5 w-14 rounded-full bg-primary/30" />
+      <Skeleton className="h-10 w-80 max-w-[70%]" />
+      <Skeleton className="h-6 w-[28rem] max-w-[85%]" />
+    </div>
+
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div
+          key={`summary-skeleton-${index}`}
+          className="rounded-xl border border-border bg-card p-6 shadow-sm"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-9 w-16" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+            <Skeleton className="h-10 w-10 rounded-xl" />
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <div className="rounded-xl border border-border bg-card shadow-sm">
+      <div className="space-y-4 border-b border-border px-6 py-5">
+        <Skeleton className="h-8 w-56" />
+        <Skeleton className="h-5 w-80 max-w-[70%]" />
+        <div className="flex flex-wrap gap-3 pt-1">
+          <Skeleton className="h-11 flex-1 min-w-[260px]" />
+          <Skeleton className="h-11 w-40" />
+          <Skeleton className="h-11 w-40" />
+        </div>
+      </div>
+      <div className="px-6 py-5">
+        <div className="space-y-4">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div
+              key={`row-skeleton-${index}`}
+              className="grid grid-cols-[2.2fr_repeat(4,minmax(0,1fr))] gap-4"
+            >
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 const AppLayoutTailAdmin = () => {
   const { user, logout } = useAuth();
   const { isLoading: clientLoading, hasLoaded: clientLoaded, currentClient } = useClient();
@@ -363,7 +420,13 @@ const AppLayoutTailAdmin = () => {
               </div>
             ) : (
               <div className="mx-auto w-full max-w-[1680px] px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
-                <Outlet />
+                <Suspense
+                  fallback={
+                    <OutletContentSkeleton />
+                  }
+                >
+                  <Outlet />
+                </Suspense>
               </div>
             )}
           </main>
