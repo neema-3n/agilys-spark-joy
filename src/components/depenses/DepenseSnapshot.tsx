@@ -26,6 +26,7 @@ interface DepenseSnapshotProps {
   onNavigateToEntity?: (type: string, id: string) => void;
   onValider?: (id: string) => void;
   onOrdonnancer?: (id: string) => void;
+  onEdit?: (id: string) => void;
   onEnregistrerPaiement?: (id: string) => void;
   onAnnuler?: (id: string) => void;
   onDelete?: (id: string) => void;
@@ -45,6 +46,7 @@ export const DepenseSnapshot = ({
   onNavigateToEntity,
   onValider,
   onOrdonnancer,
+  onEdit,
   onEnregistrerPaiement,
   onAnnuler,
   onDelete,
@@ -124,6 +126,20 @@ export const DepenseSnapshot = ({
           disabled={disableActions}
         >
           Ordonnancer
+        </Button>
+      );
+    }
+
+    if (onEdit && depense.statut === 'brouillon') {
+      buttons.push(
+        <Button
+          key="modifier"
+          variant="outline"
+          size="sm"
+          onClick={() => onEdit(depense.id)}
+          disabled={disableActions}
+        >
+          Modifier
         </Button>
       );
     }

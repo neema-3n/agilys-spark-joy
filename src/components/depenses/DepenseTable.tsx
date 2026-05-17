@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, CheckCircle, FileCheck, Banknote, XCircle, Trash, Eye } from 'lucide-react';
+import { MoreHorizontal, CheckCircle, FileCheck, Banknote, XCircle, Trash, Eye, Pencil } from 'lucide-react';
 import { ListColumn, ListTable } from '@/components/lists/ListTable';
 import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/selectionColumn';
 import { formatCurrency } from '@/lib/utils';
@@ -183,6 +183,15 @@ export const DepenseTable = ({
 
             {depense.statut === 'brouillon' && (
               <>
+                {onEdit && (
+                  <DropdownMenuItem
+                    onClick={() => onEdit(depense)}
+                    disabled={disableActions}
+                  >
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Modifier
+                  </DropdownMenuItem>
+                )}
                 {onValider && (
                   <DropdownMenuItem
                     onClick={() => onValider(depense.id)}

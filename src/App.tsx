@@ -106,10 +106,14 @@ const App = () => (
                   </Route>
                   <Route path="bons-commande">
                     <Route index element={<BonsCommande />} />
+                    <Route path="create" element={<BonsCommande />} />
+                    <Route path=":bonCommandeId/edit" element={<BonsCommande />} />
                     <Route path=":bonCommandeId" element={<BonsCommande />} />
                   </Route>
                   <Route path="depenses">
                     <Route index element={<Depenses />} />
+                    <Route path="create" element={<Depenses />} />
+                    <Route path=":depenseId/edit" element={<Depenses />} />
                     <Route path=":depenseId" element={<Depenses />} />
                   </Route>
                   <Route path="factures">
@@ -118,7 +122,11 @@ const App = () => (
                     <Route path=":factureId/edit" element={<Factures />} />
                     <Route path=":factureId" element={<Factures />} />
                   </Route>
-                  <Route path="paiements" element={<Paiements />} />
+                  <Route path="paiements">
+                    <Route index element={<Paiements />} />
+                    <Route path="create" element={<Paiements />} />
+                    <Route path=":paiementId" element={<Paiements />} />
+                  </Route>
                   <Route path="tresorerie">
                     <Route index element={<Navigate to="comptes" replace />} />
                     <Route path="comptes" element={<TresorerieComptes />} />

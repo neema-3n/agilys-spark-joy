@@ -9,10 +9,8 @@ import { EngagementDialog } from '@/components/engagements/EngagementDialog';
 import { EngagementTable } from '@/components/engagements/EngagementTable';
 import { EngagementStats } from '@/components/engagements/EngagementStats';
 import { EngagementSnapshot } from '@/components/engagements/EngagementSnapshot';
-import { BonCommandeDialog } from '@/components/bonsCommande/BonCommandeDialog';
 import { CreateDepenseFromEngagementDialog } from '@/components/depenses/CreateDepenseFromEngagementDialog';
 import { useEngagements } from '@/hooks/useEngagements';
-import { useBonsCommande } from '@/hooks/useBonsCommande';
 import { useDepenses } from '@/hooks/useDepenses';
 import { useToast } from '@/hooks/use-toast';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
@@ -40,14 +38,11 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import type { EngagementFormData } from '@/types/engagement.types';
-import type { CreateBonCommandeInput } from '@/types/bonCommande.types';
 
 const Engagements = () => {
   const { engagementId } = useParams<{ engagementId?: string }>();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEngagementId, setEditingEngagementId] = useState<string | undefined>();
-  const [bonCommandeDialogOpen, setBonCommandeDialogOpen] = useState(false);
-  const [engagementSourceId, setEngagementSourceId] = useState<string | null>(null);
   const [validateDialogOpen, setValidateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [actionEngagementId, setActionEngagementId] = useState<string | null>(null);
@@ -62,7 +57,6 @@ const Engagements = () => {
 
   const { engagements, isLoading, createEngagement, updateEngagement, validerEngagement, annulerEngagement, deleteEngagement } =
     useEngagements();
-  const { createBonCommande, genererNumero } = useBonsCommande();
   const { createDepenseFromEngagement } = useDepenses();
 
   const filteredEngagements = useMemo(() => {
@@ -107,11 +101,6 @@ const Engagements = () => {
   const editingEngagement = useMemo(
     () => engagements.find((engagement) => engagement.id === editingEngagementId),
     [editingEngagementId, engagements]
-  );
-
-  const engagementSource = useMemo(
-    () => engagements.find((engagement) => engagement.id === engagementSourceId),
-    [engagementSourceId, engagements]
   );
 
   const engagementForDepense = useMemo(
@@ -250,40 +239,13 @@ const Engagements = () => {
     }
   }, [actionEngagementId, deleteEngagement, toast]);
 
-  const handleCreerBonCommande = useCallback((engagementId: string) => {
-    setEngagementSourceId(engagementId);
-    setBonCommandeDialogOpen(true);
-  }, []);
-
-  const handleSaveBonCommande = useCallback(
-    async (data: CreateBonCommandeInput) => {
-      try {
-        const engagement = engagements.find((e) => e.id === engagementSourceId);
-
-        await createBonCommande(data);
-
-        setBonCommandeDialogOpen(false);
-        setEngagementSourceId(null);
-
-        showNavigationToast({
-          title: 'Bon de commande créé',
-          description: `Le BC a été créé depuis l'engagement ${engagement?.numero || ''}.`,
-          targetPage: {
-            name: 'Bons de Commande',
-            path: '/app/bons-commande',
-          },
-          navigate,
-        });
-      } catch (error) {
-        toast({
-          title: 'Erreur',
-          description: 'Une erreur est survenue lors de la création.',
-          variant: 'destructive',
-        });
-        throw error;
-      }
+  const handleCreerBonCommande = useCallback(
+    (engagementId: string) => {
+      navigate('/app/bons-commande/create', {
+        state: { initialEngagementId: engagementId },
+      });
     },
-    [createBonCommande, engagements, engagementSourceId, navigate, toast]
+    [navigate]
   );
 
   const handleCreerDepense = useCallback((engagementId: string) => {
@@ -451,17 +413,6 @@ const Engagements = () => {
       </div>
 
       <EngagementDialog open={dialogOpen} onOpenChange={handleDialogClose} onSave={handleSave} engagement={editingEngagement} />
-
-      <BonCommandeDialog
-        open={bonCommandeDialogOpen}
-        onOpenChange={(open) => {
-          setBonCommandeDialogOpen(open);
-          if (!open) setEngagementSourceId(null);
-        }}
-        selectedEngagement={engagementSource}
-        onSubmit={handleSaveBonCommande}
-        onGenererNumero={genererNumero}
-      />
 
       <AlertDialog
         open={annulationDialogOpen}
