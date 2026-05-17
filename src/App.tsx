@@ -122,7 +122,11 @@ const App = () => (
                     <Route path=":factureId/edit" element={<Factures />} />
                     <Route path=":factureId" element={<Factures />} />
                   </Route>
-                  <Route path="paiements" element={<Paiements />} />
+                  <Route path="paiements">
+                    <Route index element={<Paiements />} />
+                    <Route path="create" element={<Paiements />} />
+                    <Route path=":paiementId" element={<Paiements />} />
+                  </Route>
                   <Route path="tresorerie">
                     <Route index element={<Navigate to="comptes" replace />} />
                     <Route path="comptes" element={<TresorerieComptes />} />

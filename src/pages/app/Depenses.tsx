@@ -14,8 +14,6 @@ import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { useSnapshotState } from '@/hooks/useSnapshotState';
 import type { DepenseFormData } from '@/types/depense.types';
 import { usePaiementsByDepense } from '@/hooks/usePaiements';
-import { PaiementDialog } from '@/components/paiements/PaiementDialog';
-import type { PaiementFormData } from '@/types/paiement.types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -68,7 +66,6 @@ const Depenses = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
   const [annulerMultipleDialogOpen, setAnnulerMultipleDialogOpen] = useState(false);
-  const [paiementDialogOpen, setPaiementDialogOpen] = useState(false);
   const [isSubmittingAction, setIsSubmittingAction] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statutFilter, setStatutFilter] = useState<
@@ -180,14 +177,9 @@ const Depenses = () => {
   );
 
   const handleOpenEnregistrerPaiement = (id: string) => {
-    setActionDepenseId(id);
-    setPaiementDialogOpen(true);
-  };
-
-  const handleEnregistrerPaiement = async (data: PaiementFormData) => {
-    // Géré directement par PaiementDialog via usePaiements
-    setPaiementDialogOpen(false);
-    setActionDepenseId(null);
+    navigate('/app/paiements/create', {
+      state: { initialDepenseId: id },
+    });
   };
 
   const handleOpenAnnuler = (id: string) => {
@@ -554,23 +546,6 @@ const Depenses = () => {
         isSubmitting={isSubmittingAction}
       />
 
-      {(() => {
-        const depenseForPaiement = actionDepenseId 
-          ? depenses.find(d => d.id === actionDepenseId)
-          : null;
-        
-        // Vérifier que la dépense existe ET qu'elle est ordonnancée
-        return depenseForPaiement && depenseForPaiement.statut === 'ordonnancee' ? (
-          <PaiementDialog
-            open={paiementDialogOpen}
-            onOpenChange={setPaiementDialogOpen}
-            onSubmit={handleEnregistrerPaiement}
-            depenseId={actionDepenseId}
-            montantRestant={depenseForPaiement.montant - depenseForPaiement.montantPaye}
-            depenseNumero={depenseForPaiement.numero}
-          />
-        ) : null;
-      })()}
       </div>
     </>
   );
