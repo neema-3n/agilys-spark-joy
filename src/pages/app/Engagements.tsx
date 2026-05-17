@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Plus } from 'lucide-react';
+import { ArrowLeft, Plus } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
-import { EngagementDialog } from '@/components/engagements/EngagementDialog';
+import { EngagementForm } from '@/components/engagements/EngagementForm';
 import { EngagementTable } from '@/components/engagements/EngagementTable';
 import { EngagementStats } from '@/components/engagements/EngagementStats';
 import { EngagementSnapshot } from '@/components/engagements/EngagementSnapshot';
-import { CreateDepenseFromEngagementDialog } from '@/components/depenses/CreateDepenseFromEngagementDialog';
 import { useEngagements } from '@/hooks/useEngagements';
-import { useDepenses } from '@/hooks/useDepenses';
+import { useReservations } from '@/hooks/useReservations';
 import { useToast } from '@/hooks/use-toast';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { showNavigationToast } from '@/lib/navigation-toast';
@@ -37,16 +36,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Card, CardContent } from '@/components/ui/card';
 import type { EngagementFormData } from '@/types/engagement.types';
+
+type EngagementLocationState = {
+  initialReservationId?: string;
+};
 
 const Engagements = () => {
   const { engagementId } = useParams<{ engagementId?: string }>();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingEngagementId, setEditingEngagementId] = useState<string | undefined>();
+  const createMatch = useMatch('/app/engagements/create');
+  const editMatch = useMatch('/app/engagements/:engagementId/edit');
+  const location = useLocation();
   const [validateDialogOpen, setValidateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [actionEngagementId, setActionEngagementId] = useState<string | null>(null);
-  const [engagementForDepenseId, setEngagementForDepenseId] = useState<string | null>(null);
   const [annulationDialogOpen, setAnnulationDialogOpen] = useState(false);
   const [annulationEngagementId, setAnnulationEngagementId] = useState<string | null>(null);
   const [motifAnnulation, setMotifAnnulation] = useState('');
@@ -54,10 +58,26 @@ const Engagements = () => {
   const [statutFilter, setStatutFilter] = useState<'tous' | 'brouillon' | 'valide' | 'engage' | 'liquide' | 'annule'>('tous');
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isCreateMode = !!createMatch;
+  const routeEditEngagementId = editMatch?.params.engagementId;
+  const isEditMode = !!routeEditEngagementId;
+  const isEditorMode = isCreateMode || isEditMode;
+  const initialReservationId =
+    isCreateMode && typeof (location.state as EngagementLocationState | null)?.initialReservationId === 'string'
+      ? ((location.state as EngagementLocationState).initialReservationId ?? undefined)
+      : undefined;
 
-  const { engagements, isLoading, createEngagement, updateEngagement, validerEngagement, annulerEngagement, deleteEngagement } =
-    useEngagements();
-  const { createDepenseFromEngagement } = useDepenses();
+  const {
+    engagements,
+    isLoading,
+    createEngagement,
+    createEngagementFromReservation,
+    updateEngagement,
+    validerEngagement,
+    annulerEngagement,
+    deleteEngagement,
+  } = useEngagements();
+  const { reservations } = useReservations();
 
   const filteredEngagements = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -98,60 +118,45 @@ const Engagements = () => {
   const { headerCtaRef, isHeaderCtaVisible } = useHeaderCtaReveal([isSnapshotOpen]);
   const scrollProgress = useScrollProgress(!!snapshotEngagementId);
 
-  const editingEngagement = useMemo(
-    () => engagements.find((engagement) => engagement.id === editingEngagementId),
-    [editingEngagementId, engagements]
+  const routeEditingEngagement = useMemo(
+    () => engagements.find((engagement) => engagement.id === routeEditEngagementId),
+    [engagements, routeEditEngagementId]
   );
 
-  const engagementForDepense = useMemo(
-    () => engagements.find((engagement) => engagement.id === engagementForDepenseId) || null,
-    [engagementForDepenseId, engagements]
+  const selectedReservation = useMemo(
+    () => reservations.find((reservation) => reservation.id === initialReservationId),
+    [reservations, initialReservationId]
   );
 
   const handleCreate = useCallback(() => {
-    setEditingEngagementId(undefined);
-    setDialogOpen(true);
-  }, []);
+    navigate('/app/engagements/create');
+  }, [navigate]);
 
   const handleEdit = useCallback((engagementId: string) => {
-    setEditingEngagementId(engagementId);
-    setDialogOpen(true);
-  }, []);
+    navigate(`/app/engagements/${engagementId}/edit`);
+  }, [navigate]);
 
-  const handleDialogClose = useCallback((open: boolean) => {
-    setDialogOpen(open);
-    if (!open) {
-      setEditingEngagementId(undefined);
-    }
-  }, []);
-
-  const handleSave = useCallback(
+  const handleSingleSubmit = useCallback(
     async (data: EngagementFormData) => {
-      try {
-        if (editingEngagementId) {
-          await updateEngagement({ id: editingEngagementId, updates: data });
-          toast({
-            title: 'Engagement modifié',
-            description: "L'engagement a été modifié avec succès.",
-          });
-        } else {
-          await createEngagement(data);
-          toast({
-            title: 'Engagement créé',
-            description: "L'engagement a été créé avec succès.",
-          });
-        }
-        setDialogOpen(false);
-      } catch (error) {
-        toast({
-          title: 'Erreur',
-          description: 'Une erreur est survenue lors de la sauvegarde.',
-          variant: 'destructive',
-        });
-        throw error;
+      if (routeEditingEngagement) {
+        const updated = await updateEngagement({ id: routeEditingEngagement.id, updates: data });
+        navigate(`/app/engagements/${updated.id}`);
+        return;
       }
+
+      if (initialReservationId) {
+        const created = await createEngagementFromReservation({
+          reservationId: initialReservationId,
+          additionalData: data,
+        });
+        navigate(`/app/engagements/${created.id}`);
+        return;
+      }
+
+      const created = await createEngagement(data);
+      navigate(`/app/engagements/${created.id}`);
     },
-    [createEngagement, editingEngagementId, toast, updateEngagement]
+    [routeEditingEngagement, updateEngagement, navigate, initialReservationId, createEngagementFromReservation, createEngagement]
   );
 
   const handleValider = useCallback((id: string) => {
@@ -249,8 +254,10 @@ const Engagements = () => {
   );
 
   const handleCreerDepense = useCallback((engagementId: string) => {
-    setEngagementForDepenseId(engagementId);
-  }, []);
+    navigate('/app/depenses/create', {
+      state: { initialEngagementId: engagementId },
+    });
+  }, [navigate]);
 
   const handleNavigateToEntity = useCallback(
     (type: string, id: string) => {
@@ -292,6 +299,18 @@ const Engagements = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [snapshotEngagementId, snapshotIndex, engagements.length, handleCloseSnapshot, handleNavigateSnapshot]);
 
+  const handleSingleCancel = useCallback(() => {
+    if (routeEditEngagementId) {
+      navigate(`/app/engagements/${routeEditEngagementId}`);
+      return;
+    }
+    if (initialReservationId) {
+      navigate(`/app/reservations/${initialReservationId}`);
+      return;
+    }
+    navigate('/app/engagements');
+  }, [initialReservationId, navigate, routeEditEngagementId]);
+
   if (isLoading) {
     return (
       <ListPageLoading
@@ -301,6 +320,18 @@ const Engagements = () => {
       />
     );
   }
+
+  const editorHeader = isCreateMode
+    ? {
+        title: 'Nouvel engagement',
+        description: selectedReservation
+          ? `Créez un engagement à partir de la réservation ${selectedReservation.numero}.`
+          : 'Créez un engagement dans un espace de travail dédié.',
+      }
+    : {
+        title: routeEditingEngagement ? `Modifier ${routeEditingEngagement.numero}` : "Modifier l'engagement",
+        description: "Éditez l'engagement directement dans l’outlet.",
+      };
 
   const pageHeaderContent = (
     <PageHeader
@@ -321,35 +352,73 @@ const Engagements = () => {
     <>
       <style>{CTA_REVEAL_STYLES}</style>
       <div className="space-y-6">
-      {!isSnapshotOpen && pageHeaderContent}
+        {isEditorMode ? (
+          <>
+            <PageHeader
+              title={editorHeader.title}
+              description={editorHeader.description}
+              sticky={false}
+              actions={
+                <Button variant="outline" onClick={handleSingleCancel}>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Retour aux engagements
+                </Button>
+              }
+            />
 
-      <div className="space-y-6">
-        {isSnapshotOpen && snapshotEngagement ? (
-          <EngagementSnapshot
-            engagement={snapshotEngagement}
-            onClose={handleCloseSnapshot}
-            onNavigate={handleNavigateSnapshot}
-        hasPrev={snapshotIndex > 0}
-        hasNext={snapshotIndex < engagements.length - 1}
-        currentIndex={snapshotIndex}
-        totalCount={engagements.length}
-        onEdit={() => handleEdit(snapshotEngagement.id)}
-        onValider={snapshotEngagement.statut === 'brouillon' ? () => handleValider(snapshotEngagement.id) : undefined}
-        onCreerBonCommande={
-          snapshotEngagement.statut === 'valide' ? () => handleCreerBonCommande(snapshotEngagement.id) : undefined
-        }
-        onCreerDepense={snapshotEngagement.statut === 'valide' ? () => handleCreerDepense(snapshotEngagement.id) : undefined}
-        onAnnuler={
-          snapshotEngagement.statut === 'brouillon' || snapshotEngagement.statut === 'valide'
-            ? () => handleAnnulationRequest(snapshotEngagement.id)
-            : undefined
-        }
-        onNavigateToEntity={handleNavigateToEntity}
-      />
+            {isEditMode && !routeEditingEngagement ? (
+              <div className="rounded-xl border border-dashed p-8 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Cet engagement est introuvable ou n&apos;est plus accessible depuis la page courante.
+                </p>
+                <Button variant="outline" className="mt-4" onClick={() => navigate('/app/engagements')}>
+                  Retour à la liste
+                </Button>
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="pt-6">
+                  <EngagementForm
+                    key={`${isCreateMode ? 'create' : routeEditEngagementId || 'unknown'}-${initialReservationId || 'none'}`}
+                    engagement={routeEditingEngagement}
+                    selectedReservation={selectedReservation}
+                    onSubmit={handleSingleSubmit}
+                    onCancel={handleSingleCancel}
+                    submitLabel={routeEditingEngagement ? "Enregistrer l'engagement" : "Créer l'engagement"}
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </>
+        ) : isSnapshotOpen && snapshotEngagement ? (
+          <div className="space-y-6">
+            <EngagementSnapshot
+              engagement={snapshotEngagement}
+              onClose={handleCloseSnapshot}
+              onNavigate={handleNavigateSnapshot}
+              hasPrev={snapshotIndex > 0}
+              hasNext={snapshotIndex < engagements.length - 1}
+              currentIndex={snapshotIndex}
+              totalCount={engagements.length}
+              onEdit={() => handleEdit(snapshotEngagement.id)}
+              onValider={snapshotEngagement.statut === 'brouillon' ? () => handleValider(snapshotEngagement.id) : undefined}
+              onCreerBonCommande={
+                snapshotEngagement.statut === 'valide' ? () => handleCreerBonCommande(snapshotEngagement.id) : undefined
+              }
+              onCreerDepense={snapshotEngagement.statut === 'valide' ? () => handleCreerDepense(snapshotEngagement.id) : undefined}
+              onAnnuler={
+                snapshotEngagement.statut === 'brouillon' || snapshotEngagement.statut === 'valide'
+                  ? () => handleAnnulationRequest(snapshotEngagement.id)
+                  : undefined
+              }
+              onNavigateToEntity={handleNavigateToEntity}
+            />
+          </div>
         ) : isSnapshotOpen && isSnapshotLoading ? (
           <div className="flex items-center justify-center py-12 text-muted-foreground">Chargement du snapshot...</div>
         ) : (
           <>
+            {!isSnapshotOpen && pageHeaderContent}
             <EngagementStats engagements={engagements} />
 
             <ListLayout
@@ -411,8 +480,6 @@ const Engagements = () => {
           </>
         )}
       </div>
-
-      <EngagementDialog open={dialogOpen} onOpenChange={handleDialogClose} onSave={handleSave} engagement={editingEngagement} />
 
       <AlertDialog
         open={annulationDialogOpen}
@@ -485,32 +552,6 @@ const Engagements = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <CreateDepenseFromEngagementDialog
-        open={!!engagementForDepense}
-        onOpenChange={(open) => !open && setEngagementForDepenseId(null)}
-        engagement={engagementForDepense}
-        onSave={async (data) => {
-          try {
-            const engagement = engagementForDepense;
-            await createDepenseFromEngagement(data);
-
-            setEngagementForDepenseId(null);
-
-            showNavigationToast({
-              title: 'Dépense créée',
-              description: `La dépense a été créée depuis l'engagement ${engagement?.numero || ''}.`,
-              targetPage: {
-                name: 'Dépenses',
-                path: '/app/depenses',
-              },
-              navigate,
-            });
-          } catch (error) {
-            console.error('Erreur création dépense:', error);
-          }
-        }}
-      />
-      </div>
     </>
   );
 };

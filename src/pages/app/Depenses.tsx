@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { useMatch, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Plus } from 'lucide-react';
@@ -10,6 +10,7 @@ import { DepenseSnapshot } from '@/components/depenses/DepenseSnapshot';
 import { AnnulerDepenseDialog } from '@/components/depenses/AnnulerDepenseDialog';
 import { AnnulerMultipleDepensesDialog } from '@/components/depenses/AnnulerMultipleDepensesDialog';
 import { useDepenses } from '@/hooks/useDepenses';
+import { useEngagements } from '@/hooks/useEngagements';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { useSnapshotState } from '@/hooks/useSnapshotState';
 import type { DepenseFormData } from '@/types/depense.types';
@@ -45,6 +46,10 @@ import {
 import { useListSelection } from '@/hooks/useListSelection';
 import { CTA_REVEAL_STYLES, useHeaderCtaReveal } from '@/hooks/useHeaderCtaReveal';
 
+type DepensesLocationState = {
+  initialEngagementId?: string;
+};
+
 const Depenses = () => {
   const {
     depenses,
@@ -59,6 +64,7 @@ const Depenses = () => {
   } = useDepenses();
   
   const { depenseId } = useParams<{ depenseId?: string }>();
+  const location = useLocation();
   const createMatch = useMatch('/app/depenses/create');
   const editMatch = useMatch('/app/depenses/:depenseId/edit');
   const navigate = useNavigate();
@@ -75,6 +81,11 @@ const Depenses = () => {
   const routeEditDepenseId = editMatch?.params.depenseId;
   const isEditMode = !!routeEditDepenseId;
   const isEditorMode = isCreateMode || isEditMode;
+  const initialEngagementId =
+    isCreateMode && typeof (location.state as DepensesLocationState | null)?.initialEngagementId === 'string'
+      ? ((location.state as DepensesLocationState).initialEngagementId ?? undefined)
+      : undefined;
+  const { engagements } = useEngagements();
 
   const filteredDepenses = useMemo(() => {
     const searchLower = searchTerm.trim().toLowerCase();
@@ -266,6 +277,11 @@ const Depenses = () => {
     [depenses, routeEditDepenseId]
   );
 
+  const selectedEngagement = useMemo(
+    () => engagements.find((engagement) => engagement.id === initialEngagementId),
+    [engagements, initialEngagementId]
+  );
+
   const handleSingleSubmit = useCallback(
     async (data: DepenseFormData) => {
       if (editingDepense) {
@@ -312,6 +328,10 @@ const Depenses = () => {
   const handleSingleCancel = () => {
     if (routeEditDepenseId) {
       navigate(`/app/depenses/${routeEditDepenseId}`);
+      return;
+    }
+    if (initialEngagementId) {
+      navigate(`/app/engagements/${initialEngagementId}`);
       return;
     }
     navigate('/app/depenses');
@@ -373,8 +393,9 @@ const Depenses = () => {
             <Card>
               <CardContent className="pt-6">
                 <DepenseForm
-                  key={`${isCreateMode ? 'create' : routeEditDepenseId || 'unknown'}`}
+                  key={`${isCreateMode ? 'create' : routeEditDepenseId || 'unknown'}-${initialEngagementId || 'none'}`}
                   depense={editingDepense}
+                  preSelectedEngagement={selectedEngagement}
                   onSubmit={handleSingleSubmit}
                   onCancel={handleSingleCancel}
                   submitLabel={editingDepense ? 'Enregistrer' : 'Créer la dépense'}

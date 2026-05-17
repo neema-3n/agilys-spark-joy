@@ -8,7 +8,6 @@ import { PageHeader } from '@/components/PageHeader';
 import { ReservationDialog } from '@/components/reservations/ReservationDialog';
 import { ReservationTable } from '@/components/reservations/ReservationTable';
 import { ReservationStats } from '@/components/reservations/ReservationStats';
-import { EngagementDialog } from '@/components/engagements/EngagementDialog';
 import { ReservationSnapshot } from '@/components/reservations/ReservationSnapshot';
 import { useReservations } from '@/hooks/useReservations';
 import { useEngagements } from '@/hooks/useEngagements';
@@ -50,8 +49,6 @@ const Reservations = () => {
   );
   const [confirmDeleteDialogOpen, setConfirmDeleteDialogOpen] = useState(false);
   const [pendingSuppression, setPendingSuppression] = useState<{ id: string; engagements: any[] } | null>(null);
-  const [engagementDialogOpen, setEngagementDialogOpen] = useState(false);
-  const [reservationSourceId, setReservationSourceId] = useState<string | null>(null);
   const [reservationForDepenseId, setReservationForDepenseId] = useState<string | null>(null);
   const [annulationDialogOpen, setAnnulationDialogOpen] = useState(false);
   const [annulationReservationId, setAnnulationReservationId] = useState<string | null>(null);
@@ -64,7 +61,7 @@ const Reservations = () => {
 
   const { reservations, isLoading, createReservation, updateReservation, annulerReservation, deleteReservation } =
     useReservations();
-  const { createEngagementFromReservation, annulerEngagement, deleteEngagement } = useEngagements();
+  const { annulerEngagement, deleteEngagement } = useEngagements();
   const { createDepenseFromReservation } = useDepenses();
 
   const {
@@ -106,11 +103,6 @@ const Reservations = () => {
   const editingReservation = useMemo(
     () => reservations.find((reservation) => reservation.id === editingReservationId),
     [editingReservationId, reservations]
-  );
-
-  const reservationSource = useMemo(
-    () => reservations.find((reservation) => reservation.id === reservationSourceId),
-    [reservationSourceId, reservations]
   );
 
   const reservationForDepense = useMemo(
@@ -164,9 +156,10 @@ const Reservations = () => {
   );
 
   const handleCreerEngagement = useCallback((reservationId: string) => {
-    setReservationSourceId(reservationId);
-    setEngagementDialogOpen(true);
-  }, []);
+    navigate('/app/engagements/create', {
+      state: { initialReservationId: reservationId },
+    });
+  }, [navigate]);
 
   const handleCreerDepenseUrgence = useCallback((reservationId: string) => {
     setReservationForDepenseId(reservationId);
@@ -187,40 +180,6 @@ const Reservations = () => {
       }
     },
     [navigate]
-  );
-
-  const handleSaveEngagement = useCallback(
-    async (data: any) => {
-      try {
-        const reservation = reservations.find((r) => r.id === reservationSourceId);
-
-        await createEngagementFromReservation({
-          reservationId: reservationSourceId!,
-          additionalData: data,
-        });
-
-        setEngagementDialogOpen(false);
-        setReservationSourceId(null);
-
-        showNavigationToast({
-          title: 'Engagement créé',
-          description: `L'engagement a été créé depuis la réservation ${reservation?.numero || ''}.`,
-          targetPage: {
-            name: 'Engagements',
-            path: '/app/engagements',
-          },
-          navigate,
-        });
-      } catch (error) {
-        toast({
-          title: 'Erreur',
-          description: 'Une erreur est survenue lors de la création.',
-          variant: 'destructive',
-        });
-        throw error;
-      }
-    },
-    [createEngagementFromReservation, navigate, reservationSourceId, reservations, toast]
   );
 
   const executeAnnulation = useCallback(
@@ -458,16 +417,6 @@ const Reservations = () => {
       )}
 
       <ReservationDialog open={dialogOpen} onOpenChange={handleDialogOpenChange} onSave={handleSave} reservation={editingReservation} />
-
-      <EngagementDialog
-        open={engagementDialogOpen}
-        onOpenChange={(open) => {
-          setEngagementDialogOpen(open);
-          if (!open) setReservationSourceId(null);
-        }}
-        onSave={handleSaveEngagement}
-        reservation={reservationSource}
-      />
 
       <AlertDialog
         open={annulationDialogOpen}

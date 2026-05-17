@@ -102,6 +102,8 @@ const App = () => (
                   </Route>
                   <Route path="engagements">
                     <Route index element={<Engagements />} />
+                    <Route path="create" element={<Engagements />} />
+                    <Route path=":engagementId/edit" element={<Engagements />} />
                     <Route path=":engagementId" element={<Engagements />} />
                   </Route>
                   <Route path="bons-commande">

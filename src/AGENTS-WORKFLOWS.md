@@ -624,9 +624,9 @@ const mapToDatabase = (input: CreateEngagementInput | UpdateEngagementInput) => 
 
 ---
 
-### Étape 4 : Mettre à Jour le Dialog (Formulaire)
+### Étape 4 : Mettre à Jour le Formulaire
 
-**Fichier** : `src/components/engagements/EngagementDialog.tsx`
+**Fichier** : `src/components/engagements/EngagementForm.tsx`
 
 ```typescript
 // Schéma Zod
