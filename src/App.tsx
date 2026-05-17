@@ -92,6 +92,8 @@ const App = () => (
                   {/* Budget & Finance */}
                   <Route path="budgets">
                     <Route index element={<Budgets />} />
+                    <Route path="create" element={<Budgets />} />
+                    <Route path=":ligneId/edit" element={<Budgets />} />
                     <Route path=":ligneId" element={<Budgets />} />
                   </Route>
                   <Route path="enveloppes" element={<Enveloppes />} />

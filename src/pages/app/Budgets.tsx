@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
+import { useMatch, useSearchParams, useNavigate, useParams } from 'react-router-dom';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { useClient } from '@/contexts/ClientContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,10 +18,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Plus, FileEdit, CheckCircle, XCircle, Clock, Send, ArrowDown } from 'lucide-react';
+import { ArrowLeft, Plus, FileEdit, CheckCircle, XCircle, Clock, Send, ArrowDown } from 'lucide-react';
 import { BudgetTable } from '@/components/budget/BudgetTable';
 import { LigneBudgetaireSnapshot } from '@/components/budget/LigneBudgetaireSnapshot';
-import { LigneBudgetaireDialog } from '@/components/budget/LigneBudgetaireDialog';
+import { LigneBudgetaireForm } from '@/components/budget/LigneBudgetaireForm';
 import { ModificationBudgetaireDialog } from '@/components/budget/ModificationBudgetaireDialog';
 import { ReservationDialog } from '@/components/reservations/ReservationDialog';
 import { BudgetSearchPanel } from '@/components/search/BudgetSearchPanel';
@@ -89,9 +89,7 @@ const Budgets = () => {
   });
   const [loading, setLoading] = useState(true);
 
-  const [ligneDialogOpen, setLigneDialogOpen] = useState(false);
   const [modificationDialogOpen, setModificationDialogOpen] = useState(false);
-  const [selectedLigne, setSelectedLigne] = useState<LigneBudgetaire | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [reservationDialogOpen, setReservationDialogOpen] = useState(false);
   const [ligneForReservation, setLigneForReservation] = useState<LigneBudgetaire | null>(null);
@@ -99,8 +97,14 @@ const Budgets = () => {
   const [ligneToDelete, setLigneToDelete] = useState<string | null>(null);
   
   const { ligneId: ligneIdFromRoute } = useParams();
+  const createMatch = useMatch('/app/budgets/create');
+  const editMatch = useMatch('/app/budgets/:ligneId/edit');
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'lignes';
+  const isCreateMode = !!createMatch;
+  const routeEditLigneId = editMatch?.params.ligneId;
+  const isEditMode = !!routeEditLigneId;
+  const isEditorMode = isCreateMode || isEditMode;
   
   const handleTabChange = (value: string) => {
     if (value !== 'lignes' && ligneIdFromRoute) {
@@ -172,7 +176,6 @@ const Budgets = () => {
         title: 'Succès',
         description: 'Ligne budgétaire modifiée avec succès',
       });
-      setSelectedLigne(null);
       loadData();
     } catch (error) {
       toast({
@@ -376,6 +379,11 @@ const Budgets = () => {
     return params.toString();
   }, [searchParams]);
 
+  const routeEditingLigne = useMemo(
+    () => lignes.find((ligne) => ligne.id === routeEditLigneId) || null,
+    [lignes, routeEditLigneId]
+  );
+
   const navigateToSnapshot = useCallback((id: string) => {
     navigate(`/app/budgets/${id}?${buildTabQuery('lignes')}`);
   }, [navigate, buildTabQuery]);
@@ -396,7 +404,7 @@ const Budgets = () => {
   } = useSnapshotState({
     items: activeTab === 'lignes' ? lignes : [],
     getId: l => l.id,
-    initialId: activeTab === 'lignes' ? (ligneIdFromRoute || null) : null,
+    initialId: !isEditorMode && activeTab === 'lignes' ? (ligneIdFromRoute || null) : null,
     onNavigateToId: id => id ? navigateToSnapshot(id) : navigateToList('lignes'),
     onMissingId: () => navigateToList('lignes'),
     isLoadingItems: loading || loadingSections || loadingProgrammes || loadingActions || loadingComptes || loadingEnveloppes,
@@ -422,34 +430,115 @@ const Budgets = () => {
     );
   }
 
+  const handleCreate = () => {
+    navigate(`/app/budgets/create?${buildTabQuery('lignes')}`);
+  };
+
+  const handleEdit = (ligneId: string) => {
+    navigate(`/app/budgets/${ligneId}/edit?${buildTabQuery('lignes')}`);
+  };
+
+  const handleSingleSubmit = async (data: Partial<LigneBudgetaire>) => {
+    if (routeEditingLigne) {
+      await handleUpdateLigne(data);
+      navigate(`/app/budgets/${routeEditingLigne.id}?${buildTabQuery('lignes')}`);
+      return;
+    }
+
+    await handleCreateLigne(data);
+    navigate(`/app/budgets?${buildTabQuery('lignes')}`);
+  };
+
+  const handleSingleCancel = () => {
+    if (routeEditLigneId) {
+      navigate(`/app/budgets/${routeEditLigneId}?${buildTabQuery('lignes')}`);
+      return;
+    }
+    navigate(`/app/budgets?${buildTabQuery('lignes')}`);
+  };
+
+  const editorHeader = isCreateMode
+    ? {
+        title: 'Nouvelle ligne budgétaire',
+        description: 'Créez une ligne budgétaire dans un espace de travail dédié.',
+      }
+    : {
+        title: routeEditingLigne ? `Modifier ${routeEditingLigne.libelle}` : 'Modifier la ligne budgétaire',
+        description: 'Éditez la ligne budgétaire directement dans l’outlet.',
+      };
+
   return (
     <div className="space-y-6">
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
-        {!isSnapshotOpen && (
+      {isEditorMode ? (
+        <>
           <PageHeader
-            title="Gestion des Budgets"
-            description="Plan budgétaire, modifications et suivi d'exécution"
+            title={editorHeader.title}
+            description={editorHeader.description}
             actions={
-              <TabsList>
-                <TabsTrigger value="lignes">Lignes Budgétaires</TabsTrigger>
-                <TabsTrigger value="modifications">
-                  Modifications Budgétaires
-                  {modifications.filter(m => m.statut === 'en_attente').length > 0 && (
-                    <Badge variant="warning" className="ml-2">
-                      {modifications.filter(m => m.statut === 'en_attente').length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-              </TabsList>
+              <Button variant="outline" onClick={handleSingleCancel}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Retour au budget
+              </Button>
             }
             scrollProgress={scrollProgress}
             sticky={false}
           />
-        )}
 
-        {/* CONTENU */}
-        <div className={`${isSnapshotOpen ? 'pt-0' : 'pt-0'} space-y-4`}>
-        <TabsContent value="lignes" className="space-y-4">
+          {isEditMode && !routeEditingLigne ? (
+            <div className="rounded-xl border border-dashed p-8 text-center">
+              <p className="text-sm text-muted-foreground">
+                Cette ligne budgétaire est introuvable ou n&apos;est plus accessible depuis la page courante.
+              </p>
+              <Button variant="outline" className="mt-4" onClick={() => navigate(`/app/budgets?${buildTabQuery('lignes')}`)}>
+                Retour à la liste
+              </Button>
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="pt-6">
+                <LigneBudgetaireForm
+                  key={`${isCreateMode ? 'create' : routeEditLigneId || 'unknown'}`}
+                  ligne={routeEditingLigne}
+                  exerciceId={currentExercice?.id || ''}
+                  sections={sections}
+                  programmes={programmes}
+                  actions={actions}
+                  comptes={comptes}
+                  enveloppes={enveloppes}
+                  onSubmit={handleSingleSubmit}
+                  onCancel={handleSingleCancel}
+                  submitLabel={routeEditingLigne ? 'Enregistrer la ligne' : 'Créer la ligne'}
+                />
+              </CardContent>
+            </Card>
+          )}
+        </>
+      ) : (
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
+          {!isSnapshotOpen && (
+            <PageHeader
+              title="Gestion des Budgets"
+              description="Plan budgétaire, modifications et suivi d'exécution"
+              actions={
+                <TabsList>
+                  <TabsTrigger value="lignes">Lignes Budgétaires</TabsTrigger>
+                  <TabsTrigger value="modifications">
+                    Modifications Budgétaires
+                    {modifications.filter(m => m.statut === 'en_attente').length > 0 && (
+                      <Badge variant="warning" className="ml-2">
+                        {modifications.filter(m => m.statut === 'en_attente').length}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
+              }
+              scrollProgress={scrollProgress}
+              sticky={false}
+            />
+          )}
+
+          <div className="space-y-4">
+          <TabsContent value="lignes" className="space-y-4">
           {isSnapshotOpen && snapshotLigne && snapshotContext ? (
             <LigneBudgetaireSnapshot
               ligne={snapshotLigne}
@@ -464,10 +553,7 @@ const Budgets = () => {
               hasNext={snapshotIndex < lignes.length - 1}
               currentIndex={snapshotIndex}
               totalCount={lignes.length}
-              onEdit={() => {
-                setSelectedLigne(snapshotLigne);
-                setLigneDialogOpen(true);
-              }}
+              onEdit={() => handleEdit(snapshotLigne.id)}
               onReserver={() => handleReserverCredit(snapshotLigne)}
               onCreateModification={() => handleCreateModificationFromLigne(snapshotLigne)}
               onDelete={() => {
@@ -487,7 +573,7 @@ const Budgets = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Plan Budgétaire {currentExercice?.libelle}</CardTitle>
-                  <Button onClick={() => setLigneDialogOpen(true)}>
+                  <Button onClick={handleCreate}>
                     <Plus className="h-4 w-4 mr-2" />
                     Nouvelle ligne
                   </Button>
@@ -530,10 +616,7 @@ const Budgets = () => {
                     lignes={filteredLignes}
                     comptes={comptes}
                     enveloppes={enveloppes}
-                    onEdit={(ligne) => {
-                      setSelectedLigne(ligne);
-                      setLigneDialogOpen(true);
-                    }}
+                    onEdit={(ligne) => handleEdit(ligne.id)}
                     onDelete={(id) => {
                       setLigneToDelete(id);
                       setDeleteDialogOpen(true);
@@ -689,19 +772,9 @@ const Budgets = () => {
             </CardContent>
           </Card>
         </TabsContent>
-        </div>
-      </Tabs>
-
-      <LigneBudgetaireDialog
-        open={ligneDialogOpen}
-        onClose={() => {
-          setLigneDialogOpen(false);
-          setSelectedLigne(null);
-        }}
-        onSubmit={selectedLigne ? handleUpdateLigne : handleCreateLigne}
-        ligne={selectedLigne}
-        exerciceId={currentExercice?.id || ''}
-      />
+          </div>
+        </Tabs>
+      )}
 
       <ModificationBudgetaireDialog
         open={modificationDialogOpen}
