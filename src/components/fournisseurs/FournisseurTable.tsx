@@ -28,7 +28,7 @@ import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/
 interface FournisseurTableProps {
   fournisseurs: Fournisseur[];
   onViewDetails: (id: string) => void;
-  onEdit: (fournisseur: Fournisseur) => void;
+  onEdit: (fournisseurId: string) => void;
   onDelete: (id: string) => void;
   selection?: ListSelectionHandlers;
   stickyHeader?: boolean;
@@ -155,7 +155,7 @@ export const FournisseurTable = ({
                 <Eye className="mr-2 h-4 w-4" />
                 Voir détails
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onEdit(f)}>
+              <DropdownMenuItem onClick={() => onEdit(f.id)}>
                 <Edit className="mr-2 h-4 w-4" />
                 Modifier
               </DropdownMenuItem>

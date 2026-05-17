@@ -1,10 +1,10 @@
 import { useState, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useMatch } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useFournisseurs } from '@/hooks/useFournisseurs';
-import { FournisseurDialog } from '@/components/fournisseurs/FournisseurDialog';
+import { FournisseurForm } from '@/components/fournisseurs/FournisseurForm';
 import { FournisseurTable } from '@/components/fournisseurs/FournisseurTable';
 import { FournisseurStats } from '@/components/fournisseurs/FournisseurStats';
 import { FournisseurSnapshot } from '@/components/fournisseurs/FournisseurSnapshot';
@@ -16,7 +16,7 @@ import { useSnapshotState } from '@/hooks/useSnapshotState';
 import { useSnapshotHandlers } from '@/hooks/useSnapshotHandlers';
 import { useListSelection } from '@/hooks/useListSelection';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
-import { Fournisseur, StatutFournisseur } from '@/types/fournisseur.types';
+import { StatutFournisseur, CreateFournisseurInput, UpdateFournisseurInput } from '@/types/fournisseur.types';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,18 +39,18 @@ const Fournisseurs = () => {
   const { fournisseurId } = useParams<{ fournisseurId: string }>();
   const navigate = useNavigate();
   const { fournisseurs, stats, isLoading, create, update, delete: deleteFournisseur } = useFournisseurs();
+  const isCreateRoute = !!useMatch('/app/fournisseurs/create');
+  const isEditRoute = !!useMatch('/app/fournisseurs/:fournisseurId/edit');
   
   // États
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingFournisseurId, setEditingFournisseurId] = useState<string | undefined>();
   const [searchTerm, setSearchTerm] = useState('');
   const [statutFilter, setStatutFilter] = useState<'tous' | StatutFournisseur>('tous');
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // Helper pour récupérer le fournisseur depuis l'ID
   const editingFournisseur = useMemo(
-    () => fournisseurs.find((f) => f.id === editingFournisseurId),
-    [fournisseurs, editingFournisseurId]
+    () => (isEditRoute && fournisseurId ? fournisseurs.find((f) => f.id === fournisseurId) : undefined),
+    [fournisseurs, fournisseurId, isEditRoute]
   );
 
   // Filtrage
@@ -79,11 +79,6 @@ const Fournisseurs = () => {
   );
   const { selectedIds, allSelected, toggleOne, toggleAll, clearSelection } = useListSelection(selectionIds);
 
-  const selectedFournisseurs = useMemo(
-    () => filteredFournisseurs.filter((f) => selectedIds.has(f.id)),
-    [filteredFournisseurs, selectedIds]
-  );
-
   const hasSelection = selectedIds.size > 0;
 
   // Snapshot state
@@ -110,33 +105,30 @@ const Fournisseurs = () => {
 
   // Handlers
   const handleCreate = useCallback(() => {
-    setEditingFournisseurId(undefined);
-    setDialogOpen(true);
-  }, []);
-
-  const handleDialogClose = useCallback((open: boolean) => {
-    setDialogOpen(open);
-    if (!open) {
-      setEditingFournisseurId(undefined);
-    }
-  }, []);
+    navigate('/app/fournisseurs/create');
+  }, [navigate]);
 
   const handleEdit = useCallback((id: string) => {
-    setEditingFournisseurId(id);
-    setDialogOpen(true);
-  }, []);
+    navigate(`/app/fournisseurs/${id}/edit`);
+  }, [navigate]);
+
+  const handleSingleCancel = () => {
+    if (editingFournisseur) {
+      navigate(`/app/fournisseurs/${editingFournisseur.id}`);
+      return;
+    }
+
+    navigate('/app/fournisseurs');
+  };
 
   const handleSubmit = useCallback(
-    async (data: any) => {
-      if (editingFournisseurId) {
-        await update({ id: editingFournisseurId, input: data });
-      } else {
-        await create(data);
-      }
-      setDialogOpen(false);
-      setEditingFournisseurId(undefined);
+    async (data: CreateFournisseurInput | UpdateFournisseurInput) => {
+      const fournisseur = editingFournisseur
+        ? await update({ id: editingFournisseur.id, input: data as UpdateFournisseurInput })
+        : await create(data as CreateFournisseurInput);
+      navigate(`/app/fournisseurs/${fournisseur.id}`);
     },
-    [editingFournisseurId, update, create]
+    [editingFournisseur, update, create, navigate]
   );
 
   const handleDelete = useCallback(
@@ -172,7 +164,7 @@ const Fournisseurs = () => {
 
   const handleExportFournisseurs = useCallback(() => {
     // Exporter tous les fournisseurs filtrés (CSV/Excel)
-  }, [filteredFournisseurs]);
+  }, []);
 
   if (isLoading) {
     return (
@@ -181,6 +173,39 @@ const Fournisseurs = () => {
         description="Référentiel fournisseurs et suivi des contrats"
         stickyHeader={false}
       />
+    );
+  }
+
+  if ((isCreateRoute || isEditRoute) && isEditRoute && fournisseurId && !editingFournisseur) {
+    return (
+      <ListPageLoading
+        title="Gestion des Fournisseurs"
+        description="Référentiel fournisseurs et suivi des contrats"
+        stickyHeader={false}
+      />
+    );
+  }
+
+  if (isCreateRoute || isEditRoute) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title={editingFournisseur ? 'Modifier le fournisseur' : 'Nouveau fournisseur'}
+          description="Gérez les informations administratives, commerciales et bancaires du fournisseur."
+          actions={
+            <Button variant="outline" onClick={handleSingleCancel}>
+              Retour aux fournisseurs
+            </Button>
+          }
+        />
+
+        <FournisseurForm
+          fournisseur={editingFournisseur}
+          onSubmit={handleSubmit}
+          onCancel={handleSingleCancel}
+          submitLabel={editingFournisseur ? 'Enregistrer les modifications' : 'Créer le fournisseur'}
+        />
+      </div>
     );
   }
 
@@ -299,14 +324,6 @@ const Fournisseurs = () => {
           </>
         )}
       </div>
-
-      {/* Dialog */}
-      <FournisseurDialog
-        open={dialogOpen}
-        onOpenChange={handleDialogClose}
-        onSubmit={handleSubmit}
-        fournisseur={editingFournisseur}
-      />
 
       {/* Delete confirmation */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>

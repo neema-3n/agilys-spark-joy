@@ -142,6 +142,8 @@ const App = () => (
                   {/* Administration */}
                   <Route path="fournisseurs">
                     <Route index element={<Fournisseurs />} />
+                    <Route path="create" element={<Fournisseurs />} />
+                    <Route path=":fournisseurId/edit" element={<Fournisseurs />} />
                     <Route path=":fournisseurId" element={<Fournisseurs />} />
                   </Route>
                   <Route path="projets" element={<Projets />} />
