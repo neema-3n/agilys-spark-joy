@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Plus } from 'lucide-react';
@@ -50,6 +51,88 @@ import { CTA_REVEAL_STYLES, useHeaderCtaReveal } from '@/hooks/useHeaderCtaRevea
 import { facturesService } from '@/services/api/factures.service';
 import { Card, CardContent } from '@/components/ui/card';
 
+type FocusRect = {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+};
+
+const FactureFocusOverlay = ({
+  active,
+  onAttemptExit,
+}: {
+  active: boolean;
+  onAttemptExit: () => void;
+}) => {
+  const [sidebarRect, setSidebarRect] = useState<FocusRect | null>(null);
+  const [headerRect, setHeaderRect] = useState<FocusRect | null>(null);
+
+  useEffect(() => {
+    if (!active || typeof window === 'undefined') return;
+
+    const sidebar = document.querySelector('aside');
+    const header = document.querySelector('header');
+    if (!(sidebar instanceof HTMLElement) || !(header instanceof HTMLElement)) return;
+
+    const readRect = (element: HTMLElement): FocusRect => {
+      const rect = element.getBoundingClientRect();
+      return {
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+      };
+    };
+
+    const updateRects = () => {
+      setSidebarRect(readRect(sidebar));
+      setHeaderRect(readRect(header));
+    };
+
+    updateRects();
+
+    const resizeObserver = new ResizeObserver(updateRects);
+    resizeObserver.observe(sidebar);
+    resizeObserver.observe(header);
+    window.addEventListener('resize', updateRects);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateRects);
+      setSidebarRect(null);
+      setHeaderRect(null);
+    };
+  }, [active]);
+
+  if (!active || !sidebarRect || !headerRect || typeof document === 'undefined') {
+    return null;
+  }
+
+  const overlayClassName =
+    'fixed z-[70] bg-foreground/45 backdrop-blur-[1px] transition-opacity duration-150';
+
+  return createPortal(
+    <>
+      <button
+        type="button"
+        aria-label="Quitter le formulaire de facture"
+        className={overlayClassName}
+        style={sidebarRect}
+        onClick={onAttemptExit}
+      />
+      <button
+        type="button"
+        aria-label="Quitter le formulaire de facture"
+        className={overlayClassName}
+        style={headerRect}
+        onClick={onAttemptExit}
+      />
+    </>,
+    document.body
+  );
+};
+
 export default function Factures() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -70,6 +153,8 @@ export default function Factures() {
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
   const [annulationFactureId, setAnnulationFactureId] = useState<string | undefined>();
   const [selectedFactureForDepense, setSelectedFactureForDepense] = useState<Facture | null>(null);
+  const [isFactureDirty, setIsFactureDirty] = useState(false);
+  const [confirmExitOpen, setConfirmExitOpen] = useState(false);
 
   // Pagination côté serveur
   const {
@@ -311,8 +396,24 @@ export default function Factures() {
       case 'projet':
         navigate(`/app/projets/${id}`);
         break;
-    }
+      }
   }, [navigate]);
+
+  const handleSingleCancel = useCallback(() => {
+    if (routeEditFactureId) {
+      navigate(`/app/factures/${routeEditFactureId}`);
+      return;
+    }
+    navigate('/app/factures');
+  }, [navigate, routeEditFactureId]);
+
+  const handleAttemptEditorExit = useCallback(() => {
+    if (isFactureDirty) {
+      setConfirmExitOpen(true);
+      return;
+    }
+    handleSingleCancel();
+  }, [handleSingleCancel, isFactureDirty]);
 
   if (isLoading) {
     return (
@@ -323,14 +424,6 @@ export default function Factures() {
       />
     );
   }
-
-  const handleSingleCancel = () => {
-    if (routeEditFactureId) {
-      navigate(`/app/factures/${routeEditFactureId}`);
-      return;
-    }
-    navigate('/app/factures');
-  };
 
   const editorHeader = isCreateMode
     ? {
@@ -373,6 +466,26 @@ export default function Factures() {
   return (
     <>
       <style>{CTA_REVEAL_STYLES}</style>
+      <FactureFocusOverlay
+        active={isEditorMode}
+        onAttemptExit={handleAttemptEditorExit}
+      />
+      <AlertDialog open={confirmExitOpen} onOpenChange={setConfirmExitOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Quitter le formulaire ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Des modifications sont en cours. Voulez-vous vraiment quitter cette facture et perdre la saisie non enregistrée ?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Rester ici</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSingleCancel}>
+              Quitter le formulaire
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <div className="space-y-6">
       {isEditorMode ? (
         <>
@@ -407,6 +520,7 @@ export default function Factures() {
                   facture={editorFacture}
                   onSubmit={handleSingleSubmit}
                   onCancel={handleSingleCancel}
+                  onDirtyChange={setIsFactureDirty}
                   fournisseurs={fournisseurs}
                   bonsCommande={bonsCommande}
                   engagements={engagements.filter(e => e.statut === 'valide')}

@@ -22,7 +22,11 @@ import { VentilationEditor } from '@/components/finance/VentilationEditor';
 import { useComptes } from '@/hooks/useComptes';
 import { useNaturesCompte } from '@/hooks/useNaturesCompte';
 import { resolveChargePrincipale } from '@/lib/charge-principale-utils';
-import { computeFinancialBreakdown, getCoherenceErrors } from '@/lib/financial-utils';
+import {
+  computeFinancialBreakdown,
+  getCoherenceErrors,
+  sumTaxVentilations,
+} from '@/lib/financial-utils';
 import type { ChargePrincipaleMode, FinancialVentilation } from '@/types/financial.types';
 
 const factureSchema = z.object({
@@ -46,6 +50,7 @@ export interface FactureFormProps {
   facture?: Facture;
   onSubmit: (data: CreateFactureInput) => Promise<void>;
   onCancel: () => void;
+  onDirtyChange?: (isDirty: boolean) => void;
   fournisseurs: Array<{ id: string; nom: string; code: string }>;
   bonsCommande: Array<{
     id: string;
@@ -74,6 +79,7 @@ export const FactureForm = ({
   facture,
   onSubmit,
   onCancel,
+  onDirtyChange,
   fournisseurs,
   bonsCommande,
   engagements,
@@ -99,6 +105,20 @@ export const FactureForm = ({
   const [natureCompteChargeId, setNatureCompteChargeId] = useState<string>();
   const [compteChargeId, setCompteChargeId] = useState<string>();
   const initializedRef = useRef(false);
+  const initialFinanceStateRef = useRef<string | null>(null);
+
+  const serializeFinanceState = (
+    currentVentilations: FinancialVentilation[],
+    currentChargePrincipaleMode: ChargePrincipaleMode,
+    currentNatureCompteChargeId?: string,
+    currentCompteChargeId?: string,
+  ) =>
+    JSON.stringify({
+      ventilations: currentVentilations,
+      chargePrincipaleMode: currentChargePrincipaleMode,
+      natureCompteChargeId: currentNatureCompteChargeId ?? null,
+      compteChargeId: currentCompteChargeId ?? null,
+    });
 
   const form = useForm<z.infer<typeof factureSchema>>({
     resolver: zodResolver(factureSchema),
@@ -130,6 +150,10 @@ export const FactureForm = ({
     if (!facture && initialBonCommandeId && bonsCommande.length === 0) return;
 
     if (facture) {
+      const nextVentilations = facture.ventilations || [];
+      const nextChargePrincipaleMode = facture.chargePrincipaleMode || 'nature';
+      const nextNatureCompteChargeId = facture.natureCompteChargeId;
+      const nextCompteChargeId = facture.compteChargeId;
       form.reset({
         numero: facture.numero,
         dateFacture: facture.dateFacture,
@@ -146,10 +170,16 @@ export const FactureForm = ({
         montantNetPaye: facture.montantNetPaye || facture.montantTTC,
         observations: facture.observations || '',
       });
-      setVentilations(facture.ventilations || []);
-      setChargePrincipaleMode(facture.chargePrincipaleMode || 'nature');
-      setNatureCompteChargeId(facture.natureCompteChargeId);
-      setCompteChargeId(facture.compteChargeId);
+      setVentilations(nextVentilations);
+      setChargePrincipaleMode(nextChargePrincipaleMode);
+      setNatureCompteChargeId(nextNatureCompteChargeId);
+      setCompteChargeId(nextCompteChargeId);
+      initialFinanceStateRef.current = serializeFinanceState(
+        nextVentilations,
+        nextChargePrincipaleMode,
+        nextNatureCompteChargeId,
+        nextCompteChargeId,
+      );
       initializedRef.current = true;
       return;
     }
@@ -177,6 +207,7 @@ export const FactureForm = ({
         montantNetPaye: montantTTC,
         observations: '',
       });
+      initialFinanceStateRef.current = serializeFinanceState([], 'nature');
       initializedRef.current = true;
     });
 
@@ -185,6 +216,30 @@ export const FactureForm = ({
     setNatureCompteChargeId(undefined);
     setCompteChargeId(undefined);
   }, [facture, onGenererNumero, initialBonCommandeId, bonsCommande, form]);
+
+  const currentFinanceState = useMemo(
+    () =>
+      serializeFinanceState(
+        ventilations,
+        chargePrincipaleMode,
+        natureCompteChargeId,
+        compteChargeId,
+      ),
+    [ventilations, chargePrincipaleMode, natureCompteChargeId, compteChargeId]
+  );
+
+  const isDirty =
+    form.formState.isDirty ||
+    (initialFinanceStateRef.current !== null &&
+      initialFinanceStateRef.current !== currentFinanceState);
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    return () => onDirtyChange?.(false);
+  }, [onDirtyChange]);
 
   useEffect(() => {
     if (chargePrincipaleMode !== 'nature' || !natureCompteChargeId) return;
