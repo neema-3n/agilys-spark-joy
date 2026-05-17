@@ -134,7 +134,12 @@ const App = () => (
                   <Route path="tresorerie">
                     <Route index element={<Navigate to="comptes" replace />} />
                     <Route path="comptes" element={<TresorerieComptes />} />
-                    <Route path="recettes" element={<TresorerieRecettes />} />
+                    <Route path="recettes">
+                      <Route index element={<TresorerieRecettes />} />
+                      <Route path="create" element={<TresorerieRecettes />} />
+                      <Route path=":recetteId/edit" element={<TresorerieRecettes />} />
+                      <Route path=":recetteId" element={<TresorerieRecettes />} />
+                    </Route>
                     <Route path="operations" element={<TresorerieOperations />} />
                     <Route path="rapprochements" element={<TresorerieRapprochements />} />
                   </Route>
