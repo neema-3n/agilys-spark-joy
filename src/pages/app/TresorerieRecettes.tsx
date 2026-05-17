@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRecettes } from '@/hooks/useRecettes';
 import type { Recette } from '@/types/recette.types';
+import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
 
 const TresorerieRecettes = () => {
   const navigate = useNavigate();
@@ -24,6 +25,10 @@ const TresorerieRecettes = () => {
     [recettes, recetteId]
   );
   const [recetteToAnnuler, setRecetteToAnnuler] = useState<Recette | null>(null);
+  const [isRecetteDirty, setIsRecetteDirty] = useState(false);
+  const handleSingleCancel = useCallback(() => {
+    navigate(selectedRecette ? `/app/tresorerie/recettes/${selectedRecette.id}` : '/app/tresorerie/recettes');
+  }, [navigate, selectedRecette]);
 
   const handleSubmit = async (data: import('@/types/recette.types').RecetteFormData) => {
     if (selectedRecette) {
@@ -40,6 +45,14 @@ const TresorerieRecettes = () => {
     navigate('/app/tresorerie/recettes');
   };
 
+  const { guard } = useFocusedEditorGuard({
+    active: isCreateRoute || isEditRoute,
+    dirty: isRecetteDirty,
+    onExit: handleSingleCancel,
+    entityLabel: 'ce formulaire de recette',
+    overlayAriaLabel: 'Quitter le formulaire de recette',
+  });
+
   if ((isEditRoute || isDetailRoute) && recetteId && !selectedRecette) {
     return <div className="text-center text-muted-foreground">Chargement de la recette...</div>;
   }
@@ -47,16 +60,18 @@ const TresorerieRecettes = () => {
   if (isCreateRoute || isEditRoute) {
     return (
       <div className="space-y-6">
+        {guard}
         <PageHeader
           title={selectedRecette ? 'Modifier la recette' : 'Nouvelle recette'}
           description="Enregistrez un encaissement et son compte de destination."
           sticky={false}
-          actions={<Button variant="outline" onClick={() => navigate(selectedRecette ? `/app/tresorerie/recettes/${selectedRecette.id}` : '/app/tresorerie/recettes')}>Retour aux recettes</Button>}
+          actions={<Button variant="outline" onClick={handleSingleCancel}>Retour aux recettes</Button>}
         />
         <RecetteForm
           recette={selectedRecette}
           onSubmit={handleSubmit}
-          onCancel={() => navigate(selectedRecette ? `/app/tresorerie/recettes/${selectedRecette.id}` : '/app/tresorerie/recettes')}
+          onCancel={handleSingleCancel}
+          onDirtyChange={setIsRecetteDirty}
           submitLabel={selectedRecette ? 'Enregistrer les modifications' : 'Créer la recette'}
         />
       </div>

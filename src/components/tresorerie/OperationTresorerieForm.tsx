@@ -40,10 +40,11 @@ interface OperationTresorerieFormProps {
   operation?: OperationTresorerie | null;
   onSubmit: (data: OperationTresorerieFormData) => Promise<void>;
   onCancel: () => void;
+  onDirtyChange?: (isDirty: boolean) => void;
   submitLabel: string;
 }
 
-export const OperationTresorerieForm = ({ operation, onSubmit, onCancel, submitLabel }: OperationTresorerieFormProps) => {
+export const OperationTresorerieForm = ({ operation, onSubmit, onCancel, onDirtyChange, submitLabel }: OperationTresorerieFormProps) => {
   const { comptesActifs, isLoading: loadingComptes } = useComptesTresorerie();
   const form = useForm<OperationTresorerieFormData>({
     resolver: zodResolver(operationSchema),
@@ -69,6 +70,14 @@ export const OperationTresorerieForm = ({ operation, onSubmit, onCancel, submitL
       observations: operation.observations || '',
     });
   }, [operation, form]);
+
+  useEffect(() => {
+    onDirtyChange?.(form.formState.isDirty);
+  }, [form.formState.isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    return () => onDirtyChange?.(false);
+  }, [onDirtyChange]);
 
   const typeOperation = form.watch('typeOperation');
 

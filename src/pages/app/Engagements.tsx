@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import type { EngagementFormData } from '@/types/engagement.types';
+import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
 
 type EngagementLocationState = {
   initialReservationId?: string;
@@ -56,6 +57,7 @@ const Engagements = () => {
   const [motifAnnulation, setMotifAnnulation] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [statutFilter, setStatutFilter] = useState<'tous' | 'brouillon' | 'valide' | 'engage' | 'liquide' | 'annule'>('tous');
+  const [isEngagementDirty, setIsEngagementDirty] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const isCreateMode = !!createMatch;
@@ -311,6 +313,14 @@ const Engagements = () => {
     navigate('/app/engagements');
   }, [initialReservationId, navigate, routeEditEngagementId]);
 
+  const { guard } = useFocusedEditorGuard({
+    active: isEditorMode,
+    dirty: isEngagementDirty,
+    onExit: handleSingleCancel,
+    entityLabel: 'ce formulaire d’engagement',
+    overlayAriaLabel: 'Quitter le formulaire d’engagement',
+  });
+
   if (isLoading) {
     return (
       <ListPageLoading
@@ -351,6 +361,7 @@ const Engagements = () => {
   return (
     <>
       <style>{CTA_REVEAL_STYLES}</style>
+      {guard}
       <div className="space-y-6">
         {isEditorMode ? (
           <>
@@ -384,6 +395,7 @@ const Engagements = () => {
                     selectedReservation={selectedReservation}
                     onSubmit={handleSingleSubmit}
                     onCancel={handleSingleCancel}
+                    onDirtyChange={setIsEngagementDirty}
                     submitLabel={routeEditingEngagement ? "Enregistrer l'engagement" : "Créer l'engagement"}
                   />
                 </CardContent>

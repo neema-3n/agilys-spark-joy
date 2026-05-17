@@ -73,6 +73,7 @@ interface DepenseFormProps {
   depense?: Depense;
   onSubmit: (data: DepenseFormData) => Promise<void>;
   onCancel: () => void;
+  onDirtyChange?: (isDirty: boolean) => void;
   preSelectedEngagement?: Engagement;
   preSelectedReservation?: ReservationCredit;
   preSelectedFacture?: Facture;
@@ -84,6 +85,7 @@ export const DepenseForm = ({
   depense,
   onSubmit,
   onCancel,
+  onDirtyChange,
   preSelectedEngagement,
   preSelectedReservation,
   preSelectedFacture,
@@ -116,6 +118,24 @@ export const DepenseForm = ({
   const [natureCompteChargeId, setNatureCompteChargeId] = useState<string>();
   const [compteChargeId, setCompteChargeId] = useState<string>();
   const initializedRef = useRef(false);
+  const initialEditorStateRef = useRef<string | null>(null);
+
+  const serializeEditorState = (
+    currentTypeImputation: 'engagement' | 'reservation' | 'facture' | 'direct',
+    currentTypeBeneficiaire: 'fournisseur' | 'direct',
+    currentVentilations: FinancialVentilation[],
+    currentChargePrincipaleMode: ChargePrincipaleMode,
+    currentNatureCompteChargeId?: string,
+    currentCompteChargeId?: string,
+  ) =>
+    JSON.stringify({
+      typeImputation: currentTypeImputation,
+      typeBeneficiaire: currentTypeBeneficiaire,
+      ventilations: currentVentilations,
+      chargePrincipaleMode: currentChargePrincipaleMode,
+      natureCompteChargeId: currentNatureCompteChargeId ?? null,
+      compteChargeId: currentCompteChargeId ?? null,
+    });
 
   const form = useForm<DepenseSchemaValues>({
     resolver: zodResolver(depenseSchema),
@@ -167,11 +187,24 @@ export const DepenseForm = ({
       setChargePrincipaleMode(depense.chargePrincipaleMode || 'nature');
       setNatureCompteChargeId(depense.natureCompteChargeId);
       setCompteChargeId(depense.compteChargeId);
-      if (depense.factureId) setTypeImputation('facture');
-      else if (depense.engagementId) setTypeImputation('engagement');
-      else if (depense.reservationCreditId) setTypeImputation('reservation');
-      else setTypeImputation('direct');
-      setTypeBeneficiaire(depense.fournisseurId ? 'fournisseur' : 'direct');
+      const nextTypeImputation = depense.factureId
+        ? 'facture'
+        : depense.engagementId
+          ? 'engagement'
+          : depense.reservationCreditId
+            ? 'reservation'
+            : 'direct';
+      const nextTypeBeneficiaire = depense.fournisseurId ? 'fournisseur' : 'direct';
+      setTypeImputation(nextTypeImputation);
+      setTypeBeneficiaire(nextTypeBeneficiaire);
+      initialEditorStateRef.current = serializeEditorState(
+        nextTypeImputation,
+        nextTypeBeneficiaire,
+        depense.ventilations || [],
+        depense.chargePrincipaleMode || 'nature',
+        depense.natureCompteChargeId,
+        depense.compteChargeId,
+      );
       initializedRef.current = true;
       return;
     }
@@ -201,6 +234,12 @@ export const DepenseForm = ({
         observations: '',
       });
       setVentilations(selectedFacture.ventilations || []);
+      initialEditorStateRef.current = serializeEditorState(
+        'facture',
+        'fournisseur',
+        selectedFacture.ventilations || [],
+        'nature',
+      );
       initializedRef.current = true;
       return;
     }
@@ -225,6 +264,12 @@ export const DepenseForm = ({
         referencePaiement: '',
         observations: '',
       });
+      initialEditorStateRef.current = serializeEditorState(
+        'engagement',
+        selectedEngagement.fournisseurId ? 'fournisseur' : 'direct',
+        [],
+        'nature',
+      );
       initializedRef.current = true;
       return;
     }
@@ -249,6 +294,12 @@ export const DepenseForm = ({
         referencePaiement: '',
         observations: '',
       });
+      initialEditorStateRef.current = serializeEditorState(
+        'reservation',
+        'direct',
+        [],
+        'nature',
+      );
       initializedRef.current = true;
       return;
     }
@@ -276,6 +327,7 @@ export const DepenseForm = ({
       referencePaiement: '',
       observations: '',
     });
+    initialEditorStateRef.current = serializeEditorState('direct', 'fournisseur', [], 'nature');
     initializedRef.current = true;
   }, [
     depense,
@@ -284,6 +336,32 @@ export const DepenseForm = ({
     preSelectedFacture,
     preSelectedReservation,
   ]);
+
+  const currentEditorState = useMemo(
+    () =>
+      serializeEditorState(
+        typeImputation,
+        typeBeneficiaire,
+        ventilations,
+        chargePrincipaleMode,
+        natureCompteChargeId,
+        compteChargeId,
+      ),
+    [typeImputation, typeBeneficiaire, ventilations, chargePrincipaleMode, natureCompteChargeId, compteChargeId]
+  );
+
+  const isDirty =
+    form.formState.isDirty ||
+    (initialEditorStateRef.current !== null &&
+      initialEditorStateRef.current !== currentEditorState);
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    return () => onDirtyChange?.(false);
+  }, [onDirtyChange]);
 
   useEffect(() => {
     if (chargePrincipaleMode !== 'nature' || !natureCompteChargeId) return;

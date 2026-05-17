@@ -33,6 +33,7 @@ import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { useSnapshotState } from '@/hooks/useSnapshotState';
 import { Card, CardContent } from '@/components/ui/card';
 import type { PaiementFormData } from '@/types/paiement.types';
+import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
 
 type PaiementLocationState = {
   initialDepenseId?: string;
@@ -50,6 +51,7 @@ export default function Paiements() {
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
   const [selectedPaiementId, setSelectedPaiementId] = useState<string | null>(null);
   const [motifAnnulation, setMotifAnnulation] = useState('');
+  const [isPaiementDirty, setIsPaiementDirty] = useState(false);
   const initialDepenseId =
     isCreateMode && typeof (location.state as PaiementLocationState | null)?.initialDepenseId === 'string'
       ? ((location.state as PaiementLocationState).initialDepenseId ?? undefined)
@@ -126,6 +128,14 @@ export default function Paiements() {
     navigate('/app/paiements');
   }, [initialDepenseId, navigate]);
 
+  const { guard } = useFocusedEditorGuard({
+    active: isCreateMode,
+    dirty: isPaiementDirty,
+    onExit: handleSingleCancel,
+    entityLabel: 'ce formulaire de paiement',
+    overlayAriaLabel: 'Quitter le formulaire de paiement',
+  });
+
   const handleNavigateToEntity = useCallback(
     (type: string, id: string) => {
       switch (type) {
@@ -154,6 +164,7 @@ export default function Paiements() {
 
   return (
     <div className="space-y-6">
+      {guard}
       {isCreateMode ? (
         <>
           <PageHeader
@@ -179,6 +190,7 @@ export default function Paiements() {
                 initialDepenseId={initialDepenseId}
                 onSubmit={handleSingleSubmit}
                 onCancel={handleSingleCancel}
+                onDirtyChange={setIsPaiementDirty}
                 submitLabel="Enregistrer le paiement"
                 useScrollArea={false}
               />

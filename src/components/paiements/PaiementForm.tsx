@@ -52,6 +52,7 @@ interface PaiementFormProps {
   initialDepenseId?: string;
   onSubmit: (data: PaiementFormData) => Promise<void>;
   onCancel: () => void;
+  onDirtyChange?: (isDirty: boolean) => void;
   submitLabel?: string;
   useScrollArea?: boolean;
 }
@@ -61,6 +62,7 @@ export const PaiementForm = ({
   initialDepenseId,
   onSubmit,
   onCancel,
+  onDirtyChange,
   submitLabel,
   useScrollArea = true,
 }: PaiementFormProps) => {
@@ -83,6 +85,22 @@ export const PaiementForm = ({
   const [compteChargeId, setCompteChargeId] = useState<string>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const initializedRef = useRef(false);
+  const initialEditorStateRef = useRef<string | null>(null);
+
+  const serializeEditorState = (
+    currentModeSource: 'depense' | 'direct',
+    currentVentilations: FinancialVentilation[],
+    currentChargePrincipaleMode: ChargePrincipaleMode,
+    currentNatureCompteChargeId?: string,
+    currentCompteChargeId?: string,
+  ) =>
+    JSON.stringify({
+      modeSource: currentModeSource,
+      ventilations: currentVentilations,
+      chargePrincipaleMode: currentChargePrincipaleMode,
+      natureCompteChargeId: currentNatureCompteChargeId ?? null,
+      compteChargeId: currentCompteChargeId ?? null,
+    });
 
   const selectedDepense = useMemo(
     () => depenses.find((item) => item.id === initialDepenseId),
@@ -136,6 +154,13 @@ export const PaiementForm = ({
       setChargePrincipaleMode(paiement.chargePrincipaleMode || 'nature');
       setNatureCompteChargeId(paiement.natureCompteChargeId);
       setCompteChargeId(paiement.compteChargeId);
+      initialEditorStateRef.current = serializeEditorState(
+        paiement.depenseId ? 'depense' : 'direct',
+        paiement.ventilations || [],
+        paiement.chargePrincipaleMode || 'nature',
+        paiement.natureCompteChargeId,
+        paiement.compteChargeId,
+      );
       initializedRef.current = true;
       return;
     }
@@ -162,6 +187,13 @@ export const PaiementForm = ({
       setChargePrincipaleMode(selectedDepense.chargePrincipaleMode || 'nature');
       setNatureCompteChargeId(selectedDepense.natureCompteChargeId);
       setCompteChargeId(selectedDepense.compteChargeId);
+      initialEditorStateRef.current = serializeEditorState(
+        'depense',
+        selectedDepense.ventilations || [],
+        selectedDepense.chargePrincipaleMode || 'nature',
+        selectedDepense.natureCompteChargeId,
+        selectedDepense.compteChargeId,
+      );
       initializedRef.current = true;
       return;
     }
@@ -186,8 +218,34 @@ export const PaiementForm = ({
     setChargePrincipaleMode('nature');
     setNatureCompteChargeId(undefined);
     setCompteChargeId(undefined);
+    initialEditorStateRef.current = serializeEditorState('direct', [], 'nature');
     initializedRef.current = true;
   }, [form, initialDepenseId, paiement, selectedDepense]);
+
+  const currentEditorState = useMemo(
+    () =>
+      serializeEditorState(
+        modeSource,
+        ventilations,
+        chargePrincipaleMode,
+        natureCompteChargeId,
+        compteChargeId,
+      ),
+    [modeSource, ventilations, chargePrincipaleMode, natureCompteChargeId, compteChargeId]
+  );
+
+  const isDirty =
+    form.formState.isDirty ||
+    (initialEditorStateRef.current !== null &&
+      initialEditorStateRef.current !== currentEditorState);
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    return () => onDirtyChange?.(false);
+  }, [onDirtyChange]);
 
   useEffect(() => {
     if (chargePrincipaleMode !== 'nature' || !natureCompteChargeId) return;

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
 
 const Projets = () => {
   const { toast } = useToast();
@@ -41,16 +42,28 @@ const Projets = () => {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projetToDelete, setProjetToDelete] = useState<Projet | null>(null);
+  const [isProjetDirty, setIsProjetDirty] = useState(false);
   const selectedProjet = useMemo(
     () => (projetId ? projets.find((projet) => projet.id === projetId) || null : null),
     [projets, projetId]
   );
 
   const canEdit = hasAnyRole(['super_admin', 'admin_client', 'directeur_financier', 'chef_service']);
+  const handleSingleCancel = useCallback(() => {
+    navigate(selectedProjet ? `/app/projets/${selectedProjet.id}` : '/app/projets');
+  }, [navigate, selectedProjet]);
 
   const handleCreate = () => {
     navigate('/app/projets/create');
   };
+
+  const { guard } = useFocusedEditorGuard({
+    active: isCreateRoute || isEditRoute,
+    dirty: isProjetDirty,
+    onExit: handleSingleCancel,
+    entityLabel: 'ce formulaire de projet',
+    overlayAriaLabel: 'Quitter le formulaire de projet',
+  });
 
   const handleEdit = (projet: Projet) => {
     navigate(`/app/projets/${projet.id}/edit`);
@@ -131,15 +144,17 @@ const Projets = () => {
   if (isCreateRoute || isEditRoute) {
     return (
       <div className="space-y-6">
+        {guard}
         <PageHeader
           title={selectedProjet ? 'Modifier le projet' : 'Nouveau projet'}
           description="Structurez le suivi budgétaire et analytique du projet."
-          actions={<Button variant="outline" onClick={() => navigate(selectedProjet ? `/app/projets/${selectedProjet.id}` : '/app/projets')}>Retour aux projets</Button>}
+          actions={<Button variant="outline" onClick={handleSingleCancel}>Retour aux projets</Button>}
         />
         <ProjetForm
           projet={selectedProjet}
           onSubmit={handleSubmit}
-          onCancel={() => navigate(selectedProjet ? `/app/projets/${selectedProjet.id}` : '/app/projets')}
+          onCancel={handleSingleCancel}
+          onDirtyChange={setIsProjetDirty}
           submitLabel={selectedProjet ? 'Enregistrer les modifications' : 'Créer le projet'}
         />
       </div>

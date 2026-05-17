@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import { ArrowDownCircle, ArrowUpCircle, Plus, Scale, Unplug } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatsCard } from '@/components/ui/stats-card';
 import { useOperationsTresorerie } from '@/hooks/useOperationsTresorerie';
+import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('fr-FR', {
@@ -27,6 +28,10 @@ const TresorerieOperations = () => {
     () => (operationId ? operations.find((operation) => operation.id === operationId) || null : null),
     [operations, operationId]
   );
+  const [isOperationDirty, setIsOperationDirty] = useState(false);
+  const handleSingleCancel = useCallback(() => {
+    navigate('/app/tresorerie/operations');
+  }, [navigate]);
 
   const handleSubmit = async (data: import('@/types/operation-tresorerie.types').OperationTresorerieFormData) => {
     const created = await createOperation(data);
@@ -37,6 +42,14 @@ const TresorerieOperations = () => {
     navigate('/app/tresorerie/operations');
   };
 
+  const { guard } = useFocusedEditorGuard({
+    active: isCreateRoute,
+    dirty: isOperationDirty,
+    onExit: handleSingleCancel,
+    entityLabel: 'ce formulaire d’opération de trésorerie',
+    overlayAriaLabel: 'Quitter le formulaire d’opération de trésorerie',
+  });
+
   if (isDetailRoute && operationId && !selectedOperation) {
     return <div className="text-center text-muted-foreground">Chargement de l'opération...</div>;
   }
@@ -44,13 +57,14 @@ const TresorerieOperations = () => {
   if (isCreateRoute) {
     return (
       <div className="space-y-6">
+        {guard}
         <PageHeader
           title="Nouvelle opération de trésorerie"
           description="Enregistrez un encaissement, un décaissement ou un transfert."
           sticky={false}
-          actions={<Button variant="outline" onClick={() => navigate('/app/tresorerie/operations')}>Retour aux opérations</Button>}
+          actions={<Button variant="outline" onClick={handleSingleCancel}>Retour aux opérations</Button>}
         />
-        <OperationTresorerieForm onSubmit={handleSubmit} onCancel={() => navigate('/app/tresorerie/operations')} submitLabel="Créer l'opération" />
+        <OperationTresorerieForm onSubmit={handleSubmit} onCancel={handleSingleCancel} onDirtyChange={setIsOperationDirty} submitLabel="Créer l'opération" />
       </div>
     );
   }

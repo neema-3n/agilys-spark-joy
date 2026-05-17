@@ -75,10 +75,11 @@ interface ProjetFormProps {
   projet?: Projet | null;
   onSubmit: (data: Omit<ProjetFormValues, 'dateDebut' | 'dateFin'> & { dateDebut: string; dateFin: string }) => Promise<void>;
   onCancel: () => void;
+  onDirtyChange?: (isDirty: boolean) => void;
   submitLabel: string;
 }
 
-export const ProjetForm = ({ projet, onSubmit, onCancel, submitLabel }: ProjetFormProps) => {
+export const ProjetForm = ({ projet, onSubmit, onCancel, onDirtyChange, submitLabel }: ProjetFormProps) => {
   const { data: typesProjet = [] } = useReferentiels('type_projet');
   const { data: statutsProjet = [] } = useReferentiels('statut_projet');
   const { data: priorites = [] } = useReferentiels('priorite_projet');
@@ -92,6 +93,14 @@ export const ProjetForm = ({ projet, onSubmit, onCancel, submitLabel }: ProjetFo
   useEffect(() => {
     form.reset(getInitialValues(projet));
   }, [projet, form]);
+
+  useEffect(() => {
+    onDirtyChange?.(form.formState.isDirty);
+  }, [form.formState.isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    return () => onDirtyChange?.(false);
+  }, [onDirtyChange]);
 
   const handleSubmit = async (values: ProjetFormValues) => {
     await onSubmit({

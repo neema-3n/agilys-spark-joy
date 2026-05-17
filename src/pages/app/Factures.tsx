@@ -1,6 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
-import { createPortal } from 'react-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Plus } from 'lucide-react';
@@ -23,16 +22,6 @@ import { CreateDepenseFromFactureDialog } from '@/components/depenses/CreateDepe
 import { CreateFactureInput, Facture, StatutFacture } from '@/types/facture.types';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ListLayout } from '@/components/lists/ListLayout';
@@ -50,88 +39,17 @@ import { useListSelection } from '@/hooks/useListSelection';
 import { CTA_REVEAL_STYLES, useHeaderCtaReveal } from '@/hooks/useHeaderCtaReveal';
 import { facturesService } from '@/services/api/factures.service';
 import { Card, CardContent } from '@/components/ui/card';
-
-type FocusRect = {
-  top: number;
-  left: number;
-  width: number;
-  height: number;
-};
-
-const FactureFocusOverlay = ({
-  active,
-  onAttemptExit,
-}: {
-  active: boolean;
-  onAttemptExit: () => void;
-}) => {
-  const [sidebarRect, setSidebarRect] = useState<FocusRect | null>(null);
-  const [headerRect, setHeaderRect] = useState<FocusRect | null>(null);
-
-  useEffect(() => {
-    if (!active || typeof window === 'undefined') return;
-
-    const sidebar = document.querySelector('aside');
-    const header = document.querySelector('header');
-    if (!(sidebar instanceof HTMLElement) || !(header instanceof HTMLElement)) return;
-
-    const readRect = (element: HTMLElement): FocusRect => {
-      const rect = element.getBoundingClientRect();
-      return {
-        top: rect.top,
-        left: rect.left,
-        width: rect.width,
-        height: rect.height,
-      };
-    };
-
-    const updateRects = () => {
-      setSidebarRect(readRect(sidebar));
-      setHeaderRect(readRect(header));
-    };
-
-    updateRects();
-
-    const resizeObserver = new ResizeObserver(updateRects);
-    resizeObserver.observe(sidebar);
-    resizeObserver.observe(header);
-    window.addEventListener('resize', updateRects);
-
-    return () => {
-      resizeObserver.disconnect();
-      window.removeEventListener('resize', updateRects);
-      setSidebarRect(null);
-      setHeaderRect(null);
-    };
-  }, [active]);
-
-  if (!active || !sidebarRect || !headerRect || typeof document === 'undefined') {
-    return null;
-  }
-
-  const overlayClassName =
-    'fixed z-[70] bg-foreground/45 backdrop-blur-[1px] transition-opacity duration-150';
-
-  return createPortal(
-    <>
-      <button
-        type="button"
-        aria-label="Quitter le formulaire de facture"
-        className={overlayClassName}
-        style={sidebarRect}
-        onClick={onAttemptExit}
-      />
-      <button
-        type="button"
-        aria-label="Quitter le formulaire de facture"
-        className={overlayClassName}
-        style={headerRect}
-        onClick={onAttemptExit}
-      />
-    </>,
-    document.body
-  );
-};
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
 
 export default function Factures() {
   const navigate = useNavigate();
@@ -154,7 +72,6 @@ export default function Factures() {
   const [annulationFactureId, setAnnulationFactureId] = useState<string | undefined>();
   const [selectedFactureForDepense, setSelectedFactureForDepense] = useState<Facture | null>(null);
   const [isFactureDirty, setIsFactureDirty] = useState(false);
-  const [confirmExitOpen, setConfirmExitOpen] = useState(false);
 
   // Pagination côté serveur
   const {
@@ -407,23 +324,13 @@ export default function Factures() {
     navigate('/app/factures');
   }, [navigate, routeEditFactureId]);
 
-  const handleAttemptEditorExit = useCallback(() => {
-    if (isFactureDirty) {
-      setConfirmExitOpen(true);
-      return;
-    }
-    handleSingleCancel();
-  }, [handleSingleCancel, isFactureDirty]);
-
-  if (isLoading) {
-    return (
-      <ListPageLoading
-        title="Gestion des Factures"
-        description="Gérez les factures fournisseurs"
-        stickyHeader={false}
-      />
-    );
-  }
+  const { guard } = useFocusedEditorGuard({
+    active: isEditorMode,
+    dirty: isFactureDirty,
+    onExit: handleSingleCancel,
+    entityLabel: 'ce formulaire de facture',
+    overlayAriaLabel: 'Quitter le formulaire de facture',
+  });
 
   const editorHeader = isCreateMode
     ? {
@@ -463,29 +370,20 @@ export default function Factures() {
   const activeStatutLabel =
     statutOptions.find((option) => option.value === (filters.statut as StatutFacture || 'tous'))?.label || 'Tous';
 
+  if (isLoading) {
+    return (
+      <ListPageLoading
+        title="Gestion des Factures"
+        description="Gérez les factures fournisseurs"
+        stickyHeader={false}
+      />
+    );
+  }
+
   return (
     <>
       <style>{CTA_REVEAL_STYLES}</style>
-      <FactureFocusOverlay
-        active={isEditorMode}
-        onAttemptExit={handleAttemptEditorExit}
-      />
-      <AlertDialog open={confirmExitOpen} onOpenChange={setConfirmExitOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Quitter le formulaire ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Des modifications sont en cours. Voulez-vous vraiment quitter cette facture et perdre la saisie non enregistrée ?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Rester ici</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSingleCancel}>
-              Quitter le formulaire
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {guard}
       <div className="space-y-6">
       {isEditorMode ? (
         <>

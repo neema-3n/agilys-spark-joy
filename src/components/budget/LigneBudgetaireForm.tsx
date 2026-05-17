@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -43,6 +43,7 @@ interface LigneBudgetaireFormProps {
   enveloppes: Enveloppe[];
   onSubmit: (data: Partial<LigneBudgetaire>) => Promise<void> | void;
   onCancel: () => void;
+  onDirtyChange?: (isDirty: boolean) => void;
   submitLabel?: string;
 }
 
@@ -56,11 +57,16 @@ export const LigneBudgetaireForm = ({
   enveloppes,
   onSubmit,
   onCancel,
+  onDirtyChange,
   submitLabel,
 }: LigneBudgetaireFormProps) => {
   const [selectedSectionId, setSelectedSectionId] = useState('');
   const [selectedProgrammeId, setSelectedProgrammeId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const initialHierarchyRef = useRef<{ sectionId: string; programmeId: string }>({
+    sectionId: '',
+    programmeId: '',
+  });
 
   const form = useForm<LigneBudgetaireFormValues>({
     resolver: zodResolver(ligneBudgetaireSchema),
@@ -99,6 +105,10 @@ export const LigneBudgetaireForm = ({
       const selectedProgramme = programmes.find((programme) => programme.id === selectedAction?.programme_id);
       setSelectedSectionId(selectedProgramme?.section_id || '');
       setSelectedProgrammeId(selectedAction?.programme_id || '');
+      initialHierarchyRef.current = {
+        sectionId: selectedProgramme?.section_id || '',
+        programmeId: selectedAction?.programme_id || '',
+      };
       form.reset({
         actionId: ligne.actionId,
         compteId: ligne.compteId,
@@ -111,6 +121,7 @@ export const LigneBudgetaireForm = ({
 
     setSelectedSectionId('');
     setSelectedProgrammeId('');
+    initialHierarchyRef.current = { sectionId: '', programmeId: '' };
     form.reset({
       actionId: '',
       compteId: '',
@@ -119,6 +130,19 @@ export const LigneBudgetaireForm = ({
       montantInitial: 0,
     });
   }, [actions, form, ligne, programmes]);
+
+  const isDirty =
+    form.formState.isDirty ||
+    selectedSectionId !== initialHierarchyRef.current.sectionId ||
+    selectedProgrammeId !== initialHierarchyRef.current.programmeId;
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    return () => onDirtyChange?.(false);
+  }, [onDirtyChange]);
 
   const handleSubmit = async (values: LigneBudgetaireFormValues) => {
     setIsSubmitting(true);

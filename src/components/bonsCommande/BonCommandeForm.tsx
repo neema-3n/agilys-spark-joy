@@ -61,6 +61,7 @@ interface BonCommandeFormProps {
   selectedEngagement?: Engagement;
   onSubmit: (data: CreateBonCommandeInput | UpdateBonCommandeInput) => Promise<void>;
   onCancel: () => void;
+  onDirtyChange?: (isDirty: boolean) => void;
   onGenererNumero: () => Promise<string>;
   submitLabel?: string;
   useScrollArea?: boolean;
@@ -71,6 +72,7 @@ export const BonCommandeForm = ({
   selectedEngagement,
   onSubmit,
   onCancel,
+  onDirtyChange,
   onGenererNumero,
   submitLabel,
   useScrollArea = true,
@@ -154,6 +156,14 @@ export const BonCommandeForm = ({
       });
     });
   }, [bonCommande, form, onGenererNumero, selectedEngagement]);
+
+  useEffect(() => {
+    onDirtyChange?.(form.formState.isDirty);
+  }, [form.formState.isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    return () => onDirtyChange?.(false);
+  }, [onDirtyChange]);
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!currentClient || !currentExercice) return;

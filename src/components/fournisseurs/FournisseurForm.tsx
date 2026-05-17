@@ -119,6 +119,7 @@ interface FournisseurFormProps {
   fournisseur?: Fournisseur;
   onSubmit: (data: FournisseurFormValues) => Promise<void>;
   onCancel: () => void;
+  onDirtyChange?: (isDirty: boolean) => void;
   submitLabel: string;
 }
 
@@ -126,6 +127,7 @@ export const FournisseurForm = ({
   fournisseur,
   onSubmit,
   onCancel,
+  onDirtyChange,
   submitLabel,
 }: FournisseurFormProps) => {
   const form = useForm<FournisseurFormValues>({
@@ -136,6 +138,14 @@ export const FournisseurForm = ({
   useEffect(() => {
     form.reset(getInitialValues(fournisseur));
   }, [fournisseur, form]);
+
+  useEffect(() => {
+    onDirtyChange?.(form.formState.isDirty);
+  }, [form.formState.isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    return () => onDirtyChange?.(false);
+  }, [onDirtyChange]);
 
   const handleSubmit = async (values: FournisseurFormValues) => {
     await onSubmit({

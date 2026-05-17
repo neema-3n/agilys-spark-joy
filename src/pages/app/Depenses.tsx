@@ -45,6 +45,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useListSelection } from '@/hooks/useListSelection';
 import { CTA_REVEAL_STYLES, useHeaderCtaReveal } from '@/hooks/useHeaderCtaReveal';
+import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
 
 type DepensesLocationState = {
   initialEngagementId?: string;
@@ -73,6 +74,7 @@ const Depenses = () => {
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
   const [annulerMultipleDialogOpen, setAnnulerMultipleDialogOpen] = useState(false);
   const [isSubmittingAction, setIsSubmittingAction] = useState(false);
+  const [isDepenseDirty, setIsDepenseDirty] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statutFilter, setStatutFilter] = useState<
     'tous' | 'brouillon' | 'validee' | 'ordonnancee' | 'payee' | 'annulee'
@@ -315,17 +317,7 @@ const Depenses = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <ListPageLoading
-        title="Gestion des Dépenses"
-        description="Ordonnancement et liquidation des dépenses"
-        stickyHeader={false}
-      />
-    );
-  }
-
-  const handleSingleCancel = () => {
+  const handleSingleCancel = useCallback(() => {
     if (routeEditDepenseId) {
       navigate(`/app/depenses/${routeEditDepenseId}`);
       return;
@@ -335,7 +327,25 @@ const Depenses = () => {
       return;
     }
     navigate('/app/depenses');
-  };
+  }, [initialEngagementId, navigate, routeEditDepenseId]);
+
+  const { guard } = useFocusedEditorGuard({
+    active: isEditorMode,
+    dirty: isDepenseDirty,
+    onExit: handleSingleCancel,
+    entityLabel: 'ce formulaire de dépense',
+    overlayAriaLabel: 'Quitter le formulaire de dépense',
+  });
+
+  if (isLoading) {
+    return (
+      <ListPageLoading
+        title="Gestion des Dépenses"
+        description="Ordonnancement et liquidation des dépenses"
+        stickyHeader={false}
+      />
+    );
+  }
 
   const editorHeader = isCreateMode
     ? {
@@ -365,6 +375,7 @@ const Depenses = () => {
   return (
     <>
       <style>{CTA_REVEAL_STYLES}</style>
+      {guard}
       <div className="space-y-6">
       {isEditorMode ? (
         <>
@@ -398,6 +409,7 @@ const Depenses = () => {
                   preSelectedEngagement={selectedEngagement}
                   onSubmit={handleSingleSubmit}
                   onCancel={handleSingleCancel}
+                  onDirtyChange={setIsDepenseDirty}
                   submitLabel={editingDepense ? 'Enregistrer' : 'Créer la dépense'}
                   useScrollArea={false}
                 />

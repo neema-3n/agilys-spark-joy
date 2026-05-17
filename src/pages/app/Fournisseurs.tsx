@@ -34,6 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
 
 const Fournisseurs = () => {
   const { fournisseurId } = useParams<{ fournisseurId: string }>();
@@ -46,6 +47,7 @@ const Fournisseurs = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statutFilter, setStatutFilter] = useState<'tous' | StatutFournisseur>('tous');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isFournisseurDirty, setIsFournisseurDirty] = useState(false);
 
   // Helper pour récupérer le fournisseur depuis l'ID
   const editingFournisseur = useMemo(
@@ -121,6 +123,14 @@ const Fournisseurs = () => {
     navigate('/app/fournisseurs');
   };
 
+  const { guard } = useFocusedEditorGuard({
+    active: isCreateRoute || isEditRoute,
+    dirty: isFournisseurDirty,
+    onExit: handleSingleCancel,
+    entityLabel: 'ce formulaire de fournisseur',
+    overlayAriaLabel: 'Quitter le formulaire de fournisseur',
+  });
+
   const handleSubmit = useCallback(
     async (data: CreateFournisseurInput | UpdateFournisseurInput) => {
       const fournisseur = editingFournisseur
@@ -189,6 +199,7 @@ const Fournisseurs = () => {
   if (isCreateRoute || isEditRoute) {
     return (
       <div className="space-y-6">
+        {guard}
         <PageHeader
           title={editingFournisseur ? 'Modifier le fournisseur' : 'Nouveau fournisseur'}
           description="Gérez les informations administratives, commerciales et bancaires du fournisseur."
@@ -203,6 +214,7 @@ const Fournisseurs = () => {
           fournisseur={editingFournisseur}
           onSubmit={handleSubmit}
           onCancel={handleSingleCancel}
+          onDirtyChange={setIsFournisseurDirty}
           submitLabel={editingFournisseur ? 'Enregistrer les modifications' : 'Créer le fournisseur'}
         />
       </div>

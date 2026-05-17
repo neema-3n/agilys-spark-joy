@@ -53,10 +53,11 @@ interface RecetteFormProps {
   recette?: Recette | null;
   onSubmit: (data: RecetteFormData) => Promise<void>;
   onCancel: () => void;
+  onDirtyChange?: (isDirty: boolean) => void;
   submitLabel: string;
 }
 
-export const RecetteForm = ({ recette, onSubmit, onCancel, submitLabel }: RecetteFormProps) => {
+export const RecetteForm = ({ recette, onSubmit, onCancel, onDirtyChange, submitLabel }: RecetteFormProps) => {
   const { comptesActifs, isLoading: loadingComptes } = useComptesTresorerie();
   const form = useForm<RecetteFormData>({
     resolver: zodResolver(recetteSchema),
@@ -66,6 +67,14 @@ export const RecetteForm = ({ recette, onSubmit, onCancel, submitLabel }: Recett
   useEffect(() => {
     form.reset(getInitialValues(recette));
   }, [recette, form]);
+
+  useEffect(() => {
+    onDirtyChange?.(form.formState.isDirty);
+  }, [form.formState.isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    return () => onDirtyChange?.(false);
+  }, [onDirtyChange]);
 
   return (
     <Form {...form}>

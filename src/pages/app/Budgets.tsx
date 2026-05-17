@@ -50,6 +50,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
 
 const Budgets = () => {
   const { currentExercice } = useExercice();
@@ -95,6 +96,7 @@ const Budgets = () => {
   const [ligneForReservation, setLigneForReservation] = useState<LigneBudgetaire | null>(null);
   const [ligneForModification, setLigneForModification] = useState<LigneBudgetaire | null>(null);
   const [ligneToDelete, setLigneToDelete] = useState<string | null>(null);
+  const [isLigneDirty, setIsLigneDirty] = useState(false);
   
   const { ligneId: ligneIdFromRoute } = useParams();
   const createMatch = useMatch('/app/budgets/create');
@@ -422,14 +424,6 @@ const Budgets = () => {
 
   const scrollProgress = useScrollProgress(!!snapshotLigneId);
 
-  if (loading || loadingSections || loadingProgrammes || loadingActions || loadingComptes || loadingEnveloppes) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
   const handleCreate = () => {
     navigate(`/app/budgets/create?${buildTabQuery('lignes')}`);
   };
@@ -467,7 +461,25 @@ const Budgets = () => {
         description: 'Éditez la ligne budgétaire directement dans l’outlet.',
       };
 
+  const { guard } = useFocusedEditorGuard({
+    active: isEditorMode,
+    dirty: isLigneDirty,
+    onExit: handleSingleCancel,
+    entityLabel: 'ce formulaire de ligne budgétaire',
+    overlayAriaLabel: 'Quitter le formulaire de ligne budgétaire',
+  });
+
+  if (loading || loadingSections || loadingProgrammes || loadingActions || loadingComptes || loadingEnveloppes) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
+    <>
+    {guard}
     <div className="space-y-6">
       {isEditorMode ? (
         <>
@@ -507,6 +519,7 @@ const Budgets = () => {
                   enveloppes={enveloppes}
                   onSubmit={handleSingleSubmit}
                   onCancel={handleSingleCancel}
+                  onDirtyChange={setIsLigneDirty}
                   submitLabel={routeEditingLigne ? 'Enregistrer la ligne' : 'Créer la ligne'}
                 />
               </CardContent>
@@ -827,6 +840,7 @@ const Budgets = () => {
         preSelectedLigneBudgetaire={ligneForReservation}
       />
     </div>
+    </>
   );
 };
 

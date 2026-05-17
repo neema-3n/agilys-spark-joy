@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { CTA_REVEAL_STYLES, useHeaderCtaReveal } from '@/hooks/useHeaderCtaReveal';
 import { Card, CardContent } from '@/components/ui/card';
+import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
 
 type BonsCommandeLocationState = {
   initialEngagementId?: string;
@@ -56,6 +57,7 @@ const BonsCommande = () => {
   const [receptionBonCommandeId, setReceptionBonCommandeId] = useState<string | undefined>();
   const [annulationBonCommandeId, setAnnulationBonCommandeId] = useState<string | undefined>();
   const [searchTerm, setSearchTerm] = useState('');
+  const [isBonCommandeDirty, setIsBonCommandeDirty] = useState(false);
   const [statutFilter, setStatutFilter] = useState<'tous' | 'brouillon' | 'valide' | 'en_cours' | 'receptionne' | 'facture' | 'annule'>(
     'tous'
   );
@@ -232,6 +234,14 @@ const BonsCommande = () => {
     [navigate]
   );
 
+  const { guard } = useFocusedEditorGuard({
+    active: isEditorMode,
+    dirty: isBonCommandeDirty,
+    onExit: handleSingleCancel,
+    entityLabel: 'ce formulaire de bon de commande',
+    overlayAriaLabel: 'Quitter le formulaire de bon de commande',
+  });
+
   if (isLoading) {
     return (
       <ListPageLoading
@@ -284,6 +294,7 @@ const BonsCommande = () => {
   return (
     <>
       <style>{CTA_REVEAL_STYLES}</style>
+      {guard}
       <div className="space-y-6">
         {isEditorMode ? (
           <>
@@ -317,6 +328,7 @@ const BonsCommande = () => {
                     selectedEngagement={selectedEngagement}
                     onSubmit={handleSingleSubmit}
                     onCancel={handleSingleCancel}
+                    onDirtyChange={setIsBonCommandeDirty}
                     onGenererNumero={handleGenererNumero}
                     submitLabel={routeEditingBonCommande ? 'Enregistrer' : 'Créer le bon de commande'}
                     useScrollArea={false}

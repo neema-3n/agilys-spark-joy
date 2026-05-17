@@ -46,6 +46,7 @@ interface EngagementFormProps {
   selectedReservation?: ReservationCredit;
   onSubmit: (data: EngagementFormData) => Promise<void>;
   onCancel: () => void;
+  onDirtyChange?: (isDirty: boolean) => void;
   submitLabel?: string;
 }
 
@@ -54,6 +55,7 @@ export const EngagementForm = ({
   selectedReservation,
   onSubmit,
   onCancel,
+  onDirtyChange,
   submitLabel,
 }: EngagementFormProps) => {
   const { lignes: lignesBudgetaires } = useLignesBudgetaires();
@@ -69,6 +71,7 @@ export const EngagementForm = ({
   const [typeBeneficiaire, setTypeBeneficiaire] = useState<'fournisseur' | 'direct'>('fournisseur');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [montantDisponibleReservation, setMontantDisponibleReservation] = useState<number | null>(null);
+  const initialTypeBeneficiaireRef = useRef<'fournisseur' | 'direct' | null>(null);
 
   const form = useForm<EngagementFormValues>({
     resolver: zodResolver(engagementSchema),
@@ -110,6 +113,9 @@ export const EngagementForm = ({
       });
       if (selectedReservation.beneficiaire) {
         setTypeBeneficiaire('direct');
+        initialTypeBeneficiaireRef.current = 'direct';
+      } else {
+        initialTypeBeneficiaireRef.current = 'fournisseur';
       }
       initializedRef.current = true;
       return;
@@ -127,6 +133,7 @@ export const EngagementForm = ({
         reservationCreditId: engagement.reservationCreditId || '',
       });
       setTypeBeneficiaire(engagement.fournisseurId ? 'fournisseur' : 'direct');
+      initialTypeBeneficiaireRef.current = engagement.fournisseurId ? 'fournisseur' : 'direct';
       setMontantDisponibleReservation(null);
       initializedRef.current = true;
       return;
@@ -143,9 +150,23 @@ export const EngagementForm = ({
       reservationCreditId: '',
     });
     setTypeBeneficiaire('fournisseur');
+    initialTypeBeneficiaireRef.current = 'fournisseur';
     setMontantDisponibleReservation(null);
     initializedRef.current = true;
   }, [engagement, engagements, form, selectedReservation]);
+
+  const isDirty =
+    form.formState.isDirty ||
+    (initialTypeBeneficiaireRef.current !== null &&
+      initialTypeBeneficiaireRef.current !== typeBeneficiaire);
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    return () => onDirtyChange?.(false);
+  }, [onDirtyChange]);
 
   const handleSubmit = async (values: EngagementFormValues) => {
     if (typeBeneficiaire === 'fournisseur' && !values.fournisseurId) {
