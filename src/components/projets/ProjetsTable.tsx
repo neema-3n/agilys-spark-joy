@@ -24,6 +24,7 @@ import { format } from 'date-fns';
 
 interface ProjetsTableProps {
   projets: Projet[];
+  onView?: (projetId: string) => void;
   onEdit: (projet: Projet) => void;
   onDelete: (projet: Projet) => void;
   canEdit?: boolean;
@@ -49,7 +50,7 @@ const getPrioriteColor = (priorite?: string) => {
   return colors[priorite || 'moyenne'] || 'bg-muted';
 };
 
-export const ProjetsTable = ({ projets, onEdit, onDelete, canEdit = true }: ProjetsTableProps) => {
+export const ProjetsTable = ({ projets, onView, onEdit, onDelete, canEdit = true }: ProjetsTableProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatut, setFilterStatut] = useState<string>('all');
   const [filterPriorite, setFilterPriorite] = useState<string>('all');
@@ -131,7 +132,15 @@ export const ProjetsTable = ({ projets, onEdit, onDelete, canEdit = true }: Proj
                 return (
                   <TableRow key={projet.id}>
                     <TableCell className="font-mono text-sm">{projet.code}</TableCell>
-                    <TableCell className="font-medium">{projet.nom}</TableCell>
+                    <TableCell className="font-medium">
+                      {onView ? (
+                        <button type="button" className="hover:underline" onClick={() => onView(projet.id)}>
+                          {projet.nom}
+                        </button>
+                      ) : (
+                        projet.nom
+                      )}
+                    </TableCell>
                     <TableCell className="text-sm">{projet.responsable || '-'}</TableCell>
                     <TableCell>
                       <div className="text-sm">

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,10 +16,11 @@ import {
 import { Plus } from 'lucide-react';
 import { useProjets } from '@/hooks/useProjets';
 import { projetsService } from '@/services/api/projets.service';
-import { ProjetDialog } from '@/components/projets/ProjetDialog';
+import { ProjetForm } from '@/components/projets/ProjetForm';
 import { ProjetCard } from '@/components/projets/ProjetCard';
 import { ProjetsTable } from '@/components/projets/ProjetsTable';
 import { ProjetStats } from '@/components/projets/ProjetStats';
+import { ProjetSnapshot } from '@/components/projets/ProjetSnapshot';
 import { Projet } from '@/types/projet.types';
 import { useToast } from '@/hooks/use-toast';
 import { useClient } from '@/contexts/ClientContext';
@@ -30,23 +32,28 @@ const Projets = () => {
   const { currentClient } = useClient();
   const { currentExercice } = useExercice();
   const { hasAnyRole } = useAuth();
+  const navigate = useNavigate();
+  const { projetId } = useParams<{ projetId: string }>();
   const { projets, isLoading, refetch } = useProjets();
+  const isCreateRoute = !!useMatch('/app/projets/create');
+  const isEditRoute = !!useMatch('/app/projets/:projetId/edit');
+  const isDetailRoute = !!useMatch('/app/projets/:projetId');
 
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedProjet, setSelectedProjet] = useState<Projet | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projetToDelete, setProjetToDelete] = useState<Projet | null>(null);
+  const selectedProjet = useMemo(
+    () => (projetId ? projets.find((projet) => projet.id === projetId) || null : null),
+    [projets, projetId]
+  );
 
   const canEdit = hasAnyRole(['super_admin', 'admin_client', 'directeur_financier', 'chef_service']);
 
   const handleCreate = () => {
-    setSelectedProjet(null);
-    setDialogOpen(true);
+    navigate('/app/projets/create');
   };
 
   const handleEdit = (projet: Projet) => {
-    setSelectedProjet(projet);
-    setDialogOpen(true);
+    navigate(`/app/projets/${projet.id}/edit`);
   };
 
   const handleDeleteClick = (projet: Projet) => {
@@ -57,13 +64,14 @@ const Projets = () => {
   const handleSubmit = async (data: any) => {
     try {
       if (selectedProjet) {
-        await projetsService.update(selectedProjet.id, data);
+        const projet = await projetsService.update(selectedProjet.id, data);
         toast({
           title: 'Succès',
           description: 'Projet modifié avec succès',
         });
+        navigate(`/app/projets/${projet.id}`);
       } else {
-        await projetsService.create({
+        const projet = await projetsService.create({
           ...data,
           clientId: currentClient!.id,
           exerciceId: currentExercice!.id,
@@ -72,6 +80,7 @@ const Projets = () => {
           title: 'Succès',
           description: 'Projet créé avec succès',
         });
+        navigate(`/app/projets/${projet.id}`);
       }
       refetch();
     } catch (error: any) {
@@ -115,6 +124,39 @@ const Projets = () => {
     );
   }
 
+  if ((isEditRoute || isDetailRoute) && projetId && !selectedProjet) {
+    return <div className="text-center text-muted-foreground">Chargement du projet...</div>;
+  }
+
+  if (isCreateRoute || isEditRoute) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title={selectedProjet ? 'Modifier le projet' : 'Nouveau projet'}
+          description="Structurez le suivi budgétaire et analytique du projet."
+          actions={<Button variant="outline" onClick={() => navigate(selectedProjet ? `/app/projets/${selectedProjet.id}` : '/app/projets')}>Retour aux projets</Button>}
+        />
+        <ProjetForm
+          projet={selectedProjet}
+          onSubmit={handleSubmit}
+          onCancel={() => navigate(selectedProjet ? `/app/projets/${selectedProjet.id}` : '/app/projets')}
+          submitLabel={selectedProjet ? 'Enregistrer les modifications' : 'Créer le projet'}
+        />
+      </div>
+    );
+  }
+
+  if (isDetailRoute && selectedProjet) {
+    return (
+      <ProjetSnapshot
+        projet={selectedProjet}
+        onClose={() => navigate('/app/projets')}
+        onEdit={canEdit ? () => handleEdit(selectedProjet) : undefined}
+        onDelete={canEdit ? () => handleDeleteClick(selectedProjet) : undefined}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -144,6 +186,7 @@ const Projets = () => {
             <h2 className="text-xl font-semibold mb-4">Liste des projets</h2>
             <ProjetsTable
               projets={projets}
+              onView={(id) => navigate(`/app/projets/${id}`)}
               onEdit={handleEdit}
               onDelete={handleDeleteClick}
               canEdit={canEdit}
@@ -154,6 +197,7 @@ const Projets = () => {
         <TabsContent value="table">
           <ProjetsTable
             projets={projets}
+            onView={(id) => navigate(`/app/projets/${id}`)}
             onEdit={handleEdit}
             onDelete={handleDeleteClick}
             canEdit={canEdit}
@@ -177,6 +221,7 @@ const Projets = () => {
                 <ProjetCard
                   key={projet.id}
                   projet={projet}
+                  onView={(id) => navigate(`/app/projets/${id}`)}
                   onEdit={handleEdit}
                   onDelete={handleDeleteClick}
                   canEdit={canEdit}
@@ -187,13 +232,6 @@ const Projets = () => {
         </TabsContent>
         </Tabs>
       </div>
-
-      <ProjetDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        projet={selectedProjet}
-        onSubmit={handleSubmit}
-      />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

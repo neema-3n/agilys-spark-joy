@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 
 interface ProjetCardProps {
   projet: Projet;
+  onView?: (projetId: string) => void;
   onEdit: (projet: Projet) => void;
   onDelete: (projet: Projet) => void;
   canEdit?: boolean;
@@ -33,7 +34,7 @@ const getPrioriteColor = (priorite?: string) => {
   return colors[priorite || 'moyenne'] || 'bg-muted';
 };
 
-export const ProjetCard = ({ projet, onEdit, onDelete, canEdit = true }: ProjetCardProps) => {
+export const ProjetCard = ({ projet, onView, onEdit, onDelete, canEdit = true }: ProjetCardProps) => {
   const budgetDisponible = projet.budgetAlloue - projet.budgetConsomme;
   const tauxConsommation = projet.budgetAlloue > 0 
     ? (projet.budgetConsomme / projet.budgetAlloue) * 100 
@@ -57,7 +58,15 @@ export const ProjetCard = ({ projet, onEdit, onDelete, canEdit = true }: ProjetC
                 </Badge>
               )}
             </div>
-            <CardTitle className="text-lg">{projet.nom}</CardTitle>
+            <CardTitle className="text-lg">
+              {onView ? (
+                <button type="button" className="text-left hover:underline" onClick={() => onView(projet.id)}>
+                  {projet.nom}
+                </button>
+              ) : (
+                projet.nom
+              )}
+            </CardTitle>
           </div>
           {canEdit && (
             <div className="flex gap-1">
