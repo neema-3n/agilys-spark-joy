@@ -1,28 +1,19 @@
 import { useCallback, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { useBonsCommande } from '@/hooks/useBonsCommande';
-import { useFactures } from '@/hooks/useFactures';
+import { useEngagements } from '@/hooks/useEngagements';
 import { BonCommandeStats } from '@/components/bonsCommande/BonCommandeStats';
 import { BonCommandeTable } from '@/components/bonsCommande/BonCommandeTable';
-import { BonCommandeDialog } from '@/components/bonsCommande/BonCommandeDialog';
 import { AnnulerBCDialog } from '@/components/bonsCommande/AnnulerBCDialog';
 import { ReceptionnerBCDialog } from '@/components/bonsCommande/ReceptionnerBCDialog';
 import { BonCommandeSnapshot } from '@/components/bonsCommande/BonCommandeSnapshot';
-import { FactureDialog } from '@/components/factures/FactureDialog';
+import { BonCommandeForm } from '@/components/bonsCommande/BonCommandeForm';
 import { CreateBonCommandeInput, UpdateBonCommandeInput } from '@/types/bonCommande.types';
-import { CreateFactureInput } from '@/types/facture.types';
-import { showNavigationToast } from '@/lib/navigation-toast';
-import { useFournisseurs } from '@/hooks/useFournisseurs';
-import { useProjets } from '@/hooks/useProjets';
-import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
-import { useEngagements } from '@/hooks/useEngagements';
 import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { useSnapshotState } from '@/hooks/useSnapshotState';
 import { ListLayout } from '@/components/lists/ListLayout';
@@ -36,21 +27,34 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { CTA_REVEAL_STYLES, useHeaderCtaReveal } from '@/hooks/useHeaderCtaReveal';
+import { Card, CardContent } from '@/components/ui/card';
+
+type BonsCommandeLocationState = {
+  initialEngagementId?: string;
+};
 
 const BonsCommande = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { bonCommandeId } = useParams<{ bonCommandeId?: string }>();
+  const createMatch = useMatch('/app/bons-commande/create');
+  const editMatch = useMatch('/app/bons-commande/:bonCommandeId/edit');
   const { currentClient } = useClient();
   const { currentExercice } = useExercice();
 
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [factureDialogOpen, setFactureDialogOpen] = useState(false);
+  const isCreateMode = !!createMatch;
+  const routeEditBonCommandeId = editMatch?.params.bonCommandeId;
+  const isEditMode = !!routeEditBonCommandeId;
+  const isEditorMode = isCreateMode || isEditMode;
+  const initialEngagementId =
+    isCreateMode && typeof (location.state as BonsCommandeLocationState | null)?.initialEngagementId === 'string'
+      ? ((location.state as BonsCommandeLocationState).initialEngagementId ?? undefined)
+      : undefined;
+
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
   const [receptionnerDialogOpen, setReceptionnerDialogOpen] = useState(false);
-  const [editingBonCommandeId, setEditingBonCommandeId] = useState<string | undefined>();
   const [receptionBonCommandeId, setReceptionBonCommandeId] = useState<string | undefined>();
   const [annulationBonCommandeId, setAnnulationBonCommandeId] = useState<string | undefined>();
-  const [factureBonCommandeId, setFactureBonCommandeId] = useState<string | undefined>();
   const [searchTerm, setSearchTerm] = useState('');
   const [statutFilter, setStatutFilter] = useState<'tous' | 'brouillon' | 'valide' | 'en_cours' | 'receptionne' | 'facture' | 'annule'>(
     'tous'
@@ -68,16 +72,16 @@ const BonsCommande = () => {
     receptionnerBonCommande,
     annulerBonCommande,
   } = useBonsCommande();
-
-  const { createFacture, genererNumero: genererNumeroFacture } = useFactures();
-  const { fournisseurs } = useFournisseurs();
-  const { projets } = useProjets();
-  const { lignes: lignesBudgetaires } = useLignesBudgetaires();
   const { engagements } = useEngagements();
 
-  const editingBonCommande = useMemo(
-    () => bonsCommande.find((bc) => bc.id === editingBonCommandeId),
-    [bonsCommande, editingBonCommandeId]
+  const routeEditingBonCommande = useMemo(
+    () => bonsCommande.find((bc) => bc.id === routeEditBonCommandeId),
+    [bonsCommande, routeEditBonCommandeId]
+  );
+
+  const selectedEngagement = useMemo(
+    () => engagements.find((engagement) => engagement.id === initialEngagementId),
+    [engagements, initialEngagementId]
   );
 
   const receptionBonCommande = useMemo(
@@ -89,29 +93,6 @@ const BonsCommande = () => {
     () => bonsCommande.find((bc) => bc.id === annulationBonCommandeId),
     [bonsCommande, annulationBonCommandeId]
   );
-
-  const { data: bonsCommandeReceptionnes = [] } = useQuery({
-    queryKey: ['bons-commande-receptionnes', currentClient?.id, currentExercice?.id],
-    queryFn: async () => {
-      if (!currentClient) return [];
-
-      let query = supabase
-        .from('bons_commande')
-        .select('id, numero, statut, fournisseur_id, engagement_id, ligne_budgetaire_id, projet_id, objet, montant')
-        .eq('client_id', currentClient.id)
-        .eq('statut', 'receptionne')
-        .order('numero', { ascending: false });
-
-      if (currentExercice) {
-        query = query.eq('exercice_id', currentExercice.id);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!currentClient,
-  });
 
   const {
     snapshotId: snapshotBonCommandeId,
@@ -151,38 +132,42 @@ const BonsCommande = () => {
       .sort((a, b) => new Date(b.dateCommande).getTime() - new Date(a.dateCommande).getTime());
   }, [bonsCommande, searchTerm, statutFilter]);
 
-  const handleEdit = useCallback((id: string) => {
-    setEditingBonCommandeId(id);
-    setDialogOpen(true);
-  }, []);
-
   const handleCreate = useCallback(() => {
-    setEditingBonCommandeId(undefined);
-    setDialogOpen(true);
-  }, []);
+    navigate('/app/bons-commande/create');
+  }, [navigate]);
 
-  const handleDialogClose = useCallback(
-    (open: boolean) => {
-      setDialogOpen(open);
-      if (!open) {
-        setEditingBonCommandeId(undefined);
-      }
+  const handleEdit = useCallback(
+    (id: string) => {
+      navigate(`/app/bons-commande/${id}/edit`);
     },
-    []
+    [navigate]
   );
 
-  const handleSubmit = useCallback(
+  const handleSingleSubmit = useCallback(
     async (data: CreateBonCommandeInput | UpdateBonCommandeInput) => {
-      if (editingBonCommandeId) {
-        await updateBonCommande({ id: editingBonCommandeId, data: data as UpdateBonCommandeInput });
-      } else {
-        await createBonCommande(data as CreateBonCommandeInput);
+      if (routeEditingBonCommande) {
+        const updated = await updateBonCommande({ id: routeEditingBonCommande.id, data: data as UpdateBonCommandeInput });
+        navigate(`/app/bons-commande/${updated.id}`);
+        return;
       }
-      setDialogOpen(false);
-      setEditingBonCommandeId(undefined);
+
+      const created = await createBonCommande(data as CreateBonCommandeInput);
+      navigate(`/app/bons-commande/${created.id}`);
     },
-    [editingBonCommandeId, createBonCommande, updateBonCommande]
+    [routeEditingBonCommande, updateBonCommande, createBonCommande, navigate]
   );
+
+  const handleSingleCancel = useCallback(() => {
+    if (routeEditBonCommandeId) {
+      navigate(`/app/bons-commande/${routeEditBonCommandeId}`);
+      return;
+    }
+    if (initialEngagementId) {
+      navigate(`/app/engagements/${initialEngagementId}`);
+      return;
+    }
+    navigate('/app/bons-commande');
+  }, [initialEngagementId, navigate, routeEditBonCommandeId]);
 
   const handleReceptionner = useCallback((id: string) => {
     setReceptionBonCommandeId(id);
@@ -191,11 +176,10 @@ const BonsCommande = () => {
 
   const handleReceptionnerConfirm = useCallback(
     async (dateLivraisonReelle: string) => {
-      if (receptionBonCommandeId) {
-        await receptionnerBonCommande({ id: receptionBonCommandeId, date: dateLivraisonReelle });
-        setReceptionnerDialogOpen(false);
-        setReceptionBonCommandeId(undefined);
-      }
+      if (!receptionBonCommandeId) return;
+      await receptionnerBonCommande({ id: receptionBonCommandeId, date: dateLivraisonReelle });
+      setReceptionnerDialogOpen(false);
+      setReceptionBonCommandeId(undefined);
     },
     [receptionBonCommandeId, receptionnerBonCommande]
   );
@@ -207,52 +191,27 @@ const BonsCommande = () => {
 
   const handleAnnulerConfirm = useCallback(
     async (motif: string) => {
-      if (annulationBonCommandeId) {
-        await annulerBonCommande({ id: annulationBonCommandeId, motif });
-        setAnnulerDialogOpen(false);
-        setAnnulationBonCommandeId(undefined);
-      }
+      if (!annulationBonCommandeId) return;
+      await annulerBonCommande({ id: annulationBonCommandeId, motif });
+      setAnnulerDialogOpen(false);
+      setAnnulationBonCommandeId(undefined);
     },
     [annulationBonCommandeId, annulerBonCommande]
   );
 
-  const handleCreateFacture = useCallback((id: string) => {
-    setFactureBonCommandeId(id);
-    setFactureDialogOpen(true);
-  }, []);
-
-  const handleSaveFacture = useCallback(
-    async (data: CreateFactureInput) => {
-      try {
-        await createFacture({ facture: data, skipToast: true });
-        setFactureDialogOpen(false);
-        setFactureBonCommandeId(undefined);
-
-        showNavigationToast({
-          title: 'Facture créée',
-          description: 'La facture a été créée avec succès.',
-          targetPage: {
-            name: 'Factures',
-            path: '/app/factures',
-          },
-          navigate,
-        });
-      } catch (error) {
-        console.error('Erreur lors de la création de la facture:', error);
-      }
+  const handleCreateFacture = useCallback(
+    (id: string) => {
+      navigate('/app/factures/create', {
+        state: { initialBonCommandeId: id },
+      });
     },
-    [createFacture, navigate]
+    [navigate]
   );
 
   const handleGenererNumero = useCallback(async () => {
     if (!currentClient || !currentExercice) return '';
-    return await genererNumero();
-  }, [genererNumero]);
-
-  const handleGenererNumeroFacture = useCallback(async () => {
-    if (!currentClient || !currentExercice) return '';
-    return await genererNumeroFacture({ clientId: currentClient.id, exerciceId: currentExercice.id });
-  }, [currentClient, currentExercice, genererNumeroFacture]);
+    return genererNumero();
+  }, [currentClient, currentExercice, genererNumero]);
 
   const handleNavigateToEntity = useCallback(
     (type: string, id: string) => {
@@ -265,6 +224,8 @@ const BonsCommande = () => {
           break;
         case 'projet':
           navigate(`/app/projets/${id}`);
+          break;
+        default:
           break;
       }
     },
@@ -280,6 +241,18 @@ const BonsCommande = () => {
       />
     );
   }
+
+  const editorHeader = isCreateMode
+    ? {
+        title: 'Nouveau bon de commande',
+        description: selectedEngagement
+          ? `Créez un bon de commande à partir de l'engagement ${selectedEngagement.numero}.`
+          : 'Créez un bon de commande dans un espace de travail dédié.',
+      }
+    : {
+        title: routeEditingBonCommande ? `Modifier ${routeEditingBonCommande.numero}` : 'Modifier le bon de commande',
+        description: 'Éditez le bon de commande directement dans l’outlet.',
+      };
 
   const pageHeaderContent = (
     <PageHeader
@@ -312,131 +285,153 @@ const BonsCommande = () => {
     <>
       <style>{CTA_REVEAL_STYLES}</style>
       <div className="space-y-6">
-      {!isSnapshotOpen && pageHeaderContent}
+        {isEditorMode ? (
+          <>
+            <PageHeader
+              title={editorHeader.title}
+              description={editorHeader.description}
+              sticky={false}
+              actions={
+                <Button variant="outline" onClick={handleSingleCancel}>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Retour aux bons de commande
+                </Button>
+              }
+            />
 
-      <div className="space-y-6">
-        {isSnapshotOpen && snapshotBonCommande ? (
-          <BonCommandeSnapshot
-            bonCommande={snapshotBonCommande}
-            onClose={handleCloseSnapshot}
-            onNavigate={handleNavigateSnapshot}
-            hasPrev={snapshotIndex > 0}
-            hasNext={snapshotIndex < bonsCommande.length - 1}
-            currentIndex={snapshotIndex}
-            totalCount={bonsCommande.length}
-            onEdit={() => handleEdit(snapshotBonCommande.id)}
-            onValider={snapshotBonCommande.statut === 'brouillon' ? () => validerBonCommande(snapshotBonCommande.id) : undefined}
-            onMettreEnCours={snapshotBonCommande.statut === 'valide' ? () => mettreEnCours(snapshotBonCommande.id) : undefined}
-            onReceptionner={snapshotBonCommande.statut === 'en_cours' ? () => handleReceptionner(snapshotBonCommande.id) : undefined}
-            onAnnuler={snapshotBonCommande.statut !== 'facture' && snapshotBonCommande.statut !== 'annule' ? () => handleAnnuler(snapshotBonCommande.id) : undefined}
-            onCreateFacture={snapshotBonCommande.statut === 'receptionne' ? () => handleCreateFacture(snapshotBonCommande.id) : undefined}
-            onNavigateToEntity={handleNavigateToEntity}
-          />
-        ) : isSnapshotOpen && isSnapshotLoading ? (
-          <div className="py-12 text-center text-muted-foreground">Chargement du snapshot...</div>
+            {isEditMode && !routeEditingBonCommande ? (
+              <div className="rounded-xl border border-dashed p-8 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Ce bon de commande est introuvable ou n&apos;est plus accessible depuis la page courante.
+                </p>
+                <Button variant="outline" className="mt-4" onClick={() => navigate('/app/bons-commande')}>
+                  Retour à la liste
+                </Button>
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="pt-6">
+                  <BonCommandeForm
+                    key={`${isCreateMode ? 'create' : routeEditBonCommandeId || 'unknown'}-${initialEngagementId || 'none'}`}
+                    bonCommande={routeEditingBonCommande}
+                    selectedEngagement={selectedEngagement}
+                    onSubmit={handleSingleSubmit}
+                    onCancel={handleSingleCancel}
+                    onGenererNumero={handleGenererNumero}
+                    submitLabel={routeEditingBonCommande ? 'Enregistrer' : 'Créer le bon de commande'}
+                    useScrollArea={false}
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </>
         ) : (
           <>
-            <BonCommandeStats bonsCommande={bonsCommande} />
+            {!isSnapshotOpen && pageHeaderContent}
 
-            <ListLayout
-              title="Liste des bons de commande"
-              description="Visualisez, filtrez et gérez vos bons de commande"
-              actions={
-                !isHeaderCtaVisible ? (
-                  <Button onClick={handleCreate} className="sticky-cta-appear">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Nouveau bon de commande
-                  </Button>
-                ) : undefined
-              }
-              toolbar={
-                <ListToolbar
-                  searchValue={searchTerm}
-                  onSearchChange={setSearchTerm}
-                  searchPlaceholder="Rechercher par numéro, objet, fournisseur..."
-                  filters={[
-                    <DropdownMenu key="statut">
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline">Statut: {activeStatutLabel}</Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {statutOptions.map((option) => (
-                          <DropdownMenuItem key={option.value} onClick={() => setStatutFilter(option.value)}>
-                            {option.label}
-                          </DropdownMenuItem>
-                        ))}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setStatutFilter('tous')}>Réinitialiser</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>,
-                  ]}
+            <div className="space-y-6">
+              {isSnapshotOpen && snapshotBonCommande ? (
+                <BonCommandeSnapshot
+                  bonCommande={snapshotBonCommande}
+                  onClose={handleCloseSnapshot}
+                  onNavigate={handleNavigateSnapshot}
+                  hasPrev={snapshotIndex > 0}
+                  hasNext={snapshotIndex < bonsCommande.length - 1}
+                  currentIndex={snapshotIndex}
+                  totalCount={bonsCommande.length}
+                  onEdit={() => handleEdit(snapshotBonCommande.id)}
+                  onValider={snapshotBonCommande.statut === 'brouillon' ? () => validerBonCommande(snapshotBonCommande.id) : undefined}
+                  onMettreEnCours={snapshotBonCommande.statut === 'valide' ? () => mettreEnCours(snapshotBonCommande.id) : undefined}
+                  onReceptionner={snapshotBonCommande.statut === 'en_cours' ? () => handleReceptionner(snapshotBonCommande.id) : undefined}
+                  onAnnuler={
+                    snapshotBonCommande.statut !== 'facture' && snapshotBonCommande.statut !== 'annule'
+                      ? () => handleAnnuler(snapshotBonCommande.id)
+                      : undefined
+                  }
+                  onCreateFacture={snapshotBonCommande.statut === 'receptionne' ? () => handleCreateFacture(snapshotBonCommande.id) : undefined}
+                  onNavigateToEntity={handleNavigateToEntity}
                 />
-              }
-            >
-              <BonCommandeTable
-                bonsCommande={filteredBonsCommande}
-                onEdit={handleEdit}
-                onValider={validerBonCommande}
-                onMettreEnCours={mettreEnCours}
-                onReceptionner={handleReceptionner}
-                onAnnuler={handleAnnuler}
-                onDelete={deleteBonCommande}
-                onCreateFacture={handleCreateFacture}
-                onViewDetails={openBonCommandeSnapshot}
-                stickyHeader
-                stickyHeaderOffset={0}
-                scrollContainerClassName="max-h-[calc(100vh-220px)] overflow-auto"
-              />
-            </ListLayout>
+              ) : isSnapshotOpen && isSnapshotLoading ? (
+                <div className="py-12 text-center text-muted-foreground">Chargement du snapshot...</div>
+              ) : (
+                <>
+                  <BonCommandeStats bonsCommande={bonsCommande} />
+
+                  <ListLayout
+                    title="Liste des bons de commande"
+                    description="Visualisez, filtrez et gérez vos bons de commande"
+                    actions={
+                      !isHeaderCtaVisible ? (
+                        <Button onClick={handleCreate} className="sticky-cta-appear">
+                          <Plus className="mr-2 h-4 w-4" />
+                          Nouveau bon de commande
+                        </Button>
+                      ) : undefined
+                    }
+                    toolbar={
+                      <ListToolbar
+                        searchValue={searchTerm}
+                        onSearchChange={setSearchTerm}
+                        searchPlaceholder="Rechercher par numéro, objet, fournisseur..."
+                        filters={[
+                          <DropdownMenu key="statut">
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline">Statut: {activeStatutLabel}</Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {statutOptions.map((option) => (
+                                <DropdownMenuItem key={option.value} onClick={() => setStatutFilter(option.value)}>
+                                  {option.label}
+                                </DropdownMenuItem>
+                              ))}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => setStatutFilter('tous')}>Réinitialiser</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>,
+                        ]}
+                      />
+                    }
+                  >
+                    <BonCommandeTable
+                      bonsCommande={filteredBonsCommande}
+                      onEdit={handleEdit}
+                      onValider={validerBonCommande}
+                      onMettreEnCours={mettreEnCours}
+                      onReceptionner={handleReceptionner}
+                      onAnnuler={handleAnnuler}
+                      onDelete={deleteBonCommande}
+                      onCreateFacture={handleCreateFacture}
+                      onViewDetails={openBonCommandeSnapshot}
+                      stickyHeader
+                      stickyHeaderOffset={0}
+                      scrollContainerClassName="max-h-[calc(100vh-220px)] overflow-auto"
+                    />
+                  </ListLayout>
+                </>
+              )}
+            </div>
+
+            <ReceptionnerBCDialog
+              open={receptionnerDialogOpen}
+              onOpenChange={(open) => {
+                setReceptionnerDialogOpen(open);
+                if (!open) setReceptionBonCommandeId(undefined);
+              }}
+              bonCommandeNumero={receptionBonCommande?.numero || ''}
+              onConfirm={handleReceptionnerConfirm}
+            />
+
+            <AnnulerBCDialog
+              open={annulerDialogOpen}
+              onOpenChange={(open) => {
+                setAnnulerDialogOpen(open);
+                if (!open) setAnnulationBonCommandeId(undefined);
+              }}
+              bonCommandeNumero={annulationBonCommande?.numero || ''}
+              onConfirm={handleAnnulerConfirm}
+            />
           </>
         )}
-      </div>
-
-      <BonCommandeDialog
-        open={dialogOpen}
-        onOpenChange={handleDialogClose}
-        onSubmit={handleSubmit}
-        bonCommande={editingBonCommande}
-        onGenererNumero={handleGenererNumero}
-      />
-
-      <ReceptionnerBCDialog
-        open={receptionnerDialogOpen}
-        onOpenChange={(open) => {
-          setReceptionnerDialogOpen(open);
-          if (!open) setReceptionBonCommandeId(undefined);
-        }}
-        bonCommandeNumero={receptionBonCommande?.numero || ''}
-        onConfirm={handleReceptionnerConfirm}
-      />
-
-      <AnnulerBCDialog
-        open={annulerDialogOpen}
-        onOpenChange={(open) => {
-          setAnnulerDialogOpen(open);
-          if (!open) setAnnulationBonCommandeId(undefined);
-        }}
-        bonCommandeNumero={annulationBonCommande?.numero || ''}
-        onConfirm={handleAnnulerConfirm}
-      />
-
-      <FactureDialog
-        open={factureDialogOpen}
-        onOpenChange={(open) => {
-          setFactureDialogOpen(open);
-          if (!open) setFactureBonCommandeId(undefined);
-        }}
-        onSubmit={handleSaveFacture}
-        fournisseurs={fournisseurs}
-        bonsCommande={bonsCommandeReceptionnes}
-        lignesBudgetaires={lignesBudgetaires}
-        projets={projets}
-        engagements={engagements.filter((e) => e.statut === 'valide')}
-        currentClientId={currentClient?.id || ''}
-        currentExerciceId={currentExercice?.id || ''}
-        onGenererNumero={handleGenererNumeroFacture}
-        initialBonCommandeId={factureBonCommandeId}
-      />
       </div>
     </>
   );

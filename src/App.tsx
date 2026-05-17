@@ -106,6 +106,8 @@ const App = () => (
                   </Route>
                   <Route path="bons-commande">
                     <Route index element={<BonsCommande />} />
+                    <Route path="create" element={<BonsCommande />} />
+                    <Route path=":bonCommandeId/edit" element={<BonsCommande />} />
                     <Route path=":bonCommandeId" element={<BonsCommande />} />
                   </Route>
                   <Route path="depenses">

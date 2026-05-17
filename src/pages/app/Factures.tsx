@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { useMatch, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Plus } from 'lucide-react';
@@ -52,6 +52,7 @@ import { Card, CardContent } from '@/components/ui/card';
 
 export default function Factures() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { factureId } = useParams<{ factureId: string }>();
   const createMatch = useMatch('/app/factures/create');
   const editMatch = useMatch('/app/factures/:factureId/edit');
@@ -61,6 +62,10 @@ export default function Factures() {
   const routeEditFactureId = editMatch?.params.factureId;
   const isEditMode = !!routeEditFactureId;
   const isEditorMode = isCreateMode || isEditMode;
+  const initialBonCommandeId =
+    isCreateMode && typeof (location.state as { initialBonCommandeId?: unknown } | null)?.initialBonCommandeId === 'string'
+      ? ((location.state as { initialBonCommandeId?: string }).initialBonCommandeId ?? undefined)
+      : undefined;
   
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
   const [annulationFactureId, setAnnulationFactureId] = useState<string | undefined>();
@@ -398,7 +403,7 @@ export default function Factures() {
             <Card>
               <CardContent className="pt-6">
                 <FactureForm
-                  key={`${isCreateMode ? 'create' : routeEditFactureId || 'unknown'}`}
+                  key={`${isCreateMode ? 'create' : routeEditFactureId || 'unknown'}-${initialBonCommandeId || 'none'}`}
                   facture={editorFacture}
                   onSubmit={handleSingleSubmit}
                   onCancel={handleSingleCancel}
@@ -410,6 +415,7 @@ export default function Factures() {
                   currentClientId={currentClient?.id || ''}
                   currentExerciceId={currentExercice?.id || ''}
                   onGenererNumero={handleGenererNumero}
+                  initialBonCommandeId={initialBonCommandeId}
                   submitLabel={editorFacture ? 'Enregistrer' : 'Créer la facture'}
                   useScrollArea={false}
                 />

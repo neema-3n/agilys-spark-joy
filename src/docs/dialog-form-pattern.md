@@ -305,9 +305,7 @@ const isReadOnly = editingId && item?.statut !== 'brouillon';
 
 ## Composants implémentant ce pattern
 
-- ✅ `src/components/factures/FactureDialog.tsx`
 - ✅ `src/components/engagements/EngagementDialog.tsx`
-- ✅ `src/components/bonsCommande/BonCommandeDialog.tsx`
 - ✅ `src/components/reservations/ReservationDialog.tsx`
 - ✅ `src/components/fournisseurs/FournisseurDialog.tsx`
 - ✅ `src/components/projets/ProjetDialog.tsx`
