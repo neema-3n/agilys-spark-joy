@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,19 +11,28 @@ import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { Structure } from '@/types/structure.types';
 import { structuresService } from '@/services/api/structures.service';
-import { StructureDialog } from './StructureDialog';
 import { useToast } from '@/hooks/use-toast';
+import { StructureForm, StructureFormData } from './StructureForm';
+import { ParametreEditorPage } from './ParametreEditorPage';
 
 const StructureManager = () => {
   const { currentClient } = useClient();
   const { currentExercice } = useExercice();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { itemId } = useParams<{ itemId?: string }>();
+  const isCreateRoute = !!useMatch('/app/parametres/structure/create');
+  const isEditRoute = !!useMatch('/app/parametres/structure/:itemId/edit');
+  const isEditorMode = isCreateRoute || isEditRoute;
   const [structures, setStructures] = useState<Structure[]>([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedStructure, setSelectedStructure] = useState<Structure | undefined>();
   const [structureToDelete, setStructureToDelete] = useState<Structure | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isStructureDirty, setIsStructureDirty] = useState(false);
+  const selectedStructure = useMemo(
+    () => (isEditRoute ? structures.find((structure) => structure.id === itemId) : undefined),
+    [structures, isEditRoute, itemId]
+  );
 
   useEffect(() => {
     loadStructures();
@@ -50,53 +60,36 @@ const StructureManager = () => {
     }
   };
 
-  const handleCreate = async (data: any) => {
+  const handleSave = async (data: StructureFormData) => {
     if (!currentClient) return;
 
     try {
-      await structuresService.create({
-        ...data,
-        clientId: currentClient.id,
-        exerciceId: currentExercice?.id
-      });
-      
-      toast({
-        title: 'Succès',
-        description: 'Structure créée avec succès'
-      });
-      
-      setDialogOpen(false);
+      if (selectedStructure) {
+        await structuresService.update(selectedStructure.id, data);
+        toast({
+          title: 'Succès',
+          description: 'Structure mise à jour avec succès',
+        });
+      } else {
+        await structuresService.create({
+          ...data,
+          clientId: currentClient.id,
+          exerciceId: currentExercice?.id,
+        });
+        toast({
+          title: 'Succès',
+          description: 'Structure créée avec succès',
+        });
+      }
+
       await loadStructures();
+      navigate('/app/parametres/structure');
     } catch (error) {
-      console.error('Erreur lors de la création:', error);
+      console.error('Erreur lors de l’enregistrement:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de créer la structure',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const handleUpdate = async (data: any) => {
-    if (!selectedStructure) return;
-
-    try {
-      await structuresService.update(selectedStructure.id, data);
-      
-      toast({
-        title: 'Succès',
-        description: 'Structure mise à jour avec succès'
-      });
-      
-      setDialogOpen(false);
-      setSelectedStructure(undefined);
-      await loadStructures();
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour:', error);
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de mettre à jour la structure',
-        variant: 'destructive'
+        description: 'Impossible d’enregistrer la structure',
+        variant: 'destructive',
       });
     }
   };
@@ -126,13 +119,15 @@ const StructureManager = () => {
   };
 
   const openEditDialog = (structure: Structure) => {
-    setSelectedStructure(structure);
-    setDialogOpen(true);
+    navigate(`/app/parametres/structure/${structure.id}/edit`);
   };
 
   const openCreateDialog = () => {
-    setSelectedStructure(undefined);
-    setDialogOpen(true);
+    navigate('/app/parametres/structure/create');
+  };
+
+  const handleEditorCancel = () => {
+    navigate('/app/parametres/structure');
   };
 
   const getTypeLabel = (type: string) => {
@@ -144,6 +139,32 @@ const StructureManager = () => {
     };
     return labels[type] || type;
   };
+
+  if (isEditorMode) {
+    return (
+      <ParametreEditorPage
+        title={selectedStructure ? `Modifier ${selectedStructure.nom}` : 'Nouvelle structure'}
+        description="Gérez une structure organisationnelle dans un espace de travail dédié."
+        backLabel="Retour à la structure"
+        onBack={handleEditorCancel}
+        dirty={isStructureDirty}
+        entityLabel="ce formulaire de structure"
+      >
+        {isEditRoute && !selectedStructure ? (
+          <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+            Cette structure est introuvable.
+          </div>
+        ) : (
+          <StructureForm
+            structure={selectedStructure}
+            onSubmit={handleSave}
+            onCancel={handleEditorCancel}
+            onDirtyChange={setIsStructureDirty}
+          />
+        )}
+      </ParametreEditorPage>
+    );
+  }
 
   return (
     <>
@@ -231,14 +252,6 @@ const StructureManager = () => {
           )}
         </CardContent>
       </Card>
-
-      <StructureDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onSubmit={selectedStructure ? handleUpdate : handleCreate}
-        structure={selectedStructure}
-        structures={structures}
-      />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

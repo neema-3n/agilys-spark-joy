@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -18,19 +19,27 @@ import { toast } from 'sonner';
 import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { enveloppesService } from '@/services/api/enveloppes.service';
-import { EnveloppeDialog } from './EnveloppeDialog';
 import type { Enveloppe } from '@/types/enveloppe.types';
+import { EnveloppeForm, EnveloppeFormValues } from './EnveloppeForm';
+import { ParametreEditorPage } from './ParametreEditorPage';
 
 const EnveloppesManager = () => {
   const { currentClient } = useClient();
   const { currentExercice } = useExercice();
+  const navigate = useNavigate();
+  const { itemId } = useParams<{ itemId?: string }>();
+  const isCreateRoute = !!useMatch('/app/parametres/enveloppes/create');
+  const isEditRoute = !!useMatch('/app/parametres/enveloppes/:itemId/edit');
+  const isEditorMode = isCreateRoute || isEditRoute;
   const [enveloppes, setEnveloppes] = useState<Enveloppe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
-  const [selectedEnveloppe, setSelectedEnveloppe] = useState<Enveloppe | undefined>();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [enveloppeToDelete, setEnveloppeToDelete] = useState<Enveloppe | null>(null);
+  const [isEnveloppeDirty, setIsEnveloppeDirty] = useState(false);
+  const selectedEnveloppe = useMemo(
+    () => (isEditRoute ? enveloppes.find((enveloppe) => enveloppe.id === itemId) : undefined),
+    [enveloppes, isEditRoute, itemId]
+  );
 
   const loadEnveloppes = async () => {
     if (!currentClient || !currentExercice) return;
@@ -51,39 +60,38 @@ const EnveloppesManager = () => {
     loadEnveloppes();
   }, [currentClient, currentExercice]);
 
-  const handleCreate = () => {
-    setDialogMode('create');
-    setSelectedEnveloppe(undefined);
-    setDialogOpen(true);
-  };
+  const handleCreate = () => navigate('/app/parametres/enveloppes/create');
 
   const handleEdit = (enveloppe: Enveloppe) => {
-    setDialogMode('edit');
-    setSelectedEnveloppe(enveloppe);
-    setDialogOpen(true);
+    navigate(`/app/parametres/enveloppes/${enveloppe.id}/edit`);
   };
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: EnveloppeFormValues) => {
     if (!currentClient || !currentExercice) return;
 
     try {
-      if (dialogMode === 'create') {
+      if (selectedEnveloppe) {
+        await enveloppesService.update(selectedEnveloppe.id, values);
+        toast.success('Enveloppe mise à jour avec succès');
+      } else {
         await enveloppesService.create({
           ...values,
           clientId: currentClient.id,
           exerciceId: currentExercice.id,
         });
         toast.success('Enveloppe créée avec succès');
-      } else if (selectedEnveloppe) {
-        await enveloppesService.update(selectedEnveloppe.id, values);
-        toast.success('Enveloppe mise à jour avec succès');
       }
       await loadEnveloppes();
+      navigate('/app/parametres/enveloppes');
     } catch (error: any) {
       console.error('Error saving enveloppe:', error);
       toast.error(error.message || 'Erreur lors de l\'enregistrement');
       throw error;
     }
+  };
+
+  const handleEditorCancel = () => {
+    navigate('/app/parametres/enveloppes');
   };
 
   const handleDeleteClick = (enveloppe: Enveloppe) => {
@@ -134,6 +142,32 @@ const EnveloppesManager = () => {
           </p>
         </CardContent>
       </Card>
+    );
+  }
+
+  if (isEditorMode) {
+    return (
+      <ParametreEditorPage
+        title={selectedEnveloppe ? `Modifier ${selectedEnveloppe.nom}` : 'Nouvelle enveloppe'}
+        description="Gérez une enveloppe de financement dans un espace de travail dédié."
+        backLabel="Retour aux enveloppes"
+        onBack={handleEditorCancel}
+        dirty={isEnveloppeDirty}
+        entityLabel="ce formulaire d'enveloppe"
+      >
+        {isEditRoute && !selectedEnveloppe ? (
+          <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+            Cette enveloppe est introuvable.
+          </div>
+        ) : (
+          <EnveloppeForm
+            enveloppe={selectedEnveloppe}
+            onSubmit={handleSubmit}
+            onCancel={handleEditorCancel}
+            onDirtyChange={setIsEnveloppeDirty}
+          />
+        )}
+      </ParametreEditorPage>
     );
   }
 
@@ -251,14 +285,6 @@ const EnveloppesManager = () => {
           </Table>
         </CardContent>
       </Card>
-
-      <EnveloppeDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onSubmit={handleSubmit}
-        enveloppe={selectedEnveloppe}
-        mode={dialogMode}
-      />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

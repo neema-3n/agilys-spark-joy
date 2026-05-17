@@ -1,13 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Plus, FolderTree, BookOpen, Upload, Trash2, ChevronsDown, ChevronsUp, ArrowUp } from 'lucide-react';
 import { useClient } from '@/contexts/ClientContext';
-import { Compte } from '@/types/compte.types';
+import { Compte, CreateCompteInput, UpdateCompteInput } from '@/types/compte.types';
 import { comptesService } from '@/services/api/comptes.service';
-import { CompteDialog } from './CompteDialog';
+import { useMatch, useNavigate, useParams } from 'react-router-dom';
+import { ParametreEditorPage } from './ParametreEditorPage';
+import { CompteForm, CompteFormData } from './CompteForm';
 import { CompteTreeItem } from './CompteTreeItem';
 import { ImportPlanComptableDialog } from './ImportPlanComptableDialog';
 import { useToast } from '@/hooks/use-toast';
@@ -21,10 +23,13 @@ const PlanComptableManager = () => {
   const topMarkerRef = useRef<HTMLDivElement | null>(null);
   const { currentClient } = useClient();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { itemId } = useParams<{ itemId?: string }>();
+  const isCreateRoute = !!useMatch('/app/parametres/plan-comptable/create');
+  const isEditRoute = !!useMatch('/app/parametres/plan-comptable/:itemId/edit');
+  const isEditorMode = isCreateRoute || isEditRoute;
   const [comptes, setComptes] = useState<Compte[]>([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedCompte, setSelectedCompte] = useState<Compte | undefined>();
   const [compteToDelete, setCompteToDelete] = useState<Compte | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,6 +37,7 @@ const PlanComptableManager = () => {
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
   const [expandAll, setExpandAll] = useState<{ expand: boolean; timestamp: number } | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [isCompteDirty, setIsCompteDirty] = useState(false);
 
   // Trouver le premier ancêtre disponible dans la vue filtrée
   const findAvailableAncestor = (
@@ -108,6 +114,10 @@ const PlanComptableManager = () => {
 
   const filteredComptes = filterComptes(comptes, searchTerm);
   const compteTree = buildTree(filteredComptes, comptes);
+  const selectedCompte = useMemo(
+    () => comptes.find((compte) => compte.id === itemId),
+    [comptes, itemId],
+  );
 
   const getScrollContainer = () =>
     document.querySelector('main') as HTMLElement | null ||
@@ -159,22 +169,22 @@ const PlanComptableManager = () => {
     }
   };
 
-  const handleCreate = async (data: any) => {
+  const handleCreate = async (data: CompteFormData) => {
     if (!currentClient) return;
 
     try {
       await comptesService.create({
         ...data,
         clientId: currentClient.id
-      });
+      } satisfies CreateCompteInput);
       
       toast({
         title: 'Succès',
         description: 'Compte créé avec succès'
       });
       
-      setDialogOpen(false);
       await loadComptes();
+      navigate('/app/parametres/plan-comptable');
     } catch (error) {
       console.error('Erreur lors de la création:', error);
       toast({
@@ -185,20 +195,19 @@ const PlanComptableManager = () => {
     }
   };
 
-  const handleUpdate = async (data: any) => {
+  const handleUpdate = async (data: CompteFormData) => {
     if (!selectedCompte) return;
 
     try {
-      await comptesService.update(selectedCompte.id, data);
+      await comptesService.update(selectedCompte.id, data satisfies UpdateCompteInput);
       
       toast({
         title: 'Succès',
         description: 'Compte mis à jour avec succès'
       });
       
-      setDialogOpen(false);
-      setSelectedCompte(undefined);
       await loadComptes();
+      navigate('/app/parametres/plan-comptable');
     } catch (error) {
       console.error('Erreur lors de la mise à jour:', error);
       toast({
@@ -255,13 +264,11 @@ const PlanComptableManager = () => {
   };
 
   const openEditDialog = (compte: Compte) => {
-    setSelectedCompte(compte);
-    setDialogOpen(true);
+    navigate(`/app/parametres/plan-comptable/${compte.id}/edit`);
   };
 
   const openCreateDialog = () => {
-    setSelectedCompte(undefined);
-    setDialogOpen(true);
+    navigate('/app/parametres/plan-comptable/create');
   };
 
   const getTypeLabel = (type: string) => {
@@ -290,6 +297,39 @@ const PlanComptableManager = () => {
     };
     return labels[categorie] || categorie;
   };
+
+  if (isEditorMode) {
+    if (isLoading) {
+      return <div className="py-8 text-center text-muted-foreground">Chargement...</div>;
+    }
+
+    if (isEditRoute && !selectedCompte) {
+      return (
+        <div className="rounded-lg border bg-card p-8 text-center text-muted-foreground">
+          Ce compte est introuvable.
+        </div>
+      );
+    }
+
+    return (
+      <ParametreEditorPage
+        title={selectedCompte ? 'Modifier un compte' : 'Nouveau compte'}
+        description="Configurez la structure et le rattachement du compte dans le plan comptable."
+        backLabel="Retour au plan comptable"
+        onBack={() => navigate('/app/parametres/plan-comptable')}
+        dirty={isCompteDirty}
+        entityLabel="ce compte"
+      >
+        <CompteForm
+          compte={selectedCompte}
+          comptes={comptes}
+          onSubmit={selectedCompte ? handleUpdate : handleCreate}
+          onCancel={() => navigate('/app/parametres/plan-comptable')}
+          onDirtyChange={setIsCompteDirty}
+        />
+      </ParametreEditorPage>
+    );
+  }
 
   const handleClearAll = async () => {
     if (!currentClient) return;
@@ -448,14 +488,6 @@ const PlanComptableManager = () => {
           <ArrowUp className="h-4 w-4" />
         </Button>
       )}
-
-      <CompteDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onSubmit={selectedCompte ? handleUpdate : handleCreate}
-        compte={selectedCompte}
-        comptes={comptes}
-      />
 
       <ImportPlanComptableDialog
         open={importDialogOpen}

@@ -165,6 +165,8 @@ const App = () => (
                   <Route path="parametres">
                     <Route index element={<Parametres />} />
                     <Route path=":sectionId" element={<Parametres />} />
+                    <Route path=":sectionId/create" element={<Parametres />} />
+                    <Route path=":sectionId/:itemId/edit" element={<Parametres />} />
                   </Route>
                   <Route path="plan-comptable" element={<PlanComptable />} />
 

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { CalendarDays, Briefcase, Building2, BookOpen, Users, Database, Menu, Layers, Calculator } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ExercicesManager } from '@/components/parametres/ExercicesManager';
 import { EnveloppesManager } from '@/components/parametres/EnveloppesManager';
@@ -31,11 +31,13 @@ const DEFAULT_SECTION: ParametreSection = 'exercices';
 const Parametres = () => {
   const { sectionId } = useParams<{ sectionId?: ParametreSection }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const isMobile = useIsMobile();
   const [activeSection, setActiveSection] = useState<ParametreSection>(
     () => (sectionId && SECTION_IDS.includes(sectionId) ? sectionId : DEFAULT_SECTION)
   );
   const [sheetOpen, setSheetOpen] = useState(false);
+  const isEditorMode = /^\/app\/parametres\/[^/]+(?:\/create|\/[^/]+\/edit)$/.test(location.pathname);
 
   useEffect(() => {
     if (!sectionId) {
@@ -161,7 +163,7 @@ const Parametres = () => {
     <div className="-mx-4 -my-5 flex min-h-[calc(100vh-76px-40px)] flex-col bg-background sm:-mx-5 lg:-mx-8 lg:-my-7 md:flex-row">
       {/* Desktop: Sidebar normale */}
       {!isMobile && (
-        <aside className="w-80 shrink-0 border-r border-border bg-card">
+        <aside className="relative w-80 shrink-0 border-r border-border bg-card">
           <div className="border-b border-border px-8 py-8">
             <h1 className="text-2xl font-bold">Paramètres</h1>
             <p className="text-sm text-muted-foreground mt-1">
@@ -171,12 +173,13 @@ const Parametres = () => {
           <ScrollArea className="h-[calc(100vh-76px-105px)]">
             <NavigationContent />
           </ScrollArea>
+          {isEditorMode && <div className="absolute inset-0 z-10 bg-foreground/35" aria-hidden="true" />}
         </aside>
       )}
 
       {/* Mobile: En-tête avec bouton Sheet */}
       {isMobile && (
-        <div className="flex items-center gap-4 border-b border-border bg-card px-4 py-4">
+        <div className="relative flex items-center gap-4 border-b border-border bg-card px-4 py-4">
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon">
@@ -201,6 +204,7 @@ const Parametres = () => {
               {sections.find(s => s.id === activeSection)?.title}
             </h1>
           </div>
+          {isEditorMode && <div className="absolute inset-0 z-10 bg-foreground/35" aria-hidden="true" />}
         </div>
       )}
 
