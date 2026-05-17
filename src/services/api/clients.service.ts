@@ -11,5 +11,22 @@ export const clientsService = {
   getById: async (id: string): Promise<Client | null> => {
     await new Promise(resolve => setTimeout(resolve, 200));
     return MOCK_CLIENTS.find(c => c.id === id) || null;
-  }
+  },
+
+  update: async (id: string, updates: Partial<Client>): Promise<Client> => {
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    const index = MOCK_CLIENTS.findIndex((client) => client.id === id);
+
+    if (index === -1) {
+      throw new Error('Client introuvable');
+    }
+
+    MOCK_CLIENTS[index] = {
+      ...MOCK_CLIENTS[index],
+      ...updates,
+    };
+
+    return MOCK_CLIENTS[index];
+  },
 };

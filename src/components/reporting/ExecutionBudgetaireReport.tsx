@@ -3,6 +3,7 @@ import { Progress } from '@/components/ui/progress';
 import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { formatMontant } from '@/lib/utils';
 
 export const ExecutionBudgetaireReport = () => {
   const { lignes: lignesBudgetaires, isLoading } = useLignesBudgetaires();
@@ -24,14 +25,6 @@ export const ExecutionBudgetaireReport = () => {
 
   const tauxExecution = totaux.modifie > 0 ? (totaux.paye / totaux.modifie) * 100 : 0;
   const tauxEngagement = totaux.modifie > 0 ? (totaux.engage / totaux.modifie) * 100 : 0;
-
-  const formatMontant = (value: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'XOF',
-      minimumFractionDigits: 0,
-    }).format(value);
-  };
 
   const chartData = [
     {

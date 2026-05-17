@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, CheckCircle2, XCircle, TrendingUp } from 'lucide-react';
 import { FournisseurStats as FournisseurStatsType } from '@/types/fournisseur.types';
+import { formatMontant } from '@/lib/utils';
 
 interface FournisseurStatsProps {
   stats?: FournisseurStatsType;
@@ -8,13 +9,6 @@ interface FournisseurStatsProps {
 
 export const FournisseurStats = ({ stats }: FournisseurStatsProps) => {
   if (!stats) return null;
-
-  const formatMontant = (montant: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(montant);
-  };
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

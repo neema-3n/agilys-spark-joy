@@ -11,13 +11,7 @@ import { useNavigate, useMatch } from 'react-router-dom';
 import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
 import { RapprochementBancaireForm } from '@/components/tresorerie/RapprochementBancaireForm';
 import type { RapprochementBancaireFormData, RapprochementBancaire } from '@/types/rapprochement-bancaire.types';
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: 'XOF',
-    minimumFractionDigits: 0,
-  }).format(value);
+import { formatCurrency } from '@/lib/utils';
 
 const TresorerieRapprochements = () => {
   const { rapprochements, createRapprochement, validateRapprochement } = useRapprochementsBancaires();

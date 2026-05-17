@@ -9,20 +9,13 @@ import {
 } from '@/components/ui/table';
 import type { PrevisionTresorerie } from '@/types/tresorerie.types';
 import { TrendingUp, TrendingDown } from 'lucide-react';
+import { formatMontant } from '@/lib/utils';
 
 interface PrevisionsTresorerieProps {
   previsions: PrevisionTresorerie[];
 }
 
 export const PrevisionsTresorerie = ({ previsions }: PrevisionsTresorerieProps) => {
-  const formatMontant = (montant: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'XOF',
-      minimumFractionDigits: 0,
-    }).format(montant);
-  };
-
   const formatPeriode = (periode: string) => {
     const [year, month] = periode.split('-');
     return new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString('fr-FR', {

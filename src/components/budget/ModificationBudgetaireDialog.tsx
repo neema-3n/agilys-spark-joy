@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
+import { formatMontant } from '@/lib/utils';
 
 interface ModificationBudgetaireDialogProps {
   open: boolean;
@@ -123,7 +124,7 @@ export const ModificationBudgetaireDialog = ({
   };
 
   const getLigneLabel = (ligne: LigneBudgetaire) => {
-    return `${ligne.libelle} (Dispo: ${new Intl.NumberFormat('fr-FR').format(ligne.disponible)})`;
+    return `${ligne.libelle} (Dispo: ${formatMontant(ligne.disponible)})`;
   };
 
   return (

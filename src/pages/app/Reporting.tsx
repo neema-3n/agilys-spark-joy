@@ -8,19 +8,13 @@ import { DSFReport } from '@/components/reporting/DSFReport';
 import { Button } from '@/components/ui/button';
 import { useTresorerie } from '@/hooks/useTresorerie';
 import { BookOpen, FileText, Landmark, TrendingUp, WalletCards } from 'lucide-react';
+import { formatMontant } from '@/lib/utils';
 
 const Reporting = () => {
   const navigate = useNavigate();
   const { reportType } = useParams();
   const activeTab = reportType || 'budgetaire';
   const { stats: tresorerieStats } = useTresorerie();
-
-  const formatMontant = (value: number) =>
-    new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'XOF',
-      minimumFractionDigits: 0,
-    }).format(value);
 
   return (
     <div className="space-y-6">

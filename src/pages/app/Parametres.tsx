@@ -14,6 +14,7 @@ import { ReferentielsManager } from '@/components/parametres/ReferentielsManager
 import { StructureBudgetaireManager } from '@/components/parametres/StructureBudgetaireManager';
 import { ReglesComptablesManager } from '@/components/parametres/ReglesComptablesManager';
 import { ParametresEditorFocusContext } from '@/components/parametres/ParametresEditorFocusContext';
+import { MoneyFormatManager } from '@/components/parametres/MoneyFormatManager';
 
 const SECTION_IDS = [
   'exercices',
@@ -23,6 +24,7 @@ const SECTION_IDS = [
   'plan-comptable',
   'regles-comptables',
   'referentiels',
+  'format-monetaire',
   'utilisateurs',
 ] as const;
 
@@ -117,6 +119,13 @@ const Parametres = () => {
       description: 'Listes de valeurs',
       icon: Database,
       component: <ReferentielsManager />
+    },
+    {
+      id: 'format-monetaire' as ParametreSection,
+      title: 'Format monétaire',
+      description: 'Affichage des montants',
+      icon: Calculator,
+      component: <MoneyFormatManager />
     },
     {
       id: 'utilisateurs' as ParametreSection,

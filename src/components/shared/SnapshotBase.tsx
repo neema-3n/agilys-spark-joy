@@ -19,6 +19,7 @@ interface SnapshotBaseProps {
 export const SnapshotBase = ({
   title,
   subtitle,
+  statusBadge,
   currentIndex,
   totalCount,
   hasPrev,
@@ -44,7 +45,10 @@ export const SnapshotBase = ({
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <div className="mb-2 h-1 w-10 rounded-full bg-primary" />
-                <h2 className="truncate text-[28px] font-semibold leading-9">{title}</h2>
+                <div className="flex items-start gap-3">
+                  <h2 className="min-w-0 truncate text-[28px] font-semibold leading-9">{title}</h2>
+                  {statusBadge && <div className="mt-1 flex-shrink-0">{statusBadge}</div>}
+                </div>
                 {subtitle && (
                   <p className="mt-1 truncate text-sm text-muted-foreground">{subtitle}</p>
                 )}

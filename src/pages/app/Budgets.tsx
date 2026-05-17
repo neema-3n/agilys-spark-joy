@@ -51,6 +51,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
+import { formatMontant as formatSharedMontant } from '@/lib/utils';
 
 const Budgets = () => {
   const { currentExercice } = useExercice();
@@ -338,10 +339,7 @@ const Budgets = () => {
   };
 
   const formatMontant = (montant: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(montant);
+    return formatSharedMontant(montant);
   };
 
   const getModificationStatusBadge = (statut: string) => {

@@ -1,6 +1,7 @@
 import { StatsCard } from '@/components/ui/stats-card';
 import { FileText, CheckCircle, DollarSign, XCircle } from 'lucide-react';
 import { Facture } from '@/types/facture.types';
+import { formatMontant } from '@/lib/utils';
 
 interface FactureStatsProps {
   factures: Facture[];
@@ -27,13 +28,6 @@ export const FactureStats = ({ factures, stats: globalStats }: FactureStatsProps
     montantBrouillon: factures.filter(f => f.statut === 'brouillon').reduce((sum, f) => sum + f.montantTTC, 0),
     montantValidee: factures.filter(f => f.statut === 'validee').reduce((sum, f) => sum + f.montantTTC, 0),
     montantLiquide: factures.reduce((sum, f) => sum + (f.montantLiquide || 0), 0),
-  };
-
-  const formatMontant = (montant: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(montant);
   };
 
   return (

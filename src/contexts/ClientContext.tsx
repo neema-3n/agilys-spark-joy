@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode, useCallback,
 import { ClientContextType, Client } from '@/types';
 import { clientsService } from '@/services/api/clients.service';
 import { useAuth } from './AuthContext';
+import { setMoneyFormatSettings } from '@/lib/utils';
 
 const ClientContext = createContext<ClientContextType | undefined>(undefined);
 
@@ -40,6 +41,10 @@ export const ClientProvider = ({ children }: { children: ReactNode }) => {
       setHasLoaded(false);
     }
   }, [user, loadClients]);
+
+  useEffect(() => {
+    setMoneyFormatSettings(currentClient?.moneyFormat);
+  }, [currentClient]);
 
   const contextValue = useMemo(() => ({
     currentClient,

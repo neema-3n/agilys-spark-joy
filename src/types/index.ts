@@ -30,6 +30,17 @@ export interface User {
   roles: AppRole[];
 }
 
+export type ThousandsSeparator = 'space' | 'dot' | 'comma' | 'apostrophe' | 'none';
+export type DecimalSeparator = 'comma' | 'dot';
+
+export interface MoneyFormatSettings {
+  locale?: string;
+  thousandsSeparator?: ThousandsSeparator;
+  decimalSeparator?: DecimalSeparator;
+  minimumFractionDigits?: number;
+  maximumFractionDigits?: number;
+}
+
 export interface Client {
   id: string;
   nom: string;
@@ -37,6 +48,7 @@ export interface Client {
   pays: string;
   devise: string;
   statut: 'actif' | 'inactif';
+  moneyFormat?: MoneyFormatSettings;
 }
 
 export interface Exercice {

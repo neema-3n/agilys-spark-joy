@@ -7,7 +7,14 @@ export const MOCK_CLIENTS: Client[] = [
     code: 'CPN-2024',
     pays: 'Cameroun',
     devise: 'XAF',
-    statut: 'actif'
+    statut: 'actif',
+    moneyFormat: {
+      locale: 'fr-FR',
+      thousandsSeparator: 'space',
+      decimalSeparator: 'comma',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    },
   },
   {
     id: 'client-2',
@@ -15,7 +22,14 @@ export const MOCK_CLIENTS: Client[] = [
     code: 'MCO-2024',
     pays: 'Bénin',
     devise: 'XOF',
-    statut: 'inactif'
+    statut: 'inactif',
+    moneyFormat: {
+      locale: 'fr-FR',
+      thousandsSeparator: 'space',
+      decimalSeparator: 'comma',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    },
   },
   {
     id: 'client-3',
@@ -23,6 +37,13 @@ export const MOCK_CLIENTS: Client[] = [
     code: 'CDL-2024',
     pays: 'Bénin',
     devise: 'XOF',
-    statut: 'inactif'
+    statut: 'inactif',
+    moneyFormat: {
+      locale: 'fr-FR',
+      thousandsSeparator: 'space',
+      decimalSeparator: 'comma',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    },
   }
 ];

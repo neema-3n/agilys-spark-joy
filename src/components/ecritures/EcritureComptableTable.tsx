@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { EcritureComptable } from '@/types/ecriture-comptable.types';
+import { formatMontant } from '@/lib/utils';
 
 interface EcritureComptableTableProps {
   ecritures: EcritureComptable[];
@@ -26,14 +27,6 @@ const TYPE_OPERATION_LABELS: Record<string, { label: string; variant: any }> = {
 };
 
 export const EcritureComptableTable = ({ ecritures, onRowClick }: EcritureComptableTableProps) => {
-  const formatMontant = (montant: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'XOF',
-      minimumFractionDigits: 0,
-    }).format(montant);
-  };
-
   return (
     <div className="rounded-md border">
       <Table>

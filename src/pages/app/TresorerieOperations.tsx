@@ -10,13 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatsCard } from '@/components/ui/stats-card';
 import { useOperationsTresorerie } from '@/hooks/useOperationsTresorerie';
 import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: 'XOF',
-    minimumFractionDigits: 0,
-  }).format(value);
+import { formatCurrency } from '@/lib/utils';
 
 const TresorerieOperations = () => {
   const navigate = useNavigate();

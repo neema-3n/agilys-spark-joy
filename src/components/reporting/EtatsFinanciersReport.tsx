@@ -3,18 +3,11 @@ import { useEcrituresComptables } from '@/hooks/useEcrituresComptables';
 import { useTresorerie } from '@/hooks/useTresorerie';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { formatMontant } from '@/lib/utils';
 
 export const EtatsFinanciersReport = () => {
   const { stats: ecrituresStats } = useEcrituresComptables();
   const { stats: tresorerieStats } = useTresorerie();
-
-  const formatMontant = (value: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'XOF',
-      minimumFractionDigits: 0,
-    }).format(value);
-  };
 
   const balanceData = [
     {

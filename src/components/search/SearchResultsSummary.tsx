@@ -1,5 +1,6 @@
 import { Layers3, WalletCards, ShieldCheck, FileClock, Landmark, CircleDollarSign, BadgeEuro } from 'lucide-react';
 import { StatsCard } from '@/components/ui/stats-card';
+import { formatMontant } from '@/lib/utils';
 
 interface SearchResultsSummaryProps {
   totals: {
@@ -18,23 +19,17 @@ export const SearchResultsSummary = ({
   totals,
   resultCount,
 }: SearchResultsSummaryProps) => {
-  const formatMontant = (montant: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(montant);
-  };
-
   if (resultCount === 0) return null;
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7">
+    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7">
       <StatsCard
         title="Montant initial"
         value={formatMontant(totals.montantInitial)}
         icon={Layers3}
         color="text-primary"
         trend="Base budgétaire"
+        density="compact"
       />
       <StatsCard
         title="Montant modifié"
@@ -43,6 +38,7 @@ export const SearchResultsSummary = ({
         color="text-secondary"
         trend="Après ajustements"
         trendUp={true}
+        density="compact"
       />
       <StatsCard
         title="Réservé"
@@ -50,6 +46,7 @@ export const SearchResultsSummary = ({
         icon={ShieldCheck}
         color="text-orange-500"
         trend="Crédits réservés"
+        density="compact"
       />
       <StatsCard
         title="Engagé"
@@ -57,6 +54,7 @@ export const SearchResultsSummary = ({
         icon={FileClock}
         color="text-red-500"
         trend="Montants engagés"
+        density="compact"
       />
       <StatsCard
         title="Liquidé"
@@ -64,6 +62,7 @@ export const SearchResultsSummary = ({
         icon={Landmark}
         color="text-blue-500"
         trend="En liquidation"
+        density="compact"
       />
       <StatsCard
         title="Payé"
@@ -72,6 +71,7 @@ export const SearchResultsSummary = ({
         color="text-emerald-500"
         trend="Déjà payés"
         trendUp={true}
+        density="compact"
       />
       <StatsCard
         title="Disponible"
@@ -80,6 +80,7 @@ export const SearchResultsSummary = ({
         color="text-primary"
         trend="Solde mobilisable"
         trendUp={true}
+        density="compact"
       />
     </div>
   );

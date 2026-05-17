@@ -5,6 +5,7 @@ import { BudgetFilters } from '@/hooks/useBudgetSearch';
 import { Section, Programme, Action } from '@/types/budget.types';
 import { Compte } from '@/types/compte.types';
 import { Enveloppe } from '@/types/enveloppe.types';
+import { formatMontant } from '@/lib/utils';
 
 interface ActiveFiltersBarProps {
   filters: BudgetFilters;
@@ -63,14 +64,14 @@ export const ActiveFiltersBar = ({
   }
 
   if (filters.montantModifieMin !== null || filters.montantModifieMax !== null) {
-    const min = filters.montantModifieMin ? new Intl.NumberFormat('fr-FR').format(filters.montantModifieMin) : '∞';
-    const max = filters.montantModifieMax ? new Intl.NumberFormat('fr-FR').format(filters.montantModifieMax) : '∞';
+    const min = filters.montantModifieMin ? formatMontant(filters.montantModifieMin) : '∞';
+    const max = filters.montantModifieMax ? formatMontant(filters.montantModifieMax) : '∞';
     activeFilters.push({ key: 'montantModifieMin', label: `Montant: ${min} - ${max}` });
   }
 
   if (filters.disponibleMin !== null || filters.disponibleMax !== null) {
-    const min = filters.disponibleMin ? new Intl.NumberFormat('fr-FR').format(filters.disponibleMin) : '∞';
-    const max = filters.disponibleMax ? new Intl.NumberFormat('fr-FR').format(filters.disponibleMax) : '∞';
+    const min = filters.disponibleMin ? formatMontant(filters.disponibleMin) : '∞';
+    const max = filters.disponibleMax ? formatMontant(filters.disponibleMax) : '∞';
     activeFilters.push({ key: 'disponibleMin', label: `Disponible: ${min} - ${max}` });
   }
 

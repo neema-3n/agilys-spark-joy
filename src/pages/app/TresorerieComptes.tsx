@@ -8,13 +8,7 @@ import { Button } from '@/components/ui/button';
 import { StatsCard } from '@/components/ui/stats-card';
 import { useComptesTresorerie } from '@/hooks/useComptesTresorerie';
 import type { CompteTresorerie } from '@/types/compte-tresorerie.types';
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: 'XOF',
-    minimumFractionDigits: 0,
-  }).format(value);
+import { formatCurrency } from '@/lib/utils';
 
 const TresorerieComptes = () => {
   const { comptes, stats, isLoading, createCompte, updateCompte } = useComptesTresorerie();

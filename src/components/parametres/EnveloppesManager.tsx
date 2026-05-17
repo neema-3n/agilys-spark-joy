@@ -22,6 +22,7 @@ import { enveloppesService } from '@/services/api/enveloppes.service';
 import type { Enveloppe } from '@/types/enveloppe.types';
 import { EnveloppeForm, EnveloppeFormValues } from './EnveloppeForm';
 import { ParametreEditorPage } from './ParametreEditorPage';
+import { formatCurrency as formatSharedCurrency } from '@/lib/utils';
 
 const EnveloppesManager = () => {
   const { currentClient } = useClient();
@@ -127,10 +128,10 @@ const EnveloppesManager = () => {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
+    return formatSharedCurrency(amount, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(amount);
+    });
   };
 
   if (!currentClient || !currentExercice) {

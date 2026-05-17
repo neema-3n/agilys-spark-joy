@@ -8,20 +8,13 @@ import { useOperationsTresorerie } from '@/hooks/useOperationsTresorerie';
 import { StatsCard } from '@/components/ui/stats-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useState } from 'react';
+import { formatMontant } from '@/lib/utils';
 
 const TresoreriePro = () => {
   const { stats: comptesStats, comptes } = useComptesTresorerie();
   const { stats: recettesStats } = useRecettes();
   const { stats: operationsStats } = useOperationsTresorerie();
   const [activeTab, setActiveTab] = useState('comptes');
-
-  const formatMontant = (montant: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'XOF',
-      minimumFractionDigits: 0,
-    }).format(montant);
-  };
 
   return (
     <div className="space-y-6">

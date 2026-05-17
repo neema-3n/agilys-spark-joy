@@ -1,6 +1,7 @@
 import { StatsCard } from '@/components/ui/stats-card';
 import { FileText, CheckCircle, Clock, Package, DollarSign } from 'lucide-react';
 import { BonCommande } from '@/types/bonCommande.types';
+import { formatMontant } from '@/lib/utils';
 
 interface BonCommandeStatsProps {
   bonsCommande: BonCommande[];
@@ -18,13 +19,6 @@ export const BonCommandeStats = ({ bonsCommande }: BonCommandeStatsProps) => {
     montantValide: bonsCommande.filter(bc => bc.statut === 'valide' || bc.statut === 'en_cours').reduce((sum, bc) => sum + bc.montant, 0),
     montantReceptionne: bonsCommande.filter(bc => bc.statut === 'receptionne').reduce((sum, bc) => sum + bc.montant, 0),
     montantFacture: bonsCommande.filter(bc => bc.statut === 'facture').reduce((sum, bc) => sum + bc.montant, 0),
-  };
-
-  const formatMontant = (montant: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(montant);
   };
 
   return (

@@ -1,6 +1,7 @@
 import { StatsCard } from '@/components/ui/stats-card';
 import { FileText, TrendingUp, Clock, XCircle } from 'lucide-react';
 import type { Engagement } from '@/types/engagement.types';
+import { formatMontant } from '@/lib/utils';
 
 interface EngagementStatsProps {
   engagements: Engagement[];
@@ -15,12 +16,7 @@ export const EngagementStats = ({ engagements }: EngagementStatsProps) => {
   const montantActif = engagementsActifs.reduce((sum, e) => sum + Number(e.montant), 0);
   const enAttente = engagementsActifs.filter(e => e.statut === 'brouillon').length;
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
+  const formatCurrency = formatMontant;
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

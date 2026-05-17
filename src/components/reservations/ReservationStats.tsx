@@ -1,6 +1,7 @@
 import { StatsCard } from '@/components/ui/stats-card';
 import { DollarSign, Clock, CheckCircle, XCircle } from 'lucide-react';
 import type { ReservationCredit } from '@/types/reservation.types';
+import { formatMontant } from '@/lib/utils';
 
 interface ReservationStatsProps {
   reservations: ReservationCredit[];
@@ -22,12 +23,7 @@ export const ReservationStats = ({ reservations }: ReservationStatsProps) => {
     totalAnnulees: reservations.filter(r => r.statut === 'annulee').length,
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+  const formatCurrency = formatMontant;
 
   return (
     <div className="grid gap-4 md:grid-cols-4">

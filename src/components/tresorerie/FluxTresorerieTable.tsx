@@ -11,20 +11,13 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { FluxTresorerie } from '@/types/tresorerie.types';
 import { ArrowDown, ArrowUp } from 'lucide-react';
+import { formatMontant } from '@/lib/utils';
 
 interface FluxTresorerieTableProps {
   flux: FluxTresorerie[];
 }
 
 export const FluxTresorerieTable = ({ flux }: FluxTresorerieTableProps) => {
-  const formatMontant = (montant: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'XOF',
-      minimumFractionDigits: 0,
-    }).format(montant);
-  };
-
   return (
     <div className="rounded-md border">
       <Table>

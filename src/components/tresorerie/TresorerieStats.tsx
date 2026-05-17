@@ -1,6 +1,7 @@
 import { StatsCard } from '@/components/ui/stats-card';
 import { Wallet, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
 import type { TresorerieStats as TresorerieStatsType } from '@/types/tresorerie.types';
+import { formatMontant } from '@/lib/utils';
 
 interface TresorerieStatsComponentProps {
   stats?: TresorerieStatsType;
@@ -10,14 +11,6 @@ export const TresorerieStats = ({ stats }: TresorerieStatsComponentProps) => {
   if (!stats) {
     return null;
   }
-
-  const formatMontant = (montant: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'XOF',
-      minimumFractionDigits: 0,
-    }).format(montant);
-  };
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

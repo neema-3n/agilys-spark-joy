@@ -1,7 +1,9 @@
 import { LigneBudgetaire, Section, Programme, Action } from '@/types/budget.types';
 import { Compte } from '@/types/compte.types';
 import { Enveloppe } from '@/types/enveloppe.types';
-import { formatMontant } from './utils';
+import { formatMontant, formatMontantForPdf } from './utils';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface ExportContext {
   sections: Section[];
@@ -9,6 +11,16 @@ interface ExportContext {
   actions: Action[];
   comptes: Compte[];
   enveloppes: Enveloppe[];
+}
+
+interface BudgetTotals {
+  montantInitial: number;
+  montantModifie: number;
+  montantReserve: number;
+  montantEngage: number;
+  montantLiquide: number;
+  montantPaye: number;
+  disponible: number;
 }
 
 const getSectionCode = (actionId: string, context: ExportContext) => {
@@ -103,19 +115,57 @@ export function exportBudgetToCSV(
   document.body.removeChild(link);
 }
 
+const getBudgetHeaders = () => [
+  'Section',
+  'Programme',
+  'Action',
+  'Compte',
+  'Enveloppe',
+  'Libellé',
+  'Montant Initial',
+  'Montant Modifié',
+  'Réservé',
+  'Engagé',
+  'Liquidé',
+  'Payé',
+  'Disponible',
+  'Taux Exécution',
+  'Statut',
+];
+
+const getBudgetRows = (
+  lignes: LigneBudgetaire[],
+  context: ExportContext,
+  target: 'screen' | 'pdf' | 'csv' | 'print' = 'screen',
+) =>
+  lignes.map((ligne) => {
+    const tauxExecution =
+      ligne.montantModifie === 0 ? 0 : Math.round((ligne.montantEngage / ligne.montantModifie) * 100);
+
+    return [
+      getSectionCode(ligne.actionId, context),
+      getProgrammeCode(ligne.actionId, context),
+      getActionCode(ligne.actionId, context),
+      getCompteNumero(ligne.compteId, context),
+      getEnveloppeCode(ligne.enveloppeId, context),
+      ligne.libelle,
+      target === 'pdf' ? formatMontantForPdf(ligne.montantInitial) : formatMontant(ligne.montantInitial),
+      target === 'pdf' ? formatMontantForPdf(ligne.montantModifie) : formatMontant(ligne.montantModifie),
+      target === 'pdf' ? formatMontantForPdf(ligne.montantReserve || 0) : formatMontant(ligne.montantReserve || 0),
+      target === 'pdf' ? formatMontantForPdf(ligne.montantEngage) : formatMontant(ligne.montantEngage),
+      target === 'pdf' ? formatMontantForPdf(ligne.montantLiquide) : formatMontant(ligne.montantLiquide),
+      target === 'pdf' ? formatMontantForPdf(ligne.montantPaye) : formatMontant(ligne.montantPaye),
+      target === 'pdf' ? formatMontantForPdf(ligne.disponible) : formatMontant(ligne.disponible),
+      `${tauxExecution}%`,
+      ligne.statut,
+    ];
+  });
+
 export function printBudgetResults(
   lignes: LigneBudgetaire[],
   context: ExportContext,
   title: string = 'Plan Budgétaire',
-  totals?: {
-    montantInitial: number;
-    montantModifie: number;
-    montantReserve: number;
-    montantEngage: number;
-    montantLiquide: number;
-    montantPaye: number;
-    disponible: number;
-  }
+  totals?: BudgetTotals
 ) {
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
@@ -258,9 +308,90 @@ export function printBudgetResults(
 export function exportBudgetToPDF(
   lignes: LigneBudgetaire[],
   context: ExportContext,
-  filename: string = 'budget.pdf'
+  filename: string = 'budget.pdf',
+  title: string = 'Plan Budgétaire',
+  totals?: BudgetTotals
 ) {
-  // Pour l'instant, utiliser l'impression avec save as PDF
-  // Dans une future version, intégrer jspdf + jspdf-autotable
-  printBudgetResults(lignes, context, 'Plan Budgétaire');
+  const doc = new jsPDF({
+    orientation: 'landscape',
+    unit: 'mm',
+    format: 'a4',
+  });
+
+  const headers = getBudgetHeaders();
+  const rows = getBudgetRows(lignes, context, 'pdf');
+  const generatedAt = new Date().toLocaleDateString('fr-FR');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text(title, 14, 16);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.text(`Généré le ${generatedAt} - ${lignes.length} ligne(s)`, 14, 23);
+
+  const footerRow = totals
+    ? [[
+        '',
+        '',
+        '',
+        '',
+        '',
+        'TOTAUX',
+        formatMontantForPdf(totals.montantInitial),
+        formatMontantForPdf(totals.montantModifie),
+        formatMontantForPdf(totals.montantReserve),
+        formatMontantForPdf(totals.montantEngage),
+        formatMontantForPdf(totals.montantLiquide),
+        formatMontantForPdf(totals.montantPaye),
+        formatMontantForPdf(totals.disponible),
+        '',
+        '',
+      ]]
+    : [];
+
+  autoTable(doc, {
+    startY: 28,
+    head: [headers],
+    body: rows,
+    foot: footerRow,
+    theme: 'grid',
+    styles: {
+      fontSize: 8,
+      cellPadding: 2,
+      valign: 'middle',
+    },
+    headStyles: {
+      fillColor: [245, 245, 245],
+      textColor: 33,
+      fontStyle: 'bold',
+    },
+    footStyles: {
+      fillColor: [245, 245, 245],
+      textColor: 33,
+      fontStyle: 'bold',
+    },
+    columnStyles: {
+      5: { cellWidth: 55 },
+      6: { halign: 'right' },
+      7: { halign: 'right' },
+      8: { halign: 'right' },
+      9: { halign: 'right' },
+      10: { halign: 'right' },
+      11: { halign: 'right' },
+      12: { halign: 'right' },
+      13: { halign: 'center' },
+    },
+    margin: { top: 28, right: 10, bottom: 14, left: 10 },
+    didDrawPage: (data) => {
+      doc.setFontSize(8);
+      doc.text(
+        `Page ${data.pageNumber}`,
+        doc.internal.pageSize.getWidth() - 22,
+        doc.internal.pageSize.getHeight() - 6
+      );
+    },
+  });
+
+  doc.save(filename);
 }

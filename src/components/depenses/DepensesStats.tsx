@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Wallet, CheckCircle, FileCheck, Banknote, AlertCircle } from 'lucide-react';
 import { useMemo } from 'react';
 import type { Depense } from '@/types/depense.types';
+import { formatMontant } from '@/lib/utils';
 
 interface DepenseStatsCardsProps {
   depenses: Depense[];
@@ -35,14 +36,6 @@ export const DepenseStatsCards = ({ depenses }: DepenseStatsCardsProps) => {
       tauxExecution: montantTotal > 0 ? (montantPayee / montantTotal) * 100 : 0,
     };
   }, [depenses]);
-
-  const formatMontant = (montant: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'decimal',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(montant);
-  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">

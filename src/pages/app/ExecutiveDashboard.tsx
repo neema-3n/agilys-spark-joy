@@ -56,6 +56,81 @@ type PipelineStage = {
   toneClass: string;
 };
 
+const ExecutivePipelineFlow = ({ stages }: { stages: PipelineStage[] }) => (
+  <Card className="border-border/80 shadow-sm">
+    <CardHeader>
+      <CardTitle>État d&apos;avancement des opérations</CardTitle>
+      <CardDescription>Lecture séquentielle du pipeline budgétaire sur la période.</CardDescription>
+    </CardHeader>
+    <CardContent className="space-y-8">
+      <div className="relative hidden xl:block">
+        <div className="absolute left-[7%] right-[7%] top-10 h-px bg-gradient-to-r from-blue-300 via-amber-300 to-violet-300" />
+        <div className="grid grid-cols-6 gap-3">
+          {stages.map((stage) => {
+            const Icon = stage.icon;
+
+            return (
+              <div key={stage.key} className="relative flex flex-col items-center text-center">
+                <div className={cn('relative z-10 flex h-20 w-20 items-center justify-center rounded-full border shadow-sm', stage.toneClass)}>
+                  <div className={cn('flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-sm', stage.colorClass)}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                </div>
+                <div className="mt-5 space-y-2">
+                  <p className="min-h-[2.75rem] text-base font-semibold leading-tight text-foreground">
+                    {stage.label}
+                  </p>
+                  <p className="text-xl font-semibold tracking-tight text-foreground">
+                    {formatAmountShort(stage.amount)}
+                  </p>
+                  {stage.key !== 'reservation' ? (
+                    <p className="text-sm font-medium text-muted-foreground">{formatPercent(stage.rate)}</p>
+                  ) : (
+                    <div className="h-5" />
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="space-y-0 xl:hidden">
+        {stages.map((stage, index) => {
+          const Icon = stage.icon;
+          const isLast = index === stages.length - 1;
+
+          return (
+            <div key={stage.key} className="relative flex gap-4 pb-6 last:pb-0">
+              {!isLast ? (
+                <div className="absolute left-8 top-16 h-[calc(100%-2.5rem)] w-px bg-gradient-to-b from-slate-300 to-slate-200" />
+              ) : null}
+              <div className={cn('relative z-10 flex h-16 w-16 shrink-0 items-center justify-center rounded-full border shadow-sm', stage.toneClass)}>
+                <div className={cn('flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm', stage.colorClass)}>
+                  <Icon className="h-4.5 w-4.5" />
+                </div>
+              </div>
+              <div className="min-w-0 flex-1 pt-1">
+                <p className="text-base font-semibold leading-tight text-foreground">{stage.label}</p>
+                <p className="mt-1 text-lg font-semibold tracking-tight text-foreground">
+                  {formatAmountShort(stage.amount)}
+                </p>
+                {stage.key !== 'reservation' ? (
+                  <p className="mt-1 text-sm font-medium text-muted-foreground">{formatPercent(stage.rate)}</p>
+                ) : null}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <p className="text-center text-sm text-muted-foreground">
+        Les pourcentages représentent le taux par rapport au budget total autorisé.
+      </p>
+    </CardContent>
+  </Card>
+);
+
 const sumBy = <T,>(items: T[], selector: (item: T) => number) =>
   items.reduce((total, item) => total + selector(item), 0);
 
@@ -503,7 +578,7 @@ const ExecutiveDashboard = () => {
       },
       {
         key: 'depense',
-        label: 'Dépense',
+        label: 'Dépense (Ordonnancement)',
         amount: sumBy(
           filteredDepenses.filter((item) => item.statut !== 'annulee'),
           (item) => item.montant,
@@ -740,34 +815,7 @@ const ExecutiveDashboard = () => {
         </Card>
       </div>
 
-      <Card className="border-border/80 shadow-sm">
-        <CardHeader>
-          <CardTitle>État d&apos;avancement des opérations</CardTitle>
-          <CardDescription>Lecture séquentielle du pipeline budgétaire sur la période.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 xl:grid-cols-6">
-          {pipelineStages.map((stage) => {
-            const Icon = stage.icon;
-
-            return (
-              <div key={stage.key} className={cn('rounded-2xl border p-4', stage.toneClass)}>
-                <div className="mb-4 flex items-center justify-between">
-                  <div className={cn('flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm', stage.colorClass)}>
-                    <Icon className="h-6 w-6" />
-                  </div>
-                  <Badge variant="outline" className="bg-white/70">
-                    {formatPercent(stage.rate)}
-                  </Badge>
-                </div>
-                <div className="space-y-1">
-                  <p className="font-medium text-foreground">{stage.label}</p>
-                  <p className="text-2xl font-semibold tracking-tight text-foreground">{formatAmountShort(stage.amount)}</p>
-                </div>
-              </div>
-            );
-          })}
-        </CardContent>
-      </Card>
+      <ExecutivePipelineFlow stages={pipelineStages} />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <ExecutiveTableCard

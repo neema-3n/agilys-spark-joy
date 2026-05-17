@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { MoreHorizontal, Eye, Edit, Trash2 } from 'lucide-react';
 import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/selectionColumn';
+import { formatMontant } from '@/lib/utils';
 
 interface FournisseurTableProps {
   fournisseurs: Fournisseur[];
@@ -35,13 +36,6 @@ interface FournisseurTableProps {
   stickyHeaderOffset?: number;
   scrollContainerClassName?: string;
 }
-
-const formatMontant = (montant: number): string => {
-  return new Intl.NumberFormat('fr-FR', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(montant);
-};
 
 const getStatutBadge = (statut: string) => {
   const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'; label: string }> = {

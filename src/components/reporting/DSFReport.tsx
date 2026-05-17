@@ -4,19 +4,12 @@ import { useEngagements } from '@/hooks/useEngagements';
 import { useRecettes } from '@/hooks/useRecettes';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { formatMontant } from '@/lib/utils';
 
 export const DSFReport = () => {
   const { depenses } = useDepenses();
   const { engagements } = useEngagements();
   const { recettes } = useRecettes();
-
-  const formatMontant = (value: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'XOF',
-      minimumFractionDigits: 0,
-    }).format(value);
-  };
 
   const depensesValidees = depenses.filter(d => d.statut !== 'annulee');
   const engagementsValides = engagements.filter(e => e.statut !== 'annule');

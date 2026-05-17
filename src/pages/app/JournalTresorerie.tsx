@@ -6,13 +6,7 @@ import { StatsCard } from '@/components/ui/stats-card';
 import { ListToolbar } from '@/components/lists/ListToolbar';
 import { OperationTresorerieTable } from '@/components/tresorerie/OperationTresorerieTable';
 import { useOperationsTresorerie } from '@/hooks/useOperationsTresorerie';
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: 'XOF',
-    minimumFractionDigits: 0,
-  }).format(value);
+import { formatCurrency } from '@/lib/utils';
 
 const JournalTresorerie = () => {
   const { operations, stats } = useOperationsTresorerie();
