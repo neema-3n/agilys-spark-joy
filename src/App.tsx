@@ -110,6 +110,8 @@ const App = () => (
                   </Route>
                   <Route path="depenses">
                     <Route index element={<Depenses />} />
+                    <Route path="create" element={<Depenses />} />
+                    <Route path=":depenseId/edit" element={<Depenses />} />
                     <Route path=":depenseId" element={<Depenses />} />
                   </Route>
                   <Route path="factures">

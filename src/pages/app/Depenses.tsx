@@ -1,11 +1,11 @@
 import { useCallback, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { ArrowLeft, Plus } from 'lucide-react';
 import { DepenseStatsCards } from '@/components/depenses/DepensesStats';
 import { DepenseTable } from '@/components/depenses/DepenseTable';
-import { DepenseDialog } from '@/components/depenses/DepenseDialog';
+import { DepenseForm } from '@/components/depenses/DepenseForm';
 import { DepenseSnapshot } from '@/components/depenses/DepenseSnapshot';
 import { AnnulerDepenseDialog } from '@/components/depenses/AnnulerDepenseDialog';
 import { AnnulerMultipleDepensesDialog } from '@/components/depenses/AnnulerMultipleDepensesDialog';
@@ -36,6 +36,7 @@ import {
 import { ListLayout } from '@/components/lists/ListLayout';
 import { ListToolbar } from '@/components/lists/ListToolbar';
 import { ListPageLoading } from '@/components/lists/ListPageLoading';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,6 +52,7 @@ const Depenses = () => {
     depenses,
     isLoading,
     createDepense,
+    updateDepense,
     validerDepense,
     ordonnancerDepense,
     annulerDepense,
@@ -59,8 +61,9 @@ const Depenses = () => {
   } = useDepenses();
   
   const { depenseId } = useParams<{ depenseId?: string }>();
+  const createMatch = useMatch('/app/depenses/create');
+  const editMatch = useMatch('/app/depenses/:depenseId/edit');
   const navigate = useNavigate();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [actionDepenseId, setActionDepenseId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
@@ -71,11 +74,10 @@ const Depenses = () => {
   const [statutFilter, setStatutFilter] = useState<
     'tous' | 'brouillon' | 'validee' | 'ordonnancee' | 'payee' | 'annulee'
   >('tous');
-
-  const handleCreateDepense = async (data: DepenseFormData) => {
-    await createDepense(data);
-    setIsDialogOpen(false);
-  };
+  const isCreateMode = !!createMatch;
+  const routeEditDepenseId = editMatch?.params.depenseId;
+  const isEditMode = !!routeEditDepenseId;
+  const isEditorMode = isCreateMode || isEditMode;
 
   const filteredDepenses = useMemo(() => {
     const searchLower = searchTerm.trim().toLowerCase();
@@ -259,6 +261,33 @@ const Depenses = () => {
     // Exemple : exportDepenses(filteredDepenses);
   }, [filteredDepenses]);
 
+  const handleCreate = useCallback(() => {
+    navigate('/app/depenses/create');
+  }, [navigate]);
+
+  const handleEdit = useCallback((id: string) => {
+    navigate(`/app/depenses/${id}/edit`);
+  }, [navigate]);
+
+  const editingDepense = useMemo(
+    () => depenses.find((depense) => depense.id === routeEditDepenseId),
+    [depenses, routeEditDepenseId]
+  );
+
+  const handleSingleSubmit = useCallback(
+    async (data: DepenseFormData) => {
+      if (editingDepense) {
+        const updated = await updateDepense({ id: editingDepense.id, updates: data });
+        navigate(`/app/depenses/${updated.id}`);
+        return;
+      }
+
+      const created = await createDepense(data);
+      navigate(`/app/depenses/${created.id}`);
+    },
+    [createDepense, editingDepense, navigate, updateDepense]
+  );
+
   const hasSelection = selectedIds.size > 0;
   const hasBrouillonsSelected = selectedDepenses.some((depense) => depense.statut === 'brouillon');
   const hasValideesSelected = selectedDepenses.some((depense) => depense.statut === 'validee');
@@ -288,6 +317,24 @@ const Depenses = () => {
     );
   }
 
+  const handleSingleCancel = () => {
+    if (routeEditDepenseId) {
+      navigate(`/app/depenses/${routeEditDepenseId}`);
+      return;
+    }
+    navigate('/app/depenses');
+  };
+
+  const editorHeader = isCreateMode
+    ? {
+        title: 'Nouvelle dépense',
+        description: 'Créez une dépense dans un espace de travail dédié.',
+      }
+    : {
+        title: editingDepense ? `Modifier ${editingDepense.numero}` : 'Modifier la dépense',
+        description: 'Éditez la dépense dans l’outlet sans revenir à la liste.',
+      };
+
   const pageHeaderContent = (
     <PageHeader
       title="Gestion des Dépenses"
@@ -295,7 +342,7 @@ const Depenses = () => {
       scrollProgress={scrollProgress}
       sticky={false}
       actions={
-        <Button onClick={() => setIsDialogOpen(true)} ref={headerCtaRef}>
+        <Button onClick={handleCreate} ref={headerCtaRef}>
           <Plus className="h-4 w-4 mr-2" />
           Nouvelle dépense
         </Button>
@@ -307,9 +354,45 @@ const Depenses = () => {
     <>
       <style>{CTA_REVEAL_STYLES}</style>
       <div className="space-y-6">
-      {!isSnapshotOpen && pageHeaderContent}
+      {isEditorMode ? (
+        <>
+          <PageHeader
+            title={editorHeader.title}
+            description={editorHeader.description}
+            sticky={false}
+            actions={
+              <Button variant="outline" onClick={handleSingleCancel}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Retour aux dépenses
+              </Button>
+            }
+          />
 
-      {isSnapshotOpen && snapshotDepense ? (
+          {isEditMode && !editingDepense ? (
+            <div className="rounded-xl border border-dashed p-8 text-center">
+              <p className="text-sm text-muted-foreground">
+                Cette dépense est introuvable ou n&apos;est plus accessible depuis la page courante.
+              </p>
+              <Button variant="outline" className="mt-4" onClick={() => navigate('/app/depenses')}>
+                Retour à la liste
+              </Button>
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="pt-6">
+                <DepenseForm
+                  key={`${isCreateMode ? 'create' : routeEditDepenseId || 'unknown'}`}
+                  depense={editingDepense}
+                  onSubmit={handleSingleSubmit}
+                  onCancel={handleSingleCancel}
+                  submitLabel={editingDepense ? 'Enregistrer' : 'Créer la dépense'}
+                  useScrollArea={false}
+                />
+              </CardContent>
+            </Card>
+          )}
+        </>
+      ) : isSnapshotOpen && snapshotDepense ? (
         <div className="space-y-6">
           <DepenseSnapshot
             depense={snapshotDepense}
@@ -327,6 +410,7 @@ const Depenses = () => {
             onEnregistrerPaiement={handleOpenEnregistrerPaiement}
             onAnnuler={handleOpenAnnuler}
             onDelete={handleOpenDelete}
+            onEdit={snapshotDepense.statut === 'brouillon' ? () => handleEdit(snapshotDepense.id) : undefined}
             disableActions={isSubmittingAction}
           />
         </div>
@@ -334,6 +418,7 @@ const Depenses = () => {
         <div className="py-12 text-center text-muted-foreground">Chargement du snapshot...</div>
       ) : (
         <>
+          {!isSnapshotOpen && pageHeaderContent}
           <div className="space-y-6">
             <DepenseStatsCards depenses={depenses} />
             <ListLayout
@@ -341,7 +426,7 @@ const Depenses = () => {
               description="Recherche, filtres et actions groupées sur les dépenses"
               actions={
                 !isHeaderCtaVisible ? (
-                  <Button onClick={() => setIsDialogOpen(true)} className="sticky-cta-appear">
+                  <Button onClick={handleCreate} className="sticky-cta-appear">
                     <Plus className="h-4 w-4 mr-2" />
                     Nouvelle dépense
                   </Button>
@@ -412,6 +497,7 @@ const Depenses = () => {
               <DepenseTable
                 depenses={filteredDepenses}
                 onViewDetails={handleOpenSnapshot}
+                onEdit={handleEdit}
                 onValider={handleValider}
                 onOrdonnancer={handleOrdonnancer}
                 onEnregistrerPaiement={handleOpenEnregistrerPaiement}
@@ -427,12 +513,6 @@ const Depenses = () => {
           </div>
         </>
       )}
-      
-      <DepenseDialog
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        onSave={handleCreateDepense}
-      />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

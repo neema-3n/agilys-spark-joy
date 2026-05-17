@@ -2,8 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Plus } from 'lucide-react';
-import { toast } from 'sonner';
+import { ArrowLeft, Plus } from 'lucide-react';
 import { showNavigationToast } from '@/lib/navigation-toast';
 import { useFacturesPaginated } from '@/hooks/useFactures';
 import { useDepenses } from '@/hooks/useDepenses';
@@ -48,7 +47,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useListSelection } from '@/hooks/useListSelection';
 import { CTA_REVEAL_STYLES, useHeaderCtaReveal } from '@/hooks/useHeaderCtaReveal';
-import { testDataService } from '@/services/api/test-data.service';
 import { facturesService } from '@/services/api/factures.service';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -93,7 +91,6 @@ export default function Factures() {
 
   const { createDepenseFromFacture } = useDepenses();
   const [motifAnnulation, setMotifAnnulation] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
 
   // Récupérer les stats globales côté serveur
   const { data: stats } = useQuery({
@@ -312,33 +309,6 @@ export default function Factures() {
     }
   }, [navigate]);
 
-  const handleGenerateTestData = async () => {
-    if (!currentClient || !currentExercice) return;
-    
-    const count = parseInt(prompt('Combien de factures de test voulez-vous générer ? (max 1000)', '500') || '0');
-    if (count <= 0 || count > 1000) {
-      toast.error('Nombre invalide (entre 1 et 1000)');
-      return;
-    }
-
-    setIsGenerating(true);
-    try {
-      const result = await testDataService.generateTestFactures(
-        currentClient.id,
-        currentExercice.id,
-        count
-      );
-      toast.success(result.message);
-      // Rafraîchir les données
-      window.location.reload();
-    } catch (error) {
-      console.error('Erreur:', error);
-      toast.error(error instanceof Error ? error.message : 'Erreur lors de la génération');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
   if (isLoading) {
     return (
       <ListPageLoading
@@ -375,20 +345,6 @@ export default function Factures() {
       sticky={false}
       actions={
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={handleGenerateTestData}
-            disabled={isGenerating}
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Génération...
-              </>
-            ) : (
-              'Générer des données de test'
-            )}
-          </Button>
           <Button onClick={handleCreate} ref={headerCtaRef}>
             <Plus className="mr-2 h-4 w-4" />
             Nouvelle facture
