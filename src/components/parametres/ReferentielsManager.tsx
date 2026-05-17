@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Plus, Pencil, Trash2, Database, Check, X } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { useClient } from '@/contexts/ClientContext';
+import { useMatch, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useReferentiels } from '@/hooks/useReferentiels';
 import { useNaturesCompte } from '@/hooks/useNaturesCompte';
 import { useTaxesFiscales } from '@/hooks/useTaxesFiscales';
@@ -17,10 +18,11 @@ import { referentielsService } from '@/services/api/referentiels.service';
 import { naturesCompteService } from '@/services/api/natures-compte.service';
 import { taxesFiscalesService } from '@/services/api/taxes-fiscales.service';
 import { modelesFiscauxService } from '@/services/api/modeles-fiscaux.service';
-import { ReferentielDialog } from './ReferentielDialog';
-import { NatureCompteDialog } from './NatureCompteDialog';
-import { TaxeFiscaleDialog } from './TaxeFiscaleDialog';
-import { ModeleFiscalDialog } from './ModeleFiscalDialog';
+import { ParametreEditorPage } from './ParametreEditorPage';
+import { ReferentielForm, ReferentielFormData } from './ReferentielForm';
+import { NatureCompteForm } from './NatureCompteForm';
+import { TaxeFiscaleForm } from './TaxeFiscaleForm';
+import { ModeleFiscalForm } from './ModeleFiscalForm';
 import type { ParametreReferentiel, ReferentielCategorie } from '@/types/referentiel.types';
 import type { ModeleFiscal, TaxeFiscale } from '@/types/fiscalite.types';
 import type { NatureCompte } from '@/types/nature-compte.types';
@@ -105,23 +107,28 @@ export const ReferentielsManager = () => {
   const { currentClient } = useClient();
   const clientId = currentClient?.id || '';
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { itemId } = useParams<{ itemId?: string }>();
+  const [searchParams] = useSearchParams();
+  const requestedCategory = searchParams.get('category') as ManagerTab | null;
   const { comptes } = useComptes();
   const comptesCharge = useMemo(
     () => comptes.filter((compte) => compte.type === 'charge' && compte.statut === 'actif'),
     [comptes]
   );
 
-  const [activeCategorie, setActiveCategorie] = useState<ManagerTab>('compte_type');
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [activeCategorie, setActiveCategorie] = useState<ManagerTab>(
+    requestedCategory && categories.some((category) => category.value === requestedCategory) ? requestedCategory : 'compte_type',
+  );
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedReferentiel, setSelectedReferentiel] = useState<ParametreReferentiel | undefined>();
-  const [selectedNatureCompte, setSelectedNatureCompte] = useState<NatureCompte | undefined>();
-  const [selectedTaxeFiscale, setSelectedTaxeFiscale] = useState<TaxeFiscale | undefined>();
-  const [selectedModeleFiscal, setSelectedModeleFiscal] = useState<ModeleFiscal | undefined>();
   const [referentielToDelete, setReferentielToDelete] = useState<ParametreReferentiel | undefined>();
   const [natureCompteToDelete, setNatureCompteToDelete] = useState<NatureCompte | undefined>();
   const [taxeFiscaleToDelete, setTaxeFiscaleToDelete] = useState<TaxeFiscale | undefined>();
   const [modeleFiscalToDelete, setModeleFiscalToDelete] = useState<ModeleFiscal | undefined>();
+  const [isEditorDirty, setIsEditorDirty] = useState(false);
+  const isCreateRoute = !!useMatch('/app/parametres/referentiels/create');
+  const isEditRoute = !!useMatch('/app/parametres/referentiels/:itemId/edit');
+  const isEditorMode = isCreateRoute || isEditRoute;
 
   const referentielCategorie = activeCategorie === 'nature_compte' || activeCategorie === 'taxe_fiscale' || activeCategorie === 'modele_fiscal'
     ? null
@@ -135,45 +142,47 @@ export const ReferentielsManager = () => {
   const { modelesFiscaux, isLoading: isLoadingModeles } = useModelesFiscaux(false);
 
   const activeCategorieConfig = categories.find((category) => category.value === activeCategorie);
+  const selectedReferentiel = useMemo(
+    () => (referentielCategorie ? referentiels.find((item) => item.id === itemId) : undefined),
+    [referentielCategorie, referentiels, itemId],
+  );
+  const selectedNatureCompte = useMemo(
+    () => (activeCategorie === 'nature_compte' ? naturesCompte.find((item) => item.id === itemId) : undefined),
+    [activeCategorie, naturesCompte, itemId],
+  );
+  const selectedTaxeFiscale = useMemo(
+    () => (activeCategorie === 'taxe_fiscale' ? taxesFiscales.find((item) => item.id === itemId) : undefined),
+    [activeCategorie, taxesFiscales, itemId],
+  );
+  const selectedModeleFiscal = useMemo(
+    () => (activeCategorie === 'modele_fiscal' ? modelesFiscaux.find((item) => item.id === itemId) : undefined),
+    [activeCategorie, modelesFiscaux, itemId],
+  );
+
+  useEffect(() => {
+    if (requestedCategory && categories.some((category) => category.value === requestedCategory)) {
+      setActiveCategorie(requestedCategory);
+    }
+  }, [requestedCategory]);
 
   const handleCreate = () => {
-    setSelectedReferentiel(undefined);
-    setSelectedNatureCompte(undefined);
-    setSelectedTaxeFiscale(undefined);
-    setSelectedModeleFiscal(undefined);
-    setDialogOpen(true);
+    navigate(`/app/parametres/referentiels/create?category=${activeCategorie}`);
   };
 
   const handleEditReferentiel = (referentiel: ParametreReferentiel) => {
-    setSelectedReferentiel(referentiel);
-    setSelectedNatureCompte(undefined);
-    setSelectedTaxeFiscale(undefined);
-    setSelectedModeleFiscal(undefined);
-    setDialogOpen(true);
+    navigate(`/app/parametres/referentiels/${referentiel.id}/edit?category=${activeCategorie}`);
   };
 
   const handleEditNatureCompte = (natureCompte: NatureCompte) => {
-    setSelectedNatureCompte(natureCompte);
-    setSelectedReferentiel(undefined);
-    setSelectedTaxeFiscale(undefined);
-    setSelectedModeleFiscal(undefined);
-    setDialogOpen(true);
+    navigate(`/app/parametres/referentiels/${natureCompte.id}/edit?category=nature_compte`);
   };
 
   const handleEditTaxeFiscale = (taxeFiscale: TaxeFiscale) => {
-    setSelectedTaxeFiscale(taxeFiscale);
-    setSelectedReferentiel(undefined);
-    setSelectedNatureCompte(undefined);
-    setSelectedModeleFiscal(undefined);
-    setDialogOpen(true);
+    navigate(`/app/parametres/referentiels/${taxeFiscale.id}/edit?category=taxe_fiscale`);
   };
 
   const handleEditModeleFiscal = (modeleFiscal: ModeleFiscal) => {
-    setSelectedModeleFiscal(modeleFiscal);
-    setSelectedReferentiel(undefined);
-    setSelectedNatureCompte(undefined);
-    setSelectedTaxeFiscale(undefined);
-    setDialogOpen(true);
+    navigate(`/app/parametres/referentiels/${modeleFiscal.id}/edit?category=modele_fiscal`);
   };
 
   const handleDeleteReferentielClick = (referentiel: ParametreReferentiel) => {
@@ -227,7 +236,6 @@ export const ReferentielsManager = () => {
           toast({ title: 'Nature de compte créée', description: 'La nature de compte a été créée avec succès.' });
         }
         queryClient.invalidateQueries({ queryKey: ['natures-compte'] });
-        setDialogOpen(false);
         return;
       }
 
@@ -256,7 +264,6 @@ export const ReferentielsManager = () => {
         }
 
         queryClient.invalidateQueries({ queryKey: ['taxes-fiscales'] });
-        setDialogOpen(false);
         return;
       }
 
@@ -294,7 +301,6 @@ export const ReferentielsManager = () => {
         }
 
         queryClient.invalidateQueries({ queryKey: ['modeles-fiscaux'] });
-        setDialogOpen(false);
         return;
       }
 
@@ -312,7 +318,6 @@ export const ReferentielsManager = () => {
       }
 
       queryClient.invalidateQueries({ queryKey: ['referentiels'] });
-      setDialogOpen(false);
     } catch (error) {
       console.error('Error saving referentiel:', error);
       toast({
@@ -366,6 +371,81 @@ export const ReferentielsManager = () => {
         ? modeleFiscalToDelete?.libelle
         : referentielToDelete?.libelle;
 
+  const handleBack = () => {
+    navigate(`/app/parametres/referentiels?category=${activeCategorie}`);
+  };
+
+  if (isEditorMode) {
+    const isLoadingEditor =
+      (activeCategorie === 'nature_compte' && isLoadingNatures) ||
+      (activeCategorie === 'taxe_fiscale' && isLoadingTaxes) ||
+      (activeCategorie === 'modele_fiscal' && isLoadingModeles) ||
+      (!!referentielCategorie && isLoading);
+
+    if (isLoadingEditor) {
+      return <div className="py-8 text-center text-muted-foreground">Chargement...</div>;
+    }
+
+    const missingSelection =
+      (activeCategorie === 'nature_compte' && isEditRoute && !selectedNatureCompte) ||
+      (activeCategorie === 'taxe_fiscale' && isEditRoute && !selectedTaxeFiscale) ||
+      (activeCategorie === 'modele_fiscal' && isEditRoute && !selectedModeleFiscal) ||
+      (!!referentielCategorie && isEditRoute && !selectedReferentiel);
+
+    if (missingSelection) {
+      return (
+        <div className="rounded-lg border bg-card p-8 text-center text-muted-foreground">
+          Cet element est introuvable.
+        </div>
+      );
+    }
+
+    return (
+      <ParametreEditorPage
+        title={activeCategorieConfig ? `${isEditRoute ? 'Modifier' : 'Nouveau'} ${activeCategorieConfig.label}` : 'Edition du referentiel'}
+        description={activeCategorieConfig?.description || "Configurez cette valeur de parametre."}
+        backLabel="Retour aux referentiels"
+        onBack={handleBack}
+        dirty={isEditorDirty}
+        entityLabel="ce parametre"
+      >
+        {activeCategorie === 'nature_compte' ? (
+          <NatureCompteForm
+            natureCompte={selectedNatureCompte}
+            comptesCharge={comptesCharge}
+            onSubmit={handleSubmit}
+            onCancel={handleBack}
+            onDirtyChange={setIsEditorDirty}
+          />
+        ) : activeCategorie === 'taxe_fiscale' ? (
+          <TaxeFiscaleForm
+            taxeFiscale={selectedTaxeFiscale}
+            comptes={comptes}
+            onSubmit={handleSubmit}
+            onCancel={handleBack}
+            onDirtyChange={setIsEditorDirty}
+          />
+        ) : activeCategorie === 'modele_fiscal' ? (
+          <ModeleFiscalForm
+            modeleFiscal={selectedModeleFiscal}
+            taxesFiscales={taxesFiscales}
+            onSubmit={handleSubmit}
+            onCancel={handleBack}
+            onDirtyChange={setIsEditorDirty}
+          />
+        ) : (
+          <ReferentielForm
+            referentiel={selectedReferentiel}
+            categorieLabel={activeCategorieConfig?.label || 'Referentiel'}
+            onSubmit={handleSubmit as (data: ReferentielFormData) => Promise<void>}
+            onCancel={handleBack}
+            onDirtyChange={setIsEditorDirty}
+          />
+        )}
+      </ParametreEditorPage>
+    );
+  }
+
   return (
     <>
       <Card>
@@ -377,7 +457,7 @@ export const ReferentielsManager = () => {
           <CardDescription>Gérez les listes de valeurs utilisées dans l'application</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeCategorie} onValueChange={(value) => setActiveCategorie(value as ManagerTab)}>
+          <Tabs value={activeCategorie} onValueChange={(value) => navigate(`/app/parametres/referentiels?category=${value}`)}>
             <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 p-1">
               {categories.map((category) => (
                 <TabsTrigger key={category.value} value={category.value} className="whitespace-nowrap">
@@ -593,40 +673,6 @@ export const ReferentielsManager = () => {
           </Tabs>
         </CardContent>
       </Card>
-
-      {activeCategorie === 'nature_compte' ? (
-        <NatureCompteDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          onSubmit={handleSubmit}
-          natureCompte={selectedNatureCompte}
-          comptesCharge={comptesCharge}
-        />
-      ) : activeCategorie === 'taxe_fiscale' ? (
-        <TaxeFiscaleDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          onSubmit={handleSubmit}
-          taxeFiscale={selectedTaxeFiscale}
-          comptes={comptes}
-        />
-      ) : activeCategorie === 'modele_fiscal' ? (
-        <ModeleFiscalDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          onSubmit={handleSubmit}
-          modeleFiscal={selectedModeleFiscal}
-          taxesFiscales={taxesFiscales}
-        />
-      ) : (
-        <ReferentielDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          onSubmit={handleSubmit}
-          referentiel={selectedReferentiel}
-          categorieLabel={activeCategorieConfig?.label || ''}
-        />
-      )}
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

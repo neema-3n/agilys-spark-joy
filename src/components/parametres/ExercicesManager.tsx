@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { useClient } from '@/contexts/ClientContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,42 +29,52 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ExerciceDialog } from './ExerciceDialog';
 import { Plus, MoreVertical, Edit, Lock, Trash2 } from 'lucide-react';
 import { Exercice } from '@/types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { ExerciceForm, ExerciceFormValues } from './ExerciceForm';
+import { ParametreEditorPage } from './ParametreEditorPage';
 
 export function ExercicesManager() {
   const { exercices, isLoading, createExercice, updateExercice, cloturerExercice, deleteExercice } = useExercice();
   const { currentClient } = useClient();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedExercice, setSelectedExercice] = useState<Exercice | undefined>();
+  const navigate = useNavigate();
+  const { itemId } = useParams<{ itemId?: string }>();
+  const isCreateRoute = !!useMatch('/app/parametres/exercices/create');
+  const isEditRoute = !!useMatch('/app/parametres/exercices/:itemId/edit');
+  const isEditorMode = isCreateRoute || isEditRoute;
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [exerciceToDelete, setExerciceToDelete] = useState<Exercice | null>(null);
+  const [isExerciceDirty, setIsExerciceDirty] = useState(false);
+  const selectedExercice = useMemo(
+    () => (isEditRoute ? exercices.find((exercice) => exercice.id === itemId) : undefined),
+    [exercices, isEditRoute, itemId]
+  );
 
-  const handleCreate = async (data: any) => {
+  const handleSave = async (data: ExerciceFormValues) => {
     if (!currentClient) return;
-    await createExercice({
-      clientId: currentClient.id,
-      libelle: data.libelle,
-      code: data.code || undefined,
-      dateDebut: data.dateDebut,
-      dateFin: data.dateFin,
-      statut: data.statut,
-    });
-  };
 
-  const handleUpdate = async (data: any) => {
-    if (!selectedExercice) return;
-    await updateExercice(selectedExercice.id, {
-      libelle: data.libelle,
-      code: data.code || undefined,
-      dateDebut: data.dateDebut,
-      dateFin: data.dateFin,
-      statut: data.statut,
-    });
-    setSelectedExercice(undefined);
+    if (selectedExercice) {
+      await updateExercice(selectedExercice.id, {
+        libelle: data.libelle,
+        code: data.code || undefined,
+        dateDebut: data.dateDebut,
+        dateFin: data.dateFin,
+        statut: data.statut,
+      });
+    } else {
+      await createExercice({
+        clientId: currentClient.id,
+        libelle: data.libelle,
+        code: data.code || undefined,
+        dateDebut: data.dateDebut,
+        dateFin: data.dateFin,
+        statut: data.statut,
+      });
+    }
+
+    navigate('/app/parametres/exercices');
   };
 
   const handleCloturer = async (exercice: Exercice) => {
@@ -78,14 +89,42 @@ export function ExercicesManager() {
   };
 
   const openEditDialog = (exercice: Exercice) => {
-    setSelectedExercice(exercice);
-    setDialogOpen(true);
+    navigate(`/app/parametres/exercices/${exercice.id}/edit`);
   };
 
   const openCreateDialog = () => {
-    setSelectedExercice(undefined);
-    setDialogOpen(true);
+    navigate('/app/parametres/exercices/create');
   };
+
+  const handleEditorCancel = () => {
+    navigate('/app/parametres/exercices');
+  };
+
+  if (isEditorMode) {
+    return (
+      <ParametreEditorPage
+        title={selectedExercice ? `Modifier ${selectedExercice.libelle}` : 'Nouvel exercice'}
+        description="Gérez un exercice budgétaire dans un espace de travail dédié."
+        backLabel="Retour aux exercices"
+        onBack={handleEditorCancel}
+        dirty={isExerciceDirty}
+        entityLabel="ce formulaire d'exercice"
+      >
+        {isEditRoute && !selectedExercice ? (
+          <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+            Cet exercice est introuvable.
+          </div>
+        ) : (
+          <ExerciceForm
+            exercice={selectedExercice}
+            onSubmit={handleSave}
+            onCancel={handleEditorCancel}
+            onDirtyChange={setIsExerciceDirty}
+          />
+        )}
+      </ParametreEditorPage>
+    );
+  }
 
   return (
     <>
@@ -182,19 +221,6 @@ export function ExercicesManager() {
           )}
         </CardContent>
       </Card>
-
-      <ExerciceDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onSubmit={selectedExercice ? handleUpdate : handleCreate}
-        exercice={selectedExercice}
-        title={selectedExercice ? 'Modifier l\'exercice' : 'Créer un exercice'}
-        description={
-          selectedExercice
-            ? 'Modifiez les informations de l\'exercice budgétaire'
-            : 'Créez un nouvel exercice budgétaire pour votre organisation'
-        }
-      />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

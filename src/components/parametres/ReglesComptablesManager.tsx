@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Plus, Calculator, Info, Trash2, Copy, Pencil } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useReglesComptables } from '@/hooks/useReglesComptables';
-import { RegleComptableDialog } from './RegleComptableDialog';
+import { useLocation, useMatch, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { ParametreEditorPage } from './ParametreEditorPage';
+import { RegleComptableForm } from './RegleComptableForm';
 import {
   NATURE_VENTILATION_LABELS,
   OPERATEUR_LABELS,
@@ -32,44 +34,64 @@ import type { TypeOperation, RegleComptable } from '@/types/regle-comptable.type
 const TYPE_OPERATIONS: TypeOperation[] = ['facture', 'depense', 'paiement'];
 
 export const ReglesComptablesManager = () => {
-  const [activeTab, setActiveTab] = useState<TypeOperation>('reservation');
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingRegle, setEditingRegle] = useState<RegleComptable | undefined>();
-  const [initialValuesForDuplicate, setInitialValuesForDuplicate] = useState<Partial<RegleComptable> | undefined>();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { itemId } = useParams<{ itemId?: string }>();
+  const [searchParams] = useSearchParams();
+  const requestedType = searchParams.get('type') as TypeOperation | null;
+  const initialType = requestedType && TYPE_OPERATIONS.includes(requestedType) ? requestedType : 'facture';
+  const [activeTab, setActiveTab] = useState<TypeOperation>(initialType);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [regleToDelete, setRegleToDelete] = useState<RegleComptable | null>(null);
+  const [isRuleDirty, setIsRuleDirty] = useState(false);
+  const isCreateRoute = !!useMatch('/app/parametres/regles-comptables/create');
+  const isEditRoute = !!useMatch('/app/parametres/regles-comptables/:itemId/edit');
+  const isEditorMode = isCreateRoute || isEditRoute;
 
   const { regles, isLoading, deleteRegle, updateRegle } = useReglesComptables(activeTab);
+  const duplicateInitialValues = location.state && typeof location.state === 'object' && 'initialValues' in location.state
+    ? (location.state.initialValues as Partial<RegleComptable> | undefined)
+    : undefined;
+  const editingRegle = useMemo(
+    () => regles.find((regle) => regle.id === itemId),
+    [regles, itemId],
+  );
+
+  useEffect(() => {
+    const nextType = requestedType && TYPE_OPERATIONS.includes(requestedType) ? requestedType : 'facture';
+    setActiveTab(nextType);
+  }, [requestedType]);
 
   const handleEdit = (regle: RegleComptable) => {
-    setEditingRegle(regle);
-    setDialogOpen(true);
+    navigate(`/app/parametres/regles-comptables/${regle.id}/edit?type=${regle.typeOperation}`);
   };
 
   const handleDuplicate = (regle: RegleComptable) => {
-    setEditingRegle(undefined);
-    setInitialValuesForDuplicate({
-      nom: `${regle.nom} (Copie)`,
-      code: `${regle.code}_COPY`,
-      description: regle.description,
-      permanente: regle.permanente,
-      dateDebut: regle.dateDebut,
-      dateFin: regle.dateFin,
-      typeOperation: regle.typeOperation,
-      pointComptable: regle.pointComptable,
-      roleLigne: regle.roleLigne,
-      sourceMontant: regle.sourceMontant,
-      debitSource: regle.debitSource,
-      creditSource: regle.creditSource,
-      sensVentilation: regle.sensVentilation,
-      natureVentilation: regle.natureVentilation,
-      conditions: regle.conditions,
-      compteDebitId: regle.compteDebitId,
-      compteCreditId: regle.compteCreditId,
-      actif: regle.actif,
-      ordre: regle.ordre,
+    navigate(`/app/parametres/regles-comptables/create?type=${regle.typeOperation}`, {
+      state: {
+        initialValues: {
+          nom: `${regle.nom} (Copie)`,
+          code: `${regle.code}_COPY`,
+          description: regle.description,
+          permanente: regle.permanente,
+          dateDebut: regle.dateDebut,
+          dateFin: regle.dateFin,
+          typeOperation: regle.typeOperation,
+          pointComptable: regle.pointComptable,
+          roleLigne: regle.roleLigne,
+          sourceMontant: regle.sourceMontant,
+          debitSource: regle.debitSource,
+          creditSource: regle.creditSource,
+          sensVentilation: regle.sensVentilation,
+          natureVentilation: regle.natureVentilation,
+          conditions: regle.conditions,
+          compteDebitId: regle.compteDebitId,
+          compteCreditId: regle.compteCreditId,
+          actif: regle.actif,
+          ordre: regle.ordre,
+        },
+      },
     });
-    setDialogOpen(true);
   };
 
   const handleDeleteClick = (regle: RegleComptable) => {
@@ -85,18 +107,46 @@ export const ReglesComptablesManager = () => {
     }
   };
 
-  const handleCloseDialog = () => {
-    setDialogOpen(false);
-    setEditingRegle(undefined);
-    setInitialValuesForDuplicate(undefined);
-  };
-
   const handleToggleActif = async (regle: RegleComptable) => {
     await updateRegle({
       id: regle.id,
       input: { actif: !regle.actif }
     });
   };
+
+  if (isEditorMode) {
+    if (isLoading) {
+      return <div className="py-8 text-center text-muted-foreground">Chargement...</div>;
+    }
+
+    if (isEditRoute && !editingRegle) {
+      return (
+        <div className="rounded-lg border bg-card p-8 text-center text-muted-foreground">
+          Cette regle est introuvable.
+        </div>
+      );
+    }
+
+    return (
+      <ParametreEditorPage
+        title={editingRegle ? 'Modifier une regle comptable' : 'Nouvelle regle comptable'}
+        description="Configurez les regles automatiques de generation des ecritures comptables."
+        backLabel="Retour aux regles comptables"
+        onBack={() => navigate(`/app/parametres/regles-comptables?type=${activeTab}`)}
+        dirty={isRuleDirty}
+        entityLabel="cette regle comptable"
+      >
+        <RegleComptableForm
+          regle={editingRegle}
+          defaultTypeOperation={activeTab}
+          initialValues={duplicateInitialValues}
+          onCancel={() => navigate(`/app/parametres/regles-comptables?type=${activeTab}`)}
+          onSuccess={() => navigate(`/app/parametres/regles-comptables?type=${activeTab}`)}
+          onDirtyChange={setIsRuleDirty}
+        />
+      </ParametreEditorPage>
+    );
+  }
 
   return (
     <Card>
@@ -112,7 +162,7 @@ export const ReglesComptablesManager = () => {
             </CardDescription>
           </div>
           <Button
-            onClick={() => setDialogOpen(true)}
+            onClick={() => navigate(`/app/parametres/regles-comptables/create?type=${activeTab}`)}
             className="w-full justify-center sm:w-auto"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -122,7 +172,7 @@ export const ReglesComptablesManager = () => {
       </CardHeader>
 
       <CardContent>
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TypeOperation)}>
+        <Tabs value={activeTab} onValueChange={(v) => navigate(`/app/parametres/regles-comptables?type=${v}`)}>
           <div className="-mx-4 pb-2 sm:mx-0 sm:pb-0">
             <TabsList className="flex min-w-max gap-2 overflow-x-auto px-4 sm:min-w-0 sm:w-full sm:px-0">
               {TYPE_OPERATIONS.map((type) => (
@@ -337,14 +387,6 @@ export const ReglesComptablesManager = () => {
           ))}
         </Tabs>
       </CardContent>
-
-      <RegleComptableDialog
-        open={dialogOpen}
-        onClose={handleCloseDialog}
-        regle={editingRegle}
-        defaultTypeOperation={activeTab}
-        initialValues={initialValuesForDuplicate}
-      />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

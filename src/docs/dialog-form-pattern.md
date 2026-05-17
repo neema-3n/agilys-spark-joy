@@ -310,9 +310,6 @@ const isReadOnly = editingId && item?.statut !== 'brouillon';
 - ✅ `src/components/budget/ProgrammeDialog.tsx`
 - ✅ `src/components/budget/SectionDialog.tsx`
 - ✅ `src/components/budget/ActionDialog.tsx`
-- ✅ `src/components/parametres/EnveloppeDialog.tsx`
-- ✅ `src/components/parametres/ExerciceDialog.tsx`
-- ✅ `src/components/parametres/ReferentielDialog.tsx`
 
 ## Checklist pour nouveaux dialogues
 
