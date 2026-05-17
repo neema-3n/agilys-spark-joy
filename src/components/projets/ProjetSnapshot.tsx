@@ -2,7 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Calendar, Edit2, Trash2, User, Wallet } from 'lucide-react';
+import { ArrowLeft, Calendar, Edit2, Trash2, User, Wallet } from 'lucide-react';
 import { format } from 'date-fns';
 import type { Projet } from '@/types/projet.types';
 
@@ -52,7 +52,10 @@ export const ProjetSnapshot = ({ projet, onClose, onEdit, onDelete }: ProjetSnap
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={onClose}>Retour aux projets</Button>
+          <Button variant="outline" onClick={onClose}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Retour aux projets
+          </Button>
           {onEdit && <Button variant="outline" onClick={onEdit}><Edit2 className="mr-2 h-4 w-4" />Modifier</Button>}
           {onDelete && <Button variant="outline" onClick={onDelete}><Trash2 className="mr-2 h-4 w-4" />Supprimer</Button>}
         </div>

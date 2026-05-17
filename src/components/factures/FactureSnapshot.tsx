@@ -11,6 +11,7 @@ import { useGenerateEcritures } from '@/hooks/useGenerateEcritures';
 import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { EcrituresSection } from '@/components/ecritures/EcrituresSection';
+import { useNavigate } from 'react-router-dom';
 
 interface FactureSnapshotProps {
   facture: Facture;
@@ -63,6 +64,7 @@ export const FactureSnapshot = ({
   onCreerDepense,
   onNavigateToEntity,
 }: FactureSnapshotProps) => {
+  const navigate = useNavigate();
   const { currentClient } = useClient();
   const { currentExercice } = useExercice();
   const { ecritures, isLoading: ecrituresLoading } = useEcrituresBySource('facture', facture.id);
@@ -112,7 +114,7 @@ export const FactureSnapshot = ({
     if (onNavigateToEntity) {
       onNavigateToEntity(type, id);
     } else {
-      window.location.href = getEntityUrl(type, id);
+      navigate(getEntityUrl(type, id));
     }
   };
 

@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { ArrowLeft, Plus } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { RecetteStats } from '@/components/recettes/RecetteStats';
 import { RecetteTable } from '@/components/recettes/RecetteTable';
@@ -65,7 +65,12 @@ const TresorerieRecettes = () => {
           title={selectedRecette ? 'Modifier la recette' : 'Nouvelle recette'}
           description="Enregistrez un encaissement et son compte de destination."
           sticky={false}
-          actions={<Button variant="outline" onClick={handleSingleCancel}>Retour aux recettes</Button>}
+          actions={
+            <Button variant="outline" onClick={handleSingleCancel}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Retour aux recettes
+            </Button>
+          }
         />
         <RecetteForm
           recette={selectedRecette}

@@ -15,6 +15,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fallbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasUserLoadedRef = useRef(false);
 
+  const updateSessionWithoutGlobalReload = (nextSession: Session | null) => {
+    if (!isMountedRef.current) return;
+
+    setSession(nextSession);
+    if (nextSession?.user?.id) {
+      activeUserIdRef.current = nextSession.user.id;
+    }
+    setIsLoading(false);
+  };
+
   const loadUserFromSession = (nextSession: Session | null) => {
     if (!isMountedRef.current) return;
 
@@ -80,8 +90,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (event === 'TOKEN_REFRESHED') {
           clearFallback();
           if (session?.user?.id && activeUserIdRef.current === session.user.id && hasUserLoadedRef.current) {
-            setSession(session);
-            setIsLoading(false);
+            updateSessionWithoutGlobalReload(session);
             return;
           }
           loadUserFromSession(session);
@@ -90,6 +99,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (event === 'SIGNED_IN') {
           clearFallback();
+          if (session?.user?.id && activeUserIdRef.current === session.user.id && hasUserLoadedRef.current) {
+            updateSessionWithoutGlobalReload(session);
+            return;
+          }
           loadUserFromSession(session);
           return;
         }

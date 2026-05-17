@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
-import { ArrowDownCircle, ArrowUpCircle, Plus, Scale, Unplug } from 'lucide-react';
+import { ArrowDownCircle, ArrowLeft, ArrowUpCircle, Plus, Scale, Unplug } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { OperationTresorerieTable } from '@/components/tresorerie/OperationTresorerieTable';
 import { OperationTresorerieForm } from '@/components/tresorerie/OperationTresorerieForm';
@@ -62,7 +62,12 @@ const TresorerieOperations = () => {
           title="Nouvelle opération de trésorerie"
           description="Enregistrez un encaissement, un décaissement ou un transfert."
           sticky={false}
-          actions={<Button variant="outline" onClick={handleSingleCancel}>Retour aux opérations</Button>}
+          actions={
+            <Button variant="outline" onClick={handleSingleCancel}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Retour aux opérations
+            </Button>
+          }
         />
         <OperationTresorerieForm onSubmit={handleSubmit} onCancel={handleSingleCancel} onDirtyChange={setIsOperationDirty} submitLabel="Créer l'opération" />
       </div>

@@ -5,6 +5,7 @@ import { formatCurrency } from '@/lib/utils';
 import type { OperationTresorerie } from '@/types/operation-tresorerie.types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { ArrowLeft } from 'lucide-react';
 
 interface OperationTresorerieDetailsProps {
   operation: OperationTresorerie;
@@ -23,7 +24,10 @@ export const OperationTresorerieDetails = ({ operation, onClose }: OperationTres
           <p className="text-muted-foreground">{operation.libelle}</p>
         </div>
       </div>
-      <Button variant="outline" onClick={onClose}>Retour aux opérations</Button>
+      <Button variant="outline" onClick={onClose}>
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Retour aux opérations
+      </Button>
     </div>
 
     <Card>

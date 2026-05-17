@@ -1,14 +1,16 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Wand2 } from 'lucide-react';
+import { ArrowLeft, Plus } from 'lucide-react';
 import { usePrevisions } from '@/hooks/usePrevisions';
-import { ScenarioDialog } from '@/components/previsions/ScenarioDialog';
+import { ScenarioForm } from '@/components/previsions/ScenarioForm';
 import { ScenarioCard } from '@/components/previsions/ScenarioCard';
 import { GenerateurPrevisions } from '@/components/previsions/GenerateurPrevisions';
 import { Scenario } from '@/types/prevision.types';
+import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,11 +23,15 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const Previsions = () => {
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [generateurOpen, setGenerateurOpen] = useState(false);
   const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [scenarioToDelete, setScenarioToDelete] = useState<string | null>(null);
+  const [isScenarioDirty, setIsScenarioDirty] = useState(false);
+  const navigate = useNavigate();
+  const { scenarioId } = useParams<{ scenarioId?: string }>();
+  const isCreateRoute = !!useMatch('/app/previsions/create');
+  const isEditRoute = !!useMatch('/app/previsions/:scenarioId/edit');
 
   const {
     scenarios,
@@ -39,18 +45,21 @@ const Previsions = () => {
     genererPrevisions,
   } = usePrevisions();
 
-  const handleCreateEdit = (data: any) => {
-    if (selectedScenario) {
-      updateScenario.mutate({ id: selectedScenario.id, updates: data });
+  const editingScenario = useMemo(
+    () => (isEditRoute && scenarioId ? scenarios?.find((scenario) => scenario.id === scenarioId) || null : null),
+    [isEditRoute, scenarioId, scenarios]
+  );
+
+  const handleCreateEdit = async (data: any) => {
+    if (editingScenario) {
+      await updateScenario.mutateAsync({ id: editingScenario.id, updates: data });
     } else {
-      createScenario.mutate(data);
+      await createScenario.mutateAsync(data);
     }
-    setSelectedScenario(null);
   };
 
   const handleEdit = (scenario: Scenario) => {
-    setSelectedScenario(scenario);
-    setDialogOpen(true);
+    navigate(`/app/previsions/${scenario.id}/edit`);
   };
 
   const handleDuplicate = (scenario: Scenario) => {
@@ -89,6 +98,64 @@ const Previsions = () => {
   const scenariosBrouillon = scenarios?.filter(s => s.statut === 'brouillon') || [];
   const scenariosValides = scenarios?.filter(s => s.statut === 'valide') || [];
   const scenariosArchives = scenarios?.filter(s => s.statut === 'archive') || [];
+  const handleSingleCancel = () => {
+    navigate('/app/previsions');
+  };
+
+  const { guard } = useFocusedEditorGuard({
+    active: isCreateRoute || isEditRoute,
+    dirty: isScenarioDirty,
+    onExit: handleSingleCancel,
+    entityLabel: 'ce formulaire de scénario',
+    overlayAriaLabel: 'Quitter le formulaire de scénario',
+  });
+
+  if ((isCreateRoute || isEditRoute) && isEditRoute && scenarioId && !editingScenario) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Prévisions Budgétaires"
+          description="Projections pluriannuelles et scénarios budgétaires"
+          sticky={false}
+        />
+        <Card>
+          <CardContent className="p-6 text-center text-muted-foreground">
+            Chargement du scénario...
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isCreateRoute || isEditRoute) {
+    return (
+      <div className="space-y-6">
+        {guard}
+        <PageHeader
+          title={editingScenario ? 'Modifier le scénario' : 'Nouveau scénario'}
+          description="Gérez un scénario budgétaire dans un espace de travail dédié."
+          sticky={false}
+          actions={
+            <Button variant="outline" onClick={handleSingleCancel}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Retour aux prévisions
+            </Button>
+          }
+        />
+
+        <ScenarioForm
+          scenario={editingScenario}
+          onSubmit={async (data) => {
+            await handleCreateEdit(data);
+            navigate('/app/previsions');
+          }}
+          onCancel={handleSingleCancel}
+          onDirtyChange={setIsScenarioDirty}
+          submitLabel={editingScenario ? 'Enregistrer les modifications' : 'Créer le scénario'}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -98,8 +165,7 @@ const Previsions = () => {
         actions={
           <Button
             onClick={() => {
-              setSelectedScenario(null);
-              setDialogOpen(true);
+              navigate('/app/previsions/create');
             }}
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -216,13 +282,6 @@ const Previsions = () => {
         </TabsContent>
         </Tabs>
       </div>
-
-      <ScenarioDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onSubmit={handleCreateEdit}
-        scenario={selectedScenario || undefined}
-      />
 
       <GenerateurPrevisions
         open={generateurOpen}

@@ -1,15 +1,15 @@
 import { useMemo, useState } from 'react';
-import { CheckCircle2, Plus } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Plus } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { ListToolbar } from '@/components/lists/ListToolbar';
 import { ListTable, ListColumn } from '@/components/lists/ListTable';
 import { Badge } from '@/components/ui/badge';
 import { useRapprochementsBancaires } from '@/hooks/useRapprochementsBancaires';
-import { useComptesTresorerie } from '@/hooks/useComptesTresorerie';
+import { useNavigate, useMatch } from 'react-router-dom';
+import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
+import { RapprochementBancaireForm } from '@/components/tresorerie/RapprochementBancaireForm';
 import type { RapprochementBancaireFormData, RapprochementBancaire } from '@/types/rapprochement-bancaire.types';
 
 const formatCurrency = (value: number) =>
@@ -19,20 +19,12 @@ const formatCurrency = (value: number) =>
     minimumFractionDigits: 0,
   }).format(value);
 
-const defaultForm: RapprochementBancaireFormData = {
-  compteId: '',
-  dateDebut: '',
-  dateFin: '',
-  soldeReleve: 0,
-  observations: '',
-};
-
 const TresorerieRapprochements = () => {
   const { rapprochements, createRapprochement, validateRapprochement } = useRapprochementsBancaires();
-  const { comptes } = useComptesTresorerie();
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
-  const [formData, setFormData] = useState<RapprochementBancaireFormData>(defaultForm);
+  const [isRapprochementDirty, setIsRapprochementDirty] = useState(false);
+  const navigate = useNavigate();
+  const isCreateRoute = !!useMatch('/app/tresorerie/rapprochements/create');
 
   const filteredItems = useMemo(() => {
     const term = searchValue.trim().toLowerCase();
@@ -89,6 +81,47 @@ const TresorerieRapprochements = () => {
     },
   ];
 
+  const handleSingleCancel = () => {
+    navigate('/app/tresorerie/rapprochements');
+  };
+
+  const { guard } = useFocusedEditorGuard({
+    active: isCreateRoute,
+    dirty: isRapprochementDirty,
+    onExit: handleSingleCancel,
+    entityLabel: 'ce formulaire de rapprochement bancaire',
+    overlayAriaLabel: 'Quitter le formulaire de rapprochement bancaire',
+  });
+
+  if (isCreateRoute) {
+    return (
+      <div className="space-y-6">
+        {guard}
+        <PageHeader
+          title="Nouveau rapprochement bancaire"
+          description="Créez un rapprochement bancaire dans un espace de travail dédié."
+          sticky={false}
+          actions={
+            <Button variant="outline" onClick={handleSingleCancel}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Retour aux rapprochements
+            </Button>
+          }
+        />
+
+        <RapprochementBancaireForm
+          onSubmit={async (data: RapprochementBancaireFormData) => {
+            await createRapprochement(data);
+            navigate('/app/tresorerie/rapprochements');
+          }}
+          onCancel={handleSingleCancel}
+          onDirtyChange={setIsRapprochementDirty}
+          submitLabel="Créer le rapprochement"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -96,7 +129,7 @@ const TresorerieRapprochements = () => {
         description="Contrôle des écarts entre relevés bancaires et opérations comptabilisées"
         sticky={false}
         actions={
-          <Button onClick={() => setDialogOpen(true)}>
+          <Button onClick={() => navigate('/app/tresorerie/rapprochements/create')}>
             <Plus className="mr-2 h-4 w-4" />
             Nouveau rapprochement
           </Button>
@@ -116,87 +149,6 @@ const TresorerieRapprochements = () => {
           <ListTable columns={columns} items={filteredItems} getRowId={(item) => item.id} />
         </CardContent>
       </Card>
-
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Nouveau rapprochement bancaire</DialogTitle>
-          </DialogHeader>
-          <form
-            className="space-y-4"
-            onSubmit={async (event) => {
-              event.preventDefault();
-              await createRapprochement(formData);
-              setFormData(defaultForm);
-              setDialogOpen(false);
-            }}
-          >
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Compte</label>
-              <select
-                className="flex h-11 w-full rounded-xl border border-input bg-background px-4 text-sm"
-                value={formData.compteId}
-                onChange={(event) => setFormData((current) => ({ ...current, compteId: event.target.value }))}
-                required
-              >
-                <option value="">Sélectionner un compte</option>
-                {comptes
-                  .filter((compte) => compte.type === 'banque')
-                  .map((compte) => (
-                    <option key={compte.id} value={compte.id}>
-                      {compte.code} - {compte.libelle}
-                    </option>
-                  ))}
-              </select>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Date début</label>
-                <Input
-                  type="date"
-                  value={formData.dateDebut}
-                  onChange={(event) => setFormData((current) => ({ ...current, dateDebut: event.target.value }))}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Date fin</label>
-                <Input
-                  type="date"
-                  value={formData.dateFin}
-                  onChange={(event) => setFormData((current) => ({ ...current, dateFin: event.target.value }))}
-                  required
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Solde relevé</label>
-              <Input
-                type="number"
-                value={formData.soldeReleve}
-                onChange={(event) =>
-                  setFormData((current) => ({ ...current, soldeReleve: Number(event.target.value) || 0 }))
-                }
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Observations</label>
-              <textarea
-                className="min-h-[96px] w-full rounded-xl border border-input bg-background px-4 py-3 text-sm"
-                value={formData.observations || ''}
-                onChange={(event) => setFormData((current) => ({ ...current, observations: event.target.value }))}
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                Annuler
-              </Button>
-              <Button type="submit">Créer</Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

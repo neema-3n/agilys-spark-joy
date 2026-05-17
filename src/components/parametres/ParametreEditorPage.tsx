@@ -1,9 +1,10 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
+import { useParametresEditorFocus } from './ParametresEditorFocusContext';
 
 interface ParametreEditorPageProps {
   title: string;
@@ -24,13 +25,27 @@ export function ParametreEditorPage({
   entityLabel,
   children,
 }: ParametreEditorPageProps) {
-  const { guard } = useFocusedEditorGuard({
+  const parametresEditorFocus = useParametresEditorFocus();
+  const { guard, handleAttemptExit } = useFocusedEditorGuard({
     active: true,
     dirty,
     onExit: onBack,
     entityLabel,
     overlayAriaLabel: `Quitter ${entityLabel}`,
   });
+
+  useEffect(() => {
+    if (!parametresEditorFocus) return;
+
+    parametresEditorFocus.setFocusState({
+      active: true,
+      onAttemptExit: handleAttemptExit,
+    });
+
+    return () => {
+      parametresEditorFocus.setFocusState(null);
+    };
+  }, [handleAttemptExit, parametresEditorFocus]);
 
   return (
     <>
@@ -41,7 +56,7 @@ export function ParametreEditorPage({
           description={description}
           sticky={false}
           actions={
-            <Button variant="outline" onClick={onBack}>
+            <Button variant="outline" onClick={handleAttemptExit}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               {backLabel}
             </Button>

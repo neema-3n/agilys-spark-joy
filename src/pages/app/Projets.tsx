@@ -13,7 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus } from 'lucide-react';
+import { ArrowLeft, Plus } from 'lucide-react';
 import { useProjets } from '@/hooks/useProjets';
 import { projetsService } from '@/services/api/projets.service';
 import { ProjetForm } from '@/components/projets/ProjetForm';
@@ -148,7 +148,12 @@ const Projets = () => {
         <PageHeader
           title={selectedProjet ? 'Modifier le projet' : 'Nouveau projet'}
           description="Structurez le suivi budgétaire et analytique du projet."
-          actions={<Button variant="outline" onClick={handleSingleCancel}>Retour aux projets</Button>}
+          actions={
+            <Button variant="outline" onClick={handleSingleCancel}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Retour aux projets
+            </Button>
+          }
         />
         <ProjetForm
           projet={selectedProjet}

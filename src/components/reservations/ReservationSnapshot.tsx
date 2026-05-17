@@ -10,6 +10,7 @@ import { useGenerateEcritures } from '@/hooks/useGenerateEcritures';
 import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { EcrituresSection } from '@/components/ecritures/EcrituresSection';
+import { useNavigate } from 'react-router-dom';
 
 interface ReservationSnapshotProps {
   reservation: ReservationCredit;
@@ -38,6 +39,7 @@ export const ReservationSnapshot = ({
   onAnnuler,
   onNavigateToEntity,
 }: ReservationSnapshotProps) => {
+  const navigate = useNavigate();
   const { currentClient } = useClient();
   const { currentExercice } = useExercice();
   const { ecritures, isLoading: ecrituresLoading } = useEcrituresBySource('reservation', reservation.id);
@@ -89,7 +91,7 @@ export const ReservationSnapshot = ({
     if (onNavigateToEntity) {
       onNavigateToEntity(type, id);
     } else {
-      window.location.href = getEntityUrl(type, id);
+      navigate(getEntityUrl(type, id));
     }
   };
 

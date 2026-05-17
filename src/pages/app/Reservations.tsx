@@ -1,11 +1,11 @@
 import { useCallback, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Plus } from 'lucide-react';
+import { ArrowLeft, Plus } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
-import { ReservationDialog } from '@/components/reservations/ReservationDialog';
+import { ReservationForm } from '@/components/reservations/ReservationForm';
 import { ReservationTable } from '@/components/reservations/ReservationTable';
 import { ReservationStats } from '@/components/reservations/ReservationStats';
 import { ReservationSnapshot } from '@/components/reservations/ReservationSnapshot';
@@ -20,6 +20,7 @@ import { CreateDepenseUrgenceFromReservationDialog } from '@/components/depenses
 import { ListLayout } from '@/components/lists/ListLayout';
 import { ListToolbar } from '@/components/lists/ListToolbar';
 import { ListPageLoading } from '@/components/lists/ListPageLoading';
+import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,8 +42,6 @@ import {
 import type { ReservationCreditFormData } from '@/types/reservation.types';
 
 const Reservations = () => {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingReservationId, setEditingReservationId] = useState<string | undefined>();
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [pendingAnnulation, setPendingAnnulation] = useState<{ id: string; motif: string; engagements: any[] } | null>(
     null
@@ -55,8 +54,11 @@ const Reservations = () => {
   const [motifAnnulation, setMotifAnnulation] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [statutFilter, setStatutFilter] = useState<'tous' | 'active' | 'utilisee' | 'annulee' | 'expiree'>('tous');
+  const [isReservationDirty, setIsReservationDirty] = useState(false);
   const navigate = useNavigate();
   const { reservationId } = useParams<{ reservationId?: string }>();
+  const isCreateRoute = !!useMatch('/app/reservations/create');
+  const isEditRoute = !!useMatch('/app/reservations/:reservationId/edit');
   const { toast } = useToast();
 
   const { reservations, isLoading, createReservation, updateReservation, annulerReservation, deleteReservation } =
@@ -101,8 +103,8 @@ const Reservations = () => {
   }, [reservations, statutFilter, searchTerm]);
 
   const editingReservation = useMemo(
-    () => reservations.find((reservation) => reservation.id === editingReservationId),
-    [editingReservationId, reservations]
+    () => (isEditRoute && reservationId ? reservations.find((reservation) => reservation.id === reservationId) : undefined),
+    [isEditRoute, reservationId, reservations]
   );
 
   const reservationForDepense = useMemo(
@@ -111,37 +113,30 @@ const Reservations = () => {
   );
 
   const handleCreate = useCallback(() => {
-    setEditingReservationId(undefined);
-    setDialogOpen(true);
-  }, []);
-
-  const handleDialogOpenChange = useCallback((open: boolean) => {
-    setDialogOpen(open);
-    if (!open) {
-      setEditingReservationId(undefined);
-    }
+    navigate('/app/reservations/create');
   }, []);
 
   const handleEdit = useCallback((reservationId: string) => {
-    setEditingReservationId(reservationId);
-    setDialogOpen(true);
-  }, []);
+    navigate(`/app/reservations/${reservationId}/edit`);
+  }, [navigate]);
 
   const handleSave = useCallback(
     async (data: ReservationCreditFormData) => {
       try {
-        if (editingReservationId) {
-          await updateReservation({ id: editingReservationId, updates: data });
+        if (editingReservation) {
+          const updated = await updateReservation({ id: editingReservation.id, updates: data });
           toast({
             title: 'Réservation modifiée',
             description: 'La réservation a été modifiée avec succès.',
           });
+          navigate(`/app/reservations/${updated.id}`);
         } else {
-          await createReservation(data);
+          const created = await createReservation(data);
           toast({
             title: 'Réservation créée',
             description: 'La réservation a été créée avec succès.',
           });
+          navigate(`/app/reservations/${created.id}`);
         }
       } catch (error) {
         toast({
@@ -152,8 +147,25 @@ const Reservations = () => {
         throw error;
       }
     },
-    [createReservation, editingReservationId, toast, updateReservation]
+    [createReservation, editingReservation, navigate, toast, updateReservation]
   );
+
+  const handleSingleCancel = useCallback(() => {
+    if (editingReservation) {
+      navigate(`/app/reservations/${editingReservation.id}`);
+      return;
+    }
+
+    navigate('/app/reservations');
+  }, [editingReservation, navigate]);
+
+  const { guard } = useFocusedEditorGuard({
+    active: isCreateRoute || isEditRoute,
+    dirty: isReservationDirty,
+    onExit: handleSingleCancel,
+    entityLabel: 'ce formulaire de réservation',
+    overlayAriaLabel: 'Quitter le formulaire de réservation',
+  });
 
   const handleCreerEngagement = useCallback((reservationId: string) => {
     navigate('/app/engagements/create', {
@@ -316,6 +328,42 @@ const Reservations = () => {
     );
   }
 
+  if ((isCreateRoute || isEditRoute) && isEditRoute && reservationId && !editingReservation) {
+    return (
+      <ListPageLoading
+        title="Réservation de Crédits"
+        description="Blocage préalable avec traçabilité complète"
+        stickyHeader={false}
+      />
+    );
+  }
+
+  if (isCreateRoute || isEditRoute) {
+    return (
+      <div className="space-y-6">
+        {guard}
+        <PageHeader
+          title={editingReservation ? 'Modifier la réservation' : 'Nouvelle réservation'}
+          description="Créez ou modifiez une réservation de crédits dans un espace de travail dédié."
+          actions={
+            <Button variant="outline" onClick={handleSingleCancel}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Retour aux réservations
+            </Button>
+          }
+        />
+
+        <ReservationForm
+          reservation={editingReservation}
+          onSubmit={handleSave}
+          onCancel={handleSingleCancel}
+          onDirtyChange={setIsReservationDirty}
+          submitLabel={editingReservation ? 'Enregistrer les modifications' : 'Créer la réservation'}
+        />
+      </div>
+    );
+  }
+
   const pageHeaderContent = (
     <PageHeader
       title="Réservation de Crédits"
@@ -415,8 +463,6 @@ const Reservations = () => {
           </ListLayout>
         </div>
       )}
-
-      <ReservationDialog open={dialogOpen} onOpenChange={handleDialogOpenChange} onSave={handleSave} reservation={editingReservation} />
 
       <AlertDialog
         open={annulationDialogOpen}

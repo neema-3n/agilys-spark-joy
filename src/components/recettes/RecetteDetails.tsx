@@ -5,7 +5,7 @@ import { formatCurrency } from '@/lib/utils';
 import type { Recette } from '@/types/recette.types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { XCircle, Pencil } from 'lucide-react';
+import { ArrowLeft, Pencil, XCircle } from 'lucide-react';
 
 interface RecetteDetailsProps {
   recette: Recette;
@@ -29,7 +29,10 @@ export const RecetteDetails = ({ recette, onClose, onEdit, onAnnuler }: RecetteD
         </div>
       </div>
       <div className="flex gap-2">
-        <Button variant="outline" onClick={onClose}>Retour aux recettes</Button>
+        <Button variant="outline" onClick={onClose}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Retour aux recettes
+        </Button>
         {onEdit && recette.statut === 'validee' && <Button variant="outline" onClick={onEdit}><Pencil className="mr-2 h-4 w-4" />Modifier</Button>}
         {onAnnuler && recette.statut === 'validee' && <Button variant="destructive" onClick={onAnnuler}><XCircle className="mr-2 h-4 w-4" />Annuler la recette</Button>}
       </div>

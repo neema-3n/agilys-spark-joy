@@ -11,6 +11,7 @@ import { useGenerateEcritures } from '@/hooks/useGenerateEcritures';
 import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { EcrituresSection } from '@/components/ecritures/EcrituresSection';
+import { useNavigate } from 'react-router-dom';
 
 interface EngagementSnapshotProps {
   engagement: Engagement;
@@ -43,6 +44,7 @@ export const EngagementSnapshot = ({
   onCreerDepense,
   onNavigateToEntity,
 }: EngagementSnapshotProps) => {
+  const navigate = useNavigate();
   const { currentClient } = useClient();
   const { currentExercice } = useExercice();
   const { ecritures, isLoading: ecrituresLoading } = useEcrituresBySource('engagement', engagement.id);
@@ -95,7 +97,7 @@ export const EngagementSnapshot = ({
     if (onNavigateToEntity) {
       onNavigateToEntity(type, id);
     } else {
-      window.location.href = getEntityUrl(type, id);
+      navigate(getEntityUrl(type, id));
     }
   };
 

@@ -12,6 +12,7 @@ import { useGenerateEcritures } from '@/hooks/useGenerateEcritures';
 import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { EcrituresSection } from '@/components/ecritures/EcrituresSection';
+import { useNavigate } from 'react-router-dom';
 
 interface DepenseSnapshotProps {
   depense: Depense;
@@ -52,6 +53,7 @@ export const DepenseSnapshot = ({
   onDelete,
   disableActions,
 }: DepenseSnapshotProps) => {
+  const navigate = useNavigate();
   const { currentClient } = useClient();
   const { currentExercice } = useExercice();
   const { ecritures, isLoading: ecrituresLoading } = useEcrituresBySource('depense', depense.id);
@@ -97,7 +99,7 @@ export const DepenseSnapshot = ({
     if (onNavigateToEntity) {
       onNavigateToEntity(type, id);
     } else {
-      window.location.href = getEntityUrl(type, id);
+      navigate(getEntityUrl(type, id));
     }
   };
 

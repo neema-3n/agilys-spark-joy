@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -13,6 +13,7 @@ import { PlanComptableManager } from '@/components/parametres/PlanComptableManag
 import { ReferentielsManager } from '@/components/parametres/ReferentielsManager';
 import { StructureBudgetaireManager } from '@/components/parametres/StructureBudgetaireManager';
 import { ReglesComptablesManager } from '@/components/parametres/ReglesComptablesManager';
+import { ParametresEditorFocusContext } from '@/components/parametres/ParametresEditorFocusContext';
 
 const SECTION_IDS = [
   'exercices',
@@ -27,6 +28,10 @@ const SECTION_IDS = [
 
 type ParametreSection = (typeof SECTION_IDS)[number];
 const DEFAULT_SECTION: ParametreSection = 'exercices';
+type ParametresEditorFocusState = {
+  active: boolean;
+  onAttemptExit: () => void;
+};
 
 const Parametres = () => {
   const { sectionId } = useParams<{ sectionId?: ParametreSection }>();
@@ -37,7 +42,17 @@ const Parametres = () => {
     () => (sectionId && SECTION_IDS.includes(sectionId) ? sectionId : DEFAULT_SECTION)
   );
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [editorFocusState, setEditorFocusState] = useState<ParametresEditorFocusState | null>(null);
   const isEditorMode = /^\/app\/parametres\/[^/]+(?:\/create|\/[^/]+\/edit)$/.test(location.pathname);
+  const isEditorGuardActive = isEditorMode && !!editorFocusState?.active;
+
+  const focusContextValue = useMemo(
+    () => ({
+      focusState: editorFocusState,
+      setFocusState: setEditorFocusState,
+    }),
+    [editorFocusState]
+  );
 
   useEffect(() => {
     if (!sectionId) {
@@ -160,20 +175,28 @@ const Parametres = () => {
   );
 
   return (
-    <div className="-mx-4 -my-5 flex min-h-[calc(100vh-76px-40px)] flex-col bg-background sm:-mx-5 lg:-mx-8 lg:-my-7 md:flex-row">
+    <ParametresEditorFocusContext.Provider value={focusContextValue}>
+      <div className="-mx-4 -my-5 flex h-[calc(100dvh-76px)] flex-col overflow-hidden bg-background sm:-mx-5 lg:-mx-8 lg:-my-7 md:flex-row">
       {/* Desktop: Sidebar normale */}
       {!isMobile && (
-        <aside className="relative w-80 shrink-0 border-r border-border bg-card">
+        <aside className="relative flex h-full w-80 shrink-0 flex-col border-r border-border bg-card">
           <div className="border-b border-border px-8 py-8">
             <h1 className="text-2xl font-bold">Paramètres</h1>
             <p className="text-sm text-muted-foreground mt-1">
               Configuration de l'application
             </p>
           </div>
-          <ScrollArea className="h-[calc(100vh-76px-105px)]">
+          <ScrollArea className="flex-1">
             <NavigationContent />
           </ScrollArea>
-          {isEditorMode && <div className="absolute inset-0 z-10 bg-foreground/35" aria-hidden="true" />}
+          {isEditorGuardActive && (
+            <button
+              type="button"
+              aria-label="Quitter l'éditeur de paramètres"
+              className="absolute inset-0 z-10 bg-foreground/35"
+              onClick={editorFocusState?.onAttemptExit}
+            />
+          )}
         </aside>
       )}
 
@@ -204,7 +227,14 @@ const Parametres = () => {
               {sections.find(s => s.id === activeSection)?.title}
             </h1>
           </div>
-          {isEditorMode && <div className="absolute inset-0 z-10 bg-foreground/35" aria-hidden="true" />}
+          {isEditorGuardActive && (
+            <button
+              type="button"
+              aria-label="Quitter l'éditeur de paramètres"
+              className="absolute inset-0 z-10 bg-foreground/35"
+              onClick={editorFocusState?.onAttemptExit}
+            />
+          )}
         </div>
       )}
 
@@ -214,7 +244,8 @@ const Parametres = () => {
           {activeContent}
         </div>
       </main>
-    </div>
+      </div>
+    </ParametresEditorFocusContext.Provider>
   );
 };
 

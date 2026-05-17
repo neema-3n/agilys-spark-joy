@@ -85,6 +85,11 @@ const navigationSections: NavigationSection[] = [
         href: '/app/dashboard',
         icon: LayoutDashboard,
       },
+      {
+        name: 'Executive Dashboard',
+        href: '/app/executive-dashboard',
+        icon: BarChart3,
+      },
     ],
   },
   {

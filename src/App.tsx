@@ -18,6 +18,7 @@ const InitTestUsers = lazy(() => import("./pages/auth/InitTestUsers"));
 // App layout and main pages
 const AppLayout = lazy(() => import("./pages/app/AppLayoutTailAdmin"));
 const Dashboard = lazy(() => import("./pages/app/Dashboard"));
+const ExecutiveDashboard = lazy(() => import("./pages/app/ExecutiveDashboard"));
 
 // Budget & Finance pages
 const Budgets = lazy(() => import("./pages/app/Budgets"));
@@ -88,6 +89,7 @@ const App = () => (
                   }
                 >
                   <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="executive-dashboard" element={<ExecutiveDashboard />} />
 
                   {/* Budget & Finance */}
                   <Route path="budgets">
@@ -97,10 +99,16 @@ const App = () => (
                     <Route path=":ligneId" element={<Budgets />} />
                   </Route>
                   <Route path="enveloppes" element={<Enveloppes />} />
-                  <Route path="previsions" element={<Previsions />} />
                   <Route path="reservations">
                     <Route index element={<Reservations />} />
+                    <Route path="create" element={<Reservations />} />
+                    <Route path=":reservationId/edit" element={<Reservations />} />
                     <Route path=":reservationId" element={<Reservations />} />
+                  </Route>
+                  <Route path="previsions">
+                    <Route index element={<Previsions />} />
+                    <Route path="create" element={<Previsions />} />
+                    <Route path=":scenarioId/edit" element={<Previsions />} />
                   </Route>
                   <Route path="engagements">
                     <Route index element={<Engagements />} />
@@ -145,7 +153,10 @@ const App = () => (
                       <Route path="create" element={<TresorerieOperations />} />
                       <Route path=":operationId" element={<TresorerieOperations />} />
                     </Route>
-                    <Route path="rapprochements" element={<TresorerieRapprochements />} />
+                    <Route path="rapprochements">
+                      <Route index element={<TresorerieRapprochements />} />
+                      <Route path="create" element={<TresorerieRapprochements />} />
+                    </Route>
                   </Route>
 
                   {/* Administration */}
