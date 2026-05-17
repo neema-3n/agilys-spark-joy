@@ -140,7 +140,11 @@ const App = () => (
                       <Route path=":recetteId/edit" element={<TresorerieRecettes />} />
                       <Route path=":recetteId" element={<TresorerieRecettes />} />
                     </Route>
-                    <Route path="operations" element={<TresorerieOperations />} />
+                    <Route path="operations">
+                      <Route index element={<TresorerieOperations />} />
+                      <Route path="create" element={<TresorerieOperations />} />
+                      <Route path=":operationId" element={<TresorerieOperations />} />
+                    </Route>
                     <Route path="rapprochements" element={<TresorerieRapprochements />} />
                   </Route>
 

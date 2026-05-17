@@ -8,14 +8,22 @@ import { ArrowDownRight, ArrowUpRight, ArrowRightLeft } from 'lucide-react';
 
 interface OperationTresorerieTableProps {
   operations: OperationTresorerie[];
+  onViewDetails?: (id: string) => void;
 }
 
-export const OperationTresorerieTable = ({ operations }: OperationTresorerieTableProps) => {
+export const OperationTresorerieTable = ({ operations, onViewDetails }: OperationTresorerieTableProps) => {
   const columns: ListColumn<OperationTresorerie>[] = [
     {
       id: 'numero',
       header: 'Numéro',
-      render: (operation) => <span className="font-medium">{operation.numero}</span>,
+      render: (operation) =>
+        onViewDetails ? (
+          <button type="button" className="font-medium hover:underline" onClick={() => onViewDetails(operation.id)}>
+            {operation.numero}
+          </button>
+        ) : (
+          <span className="font-medium">{operation.numero}</span>
+        ),
     },
     {
       id: 'dateOperation',
@@ -134,5 +142,5 @@ export const OperationTresorerieTable = ({ operations }: OperationTresorerieTabl
     },
   ];
 
-  return <ListTable columns={columns} items={operations} getRowId={(o) => o.id} />;
+  return <ListTable columns={columns} items={operations} getRowId={(o) => o.id} onRowDoubleClick={onViewDetails ? (operation) => onViewDetails(operation.id) : undefined} />;
 };
