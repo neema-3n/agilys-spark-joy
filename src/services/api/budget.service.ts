@@ -4,6 +4,12 @@ import {
 } from '@/types/budget.types';
 import { supabase } from '@/integrations/supabase/client';
 
+const toNumber = (value: unknown) => {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string' && value.trim() !== '') return Number(value);
+  return 0;
+};
+
 // Helpers pour convertir entre camelCase et snake_case
 const toSnakeCase = (obj: any) => {
   const result: any = {};
@@ -24,6 +30,39 @@ const toCamelCase = (obj: any): any => {
   return result;
 };
 
+const mapLigneBudgetaireFromDatabase = (row: any): LigneBudgetaire => ({
+  id: row.id,
+  exerciceId: row.exercice_id,
+  actionId: row.action_id,
+  compteId: row.compte_id,
+  enveloppeId: row.enveloppe_id ?? undefined,
+  libelle: row.libelle,
+  montantInitial: toNumber(row.montant_initial),
+  montantModifie: toNumber(row.montant_modifie),
+  montantReserve: toNumber(row.montant_reserve),
+  montantEngage: toNumber(row.montant_engage),
+  montantLiquide: toNumber(row.montant_liquide),
+  montantPaye: toNumber(row.montant_paye),
+  disponible: toNumber(row.disponible),
+  dateCreation: row.created_at,
+  statut: row.statut,
+});
+
+const mapModificationFromDatabase = (row: any): ModificationBudgetaire => ({
+  id: row.id,
+  exerciceId: row.exercice_id,
+  numero: row.numero,
+  type: row.type,
+  ligneSourceId: row.ligne_source_id ?? undefined,
+  ligneDestinationId: row.ligne_destination_id,
+  montant: toNumber(row.montant),
+  motif: row.motif,
+  statut: row.statut,
+  dateCreation: row.created_at,
+  dateValidation: row.date_validation ?? undefined,
+  validePar: row.valide_par ?? undefined,
+});
+
 export const budgetService = {
   // Récupérer les lignes budgétaires par exercice
   getLignesBudgetaires: async (exerciceId: string, clientId: string): Promise<LigneBudgetaire[]> => {
@@ -35,11 +74,8 @@ export const budgetService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    
-    return (data || []).map(row => ({
-      ...toCamelCase(row),
-      montantLiquide: row.montant_liquide || 0
-    }));
+
+    return (data || []).map(mapLigneBudgetaireFromDatabase);
   },
 
   // Créer une ligne budgétaire
@@ -71,8 +107,8 @@ export const budgetService = {
       .single();
 
     if (error) throw error;
-    
-    return toCamelCase(data);
+
+    return mapLigneBudgetaireFromDatabase(data);
   },
 
   // Mettre à jour une ligne budgétaire
@@ -88,8 +124,8 @@ export const budgetService = {
 
     if (error) throw error;
     if (!data) throw new Error('Ligne budgétaire non trouvée');
-    
-    return toCamelCase(data);
+
+    return mapLigneBudgetaireFromDatabase(data);
   },
 
   // Supprimer une ligne budgétaire
@@ -121,8 +157,8 @@ export const budgetService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    
-    return (data || []).map(toCamelCase);
+
+    return (data || []).map(mapModificationFromDatabase);
   },
 
   // Créer une modification budgétaire
@@ -144,7 +180,7 @@ export const budgetService = {
     });
 
     if (error) throw new Error(error.message || 'Erreur lors de la création de la modification budgétaire');
-    return data;
+    return mapModificationFromDatabase(data);
   },
 
   // Valider une modification budgétaire
@@ -237,7 +273,7 @@ export const budgetService = {
 
     if (updateError) throw updateError;
     
-    return toCamelCase(updatedModif);
+    return mapModificationFromDatabase(updatedModif);
   },
 
   // Soumettre une modification budgétaire (brouillon -> en_attente)
@@ -263,7 +299,7 @@ export const budgetService = {
 
     if (error) throw error;
     
-    return toCamelCase(data);
+    return mapModificationFromDatabase(data);
   },
 
   // Rejeter une modification budgétaire
@@ -278,6 +314,6 @@ export const budgetService = {
     if (error) throw error;
     if (!data) throw new Error('Modification non trouvée');
     
-    return toCamelCase(data);
+    return mapModificationFromDatabase(data);
   }
 };

@@ -60,7 +60,7 @@ const ExecutivePipelineFlow = ({ stages }: { stages: PipelineStage[] }) => (
   <Card className="border-border/80 shadow-sm">
     <CardHeader>
       <CardTitle>État d&apos;avancement des opérations</CardTitle>
-      <CardDescription>Lecture séquentielle du pipeline budgétaire sur la période.</CardDescription>
+      <CardDescription>Lecture par jalon des montants actuellement présents à chaque étape du cycle d&apos;exécution.</CardDescription>
     </CardHeader>
     <CardContent className="space-y-8">
       <div className="relative hidden xl:block">
@@ -125,7 +125,7 @@ const ExecutivePipelineFlow = ({ stages }: { stages: PipelineStage[] }) => (
       </div>
 
       <p className="text-center text-sm text-muted-foreground">
-        Les pourcentages représentent le taux par rapport au budget total autorisé.
+        Les pourcentages représentent le poids de chaque jalon par rapport au budget total autorisé. Les montants ne sont pas additifs entre eux.
       </p>
     </CardContent>
   </Card>
@@ -410,26 +410,30 @@ const ExecutiveDashboard = () => {
       .sort((left, right) => right.value - left.value);
   }, [filteredEnveloppes]);
 
-  const kpis = useMemo(() => {
-    const authorizedFromEnveloppes = sumBy(filteredEnveloppes, (item) => item.montantAlloue);
-    const consumedFromEnveloppes = sumBy(filteredEnveloppes, (item) => item.montantConsomme);
-    const authorizedFromBudget = sumBy(filteredLignes, (item) => item.montantModifie);
-    const consumedFromBudget = sumBy(filteredLignes, (item) => item.montantEngage);
+  const fundingTotal = useMemo(
+    () => sumBy(fundingChartData, (item) => item.value),
+    [fundingChartData],
+  );
 
-    const budgetTotalAutorise = authorizedFromEnveloppes > 0 ? authorizedFromEnveloppes : authorizedFromBudget;
-    const budgetConsomme = consumedFromEnveloppes > 0 ? consumedFromEnveloppes : consumedFromBudget;
-    const soldeDisponible = budgetTotalAutorise - budgetConsomme;
+  const kpis = useMemo(() => {
+    const budgetTotalAutorise = sumBy(filteredLignes, (item) => item.montantModifie);
+    const budgetEngage = sumBy(filteredLignes, (item) => item.montantEngage);
+    const budgetLiquide = sumBy(filteredLignes, (item) => item.montantLiquide);
+    const budgetPaye = sumBy(filteredLignes, (item) => item.montantPaye);
+    const soldeDisponible = sumBy(filteredLignes, (item) => item.disponible);
     const tresorerieDisponible = comptesStats?.soldeTotal ?? 0;
-    const tauxExecution = budgetTotalAutorise > 0 ? (budgetConsomme / budgetTotalAutorise) * 100 : 0;
+    const tauxExecution = budgetTotalAutorise > 0 ? (budgetPaye / budgetTotalAutorise) * 100 : 0;
 
     return {
       budgetTotalAutorise,
-      budgetConsomme,
+      budgetEngage,
+      budgetLiquide,
+      budgetPaye,
       soldeDisponible,
       tresorerieDisponible,
       tauxExecution,
     };
-  }, [filteredEnveloppes, filteredLignes, comptesStats?.soldeTotal]);
+  }, [filteredLignes, comptesStats?.soldeTotal]);
 
   const evolutionData = useMemo(() => {
     if (!safePeriodStart || !safePeriodEnd) return [];
@@ -443,8 +447,8 @@ const ExecutiveDashboard = () => {
       );
 
       const realiseCumule = sumBy(
-        filteredDepenses.filter((depense) => new Date(depense.dateDepense) <= month.end && depense.statut !== 'annulee'),
-        (depense) => depense.montant,
+        filteredPaiements.filter((paiement) => new Date(paiement.datePaiement) <= month.end && paiement.statut === 'valide'),
+        (paiement) => paiement.montant,
       );
 
       return {
@@ -453,7 +457,7 @@ const ExecutiveDashboard = () => {
         realise: realiseCumule,
       };
     });
-  }, [filteredDepenses, filteredLignes, safePeriodEnd, safePeriodStart]);
+  }, [filteredLignes, filteredPaiements, safePeriodEnd, safePeriodStart]);
 
   const rankings = useMemo(() => {
     const actionsById = new Map(actions.map((action) => [action.id, action]));
@@ -578,9 +582,9 @@ const ExecutiveDashboard = () => {
       },
       {
         key: 'depense',
-        label: 'Dépense (Ordonnancement)',
+        label: 'Dépense (ordonnancée)',
         amount: sumBy(
-          filteredDepenses.filter((item) => item.statut !== 'annulee'),
+          filteredDepenses.filter((item) => item.statut === 'ordonnancee' || item.statut === 'payee'),
           (item) => item.montant,
         ),
         rate: 0,
@@ -621,7 +625,9 @@ const ExecutiveDashboard = () => {
         [
           ['Bloc', 'Libellé', 'Valeur'],
           ['KPI', 'Budget total autorisé', formatAmountShort(kpis.budgetTotalAutorise)],
-          ['KPI', 'Budget consommé', formatAmountShort(kpis.budgetConsomme)],
+          ['KPI', 'Budget engagé', formatAmountShort(kpis.budgetEngage)],
+          ['KPI', 'Budget liquidé', formatAmountShort(kpis.budgetLiquide)],
+          ['KPI', 'Budget payé', formatAmountShort(kpis.budgetPaye)],
           ['KPI', 'Solde disponible', formatAmountShort(kpis.soldeDisponible)],
           ['KPI', 'Trésorerie disponible', formatAmountShort(kpis.tresorerieDisponible)],
           ['Synthèse', 'Taux d’exécution global', formatPercent(kpis.tauxExecution)],
@@ -672,15 +678,15 @@ const ExecutiveDashboard = () => {
           title="Budget total autorisé"
           value={formatAmountShort(kpis.budgetTotalAutorise)}
           icon={Wallet}
-          trend={isLoading ? 'Chargement des agrégats...' : 'Base autorisée sur la période'}
+          trend={isLoading ? 'Chargement des agrégats...' : 'Source canonique : lignes budgétaires'}
           trendUp
           color="text-blue-600"
         />
         <StatsCard
-          title="Budget consommé"
-          value={formatAmountShort(kpis.budgetConsomme)}
+          title="Budget engagé"
+          value={formatAmountShort(kpis.budgetEngage)}
           icon={FileChartColumnIncreasing}
-          trend={formatPercent(kpis.tauxExecution)}
+          trend={formatPercent(kpis.budgetTotalAutorise > 0 ? (kpis.budgetEngage / kpis.budgetTotalAutorise) * 100 : 0)}
           trendUp
           color="text-emerald-600"
         />
@@ -711,8 +717,8 @@ const ExecutiveDashboard = () => {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <Card className="border-border/80 shadow-sm">
           <CardHeader>
-            <CardTitle>Évolution : Budget vs Réalisé</CardTitle>
-            <CardDescription>Cumul mensuel dérivé des lignes budgétaires et des dépenses de la période.</CardDescription>
+            <CardTitle>Évolution : Budget vs Paiements</CardTitle>
+            <CardDescription>Cumul mensuel du budget ouvert et des paiements validés sur la période.</CardDescription>
           </CardHeader>
           <CardContent className="h-[360px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -741,7 +747,7 @@ const ExecutiveDashboard = () => {
                 <Line
                   type="monotone"
                   dataKey="realise"
-                  name="Réalisé cumulé"
+                  name="Paiements cumulés"
                   stroke="#10b981"
                   strokeWidth={3}
                   dot={{ r: 4 }}
@@ -792,7 +798,7 @@ const ExecutiveDashboard = () => {
                 </div>
               ) : (
                 fundingChartData.map((entry, index) => {
-                  const share = kpis.budgetTotalAutorise > 0 ? (entry.value / kpis.budgetTotalAutorise) * 100 : 0;
+                  const share = fundingTotal > 0 ? (entry.value / fundingTotal) * 100 : 0;
 
                   return (
                     <div key={entry.name} className="flex items-start gap-3">

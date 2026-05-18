@@ -37,6 +37,14 @@ import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
 import { useClientPagination } from '@/hooks/useClientPagination';
 import { useListSelection } from '@/hooks/useListSelection';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 type BonsCommandeLocationState = {
   initialEngagementId?: string;
