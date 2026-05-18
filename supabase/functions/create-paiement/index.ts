@@ -21,6 +21,8 @@ interface PaiementRequest {
   totalRetraits?: number;
   datePaiement: string;
   modePaiement: string;
+  compteTresorerieId?: string;
+  statut?: string;
   referencePaiement?: string;
   observations?: string;
   chargePrincipaleMode?: string;
@@ -79,6 +81,8 @@ Deno.serve(async (req) => {
       total_retraits,
       date_paiement,
       mode_paiement,
+      compte_tresorerie_id,
+      statut,
       reference_paiement,
       observations,
       charge_principale_mode,
@@ -88,6 +92,7 @@ Deno.serve(async (req) => {
       client_id,
       exercice_id,
     } = body;
+    const normalizedStatut = statut === 'valide' ? 'valide' : 'brouillon';
 
     if ((!depense_id && !engagement_id && !ligne_budgetaire_id) || !montant || !date_paiement || !mode_paiement) {
       return new Response(
@@ -161,6 +166,8 @@ Deno.serve(async (req) => {
           p_montant: montant,
           p_date_paiement: date_paiement,
           p_mode_paiement: mode_paiement,
+          p_compte_tresorerie_id: compte_tresorerie_id || null,
+          p_statut: normalizedStatut,
           p_reference_paiement: reference_paiement || null,
           p_observations: observations || null,
           p_user_id: user.id,
@@ -226,6 +233,8 @@ Deno.serve(async (req) => {
           total_retraits: total_retraits ?? 0,
           date_paiement,
           mode_paiement,
+          compte_tresorerie_id: compte_tresorerie_id || null,
+          statut: normalizedStatut,
           reference_paiement: reference_paiement || null,
           observations: observations || null,
           charge_principale_mode: charge_principale_mode ?? 'nature',
@@ -259,6 +268,7 @@ Deno.serve(async (req) => {
         beneficiaire: beneficiaire || null,
         projet_id: projet_id || null,
         objet: objet || null,
+        compte_tresorerie_id: compte_tresorerie_id || null,
         montant_ht: montant_ht ?? montant,
         montant_ttc: montant_ttc ?? montant,
         montant_net_paye: montant_net_paye ?? montant,
@@ -276,6 +286,32 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: patchError.message }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (normalizedStatut !== 'valide') {
+      return new Response(
+        JSON.stringify({
+          ...paiement,
+          statut: normalizedStatut,
+          engagement_id: engagement_id || null,
+          ligne_budgetaire_id: ligne_budgetaire_id || null,
+          fournisseur_id: fournisseur_id || null,
+          beneficiaire: beneficiaire || null,
+          projet_id: projet_id || null,
+          objet: objet || null,
+          compte_tresorerie_id: compte_tresorerie_id || null,
+          montant_ht: montant_ht ?? montant,
+          montant_ttc: montant_ttc ?? montant,
+          montant_net_paye: montant_net_paye ?? montant,
+          total_ajouts: total_ajouts ?? 0,
+          total_retraits: total_retraits ?? 0,
+          charge_principale_mode: charge_principale_mode ?? 'nature',
+          nature_compte_charge_id: nature_compte_charge_id || null,
+          compte_charge_id: compte_charge_id || null,
+          ventilations: ventilations || [],
+        }),
+        { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -320,6 +356,8 @@ Deno.serve(async (req) => {
         beneficiaire: beneficiaire || null,
         projet_id: projet_id || null,
         objet: objet || null,
+        compte_tresorerie_id: compte_tresorerie_id || null,
+        statut: normalizedStatut,
         montant_ht: montant_ht ?? montant,
         montant_ttc: montant_ttc ?? montant,
         montant_net_paye: montant_net_paye ?? montant,

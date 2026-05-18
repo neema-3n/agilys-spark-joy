@@ -11,16 +11,20 @@ import { ReservationStats } from '@/components/reservations/ReservationStats';
 import { ReservationSnapshot } from '@/components/reservations/ReservationSnapshot';
 import { useReservations } from '@/hooks/useReservations';
 import { useEngagements } from '@/hooks/useEngagements';
-import { useDepenses } from '@/hooks/useDepenses';
 import { useToast } from '@/hooks/use-toast';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { useSnapshotState } from '@/hooks/useSnapshotState';
-import { showNavigationToast } from '@/lib/navigation-toast';
-import { CreateDepenseUrgenceFromReservationDialog } from '@/components/depenses/CreateDepenseUrgenceFromReservationDialog';
 import { ListLayout } from '@/components/lists/ListLayout';
 import { ListToolbar } from '@/components/lists/ListToolbar';
 import { ListPageLoading } from '@/components/lists/ListPageLoading';
+import { PaginationControls } from '@/components/lists/PaginationControls';
+import {
+  AdvancedFiltersPanel,
+  AdvancedFiltersToggleButton,
+} from '@/components/lists/AdvancedFiltersPanel';
 import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
+import { useClientPagination } from '@/hooks/useClientPagination';
+import { useListSelection } from '@/hooks/useListSelection';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,13 +52,17 @@ const Reservations = () => {
   );
   const [confirmDeleteDialogOpen, setConfirmDeleteDialogOpen] = useState(false);
   const [pendingSuppression, setPendingSuppression] = useState<{ id: string; engagements: any[] } | null>(null);
-  const [reservationForDepenseId, setReservationForDepenseId] = useState<string | null>(null);
   const [annulationDialogOpen, setAnnulationDialogOpen] = useState(false);
   const [annulationReservationId, setAnnulationReservationId] = useState<string | null>(null);
   const [motifAnnulation, setMotifAnnulation] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [statutFilter, setStatutFilter] = useState<'tous' | 'active' | 'utilisee' | 'annulee' | 'expiree'>('tous');
   const [isReservationDirty, setIsReservationDirty] = useState(false);
+  const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
+  const [dateDebut, setDateDebut] = useState('');
+  const [dateFin, setDateFin] = useState('');
+  const [montantMin, setMontantMin] = useState('');
+  const [montantMax, setMontantMax] = useState('');
   const navigate = useNavigate();
   const { reservationId } = useParams<{ reservationId?: string }>();
   const isCreateRoute = !!useMatch('/app/reservations/create');
@@ -64,7 +72,6 @@ const Reservations = () => {
   const { reservations, isLoading, createReservation, updateReservation, annulerReservation, deleteReservation } =
     useReservations();
   const { annulerEngagement, deleteEngagement } = useEngagements();
-  const { createDepenseFromReservation } = useDepenses();
 
   const {
     snapshotId: snapshotReservationId,
@@ -91,6 +98,10 @@ const Reservations = () => {
     const term = searchTerm.trim().toLowerCase();
     return reservations
       .filter((reservation) => (statutFilter === 'tous' ? true : reservation.statut === statutFilter))
+      .filter((reservation) => (!dateDebut ? true : reservation.dateReservation >= dateDebut))
+      .filter((reservation) => (!dateFin ? true : reservation.dateReservation <= dateFin))
+      .filter((reservation) => (!montantMin ? true : reservation.montant >= Number(montantMin)))
+      .filter((reservation) => (!montantMax ? true : reservation.montant <= Number(montantMax)))
       .filter((reservation) => {
         if (!term) return true;
         return (
@@ -100,16 +111,29 @@ const Reservations = () => {
         );
       })
       .sort((a, b) => new Date(b.dateReservation).getTime() - new Date(a.dateReservation).getTime());
-  }, [reservations, statutFilter, searchTerm]);
+  }, [dateDebut, dateFin, montantMax, montantMin, reservations, statutFilter, searchTerm]);
+
+  const activeAdvancedFiltersCount = [!!dateDebut, !!dateFin, !!montantMin, !!montantMax].filter(Boolean).length;
+
+  const {
+    currentPage,
+    pageSize,
+    totalCount,
+    totalPages,
+    paginatedItems,
+    goToPage,
+    setPageSize,
+  } = useClientPagination(filteredReservations, {
+    initialPageSize: 25,
+    resetKey: [searchTerm, statutFilter, dateDebut, dateFin, montantMin, montantMax].join('|'),
+  });
+
+  const selectionIds = useMemo(() => paginatedItems.map((reservation) => reservation.id), [paginatedItems]);
+  const { selectedIds, allSelected, toggleOne, toggleAll, clearSelection } = useListSelection(selectionIds);
 
   const editingReservation = useMemo(
     () => (isEditRoute && reservationId ? reservations.find((reservation) => reservation.id === reservationId) : undefined),
     [isEditRoute, reservationId, reservations]
-  );
-
-  const reservationForDepense = useMemo(
-    () => reservations.find((reservation) => reservation.id === reservationForDepenseId) || null,
-    [reservationForDepenseId, reservations]
   );
 
   const handleCreate = useCallback(() => {
@@ -174,8 +198,10 @@ const Reservations = () => {
   }, [navigate]);
 
   const handleCreerDepenseUrgence = useCallback((reservationId: string) => {
-    setReservationForDepenseId(reservationId);
-  }, []);
+    navigate('/app/depenses/create', {
+      state: { initialReservationId: reservationId },
+    });
+  }, [navigate]);
 
   const handleNavigateToEntity = useCallback(
     (type: string, id: string) => {
@@ -318,6 +344,13 @@ const Reservations = () => {
     setMotifAnnulation('');
   }, [annulationReservationId, handleAnnuler, motifAnnulation]);
 
+  const resetAdvancedFilters = useCallback(() => {
+    setDateDebut('');
+    setDateFin('');
+    setMontantMin('');
+    setMontantMax('');
+  }, []);
+
   if (isLoading) {
     return (
       <ListPageLoading
@@ -440,25 +473,82 @@ const Reservations = () => {
                           {option.label}
                         </DropdownMenuItem>
                       ))}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => setStatutFilter('tous')}>Réinitialiser</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setStatutFilter('tous')}>Réinitialiser</DropdownMenuItem>
+                </DropdownMenuContent>
+                  </DropdownMenu>,
+                  <AdvancedFiltersToggleButton
+                    key="advanced-filters"
+                    open={isAdvancedFiltersOpen}
+                    onToggle={() => setIsAdvancedFiltersOpen((open) => !open)}
+                    activeCount={activeAdvancedFiltersCount}
+                  />,
+                  <DropdownMenu key="batch-actions">
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline">Actions groupées</Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem disabled={selectedIds.size === 0} onClick={clearSelection}>
+                        Effacer la sélection
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>,
                 ]}
               />
             }
+            advancedFilters={
+              <AdvancedFiltersPanel
+                open={isAdvancedFiltersOpen}
+                onReset={resetAdvancedFilters}
+                resetDisabled={activeAdvancedFiltersCount === 0}
+              >
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="reservation-date-debut">Date début</Label>
+                    <Input id="reservation-date-debut" type="date" value={dateDebut} onChange={(event) => setDateDebut(event.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="reservation-date-fin">Date fin</Label>
+                    <Input id="reservation-date-fin" type="date" value={dateFin} onChange={(event) => setDateFin(event.target.value)} />
+                  </div>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Montant</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input type="number" placeholder="Min" value={montantMin} onChange={(event) => setMontantMin(event.target.value)} />
+                      <Input type="number" placeholder="Max" value={montantMax} onChange={(event) => setMontantMax(event.target.value)} />
+                    </div>
+                  </div>
+                </div>
+              </AdvancedFiltersPanel>
+            }
           >
             <ReservationTable
-              reservations={filteredReservations}
+              reservations={paginatedItems}
               onEdit={handleEdit}
               onCreerEngagement={handleCreerEngagement}
               onAnnuler={handleAnnulationRequest}
               onDelete={handleDelete}
               onCreerDepenseUrgence={handleCreerDepenseUrgence}
               onViewDetails={handleOpenSnapshot}
+              selection={{ selectedIds, allSelected, toggleOne, toggleAll }}
               stickyHeader
               stickyHeaderOffset={0}
               scrollContainerClassName="max-h-[calc(100vh-220px)] overflow-auto"
+              footer={
+                <PaginationControls
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalCount={totalCount}
+                  pageSize={pageSize}
+                  onPageChange={goToPage}
+                  onPageSizeChange={setPageSize}
+                  isLoading={isLoading}
+                  itemLabel="réservations"
+                  showKeyboardHint
+                />
+              }
             />
           </ListLayout>
         </div>
@@ -572,32 +662,6 @@ const Reservations = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <CreateDepenseUrgenceFromReservationDialog
-        open={!!reservationForDepense}
-        onOpenChange={(open) => !open && setReservationForDepenseId(null)}
-        reservation={reservationForDepense}
-        onSave={async (data) => {
-          try {
-            const reservation = reservationForDepense;
-            await createDepenseFromReservation(data);
-
-            setReservationForDepenseId(null);
-
-            showNavigationToast({
-              title: 'Dépense urgente créée',
-              description: `La dépense d'urgence a été créée depuis la réservation ${reservation?.numero || ''}.`,
-              targetPage: {
-                name: 'Dépenses',
-                path: '/app/depenses',
-              },
-              navigate,
-            });
-          } catch (error) {
-            console.error('Erreur création dépense urgente:', error);
-          }
-        }}
-      />
       </div>
     </>
   );

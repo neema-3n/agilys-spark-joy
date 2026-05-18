@@ -6,7 +6,7 @@ import type { FinancialVentilation } from '@/types/financial.types';
 const toCamelCase = (obj: any): any => {
   if (Array.isArray(obj)) {
     return obj.map(v => toCamelCase(v));
-  } else if (obj !== null && obj.constructor === Object) {
+  } else if (obj && typeof obj === 'object' && obj.constructor === Object) {
     return Object.keys(obj).reduce((result, key) => {
       const camelKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
       result[camelKey] = toCamelCase(obj[key]);
@@ -19,7 +19,7 @@ const toCamelCase = (obj: any): any => {
 const toSnakeCase = (obj: any): any => {
   if (Array.isArray(obj)) {
     return obj.map(v => toSnakeCase(v));
-  } else if (obj !== null && obj.constructor === Object) {
+  } else if (obj && typeof obj === 'object' && obj.constructor === Object) {
     return Object.keys(obj).reduce((result, key) => {
       const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
       result[snakeKey] = toSnakeCase(obj[key]);
@@ -48,6 +48,12 @@ export const getPaiements = async (exerciceId: string, clientId: string): Promis
           code
         )
       ),
+      compte_tresorerie:comptes_tresorerie!compte_tresorerie_id (
+        id,
+        code,
+        libelle,
+        type
+      ),
       ecritures_comptables!paiement_id(count)
     `)
     .eq('exercice_id', exerciceId)
@@ -73,6 +79,7 @@ export const getPaiements = async (exerciceId: string, clientId: string): Promis
       charge_principale_mode: paie.charge_principale_mode ?? 'nature',
       nature_compte_charge_id: paie.nature_compte_charge_id ?? null,
       compte_charge_id: paie.compte_charge_id ?? null,
+      compte_tresorerie_id: paie.compte_tresorerie_id ?? null,
       ventilations: parseVentilations(paie.ventilations),
     };
   });
@@ -142,6 +149,87 @@ export const createPaiement = async (
   }
 
   return toCamelCase(data);
+};
+
+export const updatePaiement = async (
+  id: string,
+  paiement: PaiementFormData,
+): Promise<Paiement> => {
+  const { data, error } = await supabase
+    .from('paiements')
+    .update({
+      ...toSnakeCase(paiement),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select(`
+      *,
+      depense:depenses!depense_id (
+        id,
+        numero,
+        objet,
+        montant,
+        fournisseur:fournisseurs (
+          id,
+          nom,
+          code
+        )
+      ),
+      compte_tresorerie:comptes_tresorerie!compte_tresorerie_id (
+        id,
+        code,
+        libelle,
+        type
+      )
+    `)
+    .single();
+
+  if (error) {
+    console.error('Error updating paiement:', error);
+    throw error;
+  }
+
+  return toCamelCase({
+    ...data,
+    montant_ht: data.montant_ht ?? data.montant,
+    montant_ttc: data.montant_ttc ?? data.montant,
+    montant_net_paye: data.montant_net_paye ?? data.montant,
+    total_ajouts: data.total_ajouts ?? 0,
+    total_retraits: data.total_retraits ?? 0,
+    charge_principale_mode: data.charge_principale_mode ?? 'nature',
+    nature_compte_charge_id: data.nature_compte_charge_id ?? null,
+    compte_charge_id: data.compte_charge_id ?? null,
+    compte_tresorerie_id: data.compte_tresorerie_id ?? null,
+    ventilations: parseVentilations(data.ventilations),
+  });
+};
+
+export const validerPaiement = async (
+  id: string,
+  clientId: string,
+  exerciceId: string,
+): Promise<Paiement> => {
+  const updated = await updatePaiement(id, { statut: 'valide' });
+
+  const { data, error } = await supabase.functions.invoke('generate-ecritures-comptables', {
+    body: {
+      typeOperation: 'paiement',
+      sourceId: id,
+      clientId,
+      exerciceId,
+    },
+  });
+
+  if (error) {
+    console.error('Error validating paiement accounting:', error);
+    throw new Error('Le paiement a été validé mais la génération des écritures comptables a échoué.');
+  }
+
+  if (!data?.success) {
+    throw new Error(data?.error || 'La validation du paiement a échoué côté comptabilité.');
+  }
+
+  return updated;
 };
 
 // Annuler un paiement

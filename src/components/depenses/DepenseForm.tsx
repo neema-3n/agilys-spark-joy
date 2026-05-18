@@ -22,7 +22,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
 import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
 import { useFournisseurs } from '@/hooks/useFournisseurs';
@@ -33,8 +32,11 @@ import { useFactures } from '@/hooks/useFactures';
 import { useComptes } from '@/hooks/useComptes';
 import { useNaturesCompte } from '@/hooks/useNaturesCompte';
 import { ChargePrincipaleField } from '@/components/finance/ChargePrincipaleField';
-import { VentilationEditor } from '@/components/finance/VentilationEditor';
-import { resolveChargePrincipale } from '@/lib/charge-principale-utils';
+import { FinancialQualificationSection } from '@/components/finance/FinancialQualificationSection';
+import {
+  normalizeChargePrincipaleForEditor,
+  resolveChargePrincipale,
+} from '@/lib/charge-principale-utils';
 import {
   computeFinancialBreakdown,
   getCoherenceErrors,
@@ -47,7 +49,6 @@ import type {
   ChargePrincipaleMode,
   FinancialVentilation,
 } from '@/types/financial.types';
-import { CheckCircle2, CircleAlert } from 'lucide-react';
 
 const depenseSchema = z.object({
   engagementId: z.string().optional(),
@@ -157,6 +158,15 @@ export const DepenseForm = ({
       observations: '',
     },
   });
+  const watchedFactureId = form.watch('factureId');
+  const hasInheritedFinancialStructure =
+    !!preSelectedFacture?.id || !!depense?.factureId || (typeImputation === 'facture' && !!watchedFactureId);
+
+  const setUnifiedFinancialAmount = (amount: number) => {
+    form.setValue('montantHT', amount, { shouldDirty: true, shouldValidate: true });
+    form.setValue('montantTTC', amount, { shouldDirty: true, shouldValidate: true });
+    form.setValue('montantNetPaye', amount, { shouldDirty: true, shouldValidate: true });
+  };
 
   useEffect(() => {
     initializedRef.current = false;
@@ -166,6 +176,12 @@ export const DepenseForm = ({
     if (initializedRef.current) return;
 
     if (depense) {
+      const normalizedChargePrincipale = normalizeChargePrincipaleForEditor(
+        depense.chargePrincipaleMode,
+        depense.natureCompteChargeId,
+        depense.compteChargeId,
+      );
+
       form.reset({
         engagementId: depense.engagementId || '',
         reservationCreditId: depense.reservationCreditId || '',
@@ -184,9 +200,9 @@ export const DepenseForm = ({
         observations: depense.observations || '',
       });
       setVentilations(depense.ventilations || []);
-      setChargePrincipaleMode(depense.chargePrincipaleMode || 'nature');
-      setNatureCompteChargeId(depense.natureCompteChargeId);
-      setCompteChargeId(depense.compteChargeId);
+      setChargePrincipaleMode(normalizedChargePrincipale.chargePrincipaleMode);
+      setNatureCompteChargeId(normalizedChargePrincipale.natureCompteChargeId);
+      setCompteChargeId(normalizedChargePrincipale.compteChargeId);
       const nextTypeImputation = depense.factureId
         ? 'facture'
         : depense.engagementId
@@ -201,9 +217,9 @@ export const DepenseForm = ({
         nextTypeImputation,
         nextTypeBeneficiaire,
         depense.ventilations || [],
-        depense.chargePrincipaleMode || 'nature',
-        depense.natureCompteChargeId,
-        depense.compteChargeId,
+        normalizedChargePrincipale.chargePrincipaleMode,
+        normalizedChargePrincipale.natureCompteChargeId,
+        normalizedChargePrincipale.compteChargeId,
       );
       initializedRef.current = true;
       return;
@@ -214,6 +230,12 @@ export const DepenseForm = ({
     const selectedReservation = preSelectedReservation || undefined;
 
     if (selectedFacture) {
+      const normalizedChargePrincipale = normalizeChargePrincipaleForEditor(
+        selectedFacture.chargePrincipaleMode,
+        selectedFacture.natureCompteChargeId,
+        selectedFacture.compteChargeId,
+      );
+
       setTypeImputation('facture');
       setTypeBeneficiaire('fournisseur');
       form.reset({
@@ -234,11 +256,16 @@ export const DepenseForm = ({
         observations: '',
       });
       setVentilations(selectedFacture.ventilations || []);
+      setChargePrincipaleMode(normalizedChargePrincipale.chargePrincipaleMode);
+      setNatureCompteChargeId(normalizedChargePrincipale.natureCompteChargeId);
+      setCompteChargeId(normalizedChargePrincipale.compteChargeId);
       initialEditorStateRef.current = serializeEditorState(
         'facture',
         'fournisseur',
         selectedFacture.ventilations || [],
-        'nature',
+        normalizedChargePrincipale.chargePrincipaleMode,
+        normalizedChargePrincipale.natureCompteChargeId,
+        normalizedChargePrincipale.compteChargeId,
       );
       initializedRef.current = true;
       return;
@@ -380,22 +407,31 @@ export const DepenseForm = ({
   const coherenceErrors = getCoherenceErrors(breakdown);
 
   const handleSubmit = async (values: DepenseSchemaValues) => {
-    const resolvedChargePrincipale = resolveChargePrincipale({
-      mode: chargePrincipaleMode,
-      natureCompteId: natureCompteChargeId,
-      compteChargeId,
-      naturesCompte,
-    });
+    const resolvedChargePrincipale = hasInheritedFinancialStructure
+      ? {
+          chargePrincipaleMode: undefined,
+          natureCompteChargeId: undefined,
+          compteChargeId: undefined,
+          error: undefined,
+        }
+      : resolveChargePrincipale({
+          mode: chargePrincipaleMode,
+          natureCompteId: natureCompteChargeId,
+          compteChargeId,
+          naturesCompte,
+        });
 
     if (resolvedChargePrincipale.error) {
       form.setError('objet', { type: 'manual', message: resolvedChargePrincipale.error });
       return;
     }
 
-    if (coherenceErrors.length > 0) {
+    if (!hasInheritedFinancialStructure && coherenceErrors.length > 0) {
       form.setError('montantNetPaye', { type: 'manual', message: coherenceErrors[0] });
       return;
     }
+
+    const montantExecution = values.montantTTC;
 
     const payload: DepenseFormData = {
       engagementId: values.engagementId || undefined,
@@ -406,12 +442,12 @@ export const DepenseForm = ({
       beneficiaire: typeBeneficiaire === 'direct' ? values.beneficiaire || undefined : undefined,
       projetId: values.projetId || undefined,
       objet: values.objet,
-      montant: values.montantTTC,
-      montantHT: values.montantHT,
-      montantTTC: values.montantTTC,
-      montantNetPaye: values.montantNetPaye,
-      totalAjouts: breakdown.totalAjouts,
-      totalRetraits: breakdown.totalRetraits,
+      montant: montantExecution,
+      montantHT: hasInheritedFinancialStructure ? montantExecution : values.montantHT,
+      montantTTC: montantExecution,
+      montantNetPaye: hasInheritedFinancialStructure ? montantExecution : values.montantNetPaye,
+      totalAjouts: hasInheritedFinancialStructure ? 0 : breakdown.totalAjouts,
+      totalRetraits: hasInheritedFinancialStructure ? 0 : breakdown.totalRetraits,
       dateDepense: values.dateDepense,
       modePaiement: values.modePaiement as DepenseFormData['modePaiement'],
       referencePaiement: values.referencePaiement || undefined,
@@ -419,7 +455,7 @@ export const DepenseForm = ({
       chargePrincipaleMode: resolvedChargePrincipale.chargePrincipaleMode,
       natureCompteChargeId: resolvedChargePrincipale.natureCompteChargeId,
       compteChargeId: resolvedChargePrincipale.compteChargeId,
-      ventilations,
+      ventilations: hasInheritedFinancialStructure ? [] : ventilations,
     };
 
     await onSubmit(payload);
@@ -431,7 +467,7 @@ export const DepenseForm = ({
         <div className="space-y-1">
           <h3 className="text-lg font-semibold tracking-tight">Noyau de saisie</h3>
           <p className="text-sm text-muted-foreground">
-            Identifiez la dépense, son imputation, son bénéficiaire et ses montants pivots.
+            Identifiez la dépense, son imputation et son bénéficiaire.
           </p>
         </div>
         <Card>
@@ -642,91 +678,95 @@ export const DepenseForm = ({
               />
             </div>
 
-            <ChargePrincipaleField
-              mode={chargePrincipaleMode}
-              onModeChange={setChargePrincipaleMode}
-              natureCompteId={natureCompteChargeId}
-              onNatureCompteIdChange={setNatureCompteChargeId}
-              compteChargeId={compteChargeId}
-              onCompteChargeIdChange={setCompteChargeId}
-              naturesCompte={naturesCompte}
-              comptesCharge={comptesCharge}
-            />
-
-            <div className="grid gap-4 md:grid-cols-3">
-              <FormField
-                control={form.control}
-                name="montantHT"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Montant HT</FormLabel>
-                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="montantTTC"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Montant TTC</FormLabel>
-                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="montantNetPaye"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Montant net payé</FormLabel>
-                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
           </CardContent>
         </Card>
       </section>
 
-      <VentilationEditor ventilations={ventilations} onChange={setVentilations} />
-
-      <Card>
-        <CardContent className="grid gap-4 pt-6 md:grid-cols-3">
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Total ajouts</p>
-            <p className="text-lg font-semibold tabular-nums">{breakdown.totalAjouts.toFixed(2)}</p>
+      <FinancialQualificationSection
+        mode={hasInheritedFinancialStructure ? 'inherited' : 'editable'}
+        title="Qualification financière"
+        editableDescription="Qualifiez comptablement le montant de la dépense et vérifiez sa ventilation."
+        inheritedDescription="La charge est héritée de la facture source. Seul le montant de la dépense reste saisissable."
+        chargeField={
+          <ChargePrincipaleField
+            mode={chargePrincipaleMode}
+            onModeChange={setChargePrincipaleMode}
+            natureCompteId={natureCompteChargeId}
+            onNatureCompteIdChange={setNatureCompteChargeId}
+            compteChargeId={compteChargeId}
+            onCompteChargeIdChange={setCompteChargeId}
+            naturesCompte={naturesCompte}
+            comptesCharge={comptesCharge}
+          />
+        }
+        amountFields={
+          <div className="grid gap-4 md:grid-cols-3">
+            <FormField
+              control={form.control}
+              name="montantHT"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Montant HT</FormLabel>
+                  <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="montantTTC"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Montant TTC</FormLabel>
+                  <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="montantNetPaye"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Montant net payé</FormLabel>
+                  <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Total retraits</p>
-            <p className="text-lg font-semibold tabular-nums">{breakdown.totalRetraits.toFixed(2)}</p>
-          </div>
-          <div className="flex items-center justify-start gap-3 rounded-lg border px-4 py-3 md:justify-end">
-            {coherenceErrors.length > 0 ? (
-              <>
-                <CircleAlert className="h-5 w-5 text-destructive" />
-                <div className="space-y-1 text-left">
-                  <p className="text-sm font-medium text-destructive">Montants incohérents</p>
-                  <p className="text-xs text-muted-foreground">{coherenceErrors[0]}</p>
-                </div>
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                <div className="space-y-1 text-left">
-                  <p className="text-sm font-medium text-emerald-700">Montants cohérents</p>
-                  <p className="text-xs text-muted-foreground">
-                    La ventilation est compatible avec les montants saisis.
-                  </p>
-                </div>
-              </>
+        }
+        inheritedAmountField={
+          <FormField
+            control={form.control}
+            name="montantTTC"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Montant de la dépense</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={field.value}
+                    onChange={(event) => {
+                      const amount = Number(event.target.value) || 0;
+                      field.onChange(amount);
+                      setUnifiedFinancialAmount(amount);
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
-          </div>
-        </CardContent>
-      </Card>
+          />
+        }
+        ventilations={ventilations}
+        onVentilationsChange={setVentilations}
+        totalAjouts={breakdown.totalAjouts}
+        totalRetraits={breakdown.totalRetraits}
+        coherenceError={coherenceErrors[0]}
+        ventilationEntityLabel="la dépense"
+      />
 
       <section className="space-y-3">
         <div className="space-y-1">

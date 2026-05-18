@@ -19,6 +19,11 @@ import { useSnapshotState } from '@/hooks/useSnapshotState';
 import { ListLayout } from '@/components/lists/ListLayout';
 import { ListToolbar } from '@/components/lists/ListToolbar';
 import { ListPageLoading } from '@/components/lists/ListPageLoading';
+import { PaginationControls } from '@/components/lists/PaginationControls';
+import {
+  AdvancedFiltersPanel,
+  AdvancedFiltersToggleButton,
+} from '@/components/lists/AdvancedFiltersPanel';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +34,9 @@ import {
 import { CTA_REVEAL_STYLES, useHeaderCtaReveal } from '@/hooks/useHeaderCtaReveal';
 import { Card, CardContent } from '@/components/ui/card';
 import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
+import { useClientPagination } from '@/hooks/useClientPagination';
+import { useListSelection } from '@/hooks/useListSelection';
+import { Input } from '@/components/ui/input';
 
 type BonsCommandeLocationState = {
   initialEngagementId?: string;
@@ -61,6 +69,12 @@ const BonsCommande = () => {
   const [statutFilter, setStatutFilter] = useState<'tous' | 'brouillon' | 'valide' | 'en_cours' | 'receptionne' | 'facture' | 'annule'>(
     'tous'
   );
+  const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState<'tous' | 'engagement' | 'direct'>('tous');
+  const [dateDebut, setDateDebut] = useState('');
+  const [dateFin, setDateFin] = useState('');
+  const [montantMin, setMontantMin] = useState('');
+  const [montantMax, setMontantMax] = useState('');
 
   const {
     bonsCommande,
@@ -122,6 +136,11 @@ const BonsCommande = () => {
 
     return bonsCommande
       .filter((bc) => (statutFilter === 'tous' ? true : bc.statut === statutFilter))
+      .filter((bc) => (sourceFilter === 'tous' ? true : sourceFilter === 'engagement' ? !!bc.engagementId : !bc.engagementId))
+      .filter((bc) => (!dateDebut ? true : bc.dateCommande >= dateDebut))
+      .filter((bc) => (!dateFin ? true : bc.dateCommande <= dateFin))
+      .filter((bc) => (!montantMin ? true : bc.montant >= Number(montantMin)))
+      .filter((bc) => (!montantMax ? true : bc.montant <= Number(montantMax)))
       .filter((bc) => {
         if (!searchLower) return true;
         return (
@@ -132,7 +151,30 @@ const BonsCommande = () => {
         );
       })
       .sort((a, b) => new Date(b.dateCommande).getTime() - new Date(a.dateCommande).getTime());
-  }, [bonsCommande, searchTerm, statutFilter]);
+  }, [bonsCommande, dateDebut, dateFin, montantMax, montantMin, searchTerm, sourceFilter, statutFilter]);
+
+  const activeAdvancedFiltersCount = [sourceFilter !== 'tous', !!dateDebut, !!dateFin, !!montantMin, !!montantMax].filter(Boolean).length;
+
+  const {
+    currentPage,
+    pageSize,
+    totalCount,
+    totalPages,
+    paginatedItems,
+    goToPage,
+    setPageSize,
+  } = useClientPagination(filteredBonsCommande, {
+    initialPageSize: 25,
+    resetKey: [searchTerm, statutFilter, sourceFilter, dateDebut, dateFin, montantMin, montantMax].join('|'),
+  });
+
+  const selectionIds = useMemo(() => paginatedItems.map((bc) => bc.id), [paginatedItems]);
+  const { selectedIds, allSelected, toggleOne, toggleAll, clearSelection } = useListSelection(selectionIds);
+  const selectedBonsCommande = useMemo(
+    () => paginatedItems.filter((bc) => selectedIds.has(bc.id)),
+    [paginatedItems, selectedIds]
+  );
+  const hasBrouillonsSelected = selectedBonsCommande.some((bc) => bc.statut === 'brouillon');
 
   const handleCreate = useCallback(() => {
     navigate('/app/bons-commande/create');
@@ -242,6 +284,33 @@ const BonsCommande = () => {
     overlayAriaLabel: 'Quitter le formulaire de bon de commande',
   });
 
+  const statutOptions: { value: typeof statutFilter; label: string }[] = [
+    { value: 'tous', label: 'Tous' },
+    { value: 'brouillon', label: 'Brouillon' },
+    { value: 'valide', label: 'Validé' },
+    { value: 'en_cours', label: 'En cours' },
+    { value: 'receptionne', label: 'Réceptionné' },
+    { value: 'facture', label: 'Facturé' },
+    { value: 'annule', label: 'Annulé' },
+  ];
+
+  const activeStatutLabel = statutOptions.find((option) => option.value === statutFilter)?.label || 'Tous';
+
+  const resetAdvancedFilters = useCallback(() => {
+    setSourceFilter('tous');
+    setDateDebut('');
+    setDateFin('');
+    setMontantMin('');
+    setMontantMax('');
+  }, []);
+
+  const handleBatchValider = useCallback(async () => {
+    const candidates = selectedBonsCommande.filter((bc) => bc.statut === 'brouillon');
+    if (candidates.length === 0) return;
+    await Promise.all(candidates.map((bc) => validerBonCommande(bc.id)));
+    clearSelection();
+  }, [clearSelection, selectedBonsCommande, validerBonCommande]);
+
   if (isLoading) {
     return (
       <ListPageLoading
@@ -278,18 +347,6 @@ const BonsCommande = () => {
       }
     />
   );
-
-  const statutOptions: { value: typeof statutFilter; label: string }[] = [
-    { value: 'tous', label: 'Tous' },
-    { value: 'brouillon', label: 'Brouillon' },
-    { value: 'valide', label: 'Validé' },
-    { value: 'en_cours', label: 'En cours' },
-    { value: 'receptionne', label: 'Réceptionné' },
-    { value: 'facture', label: 'Facturé' },
-    { value: 'annule', label: 'Annulé' },
-  ];
-
-  const activeStatutLabel = statutOptions.find((option) => option.value === statutFilter)?.label || 'Tous';
 
   return (
     <>
@@ -400,12 +457,70 @@ const BonsCommande = () => {
                               <DropdownMenuItem onClick={() => setStatutFilter('tous')}>Réinitialiser</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>,
+                          <AdvancedFiltersToggleButton
+                            key="advanced-filters"
+                            open={isAdvancedFiltersOpen}
+                            onToggle={() => setIsAdvancedFiltersOpen((open) => !open)}
+                            activeCount={activeAdvancedFiltersCount}
+                          />,
+                          <DropdownMenu key="batch-actions">
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline">Actions groupées</Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem disabled={!hasBrouillonsSelected} onClick={handleBatchValider}>
+                                Valider les brouillons
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem disabled={selectedIds.size === 0} onClick={clearSelection}>
+                                Effacer la sélection
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>,
                         ]}
                       />
                     }
+                    advancedFilters={
+                      <AdvancedFiltersPanel
+                        open={isAdvancedFiltersOpen}
+                        onReset={resetAdvancedFilters}
+                        resetDisabled={activeAdvancedFiltersCount === 0}
+                      >
+                        <div className="grid gap-4 md:grid-cols-3">
+                          <div className="space-y-2">
+                            <Label>Source</Label>
+                            <Select value={sourceFilter} onValueChange={(value) => setSourceFilter(value as typeof sourceFilter)}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="tous">Toutes les sources</SelectItem>
+                                <SelectItem value="engagement">Depuis engagement</SelectItem>
+                                <SelectItem value="direct">Sans engagement</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="bc-date-debut">Date début</Label>
+                            <Input id="bc-date-debut" type="date" value={dateDebut} onChange={(event) => setDateDebut(event.target.value)} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="bc-date-fin">Date fin</Label>
+                            <Input id="bc-date-fin" type="date" value={dateFin} onChange={(event) => setDateFin(event.target.value)} />
+                          </div>
+                        </div>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div className="space-y-2">
+                            <Label>Montant</Label>
+                            <div className="grid grid-cols-2 gap-2">
+                              <Input type="number" placeholder="Min" value={montantMin} onChange={(event) => setMontantMin(event.target.value)} />
+                              <Input type="number" placeholder="Max" value={montantMax} onChange={(event) => setMontantMax(event.target.value)} />
+                            </div>
+                          </div>
+                        </div>
+                      </AdvancedFiltersPanel>
+                    }
                   >
                     <BonCommandeTable
-                      bonsCommande={filteredBonsCommande}
+                      bonsCommande={paginatedItems}
                       onEdit={handleEdit}
                       onValider={validerBonCommande}
                       onMettreEnCours={mettreEnCours}
@@ -414,9 +529,23 @@ const BonsCommande = () => {
                       onDelete={deleteBonCommande}
                       onCreateFacture={handleCreateFacture}
                       onViewDetails={openBonCommandeSnapshot}
+                      selection={{ selectedIds, allSelected, toggleOne, toggleAll }}
                       stickyHeader
                       stickyHeaderOffset={0}
                       scrollContainerClassName="max-h-[calc(100vh-220px)] overflow-auto"
+                      footer={
+                        <PaginationControls
+                          currentPage={currentPage}
+                          totalPages={totalPages}
+                          totalCount={totalCount}
+                          pageSize={pageSize}
+                          onPageChange={goToPage}
+                          onPageSizeChange={setPageSize}
+                          isLoading={isLoading}
+                          itemLabel="bons de commande"
+                          showKeyboardHint
+                        />
+                      }
                     />
                   </ListLayout>
                 </>

@@ -28,6 +28,7 @@ interface DepenseTableProps {
   stickyHeader?: boolean;
   stickyHeaderOffset?: number;
   scrollContainerClassName?: string;
+  footer?: React.ReactNode;
 }
 
 export const DepenseTable = ({
@@ -44,6 +45,7 @@ export const DepenseTable = ({
   stickyHeader = false,
   stickyHeaderOffset = 0,
   scrollContainerClassName,
+  footer,
 }: DepenseTableProps) => {
   const formatMontant = (montant: number) => {
     return formatCurrency(montant);
@@ -262,6 +264,7 @@ export const DepenseTable = ({
       stickyHeader={stickyHeader}
       stickyHeaderOffset={stickyHeaderOffset}
       scrollContainerClassName={scrollContainerClassName}
+      footer={footer}
     />
   );
 };

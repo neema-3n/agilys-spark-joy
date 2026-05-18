@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { StatsCard } from '@/components/ui/stats-card';
-import { Banknote, CheckCircle, TrendingUp } from 'lucide-react';
+import { Banknote, CheckCircle, PencilLine, TrendingUp } from 'lucide-react';
 import { Paiement } from '@/types/paiement.types';
+import { formatCurrency } from '@/lib/utils';
 
 interface PaiementStatsProps {
   paiements: Paiement[];
@@ -15,6 +16,7 @@ export const PaiementStats = ({ paiements }: PaiementStatsProps) => {
       .split('T')[0];
 
     const nombreTotal = paiements.length;
+    const nombreBrouillon = paiements.filter(p => p.statut === 'brouillon').length;
     const nombreValide = paiements.filter(p => p.statut === 'valide').length;
 
     const montantTotal = paiements
@@ -31,10 +33,11 @@ export const PaiementStats = ({ paiements }: PaiementStatsProps) => {
 
     return {
       nombreTotal: nombreTotal.toString(),
+      nombreBrouillon: nombreBrouillon.toString(),
       nombreValide: nombreValide.toString(),
-      montantTotal: `${montantTotal.toFixed(2)} €`,
-      montantAujourdHui: `${montantAujourdHui.toFixed(2)} €`,
-      montantCeMois: `${montantCeMois.toFixed(2)} €`,
+      montantTotal: formatCurrency(montantTotal),
+      montantAujourdHui: formatCurrency(montantAujourdHui),
+      montantCeMois: formatCurrency(montantCeMois),
     };
   }, [paiements]);
 
@@ -46,7 +49,12 @@ export const PaiementStats = ({ paiements }: PaiementStatsProps) => {
         icon={Banknote}
       />
       <StatsCard
-        title="Paiements valides"
+        title="Brouillons"
+        value={stats.nombreBrouillon}
+        icon={PencilLine}
+      />
+      <StatsCard
+        title="Paiements validés"
         value={stats.nombreValide}
         icon={CheckCircle}
       />

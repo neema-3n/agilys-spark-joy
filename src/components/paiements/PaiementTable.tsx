@@ -9,8 +9,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ListColumn, ListTable } from '@/components/lists/ListTable';
+import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/selectionColumn';
 import { formatCurrency } from '@/lib/utils';
-import { Eye, XCircle } from 'lucide-react';
+import { CheckCircle2, Eye, Pencil, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { Paiement } from '@/types/paiement.types';
@@ -18,10 +19,14 @@ import type { Paiement } from '@/types/paiement.types';
 interface PaiementTableProps {
   paiements: Paiement[];
   onView?: (id: string) => void;
+  onEdit?: (id: string) => void;
+  onValidate?: (id: string) => void;
   onAnnuler?: (id: string) => void;
+  selection?: ListSelectionHandlers;
   stickyHeader?: boolean;
   stickyHeaderOffset?: number;
   scrollContainerClassName?: string;
+  footer?: React.ReactNode;
 }
 
 const formatDate = (dateString: string) => format(new Date(dateString), 'dd/MM/yyyy', { locale: fr });
@@ -29,10 +34,14 @@ const formatDate = (dateString: string) => format(new Date(dateString), 'dd/MM/y
 export const PaiementTable = ({
   paiements,
   onView,
+  onEdit,
+  onValidate,
   onAnnuler,
+  selection,
   stickyHeader = false,
   stickyHeaderOffset = 0,
   scrollContainerClassName,
+  footer,
 }: PaiementTableProps) => {
   const modes: Record<string, string> = {
     virement: 'Virement',
@@ -44,10 +53,31 @@ export const PaiementTable = ({
 
   const columns: ListColumn<Paiement>[] = useMemo(
     () => [
+      ...(selection
+        ? [
+            buildSelectionColumn<Paiement>({
+              selection,
+              getId: (paiement) => paiement.id,
+              getLabel: (paiement) => `Sélectionner le paiement ${paiement.numero}`,
+              allLabel: 'Sélectionner tous les paiements',
+            }),
+          ]
+        : []),
       {
         id: 'numero',
         header: 'Numéro',
-        render: (paiement) => paiement.numero,
+        render: (paiement) =>
+          onView ? (
+            <button
+              type="button"
+              className="text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded"
+              onClick={() => onView(paiement.id)}
+            >
+              {paiement.numero}
+            </button>
+          ) : (
+            paiement.numero
+          ),
       },
       {
         id: 'date',
@@ -84,8 +114,20 @@ export const PaiementTable = ({
         id: 'statut',
         header: 'Statut',
         render: (paiement) => (
-          <Badge variant={paiement.statut === 'valide' ? 'success' : 'destructive'}>
-            {paiement.statut === 'valide' ? 'Validé' : 'Annulé'}
+          <Badge
+            variant={
+              paiement.statut === 'valide'
+                ? 'success'
+                : paiement.statut === 'brouillon'
+                  ? 'secondary'
+                  : 'destructive'
+            }
+          >
+            {paiement.statut === 'valide'
+              ? 'Validé'
+              : paiement.statut === 'brouillon'
+                ? 'Brouillon'
+                : 'Annulé'}
           </Badge>
         ),
       },
@@ -108,6 +150,18 @@ export const PaiementTable = ({
                   Voir
                 </DropdownMenuItem>
               )}
+              {paiement.statut === 'brouillon' && onEdit && (
+                <DropdownMenuItem onClick={() => onEdit(paiement.id)}>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Modifier
+                </DropdownMenuItem>
+              )}
+              {paiement.statut === 'brouillon' && onValidate && (
+                <DropdownMenuItem onClick={() => onValidate(paiement.id)}>
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Valider
+                </DropdownMenuItem>
+              )}
               {paiement.statut === 'valide' && onAnnuler && (
                 <>
                   <DropdownMenuSeparator />
@@ -122,7 +176,7 @@ export const PaiementTable = ({
         ),
       },
     ],
-    [onAnnuler, onView]
+    [onAnnuler, onEdit, onValidate, onView, selection]
   );
 
   return (
@@ -135,6 +189,7 @@ export const PaiementTable = ({
       stickyHeader={stickyHeader}
       stickyHeaderOffset={stickyHeaderOffset}
       scrollContainerClassName={scrollContainerClassName}
+      footer={footer}
     />
   );
 };

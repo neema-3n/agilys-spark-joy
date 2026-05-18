@@ -18,6 +18,11 @@ import { useSnapshotState } from '@/hooks/useSnapshotState';
 import { ListLayout } from '@/components/lists/ListLayout';
 import { ListToolbar } from '@/components/lists/ListToolbar';
 import { ListPageLoading } from '@/components/lists/ListPageLoading';
+import { PaginationControls } from '@/components/lists/PaginationControls';
+import {
+  AdvancedFiltersPanel,
+  AdvancedFiltersToggleButton,
+} from '@/components/lists/AdvancedFiltersPanel';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,6 +44,15 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import type { EngagementFormData } from '@/types/engagement.types';
 import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
+import { useClientPagination } from '@/hooks/useClientPagination';
+import { useListSelection } from '@/hooks/useListSelection';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 type EngagementLocationState = {
   initialReservationId?: string;
@@ -58,6 +72,12 @@ const Engagements = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statutFilter, setStatutFilter] = useState<'tous' | 'brouillon' | 'valide' | 'engage' | 'liquide' | 'annule'>('tous');
   const [isEngagementDirty, setIsEngagementDirty] = useState(false);
+  const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState<'tous' | 'reservation' | 'direct'>('tous');
+  const [dateDebut, setDateDebut] = useState('');
+  const [dateFin, setDateFin] = useState('');
+  const [montantMin, setMontantMin] = useState('');
+  const [montantMax, setMontantMax] = useState('');
   const navigate = useNavigate();
   const { toast } = useToast();
   const isCreateMode = !!createMatch;
@@ -85,6 +105,13 @@ const Engagements = () => {
     const term = searchTerm.trim().toLowerCase();
     return engagements
       .filter((engagement) => (statutFilter === 'tous' ? true : engagement.statut === statutFilter))
+      .filter((engagement) =>
+        sourceFilter === 'tous' ? true : sourceFilter === 'reservation' ? !!engagement.reservationCreditId : !engagement.reservationCreditId
+      )
+      .filter((engagement) => (!dateDebut ? true : engagement.dateCreation >= dateDebut))
+      .filter((engagement) => (!dateFin ? true : engagement.dateCreation <= dateFin))
+      .filter((engagement) => (!montantMin ? true : engagement.montant >= Number(montantMin)))
+      .filter((engagement) => (!montantMax ? true : engagement.montant <= Number(montantMax)))
       .filter((engagement) => {
         if (!term) return true;
         return (
@@ -97,7 +124,30 @@ const Engagements = () => {
         );
       })
       .sort((a, b) => new Date(b.dateCreation).getTime() - new Date(a.dateCreation).getTime());
-  }, [engagements, statutFilter, searchTerm]);
+  }, [dateDebut, dateFin, engagements, montantMax, montantMin, searchTerm, sourceFilter, statutFilter]);
+
+  const activeAdvancedFiltersCount = [sourceFilter !== 'tous', !!dateDebut, !!dateFin, !!montantMin, !!montantMax].filter(Boolean).length;
+
+  const {
+    currentPage,
+    pageSize,
+    totalCount,
+    totalPages,
+    paginatedItems,
+    goToPage,
+    setPageSize,
+  } = useClientPagination(filteredEngagements, {
+    initialPageSize: 25,
+    resetKey: [searchTerm, statutFilter, sourceFilter, dateDebut, dateFin, montantMin, montantMax].join('|'),
+  });
+
+  const selectionIds = useMemo(() => paginatedItems.map((engagement) => engagement.id), [paginatedItems]);
+  const { selectedIds, allSelected, toggleOne, toggleAll, clearSelection } = useListSelection(selectionIds);
+  const selectedEngagements = useMemo(
+    () => paginatedItems.filter((engagement) => selectedIds.has(engagement.id)),
+    [paginatedItems, selectedIds]
+  );
+  const hasBrouillonsSelected = selectedEngagements.some((engagement) => engagement.statut === 'brouillon');
 
   const {
     snapshotId: snapshotEngagementId,
@@ -313,6 +363,21 @@ const Engagements = () => {
     navigate('/app/engagements');
   }, [initialReservationId, navigate, routeEditEngagementId]);
 
+  const resetAdvancedFilters = useCallback(() => {
+    setSourceFilter('tous');
+    setDateDebut('');
+    setDateFin('');
+    setMontantMin('');
+    setMontantMax('');
+  }, []);
+
+  const handleBatchValider = useCallback(async () => {
+    const candidates = selectedEngagements.filter((engagement) => engagement.statut === 'brouillon');
+    if (candidates.length === 0) return;
+    await Promise.all(candidates.map((engagement) => validerEngagement(engagement.id)));
+    clearSelection();
+  }, [clearSelection, selectedEngagements, validerEngagement]);
+
   const { guard } = useFocusedEditorGuard({
     active: isEditorMode,
     dirty: isEngagementDirty,
@@ -467,16 +532,74 @@ const Engagements = () => {
                             {option.label}
                           </DropdownMenuItem>
                         ))}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setStatutFilter('tous')}>Réinitialiser</DropdownMenuItem>
+                  </DropdownMenuContent>
+                    </DropdownMenu>,
+                    <AdvancedFiltersToggleButton
+                      key="advanced-filters"
+                      open={isAdvancedFiltersOpen}
+                      onToggle={() => setIsAdvancedFiltersOpen((open) => !open)}
+                      activeCount={activeAdvancedFiltersCount}
+                    />,
+                    <DropdownMenu key="batch-actions">
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline">Actions groupées</Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem disabled={!hasBrouillonsSelected} onClick={handleBatchValider}>
+                          Valider les brouillons
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setStatutFilter('tous')}>Réinitialiser</DropdownMenuItem>
+                        <DropdownMenuItem disabled={selectedIds.size === 0} onClick={clearSelection}>
+                          Effacer la sélection
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>,
                   ]}
                 />
               }
+              advancedFilters={
+                <AdvancedFiltersPanel
+                  open={isAdvancedFiltersOpen}
+                  onReset={resetAdvancedFilters}
+                  resetDisabled={activeAdvancedFiltersCount === 0}
+                >
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label>Source</Label>
+                      <Select value={sourceFilter} onValueChange={(value) => setSourceFilter(value as typeof sourceFilter)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="tous">Toutes les sources</SelectItem>
+                          <SelectItem value="reservation">Depuis réservation</SelectItem>
+                          <SelectItem value="direct">Sans réservation</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="engagement-date-debut">Date début</Label>
+                      <Input id="engagement-date-debut" type="date" value={dateDebut} onChange={(event) => setDateDebut(event.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="engagement-date-fin">Date fin</Label>
+                      <Input id="engagement-date-fin" type="date" value={dateFin} onChange={(event) => setDateFin(event.target.value)} />
+                    </div>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Montant</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input type="number" placeholder="Min" value={montantMin} onChange={(event) => setMontantMin(event.target.value)} />
+                        <Input type="number" placeholder="Max" value={montantMax} onChange={(event) => setMontantMax(event.target.value)} />
+                      </div>
+                    </div>
+                  </div>
+                </AdvancedFiltersPanel>
+              }
             >
               <EngagementTable
-                engagements={filteredEngagements}
+                engagements={paginatedItems}
                 onEdit={handleEdit}
                 onValider={handleValider}
                 onAnnuler={handleAnnulationRequest}
@@ -484,9 +607,23 @@ const Engagements = () => {
                 onCreerBonCommande={handleCreerBonCommande}
                 onCreerDepense={handleCreerDepense}
                 onViewDetails={handleOpenSnapshot}
+                selection={{ selectedIds, allSelected, toggleOne, toggleAll }}
                 stickyHeader
                 stickyHeaderOffset={0}
                 scrollContainerClassName="max-h-[calc(100vh-220px)] overflow-auto"
+                footer={
+                  <PaginationControls
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalCount={totalCount}
+                    pageSize={pageSize}
+                    onPageChange={goToPage}
+                    onPageSizeChange={setPageSize}
+                    isLoading={isLoading}
+                    itemLabel="engagements"
+                    showKeyboardHint
+                  />
+                }
               />
             </ListLayout>
           </>

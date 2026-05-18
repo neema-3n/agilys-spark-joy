@@ -2,9 +2,14 @@ import { useMemo, useState } from 'react';
 import { ArrowLeft, CheckCircle2, Plus } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ListLayout } from '@/components/lists/ListLayout';
 import { ListToolbar } from '@/components/lists/ListToolbar';
 import { ListTable, ListColumn } from '@/components/lists/ListTable';
+import { PaginationControls } from '@/components/lists/PaginationControls';
+import {
+  AdvancedFiltersPanel,
+  AdvancedFiltersToggleButton,
+} from '@/components/lists/AdvancedFiltersPanel';
 import { Badge } from '@/components/ui/badge';
 import { useRapprochementsBancaires } from '@/hooks/useRapprochementsBancaires';
 import { useNavigate, useMatch } from 'react-router-dom';
@@ -12,11 +17,27 @@ import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
 import { RapprochementBancaireForm } from '@/components/tresorerie/RapprochementBancaireForm';
 import type { RapprochementBancaireFormData, RapprochementBancaire } from '@/types/rapprochement-bancaire.types';
 import { formatCurrency } from '@/lib/utils';
+import { useClientPagination } from '@/hooks/useClientPagination';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const TresorerieRapprochements = () => {
   const { rapprochements, createRapprochement, validateRapprochement } = useRapprochementsBancaires();
   const [searchValue, setSearchValue] = useState('');
+  const [statutFilter, setStatutFilter] = useState<'tous' | 'en_cours' | 'valide' | 'annule'>('tous');
   const [isRapprochementDirty, setIsRapprochementDirty] = useState(false);
+  const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
+  const [dateDebutFilter, setDateDebutFilter] = useState('');
+  const [dateFinFilter, setDateFinFilter] = useState('');
+  const [ecartMin, setEcartMin] = useState('');
+  const [ecartMax, setEcartMax] = useState('');
   const navigate = useNavigate();
   const isCreateRoute = !!useMatch('/app/tresorerie/rapprochements/create');
 
@@ -24,12 +45,38 @@ const TresorerieRapprochements = () => {
     const term = searchValue.trim().toLowerCase();
     if (!term) return rapprochements;
 
-    return rapprochements.filter((item) =>
-      [item.numero, item.compte?.code, item.compte?.libelle, item.statut]
-        .filter(Boolean)
-        .some((value) => value!.toLowerCase().includes(term)),
-    );
-  }, [rapprochements, searchValue]);
+    return rapprochements
+      .filter((item) => (statutFilter === 'tous' ? true : item.statut === statutFilter))
+      .filter((item) => (!dateDebutFilter ? true : item.dateDebut >= dateDebutFilter))
+      .filter((item) => (!dateFinFilter ? true : item.dateFin <= dateFinFilter))
+      .filter((item) => (!ecartMin ? true : item.ecart >= Number(ecartMin)))
+      .filter((item) => (!ecartMax ? true : item.ecart <= Number(ecartMax)))
+      .filter((item) =>
+        [item.numero, item.compte?.code, item.compte?.libelle, item.statut]
+          .filter(Boolean)
+          .some((value) => value!.toLowerCase().includes(term)),
+      );
+  }, [dateDebutFilter, dateFinFilter, ecartMax, ecartMin, rapprochements, searchValue, statutFilter]);
+
+  const activeAdvancedFiltersCount = [
+    !!dateDebutFilter,
+    !!dateFinFilter,
+    !!ecartMin,
+    !!ecartMax,
+  ].filter(Boolean).length;
+
+  const {
+    currentPage,
+    pageSize,
+    totalCount,
+    totalPages,
+    paginatedItems,
+    goToPage,
+    setPageSize,
+  } = useClientPagination(filteredItems, {
+    initialPageSize: 25,
+    resetKey: [searchValue, statutFilter, dateDebutFilter, dateFinFilter, ecartMin, ecartMax].join('|'),
+  });
 
   const columns: ListColumn<RapprochementBancaire>[] = [
     { id: 'numero', header: 'Numéro', render: (item) => <span className="font-medium">{item.numero}</span> },
@@ -116,6 +163,13 @@ const TresorerieRapprochements = () => {
     );
   }
 
+  const resetAdvancedFilters = () => {
+    setDateDebutFilter('');
+    setDateFinFilter('');
+    setEcartMin('');
+    setEcartMax('');
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -130,19 +184,79 @@ const TresorerieRapprochements = () => {
         }
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Historique des rapprochements</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <ListLayout
+        title="Historique des rapprochements"
+        description="Contrôle des écarts et validation des rapprochements bancaires"
+        toolbar={
           <ListToolbar
             searchValue={searchValue}
             onSearchChange={setSearchValue}
             searchPlaceholder="Rechercher par numéro ou compte..."
+            filters={[
+              <Select key="statut" value={statutFilter} onValueChange={(value) => setStatutFilter(value as typeof statutFilter)}>
+                <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tous">Statut: Tous</SelectItem>
+                  <SelectItem value="en_cours">Statut: En cours</SelectItem>
+                  <SelectItem value="valide">Statut: Validé</SelectItem>
+                  <SelectItem value="annule">Statut: Annulé</SelectItem>
+                </SelectContent>
+              </Select>,
+              <AdvancedFiltersToggleButton
+                key="advanced-filters"
+                open={isAdvancedFiltersOpen}
+                onToggle={() => setIsAdvancedFiltersOpen((open) => !open)}
+                activeCount={activeAdvancedFiltersCount}
+              />,
+            ]}
           />
-          <ListTable columns={columns} items={filteredItems} getRowId={(item) => item.id} />
-        </CardContent>
-      </Card>
+        }
+        advancedFilters={
+          <AdvancedFiltersPanel
+            open={isAdvancedFiltersOpen}
+            onReset={resetAdvancedFilters}
+            resetDisabled={activeAdvancedFiltersCount === 0}
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="rappro-date-debut">Date début</Label>
+                <Input id="rappro-date-debut" type="date" value={dateDebutFilter} onChange={(event) => setDateDebutFilter(event.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="rappro-date-fin">Date fin</Label>
+                <Input id="rappro-date-fin" type="date" value={dateFinFilter} onChange={(event) => setDateFinFilter(event.target.value)} />
+              </div>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Écart</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input type="number" placeholder="Min" value={ecartMin} onChange={(event) => setEcartMin(event.target.value)} />
+                  <Input type="number" placeholder="Max" value={ecartMax} onChange={(event) => setEcartMax(event.target.value)} />
+                </div>
+              </div>
+            </div>
+          </AdvancedFiltersPanel>
+        }
+      >
+        <ListTable
+          columns={columns}
+          items={paginatedItems}
+          getRowId={(item) => item.id}
+          footer={
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalCount={totalCount}
+              pageSize={pageSize}
+              onPageChange={goToPage}
+              onPageSizeChange={setPageSize}
+              itemLabel="rapprochements"
+              showKeyboardHint
+            />
+          }
+        />
+      </ListLayout>
     </div>
   );
 };

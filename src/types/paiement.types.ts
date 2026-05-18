@@ -1,6 +1,6 @@
 import type { ChargePrincipaleMode, FinancialVentilation } from './financial.types';
 
-export type StatutPaiement = 'valide' | 'annule';
+export type StatutPaiement = 'brouillon' | 'valide' | 'annule';
 export type ModePaiement = 'virement' | 'cheque' | 'especes' | 'carte' | 'autre';
 
 export interface Paiement {
@@ -33,6 +33,7 @@ export interface Paiement {
   // Détails paiement
   datePaiement: string;
   modePaiement: ModePaiement;
+  compteTresorerieId?: string;
   referencePaiement?: string;
   observations?: string;
   
@@ -59,6 +60,12 @@ export interface Paiement {
       code: string;
     };
   };
+  compteTresorerie?: {
+    id: string;
+    code: string;
+    libelle: string;
+    type: string;
+  };
 }
 
 export interface PaiementFormData {
@@ -77,16 +84,19 @@ export interface PaiementFormData {
   totalRetraits?: number;
   datePaiement: string;
   modePaiement: ModePaiement;
+  compteTresorerieId?: string;
   referencePaiement?: string;
   observations?: string;
   chargePrincipaleMode?: ChargePrincipaleMode;
   natureCompteChargeId?: string;
   compteChargeId?: string;
   ventilations?: FinancialVentilation[];
+  statut?: StatutPaiement;
 }
 
 export interface PaiementStats {
   nombreTotal: number;
+  nombreBrouillon: number;
   nombreValide: number;
   nombreAnnule: number;
   montantTotal: number;

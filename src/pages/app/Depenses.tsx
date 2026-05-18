@@ -11,6 +11,8 @@ import { AnnulerDepenseDialog } from '@/components/depenses/AnnulerDepenseDialog
 import { AnnulerMultipleDepensesDialog } from '@/components/depenses/AnnulerMultipleDepensesDialog';
 import { useDepenses } from '@/hooks/useDepenses';
 import { useEngagements } from '@/hooks/useEngagements';
+import { useFactures } from '@/hooks/useFactures';
+import { useReservations } from '@/hooks/useReservations';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { useSnapshotState } from '@/hooks/useSnapshotState';
 import type { DepenseFormData } from '@/types/depense.types';
@@ -35,6 +37,11 @@ import {
 import { ListLayout } from '@/components/lists/ListLayout';
 import { ListToolbar } from '@/components/lists/ListToolbar';
 import { ListPageLoading } from '@/components/lists/ListPageLoading';
+import { PaginationControls } from '@/components/lists/PaginationControls';
+import {
+  AdvancedFiltersPanel,
+  AdvancedFiltersToggleButton,
+} from '@/components/lists/AdvancedFiltersPanel';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   DropdownMenu,
@@ -46,9 +53,13 @@ import {
 import { useListSelection } from '@/hooks/useListSelection';
 import { CTA_REVEAL_STYLES, useHeaderCtaReveal } from '@/hooks/useHeaderCtaReveal';
 import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
+import { Input } from '@/components/ui/input';
+import { useClientPagination } from '@/hooks/useClientPagination';
 
 type DepensesLocationState = {
   initialEngagementId?: string;
+  initialFactureId?: string;
+  initialReservationId?: string;
 };
 
 const Depenses = () => {
@@ -79,6 +90,12 @@ const Depenses = () => {
   const [statutFilter, setStatutFilter] = useState<
     'tous' | 'brouillon' | 'validee' | 'ordonnancee' | 'payee' | 'annulee'
   >('tous');
+  const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState<'tous' | 'facture' | 'engagement' | 'reservation' | 'direct'>('tous');
+  const [dateDebut, setDateDebut] = useState('');
+  const [dateFin, setDateFin] = useState('');
+  const [montantMin, setMontantMin] = useState('');
+  const [montantMax, setMontantMax] = useState('');
   const isCreateMode = !!createMatch;
   const routeEditDepenseId = editMatch?.params.depenseId;
   const isEditMode = !!routeEditDepenseId;
@@ -87,12 +104,33 @@ const Depenses = () => {
     isCreateMode && typeof (location.state as DepensesLocationState | null)?.initialEngagementId === 'string'
       ? ((location.state as DepensesLocationState).initialEngagementId ?? undefined)
       : undefined;
-  const { engagements } = useEngagements();
+  const initialFactureId =
+    isCreateMode && typeof (location.state as DepensesLocationState | null)?.initialFactureId === 'string'
+      ? ((location.state as DepensesLocationState).initialFactureId ?? undefined)
+      : undefined;
+  const initialReservationId =
+    isCreateMode && typeof (location.state as DepensesLocationState | null)?.initialReservationId === 'string'
+      ? ((location.state as DepensesLocationState).initialReservationId ?? undefined)
+      : undefined;
+  const { engagements, isLoading: isEngagementsLoading } = useEngagements();
+  const { factures, isLoading: isFacturesLoading } = useFactures();
+  const { reservations, isLoading: isReservationsLoading } = useReservations();
 
   const filteredDepenses = useMemo(() => {
     const searchLower = searchTerm.trim().toLowerCase();
     return depenses
       .filter((depense) => (statutFilter === 'tous' ? true : depense.statut === statutFilter))
+      .filter((depense) => {
+        if (sourceFilter === 'tous') return true;
+        if (sourceFilter === 'facture') return !!depense.factureId;
+        if (sourceFilter === 'engagement') return !!depense.engagementId;
+        if (sourceFilter === 'reservation') return !!depense.reservationCreditId;
+        return !depense.factureId && !depense.engagementId && !depense.reservationCreditId;
+      })
+      .filter((depense) => (!dateDebut ? true : depense.dateDepense >= dateDebut))
+      .filter((depense) => (!dateFin ? true : depense.dateDepense <= dateFin))
+      .filter((depense) => (!montantMin ? true : depense.montant >= Number(montantMin)))
+      .filter((depense) => (!montantMax ? true : depense.montant <= Number(montantMax)))
       .filter((depense) => {
         if (!searchLower) return true;
         return (
@@ -103,14 +141,35 @@ const Depenses = () => {
         );
       })
       .sort((a, b) => new Date(b.dateDepense).getTime() - new Date(a.dateDepense).getTime());
-  }, [depenses, statutFilter, searchTerm]);
+  }, [dateDebut, dateFin, depenses, montantMax, montantMin, searchTerm, sourceFilter, statutFilter]);
 
-  const selectionIds = useMemo(() => filteredDepenses.map((depense) => depense.id), [filteredDepenses]);
+  const activeAdvancedFiltersCount = [
+    sourceFilter !== 'tous',
+    !!dateDebut,
+    !!dateFin,
+    !!montantMin,
+    !!montantMax,
+  ].filter(Boolean).length;
+
+  const {
+    currentPage,
+    pageSize,
+    totalCount,
+    totalPages,
+    paginatedItems,
+    goToPage,
+    setPageSize,
+  } = useClientPagination(filteredDepenses, {
+    initialPageSize: 25,
+    resetKey: [searchTerm, statutFilter, sourceFilter, dateDebut, dateFin, montantMin, montantMax].join('|'),
+  });
+
+  const selectionIds = useMemo(() => paginatedItems.map((depense) => depense.id), [paginatedItems]);
   const { selectedIds, allSelected, toggleOne, toggleAll, clearSelection } = useListSelection(selectionIds);
 
   const selectedDepenses = useMemo(
-    () => filteredDepenses.filter((depense) => selectedIds.has(depense.id)),
-    [filteredDepenses, selectedIds]
+    () => paginatedItems.filter((depense) => selectedIds.has(depense.id)),
+    [paginatedItems, selectedIds]
   );
 
   const {
@@ -266,6 +325,14 @@ const Depenses = () => {
     // Exemple : exportDepenses(filteredDepenses);
   }, [filteredDepenses]);
 
+  const resetAdvancedFilters = useCallback(() => {
+    setSourceFilter('tous');
+    setDateDebut('');
+    setDateFin('');
+    setMontantMin('');
+    setMontantMax('');
+  }, []);
+
   const handleCreate = useCallback(() => {
     navigate('/app/depenses/create');
   }, [navigate]);
@@ -283,6 +350,19 @@ const Depenses = () => {
     () => engagements.find((engagement) => engagement.id === initialEngagementId),
     [engagements, initialEngagementId]
   );
+  const selectedFacture = useMemo(
+    () => factures.find((facture) => facture.id === initialFactureId),
+    [factures, initialFactureId]
+  );
+  const selectedReservation = useMemo(
+    () => reservations.find((reservation) => reservation.id === initialReservationId),
+    [reservations, initialReservationId]
+  );
+
+  const isWaitingForPreselection =
+    (Boolean(initialEngagementId) && isEngagementsLoading && !selectedEngagement) ||
+    (Boolean(initialFactureId) && isFacturesLoading && !selectedFacture) ||
+    (Boolean(initialReservationId) && isReservationsLoading && !selectedReservation);
 
   const handleSingleSubmit = useCallback(
     async (data: DepenseFormData) => {
@@ -320,6 +400,14 @@ const Depenses = () => {
   const handleSingleCancel = useCallback(() => {
     if (routeEditDepenseId) {
       navigate(`/app/depenses/${routeEditDepenseId}`);
+      return;
+    }
+    if (initialFactureId) {
+      navigate(`/app/factures/${initialFactureId}`);
+      return;
+    }
+    if (initialReservationId) {
+      navigate(`/app/reservations/${initialReservationId}`);
       return;
     }
     if (initialEngagementId) {
@@ -391,7 +479,13 @@ const Depenses = () => {
             }
           />
 
-          {isEditMode && !editingDepense ? (
+          {isWaitingForPreselection ? (
+            <div className="rounded-xl border border-dashed p-8 text-center">
+              <p className="text-sm text-muted-foreground">
+                Chargement des données source de la dépense...
+              </p>
+            </div>
+          ) : isEditMode && !editingDepense ? (
             <div className="rounded-xl border border-dashed p-8 text-center">
               <p className="text-sm text-muted-foreground">
                 Cette dépense est introuvable ou n&apos;est plus accessible depuis la page courante.
@@ -404,9 +498,11 @@ const Depenses = () => {
             <Card>
               <CardContent className="pt-6">
                 <DepenseForm
-                  key={`${isCreateMode ? 'create' : routeEditDepenseId || 'unknown'}-${initialEngagementId || 'none'}`}
+                  key={`${isCreateMode ? 'create' : routeEditDepenseId || 'unknown'}-${initialEngagementId || 'none'}-${initialFactureId || 'none'}-${initialReservationId || 'none'}`}
                   depense={editingDepense}
                   preSelectedEngagement={selectedEngagement}
+                  preSelectedFacture={selectedFacture}
+                  preSelectedReservation={selectedReservation}
                   onSubmit={handleSingleSubmit}
                   onCancel={handleSingleCancel}
                   onDirtyChange={setIsDepenseDirty}
@@ -484,6 +580,12 @@ const Depenses = () => {
                         ))}
                       </DropdownMenuContent>
                     </DropdownMenu>,
+                    <AdvancedFiltersToggleButton
+                      key="advanced-filters"
+                      open={isAdvancedFiltersOpen}
+                      onToggle={() => setIsAdvancedFiltersOpen((open) => !open)}
+                      activeCount={activeAdvancedFiltersCount}
+                    />,
                     <DropdownMenu key="batch">
                       <DropdownMenuTrigger asChild>
                         <Button variant="outline">
@@ -518,9 +620,49 @@ const Depenses = () => {
                   ]}
                 />
               }
+              advancedFilters={
+                <AdvancedFiltersPanel
+                  open={isAdvancedFiltersOpen}
+                  onReset={resetAdvancedFilters}
+                  resetDisabled={activeAdvancedFiltersCount === 0}
+                >
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Source</label>
+                      <Select value={sourceFilter} onValueChange={(value) => setSourceFilter(value as typeof sourceFilter)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="tous">Toutes les sources</SelectItem>
+                          <SelectItem value="facture">Issue de facture</SelectItem>
+                          <SelectItem value="engagement">Issue d&apos;engagement</SelectItem>
+                          <SelectItem value="reservation">Issue de réservation</SelectItem>
+                          <SelectItem value="direct">Directe</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Date début</label>
+                      <Input type="date" value={dateDebut} onChange={(e) => setDateDebut(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Date fin</label>
+                      <Input type="date" value={dateFin} onChange={(e) => setDateFin(e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Montant TTC</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input type="number" placeholder="Min" value={montantMin} onChange={(e) => setMontantMin(e.target.value)} />
+                        <Input type="number" placeholder="Max" value={montantMax} onChange={(e) => setMontantMax(e.target.value)} />
+                      </div>
+                    </div>
+                  </div>
+                </AdvancedFiltersPanel>
+              }
             >
               <DepenseTable
-                depenses={filteredDepenses}
+                depenses={paginatedItems}
                 onViewDetails={handleOpenSnapshot}
                 onEdit={handleEdit}
                 onValider={handleValider}
@@ -533,6 +675,19 @@ const Depenses = () => {
                 stickyHeader
                 stickyHeaderOffset={0}
                 scrollContainerClassName="max-h-[calc(100vh-220px)] overflow-auto"
+                footer={
+                  <PaginationControls
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalCount={totalCount}
+                    pageSize={pageSize}
+                    onPageChange={goToPage}
+                    onPageSizeChange={setPageSize}
+                    isLoading={isLoading}
+                    itemLabel="dépenses"
+                    showKeyboardHint
+                  />
+                }
               />
             </ListLayout>
           </div>

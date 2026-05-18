@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SnapshotBase } from '@/components/shared/SnapshotBase';
 import type { Paiement } from '@/types/paiement.types';
 import { formatMontant, formatDate } from '@/lib/snapshot-utils';
-import { Building2, Calendar, CreditCard, FileText, Wallet } from 'lucide-react';
+import { Building2, Calendar, CreditCard, FileText, Pencil, Wallet } from 'lucide-react';
 
 interface PaiementSnapshotProps {
   paiement: Paiement;
@@ -15,6 +15,8 @@ interface PaiementSnapshotProps {
   currentIndex: number;
   totalCount: number;
   onAnnuler?: () => void;
+  onEdit?: () => void;
+  onValidate?: () => void;
   onNavigateToEntity?: (type: string, id: string) => void;
 }
 
@@ -35,10 +37,23 @@ export const PaiementSnapshot = ({
   currentIndex,
   totalCount,
   onAnnuler,
+  onEdit,
+  onValidate,
   onNavigateToEntity,
 }: PaiementSnapshotProps) => {
   const actions = (
     <div className="flex flex-wrap gap-2">
+      {onEdit && paiement.statut === 'brouillon' && (
+        <Button size="sm" variant="outline" onClick={onEdit}>
+          <Pencil className="mr-2 h-4 w-4" />
+          Modifier
+        </Button>
+      )}
+      {onValidate && paiement.statut === 'brouillon' && (
+        <Button size="sm" onClick={onValidate}>
+          Valider
+        </Button>
+      )}
       {onAnnuler && paiement.statut === 'valide' && (
         <Button size="sm" variant="outline" onClick={onAnnuler}>
           Annuler
@@ -66,8 +81,20 @@ export const PaiementSnapshot = ({
               <Wallet className="h-5 w-5" />
               Informations principales
             </CardTitle>
-            <Badge variant={paiement.statut === 'valide' ? 'success' : 'destructive'}>
-              {paiement.statut === 'valide' ? 'Validé' : 'Annulé'}
+            <Badge
+              variant={
+                paiement.statut === 'valide'
+                  ? 'success'
+                  : paiement.statut === 'brouillon'
+                    ? 'secondary'
+                    : 'destructive'
+              }
+            >
+              {paiement.statut === 'valide'
+                ? 'Validé'
+                : paiement.statut === 'brouillon'
+                  ? 'Brouillon'
+                  : 'Annulé'}
             </Badge>
           </div>
         </CardHeader>
@@ -151,6 +178,14 @@ export const PaiementSnapshot = ({
           <div>
             <p className="text-sm text-muted-foreground">Référence</p>
             <p className="font-medium">{paiement.referencePaiement || '—'}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Compte de trésorerie</p>
+            <p className="font-medium">
+              {paiement.compteTresorerie
+                ? `${paiement.compteTresorerie.code} - ${paiement.compteTresorerie.libelle}`
+                : '—'}
+            </p>
           </div>
         </CardContent>
       </Card>

@@ -11,10 +11,16 @@ import { FournisseurSnapshot } from '@/components/fournisseurs/FournisseurSnapsh
 import { ListPageLoading } from '@/components/lists/ListPageLoading';
 import { ListLayout } from '@/components/lists/ListLayout';
 import { ListToolbar } from '@/components/lists/ListToolbar';
+import { PaginationControls } from '@/components/lists/PaginationControls';
+import {
+  AdvancedFiltersPanel,
+  AdvancedFiltersToggleButton,
+} from '@/components/lists/AdvancedFiltersPanel';
 import { CTA_REVEAL_STYLES, useHeaderCtaReveal } from '@/hooks/useHeaderCtaReveal';
 import { useSnapshotState } from '@/hooks/useSnapshotState';
 import { useSnapshotHandlers } from '@/hooks/useSnapshotHandlers';
 import { useListSelection } from '@/hooks/useListSelection';
+import { useClientPagination } from '@/hooks/useClientPagination';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { StatutFournisseur, CreateFournisseurInput, UpdateFournisseurInput } from '@/types/fournisseur.types';
 import {
@@ -35,6 +41,15 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const Fournisseurs = () => {
   const { fournisseurId } = useParams<{ fournisseurId: string }>();
@@ -48,6 +63,12 @@ const Fournisseurs = () => {
   const [statutFilter, setStatutFilter] = useState<'tous' | StatutFournisseur>('tous');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isFournisseurDirty, setIsFournisseurDirty] = useState(false);
+  const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<'tous' | 'personne_physique' | 'personne_morale'>('tous');
+  const [engagementsMin, setEngagementsMin] = useState('');
+  const [engagementsMax, setEngagementsMax] = useState('');
+  const [montantMin, setMontantMin] = useState('');
+  const [montantMax, setMontantMax] = useState('');
 
   // Helper pour récupérer le fournisseur depuis l'ID
   const editingFournisseur = useMemo(
@@ -61,6 +82,11 @@ const Fournisseurs = () => {
 
     return fournisseurs
       .filter((f) => (statutFilter === 'tous' ? true : f.statut === statutFilter))
+      .filter((f) => (typeFilter === 'tous' ? true : f.typeFournisseur === typeFilter))
+      .filter((f) => (!engagementsMin ? true : f.nombreEngagements >= Number(engagementsMin)))
+      .filter((f) => (!engagementsMax ? true : f.nombreEngagements <= Number(engagementsMax)))
+      .filter((f) => (!montantMin ? true : f.montantTotalEngage >= Number(montantMin)))
+      .filter((f) => (!montantMax ? true : f.montantTotalEngage <= Number(montantMax)))
       .filter((f) => {
         if (!searchLower) return true;
         return (
@@ -72,13 +98,31 @@ const Fournisseurs = () => {
         );
       })
       .sort((a, b) => a.nom.localeCompare(b.nom));
-  }, [fournisseurs, searchTerm, statutFilter]);
+  }, [engagementsMax, engagementsMin, fournisseurs, montantMax, montantMin, searchTerm, statutFilter, typeFilter]);
+
+  const activeAdvancedFiltersCount = [
+    typeFilter !== 'tous',
+    !!engagementsMin,
+    !!engagementsMax,
+    !!montantMin,
+    !!montantMax,
+  ].filter(Boolean).length;
+
+  const {
+    currentPage,
+    pageSize,
+    totalCount,
+    totalPages,
+    paginatedItems,
+    goToPage,
+    setPageSize,
+  } = useClientPagination(filteredFournisseurs, {
+    initialPageSize: 25,
+    resetKey: [searchTerm, statutFilter, typeFilter, engagementsMin, engagementsMax, montantMin, montantMax].join('|'),
+  });
 
   // Sélection batch
-  const selectionIds = useMemo(
-    () => filteredFournisseurs.map((f) => f.id),
-    [filteredFournisseurs]
-  );
+  const selectionIds = useMemo(() => paginatedItems.map((f) => f.id), [paginatedItems]);
   const { selectedIds, allSelected, toggleOne, toggleAll, clearSelection } = useListSelection(selectionIds);
 
   const hasSelection = selectedIds.size > 0;
@@ -176,6 +220,25 @@ const Fournisseurs = () => {
     // Exporter tous les fournisseurs filtrés (CSV/Excel)
   }, []);
 
+  const statutOptions: { value: 'tous' | StatutFournisseur; label: string }[] = [
+    { value: 'tous', label: 'Tous' },
+    { value: 'actif', label: 'Actifs' },
+    { value: 'inactif', label: 'Inactifs' },
+    { value: 'blackliste', label: 'Blacklistés' },
+    { value: 'en_attente_validation', label: 'En attente' },
+  ];
+
+  const activeStatutLabel =
+    statutOptions.find((option) => option.value === statutFilter)?.label || 'Tous';
+
+  const resetAdvancedFilters = useCallback(() => {
+    setTypeFilter('tous');
+    setEngagementsMin('');
+    setEngagementsMax('');
+    setMontantMin('');
+    setMontantMax('');
+  }, []);
+
   if (isLoading) {
     return (
       <ListPageLoading
@@ -235,17 +298,6 @@ const Fournisseurs = () => {
       }
     />
   );
-
-  const statutOptions: { value: 'tous' | StatutFournisseur; label: string }[] = [
-    { value: 'tous', label: 'Tous' },
-    { value: 'actif', label: 'Actifs' },
-    { value: 'inactif', label: 'Inactifs' },
-    { value: 'blackliste', label: 'Blacklistés' },
-    { value: 'en_attente_validation', label: 'En attente' },
-  ];
-
-  const activeStatutLabel =
-    statutOptions.find((option) => option.value === statutFilter)?.label || 'Tous';
 
   return (
     <>
@@ -318,19 +370,73 @@ const Fournisseurs = () => {
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>,
+                    <AdvancedFiltersToggleButton
+                      key="advanced-filters"
+                      open={isAdvancedFiltersOpen}
+                      onToggle={() => setIsAdvancedFiltersOpen((open) => !open)}
+                      activeCount={activeAdvancedFiltersCount}
+                    />,
                   ]}
                 />
               }
+              advancedFilters={
+                <AdvancedFiltersPanel
+                  open={isAdvancedFiltersOpen}
+                  onReset={resetAdvancedFilters}
+                  resetDisabled={activeAdvancedFiltersCount === 0}
+                >
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label>Type</Label>
+                      <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as typeof typeFilter)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="tous">Tous les types</SelectItem>
+                          <SelectItem value="personne_morale">Personne morale</SelectItem>
+                          <SelectItem value="personne_physique">Personne physique</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Nombre d&apos;engagements</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input type="number" placeholder="Min" value={engagementsMin} onChange={(event) => setEngagementsMin(event.target.value)} />
+                        <Input type="number" placeholder="Max" value={engagementsMax} onChange={(event) => setEngagementsMax(event.target.value)} />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Montant engagé</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input type="number" placeholder="Min" value={montantMin} onChange={(event) => setMontantMin(event.target.value)} />
+                        <Input type="number" placeholder="Max" value={montantMax} onChange={(event) => setMontantMax(event.target.value)} />
+                      </div>
+                    </div>
+                  </div>
+                </AdvancedFiltersPanel>
+              }
             >
               <FournisseurTable
-                fournisseurs={filteredFournisseurs}
+                fournisseurs={paginatedItems}
                 onViewDetails={handleOpenSnapshot}
-                onEdit={(f) => handleEdit(f.id)}
+                onEdit={handleEdit}
                 onDelete={(id) => setDeleteId(id)}
                 selection={{ selectedIds, allSelected, toggleOne, toggleAll }}
                 stickyHeader
                 stickyHeaderOffset={0}
                 scrollContainerClassName="max-h-[calc(100vh-220px)] overflow-auto"
+                footer={
+                  <PaginationControls
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalCount={totalCount}
+                    pageSize={pageSize}
+                    onPageChange={goToPage}
+                    onPageSizeChange={setPageSize}
+                    isLoading={isLoading}
+                    itemLabel="fournisseurs"
+                    showKeyboardHint
+                  />
+                }
               />
             </ListLayout>
           </>

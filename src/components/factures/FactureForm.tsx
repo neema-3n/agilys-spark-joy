@@ -18,10 +18,13 @@ import {
 } from '@/components/ui/select';
 import { Facture, CreateFactureInput } from '@/types/facture.types';
 import { ChargePrincipaleField } from '@/components/finance/ChargePrincipaleField';
-import { VentilationEditor } from '@/components/finance/VentilationEditor';
+import { FinancialVentilationSection } from '@/components/finance/FinancialVentilationSection';
 import { useComptes } from '@/hooks/useComptes';
 import { useNaturesCompte } from '@/hooks/useNaturesCompte';
-import { resolveChargePrincipale } from '@/lib/charge-principale-utils';
+import {
+  normalizeChargePrincipaleForEditor,
+  resolveChargePrincipale,
+} from '@/lib/charge-principale-utils';
 import {
   computeFinancialBreakdown,
   getCoherenceErrors,
@@ -150,10 +153,12 @@ export const FactureForm = ({
     if (!facture && initialBonCommandeId && bonsCommande.length === 0) return;
 
     if (facture) {
+      const normalizedChargePrincipale = normalizeChargePrincipaleForEditor(
+        facture.chargePrincipaleMode,
+        facture.natureCompteChargeId,
+        facture.compteChargeId,
+      );
       const nextVentilations = facture.ventilations || [];
-      const nextChargePrincipaleMode = facture.chargePrincipaleMode || 'nature';
-      const nextNatureCompteChargeId = facture.natureCompteChargeId;
-      const nextCompteChargeId = facture.compteChargeId;
       form.reset({
         numero: facture.numero,
         dateFacture: facture.dateFacture,
@@ -171,14 +176,14 @@ export const FactureForm = ({
         observations: facture.observations || '',
       });
       setVentilations(nextVentilations);
-      setChargePrincipaleMode(nextChargePrincipaleMode);
-      setNatureCompteChargeId(nextNatureCompteChargeId);
-      setCompteChargeId(nextCompteChargeId);
+      setChargePrincipaleMode(normalizedChargePrincipale.chargePrincipaleMode);
+      setNatureCompteChargeId(normalizedChargePrincipale.natureCompteChargeId);
+      setCompteChargeId(normalizedChargePrincipale.compteChargeId);
       initialFinanceStateRef.current = serializeFinanceState(
         nextVentilations,
-        nextChargePrincipaleMode,
-        nextNatureCompteChargeId,
-        nextCompteChargeId,
+        normalizedChargePrincipale.chargePrincipaleMode,
+        normalizedChargePrincipale.natureCompteChargeId,
+        normalizedChargePrincipale.compteChargeId,
       );
       initializedRef.current = true;
       return;
@@ -425,47 +430,14 @@ export const FactureForm = ({
         </div>
       </section>
 
-      <section className="space-y-4">
-        <div className="space-y-1">
-          <h3 className="text-base font-semibold">Ventilation financière</h3>
-          <p className="text-sm text-muted-foreground">
-            Répartissez les composantes du montant et vérifiez la cohérence financière de la facture.
-          </p>
-        </div>
-        <div className="rounded-md border p-4 md:p-5 space-y-4">
-          <VentilationEditor ventilations={ventilations} onChange={setVentilations} />
-
-          <div className="grid gap-3 rounded-md border p-4 text-sm md:grid-cols-[1fr_1fr_1.2fr]">
-            <div className="min-w-0">
-              <span className="text-muted-foreground">Total ajouts :</span>{' '}
-              <span className="font-medium text-foreground">{breakdown.totalAjouts.toFixed(2)}</span>
-            </div>
-            <div className="min-w-0">
-              <span className="text-muted-foreground">Total retraits :</span>{' '}
-              <span className="font-medium text-foreground">{breakdown.totalRetraits.toFixed(2)}</span>
-            </div>
-            <div
-              className={
-                coherenceErrors.length > 0
-                  ? 'flex items-center justify-start gap-2 text-destructive md:justify-end'
-                  : 'flex items-center justify-start gap-2 text-emerald-600 md:justify-end'
-              }
-            >
-              {coherenceErrors.length > 0 ? (
-                <>
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span className="font-medium">{coherenceErrors[0]}</span>
-                </>
-              ) : (
-                <>
-                  <CircleCheckBig className="h-4 w-4 shrink-0" />
-                  <span className="font-medium">Montants cohérents.</span>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
+      <FinancialVentilationSection
+        ventilations={ventilations}
+        onVentilationsChange={setVentilations}
+        totalAjouts={breakdown.totalAjouts}
+        totalRetraits={breakdown.totalRetraits}
+        coherenceError={coherenceErrors[0]}
+        entityLabel="la facture"
+      />
 
       <section className="space-y-4">
         <div className="space-y-1">

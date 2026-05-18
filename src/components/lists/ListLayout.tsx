@@ -5,12 +5,21 @@ interface ListLayoutProps {
   title: string;
   description?: string;
   toolbar?: ReactNode;
+  advancedFilters?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
   actions?: ReactNode;
 }
 
-export const ListLayout = ({ title, description, toolbar, children, footer, actions }: ListLayoutProps) => {
+export const ListLayout = ({
+  title,
+  description,
+  toolbar,
+  advancedFilters,
+  children,
+  footer,
+  actions,
+}: ListLayoutProps) => {
   return (
     <Card className="overflow-hidden rounded-xl border-border bg-card shadow-sm">
       <CardHeader className="space-y-4 border-b border-border bg-muted/25 px-4 py-4 md:px-6">
@@ -22,6 +31,7 @@ export const ListLayout = ({ title, description, toolbar, children, footer, acti
           {actions && <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>}
         </div>
         {toolbar}
+        {advancedFilters}
       </CardHeader>
       <CardContent className="p-0">{children}</CardContent>
       {footer && <CardContent className="border-t bg-muted/20 px-4 py-4 md:px-6">{footer}</CardContent>}

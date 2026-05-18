@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { ReactNode, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ListColumn, ListTable } from '@/components/lists/ListTable';
+import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/selectionColumn';
 import { formatCurrency, cn } from '@/lib/utils';
 import { Edit, Trash2, Eye, MoreHorizontal, XCircle, CheckCircle, AlertOctagon } from 'lucide-react';
 import { format } from 'date-fns';
@@ -24,9 +25,11 @@ interface ReservationTableProps {
   onDelete?: (reservationId: string) => void;
   onCreerDepenseUrgence?: (reservationId: string) => void;
   onViewDetails?: (reservationId: string) => void;
+  selection?: ListSelectionHandlers;
   stickyHeader?: boolean;
   stickyHeaderOffset?: number;
   scrollContainerClassName?: string;
+  footer?: ReactNode;
 }
 
 const calculerSolde = (reservation: ReservationCredit): number => {
@@ -69,13 +72,16 @@ export const ReservationTable = ({
   onDelete,
   onCreerDepenseUrgence,
   onViewDetails,
+  selection,
   stickyHeader = false,
   stickyHeaderOffset = 0,
   scrollContainerClassName,
+  footer,
 }: ReservationTableProps) => {
   const columns: ListColumn<ReservationCredit>[] = useMemo(
-    () => [
-      {
+    () => {
+      const baseColumns: ListColumn<ReservationCredit>[] = [
+        {
         id: 'numero',
         header: 'Numéro',
         render: (reservation) => (
@@ -238,9 +244,24 @@ export const ReservationTable = ({
             </DropdownMenu>
           );
         },
-      },
-    ],
-    [onAnnuler, onCreerDepenseUrgence, onCreerEngagement, onDelete, onEdit, onViewDetails]
+        },
+      ];
+
+      if (selection) {
+        return [
+          buildSelectionColumn({
+            selection,
+            getId: (reservation) => reservation.id,
+            getLabel: (reservation) => `Sélectionner ${reservation.numero}`,
+            allLabel: 'Sélectionner toutes les réservations',
+          }),
+          ...baseColumns,
+        ];
+      }
+
+      return baseColumns;
+    },
+    [onAnnuler, onCreerDepenseUrgence, onCreerEngagement, onDelete, onEdit, onViewDetails, selection]
   );
 
   return (
@@ -253,6 +274,7 @@ export const ReservationTable = ({
       stickyHeader={stickyHeader}
       stickyHeaderOffset={stickyHeaderOffset}
       scrollContainerClassName={scrollContainerClassName}
+      footer={footer}
     />
   );
 };

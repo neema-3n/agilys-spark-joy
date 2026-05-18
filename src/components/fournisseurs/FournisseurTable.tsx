@@ -1,9 +1,7 @@
-import { useMemo, useState } from 'react';
+import { ReactNode, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Fournisseur } from '@/types/fournisseur.types';
 import { ListTable, ListColumn } from '@/components/lists/ListTable';
-import { ListToolbar } from '@/components/lists/ListToolbar';
-import { ListLayout } from '@/components/lists/ListLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,16 +10,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { MoreHorizontal, Eye, Edit, Trash2 } from 'lucide-react';
 import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/selectionColumn';
 import { formatMontant } from '@/lib/utils';
@@ -35,6 +23,7 @@ interface FournisseurTableProps {
   stickyHeader?: boolean;
   stickyHeaderOffset?: number;
   scrollContainerClassName?: string;
+  footer?: ReactNode;
 }
 
 const getStatutBadge = (statut: string) => {
@@ -57,6 +46,7 @@ export const FournisseurTable = ({
   stickyHeader = false,
   stickyHeaderOffset = 0,
   scrollContainerClassName,
+  footer,
 }: FournisseurTableProps) => {
 
   const columns = useMemo<ListColumn<Fournisseur>[]>(() => {
@@ -193,6 +183,7 @@ export const FournisseurTable = ({
       stickyHeader={stickyHeader}
       stickyHeaderOffset={stickyHeaderOffset}
       scrollContainerClassName={scrollContainerClassName}
+      footer={footer}
     />
   );
 };

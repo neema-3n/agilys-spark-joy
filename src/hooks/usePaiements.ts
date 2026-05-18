@@ -26,10 +26,42 @@ export const usePaiements = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['paiements'] });
       queryClient.invalidateQueries({ queryKey: ['depenses'] });
+      queryClient.invalidateQueries({ queryKey: ['operations-tresorerie-v2'] });
+      queryClient.invalidateQueries({ queryKey: ['comptes-tresorerie'] });
       toast.success('Paiement enregistré avec succès');
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Erreur lors de l\'enregistrement du paiement');
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: PaiementFormData }) =>
+      paiementsService.updatePaiement(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['paiements'] });
+      queryClient.invalidateQueries({ queryKey: ['depenses'] });
+      queryClient.invalidateQueries({ queryKey: ['operations-tresorerie-v2'] });
+      queryClient.invalidateQueries({ queryKey: ['comptes-tresorerie'] });
+      toast.success('Paiement mis à jour');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erreur lors de la mise à jour du paiement');
+    },
+  });
+
+  const validerMutation = useMutation({
+    mutationFn: (id: string) =>
+      paiementsService.validerPaiement(id, currentClient!.id, currentExercice!.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['paiements'] });
+      queryClient.invalidateQueries({ queryKey: ['depenses'] });
+      queryClient.invalidateQueries({ queryKey: ['operations-tresorerie-v2'] });
+      queryClient.invalidateQueries({ queryKey: ['comptes-tresorerie'] });
+      toast.success('Paiement validé');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erreur lors de la validation du paiement');
     },
   });
 
@@ -65,6 +97,8 @@ export const usePaiements = () => {
     isLoading,
     error,
     createPaiement: createMutation.mutateAsync,
+    updatePaiement: updateMutation.mutateAsync,
+    validerPaiement: validerMutation.mutateAsync,
     annulerPaiement: annulerMutation.mutateAsync,
     deletePaiement: deleteMutation.mutateAsync,
   };

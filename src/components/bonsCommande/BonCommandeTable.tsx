@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { ReactNode, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ListColumn, ListTable } from '@/components/lists/ListTable';
+import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/selectionColumn';
 import { formatCurrency } from '@/lib/utils';
 import { CheckCircle, Edit, Eye, FileText, MoreHorizontal, PackageCheck, Receipt, Trash2, Truck, XCircle } from 'lucide-react';
 import type { BonCommande } from '@/types/bonCommande.types';
@@ -26,9 +27,11 @@ interface BonCommandeTableProps {
   onDelete?: (id: string) => void;
   onCreateFacture?: (id: string) => void;
   onViewDetails?: (bonCommandeId: string) => void;
+  selection?: ListSelectionHandlers;
   stickyHeader?: boolean;
   stickyHeaderOffset?: number;
   scrollContainerClassName?: string;
+  footer?: ReactNode;
 }
 
 const formatDate = (dateString?: string | null): string => {
@@ -64,13 +67,16 @@ export const BonCommandeTable = ({
   onDelete,
   onCreateFacture,
   onViewDetails,
+  selection,
   stickyHeader = false,
   stickyHeaderOffset = 0,
   scrollContainerClassName,
+  footer,
 }: BonCommandeTableProps) => {
   const columns: ListColumn<BonCommande>[] = useMemo(
-    () => [
-      {
+    () => {
+      const baseColumns: ListColumn<BonCommande>[] = [
+        {
         id: 'numero',
         header: 'Numéro',
         render: (bc) => (
@@ -235,9 +241,24 @@ export const BonCommandeTable = ({
             </DropdownMenuContent>
           </DropdownMenu>
         ),
-      },
-    ],
-    [onAnnuler, onCreateFacture, onDelete, onEdit, onMettreEnCours, onReceptionner, onValider, onViewDetails]
+        },
+      ];
+
+      if (selection) {
+        return [
+          buildSelectionColumn({
+            selection,
+            getId: (bc) => bc.id,
+            getLabel: (bc) => `Sélectionner ${bc.numero}`,
+            allLabel: 'Sélectionner tous les bons de commande',
+          }),
+          ...baseColumns,
+        ];
+      }
+
+      return baseColumns;
+    },
+    [onAnnuler, onCreateFacture, onDelete, onEdit, onMettreEnCours, onReceptionner, onValider, onViewDetails, selection]
   );
 
   return (
@@ -250,6 +271,7 @@ export const BonCommandeTable = ({
       stickyHeader={stickyHeader}
       stickyHeaderOffset={stickyHeaderOffset}
       scrollContainerClassName={scrollContainerClassName}
+      footer={footer}
     />
   );
 };

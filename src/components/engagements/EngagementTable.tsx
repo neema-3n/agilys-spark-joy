@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { ReactNode, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ListColumn, ListTable } from '@/components/lists/ListTable';
+import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/selectionColumn';
 import { formatCurrency } from '@/lib/utils';
 import { CheckCircle, Edit, FileText, MoreHorizontal, Receipt, Trash2, XCircle } from 'lucide-react';
 import type { Engagement } from '@/types/engagement.types';
@@ -23,9 +24,11 @@ interface EngagementTableProps {
   onCreerBonCommande?: (id: string) => void;
   onCreerDepense?: (id: string) => void;
   onViewDetails?: (engagementId: string) => void;
+  selection?: ListSelectionHandlers;
   stickyHeader?: boolean;
   stickyHeaderOffset?: number;
   scrollContainerClassName?: string;
+  footer?: ReactNode;
 }
 
 const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('fr-FR');
@@ -51,13 +54,16 @@ export const EngagementTable = ({
   onCreerBonCommande,
   onCreerDepense,
   onViewDetails,
+  selection,
   stickyHeader = false,
   stickyHeaderOffset = 0,
   scrollContainerClassName,
+  footer,
 }: EngagementTableProps) => {
   const columns: ListColumn<Engagement>[] = useMemo(
-    () => [
-      {
+    () => {
+      const baseColumns: ListColumn<Engagement>[] = [
+        {
         id: 'numero',
         header: 'Numéro',
         render: (engagement) => (
@@ -220,9 +226,24 @@ export const EngagementTable = ({
             </DropdownMenuContent>
           </DropdownMenu>
         ),
-      },
-    ],
-    [onAnnuler, onCreerBonCommande, onCreerDepense, onDelete, onEdit, onValider, onViewDetails]
+        },
+      ];
+
+      if (selection) {
+        return [
+          buildSelectionColumn({
+            selection,
+            getId: (engagement) => engagement.id,
+            getLabel: (engagement) => `Sélectionner ${engagement.numero}`,
+            allLabel: 'Sélectionner tous les engagements',
+          }),
+          ...baseColumns,
+        ];
+      }
+
+      return baseColumns;
+    },
+    [onAnnuler, onCreerBonCommande, onCreerDepense, onDelete, onEdit, onValider, onViewDetails, selection]
   );
 
   return (
@@ -235,6 +256,7 @@ export const EngagementTable = ({
       stickyHeader={stickyHeader}
       stickyHeaderOffset={stickyHeaderOffset}
       scrollContainerClassName={scrollContainerClassName}
+      footer={footer}
     />
   );
 };

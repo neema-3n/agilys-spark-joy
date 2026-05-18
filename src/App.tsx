@@ -137,6 +137,7 @@ const App = () => (
                   <Route path="paiements">
                     <Route index element={<Paiements />} />
                     <Route path="create" element={<Paiements />} />
+                    <Route path=":paiementId/edit" element={<Paiements />} />
                     <Route path=":paiementId" element={<Paiements />} />
                   </Route>
                   <Route path="tresorerie">

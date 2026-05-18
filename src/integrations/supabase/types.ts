@@ -1556,59 +1556,114 @@ export type Database = {
       paiements: {
         Row: {
           client_id: string
+          compte_tresorerie_id: string | null
           created_at: string
           created_by: string | null
           date_annulation: string | null
           date_paiement: string
-          depense_id: string
+          depense_id: string | null
+          engagement_id: string | null
           exercice_id: string
+          fournisseur_id: string | null
           id: string
+          ligne_budgetaire_id: string | null
           mode_paiement: string
           montant: number
+          montant_ht: number
+          montant_net_paye: number
+          montant_ttc: number
           motif_annulation: string | null
           numero: string
+          objet: string | null
           observations: string | null
+          projet_id: string | null
           reference_paiement: string | null
           statut: string
+          total_ajouts: number
+          total_retraits: number
+          charge_principale_mode: string
+          nature_compte_charge_id: string | null
+          compte_charge_id: string | null
+          ventilations: Json
+          beneficiaire: string | null
           updated_at: string
         }
         Insert: {
           client_id: string
+          compte_tresorerie_id?: string | null
           created_at?: string
           created_by?: string | null
           date_annulation?: string | null
           date_paiement: string
-          depense_id: string
+          depense_id?: string | null
+          engagement_id?: string | null
           exercice_id: string
+          fournisseur_id?: string | null
           id?: string
+          ligne_budgetaire_id?: string | null
           mode_paiement: string
           montant: number
+          montant_ht?: number
+          montant_net_paye?: number
+          montant_ttc?: number
           motif_annulation?: string | null
           numero: string
+          objet?: string | null
           observations?: string | null
+          projet_id?: string | null
           reference_paiement?: string | null
           statut?: string
+          total_ajouts?: number
+          total_retraits?: number
+          charge_principale_mode?: string
+          nature_compte_charge_id?: string | null
+          compte_charge_id?: string | null
+          ventilations?: Json
+          beneficiaire?: string | null
           updated_at?: string
         }
         Update: {
           client_id?: string
+          compte_tresorerie_id?: string | null
           created_at?: string
           created_by?: string | null
           date_annulation?: string | null
           date_paiement?: string
-          depense_id?: string
+          depense_id?: string | null
+          engagement_id?: string | null
           exercice_id?: string
+          fournisseur_id?: string | null
           id?: string
+          ligne_budgetaire_id?: string | null
           mode_paiement?: string
           montant?: number
+          montant_ht?: number
+          montant_net_paye?: number
+          montant_ttc?: number
           motif_annulation?: string | null
           numero?: string
+          objet?: string | null
           observations?: string | null
+          projet_id?: string | null
           reference_paiement?: string | null
           statut?: string
+          total_ajouts?: number
+          total_retraits?: number
+          charge_principale_mode?: string
+          nature_compte_charge_id?: string | null
+          compte_charge_id?: string | null
+          ventilations?: Json
+          beneficiaire?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "paiements_compte_tresorerie_id_fkey"
+            columns: ["compte_tresorerie_id"]
+            isOneToOne: false
+            referencedRelation: "comptes_tresorerie"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "paiements_created_by_fkey"
             columns: ["created_by"]
@@ -2444,7 +2499,9 @@ export type Database = {
           p_mode_paiement: string
           p_montant: number
           p_observations: string
+          p_compte_tresorerie_id?: string
           p_reference_paiement: string
+          p_statut?: string
           p_user_id: string
         }
         Returns: Json

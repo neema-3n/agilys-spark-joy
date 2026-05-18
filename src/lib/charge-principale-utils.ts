@@ -15,6 +15,31 @@ interface ResolveChargePrincipaleResult {
   error?: string;
 }
 
+interface NormalizeChargePrincipaleForEditorResult {
+  chargePrincipaleMode: ChargePrincipaleMode;
+  natureCompteChargeId?: string;
+  compteChargeId?: string;
+}
+
+export const normalizeChargePrincipaleForEditor = (
+  mode: ChargePrincipaleMode | undefined,
+  natureCompteChargeId?: string,
+  compteChargeId?: string,
+): NormalizeChargePrincipaleForEditorResult => {
+  if (mode === 'nature' && !natureCompteChargeId && compteChargeId) {
+    return {
+      chargePrincipaleMode: 'compte_expert',
+      compteChargeId,
+    };
+  }
+
+  return {
+    chargePrincipaleMode: mode || 'nature',
+    natureCompteChargeId,
+    compteChargeId,
+  };
+};
+
 export const resolveChargePrincipale = ({
   mode,
   natureCompteId,
@@ -50,6 +75,13 @@ export const resolveChargePrincipale = ({
       chargePrincipaleMode: 'nature',
       natureCompteChargeId: natureCompteId,
       error: 'La nature de compte selectionnee n’a pas de compte de charge par defaut.',
+    };
+  }
+
+  if (nature?.isFallback) {
+    return {
+      chargePrincipaleMode: 'nature',
+      compteChargeId: resolvedCompteChargeId,
     };
   }
 

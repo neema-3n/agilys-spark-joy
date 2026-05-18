@@ -81,11 +81,6 @@ const navigationSections: NavigationSection[] = [
     title: 'Accueil',
     items: [
       {
-        name: 'Tableau de bord',
-        href: '/app/dashboard',
-        icon: LayoutDashboard,
-      },
-      {
         name: 'Executive Dashboard',
         href: '/app/executive-dashboard',
         icon: BarChart3,

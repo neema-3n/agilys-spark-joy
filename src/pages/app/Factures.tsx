@@ -3,9 +3,7 @@ import { useLocation, useMatch, useNavigate, useParams } from 'react-router-dom'
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Plus } from 'lucide-react';
-import { showNavigationToast } from '@/lib/navigation-toast';
 import { useFacturesPaginated } from '@/hooks/useFactures';
-import { useDepenses } from '@/hooks/useDepenses';
 import { useFournisseurs } from '@/hooks/useFournisseurs';
 import { useProjets } from '@/hooks/useProjets';
 import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
@@ -18,7 +16,6 @@ import { FactureStats } from '@/components/factures/FactureStats';
 import { FactureTable } from '@/components/factures/FactureTable';
 import { FactureForm } from '@/components/factures/FactureForm';
 import { FactureSnapshot } from '@/components/factures/FactureSnapshot';
-import { CreateDepenseFromFactureDialog } from '@/components/depenses/CreateDepenseFromFactureDialog';
 import { CreateFactureInput, Facture, StatutFacture } from '@/types/facture.types';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +25,10 @@ import { ListLayout } from '@/components/lists/ListLayout';
 import { ListToolbar } from '@/components/lists/ListToolbar';
 import { ListPageLoading } from '@/components/lists/ListPageLoading';
 import { PaginationControls } from '@/components/lists/PaginationControls';
+import {
+  AdvancedFiltersPanel,
+  AdvancedFiltersToggleButton,
+} from '@/components/lists/AdvancedFiltersPanel';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,6 +40,13 @@ import { useListSelection } from '@/hooks/useListSelection';
 import { CTA_REVEAL_STYLES, useHeaderCtaReveal } from '@/hooks/useHeaderCtaReveal';
 import { facturesService } from '@/services/api/factures.service';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -70,8 +78,8 @@ export default function Factures() {
   
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
   const [annulationFactureId, setAnnulationFactureId] = useState<string | undefined>();
-  const [selectedFactureForDepense, setSelectedFactureForDepense] = useState<Facture | null>(null);
   const [isFactureDirty, setIsFactureDirty] = useState(false);
+  const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
 
   // Pagination côté serveur
   const {
@@ -96,8 +104,16 @@ export default function Factures() {
     annulerFacture,
   } = useFacturesPaginated();
 
-  const { createDepenseFromFacture } = useDepenses();
   const [motifAnnulation, setMotifAnnulation] = useState('');
+
+  const handleCreateDepenseFromFacture = useCallback(
+    (facture: Facture) => {
+      navigate('/app/depenses/create', {
+        state: { initialFactureId: facture.id },
+      });
+    },
+    [navigate]
+  );
 
   // Récupérer les stats globales côté serveur
   const { data: stats } = useQuery({
@@ -128,23 +144,6 @@ export default function Factures() {
 
   const editorFacture = routeEditingFactureFromList || routeEditingFacture;
 
-  // Synchroniser filtres avec le hook de pagination
-  useEffect(() => {
-    const newFilters: Record<string, any> = {};
-    const searchTerm = filters.searchTerm as string | undefined;
-    const statutFilter = filters.statut as StatutFacture | undefined;
-
-    if (searchTerm) newFilters.searchTerm = searchTerm;
-    if (statutFilter) newFilters.statut = statutFilter;
-
-    // Ne mettre à jour que si les filtres ont changé
-    const currentKeys = Object.keys(filters).sort().join(',');
-    const newKeys = Object.keys(newFilters).sort().join(',');
-    if (currentKeys !== newKeys) {
-      setFilters(newFilters);
-    }
-  }, []);
-
   const handleSearchChange = useCallback((value: string) => {
     setFilters({ ...filters, searchTerm: value || undefined });
   }, [filters, setFilters]);
@@ -156,6 +155,24 @@ export default function Factures() {
     } else {
       newFilters.statut = value;
     }
+    setFilters(newFilters);
+  }, [filters, setFilters]);
+
+  const handleAdvancedFilterChange = useCallback(
+    (key: 'fournisseurId' | 'dateDebut' | 'dateFin', value?: string) => {
+      setFilters({
+        ...filters,
+        [key]: value || undefined,
+      });
+    },
+    [filters, setFilters]
+  );
+
+  const resetAdvancedFilters = useCallback(() => {
+    const newFilters = { ...filters };
+    delete newFilters.fournisseurId;
+    delete newFilters.dateDebut;
+    delete newFilters.dateFin;
     setFilters(newFilters);
   }, [filters, setFilters]);
 
@@ -369,6 +386,11 @@ export default function Factures() {
 
   const activeStatutLabel =
     statutOptions.find((option) => option.value === (filters.statut as StatutFacture || 'tous'))?.label || 'Tous';
+  const activeAdvancedFiltersCount = [
+    filters.fournisseurId,
+    filters.dateDebut,
+    filters.dateFin,
+  ].filter(Boolean).length;
 
   if (isLoading) {
     return (
@@ -454,7 +476,7 @@ export default function Factures() {
             onMarquerPayee={snapshotFacture.statut === 'validee' ? () => marquerPayee(snapshotFacture.id) : undefined}
             onAnnuler={snapshotFacture.statut !== 'annulee' && snapshotFacture.statut !== 'payee' ? () => handleAnnuler(snapshotFacture.id) : undefined}
             onEdit={snapshotFacture.statut === 'brouillon' ? () => handleEdit(snapshotFacture.id) : undefined}
-            onCreerDepense={(snapshotFacture.statut === 'validee' || snapshotFacture.statut === 'payee') ? () => setSelectedFactureForDepense(snapshotFacture) : undefined}
+            onCreerDepense={(snapshotFacture.statut === 'validee' || snapshotFacture.statut === 'payee') ? () => handleCreateDepenseFromFacture(snapshotFacture) : undefined}
           />
         ) : isSnapshotOpen && isSnapshotLoading ? (
           <div className="py-12 text-center text-muted-foreground">Chargement du snapshot...</div>
@@ -494,6 +516,12 @@ export default function Factures() {
                         ))}
                       </DropdownMenuContent>
                     </DropdownMenu>,
+                    <AdvancedFiltersToggleButton
+                      key="advanced-filters"
+                      open={isAdvancedFiltersOpen}
+                      onToggle={() => setIsAdvancedFiltersOpen((open) => !open)}
+                      activeCount={activeAdvancedFiltersCount}
+                    />,
                     <DropdownMenu key="batch-actions">
                       <DropdownMenuTrigger asChild>
                         <Button variant="outline">
@@ -526,6 +554,57 @@ export default function Factures() {
                   ]}
                 />
               }
+              advancedFilters={
+                <AdvancedFiltersPanel
+                  open={isAdvancedFiltersOpen}
+                  onReset={resetAdvancedFilters}
+                  resetDisabled={activeAdvancedFiltersCount === 0}
+                >
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label>Fournisseur</Label>
+                      <Select
+                        value={(filters.fournisseurId as string) || 'all'}
+                        onValueChange={(value) =>
+                          handleAdvancedFilterChange('fournisseurId', value === 'all' ? undefined : value)
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Tous les fournisseurs" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tous les fournisseurs</SelectItem>
+                          {fournisseurs.map((fournisseur) => (
+                            <SelectItem key={fournisseur.id} value={fournisseur.id}>
+                              {fournisseur.nom} - {fournisseur.code}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Date début</Label>
+                      <Input
+                        type="date"
+                        value={(filters.dateDebut as string) || ''}
+                        onChange={(event) =>
+                          handleAdvancedFilterChange('dateDebut', event.target.value || undefined)
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Date fin</Label>
+                      <Input
+                        type="date"
+                        value={(filters.dateFin as string) || ''}
+                        onChange={(event) =>
+                          handleAdvancedFilterChange('dateFin', event.target.value || undefined)
+                        }
+                      />
+                    </div>
+                  </div>
+                </AdvancedFiltersPanel>
+              }
             >
               <FactureTable
                 factures={factures}
@@ -534,7 +613,7 @@ export default function Factures() {
                 onValider={validerFacture}
                 onMarquerPayee={marquerPayee}
                 onAnnuler={handleAnnuler}
-                onCreerDepense={(facture) => setSelectedFactureForDepense(facture)}
+                onCreerDepense={handleCreateDepenseFromFacture}
                 onViewDetails={handleOpenSnapshot}
                 selection={{ selectedIds, allSelected, toggleOne, toggleAll }}
                 stickyHeader
@@ -592,31 +671,6 @@ export default function Factures() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <CreateDepenseFromFactureDialog
-        open={!!selectedFactureForDepense}
-        onOpenChange={(open) => !open && setSelectedFactureForDepense(null)}
-        facture={selectedFactureForDepense}
-        onSave={async (data) => {
-          try {
-            const facture = selectedFactureForDepense;
-            await createDepenseFromFacture(data);
-            
-            setSelectedFactureForDepense(null);
-            
-            showNavigationToast({
-              title: 'Dépense créée',
-              description: `La dépense a été créée depuis la facture ${facture?.numero || ''}.`,
-              targetPage: {
-                name: 'Dépenses',
-                path: '/app/depenses',
-              },
-              navigate,
-            });
-          } catch (error) {
-            console.error('Erreur création dépense:', error);
-          }
-        }}
-      />
       </>
       )}
       </div>
