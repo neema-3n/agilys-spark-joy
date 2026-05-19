@@ -18,6 +18,7 @@ export const RecetteStats = ({ stats }: RecetteStatsProps) => {
         title="Total Recettes"
         value={formatCurrency(stats.montantTotal)}
         icon={DollarSign}
+        showCurrencyCode
         trend={`${stats.nombreTotal} recettes`}
         color="text-green-600"
       />
@@ -25,6 +26,7 @@ export const RecetteStats = ({ stats }: RecetteStatsProps) => {
         title="Validées"
         value={formatCurrency(stats.montantValidees)}
         icon={TrendingUp}
+        showCurrencyCode
         trend={`${stats.nombreValidees} validées`}
         trendUp
         color="text-green-600"
@@ -33,12 +35,14 @@ export const RecetteStats = ({ stats }: RecetteStatsProps) => {
         title="Ce Mois"
         value={formatCurrency(stats.montantCeMois)}
         icon={Calendar}
+        showCurrencyCode
         trend="Mois en cours"
       />
       <StatsCard
         title="Aujourd'hui"
         value={formatCurrency(stats.montantAujourdhui)}
         icon={FileText}
+        showCurrencyCode
         trend="Encaissements du jour"
       />
     </div>

@@ -20,11 +20,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { formatMontantWithSettings } from '@/lib/utils';
 
 const moneyFormatSchema = z
   .object({
     locale: z.string().min(1),
+    currencyCode: z
+      .string()
+      .trim()
+      .min(1, 'Le code devise est requis')
+      .max(8, 'Le code devise est trop long')
+      .transform((value) => value.toUpperCase()),
     thousandsSeparator: z.enum(['space', 'dot', 'comma', 'apostrophe', 'none']),
     decimalSeparator: z.enum(['comma', 'dot']),
     minimumFractionDigits: z.coerce.number().int().min(0).max(4),
@@ -61,6 +68,7 @@ export function MoneyFormatForm({
     resolver: zodResolver(moneyFormatSchema),
     defaultValues: {
       locale: value.locale || 'fr-FR',
+      currencyCode: value.currencyCode || 'XAF',
       thousandsSeparator: value.thousandsSeparator || 'space',
       decimalSeparator: value.decimalSeparator || 'comma',
       minimumFractionDigits: value.minimumFractionDigits ?? 0,
@@ -71,6 +79,7 @@ export function MoneyFormatForm({
   useEffect(() => {
     form.reset({
       locale: value.locale || 'fr-FR',
+      currencyCode: value.currencyCode || 'XAF',
       thousandsSeparator: value.thousandsSeparator || 'space',
       decimalSeparator: value.decimalSeparator || 'comma',
       minimumFractionDigits: value.minimumFractionDigits ?? 0,
@@ -97,6 +106,7 @@ export function MoneyFormatForm({
     previewAmount,
     {
       locale: watched.locale,
+      currencyCode: watched.currencyCode,
       thousandsSeparator: watched.thousandsSeparator,
       decimalSeparator: watched.decimalSeparator,
       minimumFractionDigits: safeMinimumFractionDigits,
@@ -142,6 +152,27 @@ export function MoneyFormatForm({
                 </Select>
                 <FormDescription>
                   Base culturelle utilisée pour le format des nombres.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="currencyCode"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Code devise</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    placeholder="XAF"
+                    onChange={(event) => field.onChange(event.target.value.toUpperCase())}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Utilisé pour l&apos;affichage des montants dans les dashboards.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -276,7 +307,10 @@ export function MoneyFormatForm({
           <p className="text-sm font-medium text-foreground">Aperçu</p>
           <p className="mt-2 text-2xl font-semibold">{preview}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Aperçu basé sur 123456789.45, appliqué aux écrans, exports et PDF.
+            Aperçu standard basé sur 123456789.45.
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Affichage dashboard : {watched.currencyCode ? `${preview} ${watched.currencyCode}` : preview}
           </p>
         </div>
 

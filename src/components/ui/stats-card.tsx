@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AmountWithCurrencyCode } from '@/components/ui/amount-with-currency-code';
 import { LucideIcon } from 'lucide-react';
 
 interface StatsCardProps {
@@ -9,6 +10,7 @@ interface StatsCardProps {
   trendUp?: boolean;
   color?: string;
   density?: 'default' | 'compact';
+  showCurrencyCode?: boolean;
 }
 
 export const StatsCard = ({ 
@@ -19,6 +21,7 @@ export const StatsCard = ({
   trendUp,
   color = 'text-primary',
   density = 'default',
+  showCurrencyCode = false,
 }: StatsCardProps) => {
   const isCompact = density === 'compact';
 
@@ -33,7 +36,9 @@ export const StatsCard = ({
         </div>
       </CardHeader>
       <CardContent className={isCompact ? 'px-5 pb-5 pt-0' : undefined}>
-        <div className={`mb-1 font-semibold tracking-normal ${isCompact ? 'text-[24px] leading-7' : 'text-[32px] leading-9'}`}>{value}</div>
+        <div className={`mb-1 font-semibold tracking-normal ${isCompact ? 'text-[24px] leading-7' : 'text-[32px] leading-9'}`}>
+          {showCurrencyCode ? <AmountWithCurrencyCode amount={value} /> : value}
+        </div>
         {trend && (
           <p className={`font-medium ${isCompact ? 'text-[11px] leading-4' : 'text-xs leading-4'} ${trendUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
             {trend}

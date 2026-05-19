@@ -18,6 +18,7 @@ export const TresorerieStats = ({ stats }: TresorerieStatsComponentProps) => {
         title="Solde Actuel"
         value={formatMontant(stats.soldeActuel)}
         icon={Wallet}
+        showCurrencyCode
         trend={`${stats.variationMensuelle >= 0 ? '+' : ''}${formatMontant(stats.variationMensuelle)} vs mois dernier`}
         trendUp={stats.variationMensuelle >= 0}
       />
@@ -25,6 +26,7 @@ export const TresorerieStats = ({ stats }: TresorerieStatsComponentProps) => {
         title="Encaissements"
         value={formatMontant(stats.totalEncaissements)}
         icon={TrendingUp}
+        showCurrencyCode
         trend={`${formatMontant(stats.encaissementsMoisEnCours)} ce mois`}
         color="text-green-600"
       />
@@ -32,6 +34,7 @@ export const TresorerieStats = ({ stats }: TresorerieStatsComponentProps) => {
         title="Décaissements"
         value={formatMontant(stats.totalDecaissements)}
         icon={TrendingDown}
+        showCurrencyCode
         trend={`${formatMontant(stats.decaissementsMoisEnCours)} ce mois`}
         color="text-red-600"
       />
@@ -39,6 +42,7 @@ export const TresorerieStats = ({ stats }: TresorerieStatsComponentProps) => {
         title="Solde Prévisionnel"
         value={formatMontant(stats.soldePrevisionnel)}
         icon={Calendar}
+        showCurrencyCode
       />
     </div>
   );

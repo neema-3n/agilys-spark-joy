@@ -22,6 +22,7 @@ interface EngagementTableProps {
   onAnnuler?: (id: string) => void;
   onDelete?: (id: string) => void;
   onCreerBonCommande?: (id: string) => void;
+  onCreerFacture?: (id: string) => void;
   onCreerDepense?: (id: string) => void;
   onViewDetails?: (engagementId: string) => void;
   selection?: ListSelectionHandlers;
@@ -52,6 +53,7 @@ export const EngagementTable = ({
   onAnnuler,
   onDelete,
   onCreerBonCommande,
+  onCreerFacture,
   onCreerDepense,
   onViewDetails,
   selection,
@@ -193,12 +195,18 @@ export const EngagementTable = ({
                 </>
               )}
 
-              {engagement.statut === 'valide' && (
+              {(engagement.statut === 'valide' || engagement.statut === 'engage') && (
                 <>
-                  {onCreerBonCommande && (
+                  {onCreerBonCommande && engagement.fournisseurId && (
                     <DropdownMenuItem onClick={() => onCreerBonCommande(engagement.id)}>
                       <FileText className="h-4 w-4 mr-2" />
                       Créer bon de commande
+                    </DropdownMenuItem>
+                  )}
+                  {onCreerFacture && (
+                    <DropdownMenuItem onClick={() => onCreerFacture(engagement.id)}>
+                      <Receipt className="h-4 w-4 mr-2" />
+                      Créer une facture
                     </DropdownMenuItem>
                   )}
                   {onCreerDepense && (
@@ -243,7 +251,7 @@ export const EngagementTable = ({
 
       return baseColumns;
     },
-    [onAnnuler, onCreerBonCommande, onCreerDepense, onDelete, onEdit, onValider, onViewDetails, selection]
+    [onAnnuler, onCreerBonCommande, onCreerFacture, onCreerDepense, onDelete, onEdit, onValider, onViewDetails, selection]
   );
 
   return (

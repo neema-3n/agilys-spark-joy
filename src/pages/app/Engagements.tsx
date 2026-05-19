@@ -305,6 +305,12 @@ const Engagements = () => {
     [navigate]
   );
 
+  const handleCreerFacture = useCallback((engagementId: string) => {
+    navigate('/app/factures/create', {
+      state: { initialEngagementId: engagementId },
+    });
+  }, [navigate]);
+
   const handleCreerDepense = useCallback((engagementId: string) => {
     navigate('/app/depenses/create', {
       state: { initialEngagementId: engagementId },
@@ -315,8 +321,10 @@ const Engagements = () => {
     (type: string, id: string) => {
       const entityRoutes: Record<string, string> = {
         fournisseur: `/app/fournisseurs/${id}`,
+        'ligne-budgetaire': `/app/budgets/${id}?tab=lignes`,
         ligneBudgetaire: `/app/budgets/${id}?tab=lignes`,
         projet: `/app/projets/${id}`,
+        reservation: `/app/reservations/${id}`,
         reservationCredit: `/app/reservations/${id}`,
       };
 
@@ -482,7 +490,16 @@ const Engagements = () => {
               onCreerBonCommande={
                 snapshotEngagement.statut === 'valide' ? () => handleCreerBonCommande(snapshotEngagement.id) : undefined
               }
-              onCreerDepense={snapshotEngagement.statut === 'valide' ? () => handleCreerDepense(snapshotEngagement.id) : undefined}
+              onCreerFacture={
+                snapshotEngagement.statut === 'valide' || snapshotEngagement.statut === 'engage'
+                  ? () => handleCreerFacture(snapshotEngagement.id)
+                  : undefined
+              }
+              onCreerDepense={
+                snapshotEngagement.statut === 'valide' || snapshotEngagement.statut === 'engage'
+                  ? () => handleCreerDepense(snapshotEngagement.id)
+                  : undefined
+              }
               onAnnuler={
                 snapshotEngagement.statut === 'brouillon' || snapshotEngagement.statut === 'valide'
                   ? () => handleAnnulationRequest(snapshotEngagement.id)
@@ -605,6 +622,7 @@ const Engagements = () => {
                 onAnnuler={handleAnnulationRequest}
                 onDelete={handleDelete}
                 onCreerBonCommande={handleCreerBonCommande}
+                onCreerFacture={handleCreerFacture}
                 onCreerDepense={handleCreerDepense}
                 onViewDetails={handleOpenSnapshot}
                 selection={{ selectedIds, allSelected, toggleOne, toggleAll }}

@@ -425,7 +425,11 @@ const BonsCommande = () => {
                       ? () => handleAnnuler(snapshotBonCommande.id)
                       : undefined
                   }
-                  onCreateFacture={snapshotBonCommande.statut === 'receptionne' ? () => handleCreateFacture(snapshotBonCommande.id) : undefined}
+                  onCreateFacture={
+                    snapshotBonCommande.statut === 'receptionne' && snapshotBonCommande.engagementId
+                      ? () => handleCreateFacture(snapshotBonCommande.id)
+                      : undefined
+                  }
                   onNavigateToEntity={handleNavigateToEntity}
                 />
               ) : isSnapshotOpen && isSnapshotLoading ? (

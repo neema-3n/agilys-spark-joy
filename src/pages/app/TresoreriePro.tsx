@@ -29,11 +29,13 @@ const TresoreriePro = () => {
             title="Solde Total"
             value={formatMontant(comptesStats?.soldeTotal || 0)}
             icon={Wallet}
+            showCurrencyCode
           />
           <StatsCard
             title="Encaissements"
             value={formatMontant(recettesStats?.montantCeMois || 0)}
             icon={TrendingUp}
+            showCurrencyCode
             trend="Ce mois"
             color="text-green-600"
           />
@@ -41,6 +43,7 @@ const TresoreriePro = () => {
             title="Décaissements"
             value={formatMontant(operationsStats?.montantDecaissements || 0)}
             icon={ArrowDownUp}
+            showCurrencyCode
             trend="Exercice en cours"
             color="text-red-600"
           />

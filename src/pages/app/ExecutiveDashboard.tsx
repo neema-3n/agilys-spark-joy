@@ -158,7 +158,6 @@ const formatAmountShort = (value: number) => {
     maximumFractionDigits: 0,
   });
 };
-
 const formatPercent = (value: number) =>
   `${formatMontant(value, {
     minimumFractionDigits: 1,
@@ -169,6 +168,8 @@ const formatDateRange = (start: string, end: string) => {
   const formatter = new Intl.DateTimeFormat('fr-FR');
   return `${formatter.format(new Date(start))} - ${formatter.format(new Date(end))}`;
 };
+
+const getTodayIsoDate = () => new Date().toISOString().split('T')[0];
 
 const isDateInRange = (dateValue: string | undefined, startDate: string, endDate: string) => {
   if (!dateValue) return false;
@@ -337,15 +338,15 @@ const ExecutiveDashboard = () => {
   const { actions } = useActions();
 
   const [periodStart, setPeriodStart] = useState(currentExercice?.dateDebut ?? '');
-  const [periodEnd, setPeriodEnd] = useState(currentExercice?.dateFin ?? '');
+  const [periodEnd, setPeriodEnd] = useState(getTodayIsoDate());
 
   useEffect(() => {
     setPeriodStart(currentExercice?.dateDebut ?? '');
-    setPeriodEnd(currentExercice?.dateFin ?? '');
-  }, [currentExercice?.dateDebut, currentExercice?.dateFin]);
+    setPeriodEnd(getTodayIsoDate());
+  }, [currentExercice?.dateDebut, currentExercice?.id]);
 
   const safePeriodStart = periodStart || currentExercice?.dateDebut || '';
-  const safePeriodEnd = periodEnd || currentExercice?.dateFin || '';
+  const safePeriodEnd = periodEnd || getTodayIsoDate();
 
   const filteredLignes = useMemo(
     () => lignes.filter((ligne) => isDateInRange(ligne.dateCreation, safePeriodStart, safePeriodEnd)),
@@ -678,6 +679,7 @@ const ExecutiveDashboard = () => {
           title="Budget total autorisé"
           value={formatAmountShort(kpis.budgetTotalAutorise)}
           icon={Wallet}
+          showCurrencyCode
           trend={isLoading ? 'Chargement des agrégats...' : 'Source canonique : lignes budgétaires'}
           trendUp
           color="text-blue-600"
@@ -686,6 +688,7 @@ const ExecutiveDashboard = () => {
           title="Budget engagé"
           value={formatAmountShort(kpis.budgetEngage)}
           icon={FileChartColumnIncreasing}
+          showCurrencyCode
           trend={formatPercent(kpis.budgetTotalAutorise > 0 ? (kpis.budgetEngage / kpis.budgetTotalAutorise) * 100 : 0)}
           trendUp
           color="text-emerald-600"
@@ -694,6 +697,7 @@ const ExecutiveDashboard = () => {
           title="Solde disponible"
           value={formatAmountShort(kpis.soldeDisponible)}
           icon={WalletCards}
+          showCurrencyCode
           trend="Capacité restante avant arbitrage"
           trendUp={kpis.soldeDisponible >= 0}
           color="text-amber-600"
@@ -702,6 +706,7 @@ const ExecutiveDashboard = () => {
           title="Trésorerie disponible"
           value={formatAmountShort(kpis.tresorerieDisponible)}
           icon={Landmark}
+          showCurrencyCode
           trend="Trésorerie active consolidée"
           trendUp
           color="text-violet-600"
@@ -727,7 +732,7 @@ const ExecutiveDashboard = () => {
                 <XAxis dataKey="mois" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
                 <YAxis tick={{ fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(value) => formatAmountShort(value)} />
                 <Tooltip
-                  formatter={(value: number) => formatAmountShort(value)}
+                  formatter={(value: number) => formatMontant(value)}
                   contentStyle={{
                     borderRadius: '12px',
                     border: '1px solid hsl(var(--border))',
@@ -780,7 +785,7 @@ const ExecutiveDashboard = () => {
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value: number) => formatAmountShort(value)}
+                    formatter={(value: number) => formatMontant(value)}
                     contentStyle={{
                       borderRadius: '12px',
                       border: '1px solid hsl(var(--border))',

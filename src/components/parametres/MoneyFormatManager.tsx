@@ -32,6 +32,7 @@ export function MoneyFormatManager() {
   const moneyFormat = useMemo(
     () => ({
       locale: currentClient?.moneyFormat?.locale || 'fr-FR',
+      currencyCode: currentClient?.moneyFormat?.currencyCode || currentClient?.devise || 'XAF',
       thousandsSeparator: currentClient?.moneyFormat?.thousandsSeparator || 'space',
       decimalSeparator: currentClient?.moneyFormat?.decimalSeparator || 'comma',
       minimumFractionDigits: currentClient?.moneyFormat?.minimumFractionDigits ?? 0,
@@ -120,10 +121,14 @@ export function MoneyFormatManager() {
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <div className="rounded-xl border p-4">
             <p className="text-sm text-muted-foreground">Locale</p>
             <p className="mt-1 font-medium">{moneyFormat.locale}</p>
+          </div>
+          <div className="rounded-xl border p-4">
+            <p className="text-sm text-muted-foreground">Code devise</p>
+            <p className="mt-1 font-medium">{moneyFormat.currencyCode}</p>
           </div>
           <div className="rounded-xl border p-4">
             <p className="text-sm text-muted-foreground">Séparateur de milliers</p>
@@ -151,7 +156,10 @@ export function MoneyFormatManager() {
             {formatMontantWithSettings(123456789.45, moneyFormat)}
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            Ce format s&apos;applique aux écrans, exports CSV, impressions et PDF.
+            Le format standard reste appliqué aux écrans, exports CSV, impressions et PDF.
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Dans les dashboards, le code devise s&apos;affiche sous la forme {formatMontantWithSettings(123456789.45, moneyFormat)} {moneyFormat.currencyCode}.
           </p>
         </div>
       </CardContent>

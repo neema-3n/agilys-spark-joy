@@ -16,7 +16,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
 import { useDepenses } from '@/hooks/useDepenses';
-import { useEngagements } from '@/hooks/useEngagements';
 import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
 import { useFournisseurs } from '@/hooks/useFournisseurs';
 import { useProjets } from '@/hooks/useProjets';
@@ -34,7 +33,7 @@ import { computeFinancialBreakdown, getCoherenceErrors } from '@/lib/financial-u
 import type { ChargePrincipaleMode, FinancialVentilation } from '@/types/financial.types';
 
 const formSchema = z.object({
-  depenseId: z.string().optional(),
+  depenseId: z.string().min(1, 'La dépense est requise'),
   engagementId: z.string().optional(),
   ligneBudgetaireId: z.string().optional(),
   fournisseurId: z.string().optional(),
@@ -71,7 +70,6 @@ export const PaiementForm = ({
   useScrollArea = true,
 }: PaiementFormProps) => {
   const { depenses } = useDepenses();
-  const { engagements } = useEngagements();
   const { lignes: lignesBudgetaires } = useLignesBudgetaires();
   const { fournisseurs } = useFournisseurs();
   const { projets } = useProjets();
@@ -84,7 +82,7 @@ export const PaiementForm = ({
     () => comptes.filter((compte) => compte.type === 'charge' && compte.statut === 'actif'),
     [comptes]
   );
-  const [modeSource, setModeSource] = useState<'depense' | 'direct'>(initialDepenseId ? 'depense' : 'direct');
+  const [modeSource] = useState<'depense'>('depense');
   const [ventilations, setVentilations] = useState<FinancialVentilation[]>([]);
   const [chargePrincipaleMode, setChargePrincipaleMode] = useState<ChargePrincipaleMode>('nature');
   const [natureCompteChargeId, setNatureCompteChargeId] = useState<string>();
@@ -191,6 +189,7 @@ export const PaiementForm = ({
   }, [linkedDepense, projets]);
   const hasInheritedFinancialStructure =
     !!linkedDepense?.factureId && (modeSource === 'depense' || !!paiement?.depenseId || !!initialDepenseId);
+  const lockPaiementInheritedFields = !!selectedDepenseId;
 
   const setUnifiedFinancialAmount = (amount: number) => {
     form.setValue('montantHT', amount, { shouldDirty: true, shouldValidate: true });
@@ -240,8 +239,6 @@ export const PaiementForm = ({
     if (initializedRef.current) return;
     if (initialDepenseId && !selectedDepense) return;
 
-    setModeSource(initialDepenseId ? 'depense' : 'direct');
-
     if (paiement) {
       const normalizedChargePrincipale = normalizeChargePrincipaleForEditor(
         paiement.chargePrincipaleMode,
@@ -270,7 +267,7 @@ export const PaiementForm = ({
       setNatureCompteChargeId(normalizedChargePrincipale.natureCompteChargeId);
       setCompteChargeId(normalizedChargePrincipale.compteChargeId);
       initialEditorStateRef.current = serializeEditorState(
-        paiement.depenseId ? 'depense' : 'direct',
+        'depense',
         paiement.ventilations || [],
         normalizedChargePrincipale.chargePrincipaleMode,
         normalizedChargePrincipale.natureCompteChargeId,
@@ -309,7 +306,7 @@ export const PaiementForm = ({
     setNatureCompteChargeId(undefined);
     setCompteChargeId(undefined);
     hydratedDepenseIdRef.current = null;
-    initialEditorStateRef.current = serializeEditorState('direct', [], 'nature');
+    initialEditorStateRef.current = serializeEditorState('depense', [], 'nature');
     initializedRef.current = true;
   }, [form, initialDepenseId, paiement, selectedDepense]);
 
@@ -320,12 +317,6 @@ export const PaiementForm = ({
     hydrateFromDepense(selectedDepense, selectedDepenseId);
     hydratedDepenseIdRef.current = selectedDepense.id;
   }, [form, modeSource, paiement, selectedDepense, selectedDepenseId]);
-
-  useEffect(() => {
-    if (modeSource !== 'depense') {
-      hydratedDepenseIdRef.current = null;
-    }
-  }, [modeSource]);
 
   const currentEditorState = useMemo(
     () =>
@@ -396,8 +387,8 @@ export const PaiementForm = ({
     const montantExecution = values.montantNetPaye;
 
     const payload: PaiementFormData = {
-      depenseId: modeSource === 'depense' ? (values.depenseId || initialDepenseId) : undefined,
-      engagementId: modeSource === 'direct' ? values.engagementId || undefined : values.engagementId || undefined,
+      depenseId: values.depenseId || initialDepenseId,
+      engagementId: values.engagementId || undefined,
       ligneBudgetaireId: values.ligneBudgetaireId || undefined,
       fournisseurId: values.fournisseurId || undefined,
       beneficiaire: values.beneficiaire || undefined,
@@ -442,53 +433,25 @@ export const PaiementForm = ({
         <Card>
           <CardContent className="space-y-6 pt-6">
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <FormLabel>Mode</FormLabel>
-                <Select value={modeSource} onValueChange={(value) => setModeSource(value as typeof modeSource)} disabled={!!initialDepenseId}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="depense">Paiement sur dépense</SelectItem>
-                    <SelectItem value="direct">Paiement direct</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {modeSource === 'depense' ? (
-                <FormField control={form.control} name="depenseId" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Dépense</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || initialDepenseId || ''} disabled={!!initialDepenseId}>
-                      <FormControl><SelectTrigger><SelectValue placeholder="Sélectionner une dépense" /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        {depenses.filter((item) => item.statut === 'ordonnancee' || item.statut === 'payee').map((item) => (
-                          <SelectItem key={item.id} value={item.id}>{item.numero}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              ) : (
-                <FormField control={form.control} name="engagementId" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Engagement minimal</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un engagement" /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        {engagements.map((item) => (
-                          <SelectItem key={item.id} value={item.id}>{item.numero}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              )}
+              <FormField control={form.control} name="depenseId" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Dépense</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || initialDepenseId || ''} disabled={!!initialDepenseId}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Sélectionner une dépense" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      {depenses.filter((item) => item.statut === 'ordonnancee' || item.statut === 'payee').map((item) => (
+                        <SelectItem key={item.id} value={item.id}>{item.numero}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
 
               <FormField control={form.control} name="ligneBudgetaireId" render={({ field }) => (
                 <FormItem>
                     <FormLabel>Ligne budgétaire</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={lockPaiementInheritedFields}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Sélectionner une ligne budgétaire" /></SelectTrigger></FormControl>
                       <SelectContent>
                         {ligneBudgetaireOptions.map((item) => (
@@ -503,7 +466,7 @@ export const PaiementForm = ({
               <FormField control={form.control} name="fournisseurId" render={({ field }) => (
                 <FormItem>
                     <FormLabel>Fournisseur</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={lockPaiementInheritedFields}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un fournisseur" /></SelectTrigger></FormControl>
                       <SelectContent>
                         {fournisseurOptions.map((item) => (
@@ -518,7 +481,7 @@ export const PaiementForm = ({
               <FormField control={form.control} name="beneficiaire" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Bénéficiaire libre</FormLabel>
-                  <FormControl><Input {...field} value={field.value || ''} /></FormControl>
+                  <FormControl><Input {...field} value={field.value || ''} disabled={lockPaiementInheritedFields} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
@@ -526,7 +489,7 @@ export const PaiementForm = ({
               <FormField control={form.control} name="projetId" render={({ field }) => (
                 <FormItem>
                     <FormLabel>Projet</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={lockPaiementInheritedFields}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un projet" /></SelectTrigger></FormControl>
                       <SelectContent>
                         {projetOptions.map((item) => (
@@ -541,7 +504,7 @@ export const PaiementForm = ({
               <FormField control={form.control} name="objet" render={({ field }) => (
                 <FormItem className="md:col-span-2">
                   <FormLabel>Objet</FormLabel>
-                  <FormControl><Input {...field} value={field.value || ''} /></FormControl>
+                  <FormControl><Input {...field} value={field.value || ''} disabled={lockPaiementInheritedFields} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />

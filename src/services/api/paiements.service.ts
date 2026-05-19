@@ -121,6 +121,9 @@ export const createPaiement = async (
   clientId: string,
   userId: string
 ): Promise<Paiement> => {
+  if (!paiement.depenseId) {
+    throw new Error("Un paiement doit être rattaché à une dépense.");
+  }
   const { data, error } = await supabase.functions.invoke('create-paiement', {
     body: {
       ...toSnakeCase(paiement),
@@ -155,6 +158,20 @@ export const updatePaiement = async (
   id: string,
   paiement: PaiementFormData,
 ): Promise<Paiement> => {
+  const { data: currentPaiement, error: currentPaiementError } = await supabase
+    .from('paiements')
+    .select('depense_id')
+    .eq('id', id)
+    .single();
+
+  if (currentPaiementError) {
+    console.error('Error fetching current paiement:', currentPaiementError);
+    throw currentPaiementError;
+  }
+
+  if (!paiement.depenseId && !currentPaiement?.depense_id) {
+    throw new Error("Un paiement doit rester rattaché à une dépense.");
+  }
   const { data, error } = await supabase
     .from('paiements')
     .update({

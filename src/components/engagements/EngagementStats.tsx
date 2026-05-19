@@ -31,6 +31,7 @@ export const EngagementStats = ({ engagements }: EngagementStatsProps) => {
         title="Montant Engagé"
         value={formatCurrency(montantActif)}
         icon={TrendingUp}
+        showCurrencyCode
         color="text-secondary"
         trend="Montant des engagements actifs"
         trendUp={true}

@@ -130,6 +130,9 @@ export const bonsCommandeService = {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Non authentifié');
+      if (!bonCommande.engagementId) {
+        throw new Error("Un bon de commande doit être rattaché à un engagement.");
+      }
 
       // Appeler l'edge function pour créer le bon de commande avec numéro généré atomiquement
       const { data, error } = await supabase.functions.invoke('create-bon-commande', {
@@ -160,6 +163,9 @@ export const bonsCommandeService = {
   },
 
   async update(id: string, bonCommande: UpdateBonCommandeInput): Promise<BonCommande> {
+    if (!bonCommande.engagementId) {
+      throw new Error("Un bon de commande doit rester rattaché à un engagement.");
+    }
     // Vérifier que le bon de commande est en brouillon ou validé avant modification
     const { data: currentBC, error: fetchError } = await supabase
       .from('bons_commande')

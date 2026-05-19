@@ -43,7 +43,10 @@ export const ClientProvider = ({ children }: { children: ReactNode }) => {
   }, [user, loadClients]);
 
   useEffect(() => {
-    setMoneyFormatSettings(currentClient?.moneyFormat);
+    setMoneyFormatSettings({
+      ...currentClient?.moneyFormat,
+      currencyCode: currentClient?.moneyFormat?.currencyCode || currentClient?.devise || '',
+    });
   }, [currentClient]);
 
   const contextValue = useMemo(() => ({

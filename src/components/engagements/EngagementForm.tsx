@@ -21,6 +21,16 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
 import { useFournisseurs } from '@/hooks/useFournisseurs';
 import { useProjets } from '@/hooks/useProjets';
@@ -40,6 +50,11 @@ const engagementSchema = z.object({
 });
 
 type EngagementFormValues = z.infer<typeof engagementSchema>;
+
+type PendingOverrideSubmission = {
+  data: EngagementFormData;
+  messages: string[];
+};
 
 interface EngagementFormProps {
   engagement?: Engagement;
@@ -71,6 +86,7 @@ export const EngagementForm = ({
   const [typeBeneficiaire, setTypeBeneficiaire] = useState<'fournisseur' | 'direct'>('fournisseur');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [montantDisponibleReservation, setMontantDisponibleReservation] = useState<number | null>(null);
+  const [pendingOverrideSubmission, setPendingOverrideSubmission] = useState<PendingOverrideSubmission | null>(null);
   const initialTypeBeneficiaireRef = useRef<'fournisseur' | 'direct' | null>(null);
 
   const form = useForm<EngagementFormValues>({
@@ -168,6 +184,36 @@ export const EngagementForm = ({
     return () => onDirtyChange?.(false);
   }, [onDirtyChange]);
 
+  const submitEngagement = async (data: EngagementFormData) => {
+    setIsSubmitting(true);
+    try {
+      await onSubmit(data);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const buildSubmissionData = (values: EngagementFormValues): EngagementFormData =>
+    typeBeneficiaire === 'fournisseur'
+      ? {
+          ligneBudgetaireId: values.ligneBudgetaireId,
+          objet: values.objet,
+          montant: values.montant,
+          fournisseurId: values.fournisseurId || undefined,
+          projetId: values.projetId || undefined,
+          observations: values.observations || undefined,
+          reservationCreditId: values.reservationCreditId || undefined,
+        }
+      : {
+          ligneBudgetaireId: values.ligneBudgetaireId,
+          objet: values.objet,
+          montant: values.montant,
+          beneficiaire: values.beneficiaire || undefined,
+          projetId: values.projetId || undefined,
+          observations: values.observations || undefined,
+          reservationCreditId: values.reservationCreditId || undefined,
+        };
+
   const handleSubmit = async (values: EngagementFormValues) => {
     if (typeBeneficiaire === 'fournisseur' && !values.fournisseurId) {
       form.setError('fournisseurId', { message: 'Veuillez sélectionner un fournisseur' });
@@ -180,52 +226,37 @@ export const EngagementForm = ({
     }
 
     const ligneBudgetaire = lignesActives.find((ligne) => ligne.id === values.ligneBudgetaireId);
+    const overrideMessages: string[] = [];
+
     if (ligneBudgetaire && values.montant > ligneBudgetaire.disponible) {
-      form.setError('montant', {
-        message: `Le montant dépasse le disponible de la ligne (${ligneBudgetaire.disponible.toLocaleString('fr-FR')})`,
-      });
-      return;
+      overrideMessages.push(
+        `Le montant saisi (${values.montant.toLocaleString('fr-FR')}) dépasse le disponible de la ligne budgétaire (${ligneBudgetaire.disponible.toLocaleString('fr-FR')}).`,
+      );
     }
 
     if (montantDisponibleReservation !== null && values.montant > montantDisponibleReservation) {
-      form.setError('montant', {
-        message: `Le montant dépasse le disponible de la réservation (${montantDisponibleReservation.toLocaleString('fr-FR')})`,
+      overrideMessages.push(
+        `Le montant saisi (${values.montant.toLocaleString('fr-FR')}) dépasse le disponible de la réservation (${montantDisponibleReservation.toLocaleString('fr-FR')}).`,
+      );
+    }
+
+    const cleanedData = buildSubmissionData(values);
+
+    if (overrideMessages.length > 0) {
+      setPendingOverrideSubmission({
+        data: cleanedData,
+        messages: overrideMessages,
       });
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      const cleanedData: EngagementFormData =
-        typeBeneficiaire === 'fournisseur'
-          ? {
-              ligneBudgetaireId: values.ligneBudgetaireId,
-              objet: values.objet,
-              montant: values.montant,
-              fournisseurId: values.fournisseurId || undefined,
-              projetId: values.projetId || undefined,
-              observations: values.observations || undefined,
-              reservationCreditId: values.reservationCreditId || undefined,
-            }
-          : {
-              ligneBudgetaireId: values.ligneBudgetaireId,
-              objet: values.objet,
-              montant: values.montant,
-              beneficiaire: values.beneficiaire || undefined,
-              projetId: values.projetId || undefined,
-              observations: values.observations || undefined,
-              reservationCreditId: values.reservationCreditId || undefined,
-            };
-
-      await onSubmit(cleanedData);
-    } finally {
-      setIsSubmitting(false);
-    }
+    await submitEngagement(cleanedData);
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+    <>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
         {selectedReservation ? (
           <div className="rounded-xl border bg-muted/30 p-4 space-y-1">
             <p className="text-sm font-medium">Réservation source : {selectedReservation.numero}</p>
@@ -426,15 +457,48 @@ export const EngagementForm = ({
           />
         </div>
 
-        <div className="flex justify-end gap-3 border-t pt-6">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Annuler
-          </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Enregistrement...' : submitLabel || (engagement ? "Enregistrer l'engagement" : "Créer l'engagement")}
-          </Button>
-        </div>
-      </form>
-    </Form>
+          <div className="flex justify-end gap-3 border-t pt-6">
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Annuler
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Enregistrement...' : submitLabel || (engagement ? "Enregistrer l'engagement" : "Créer l'engagement")}
+            </Button>
+          </div>
+        </form>
+      </Form>
+
+      <AlertDialog open={!!pendingOverrideSubmission} onOpenChange={(open) => !open && setPendingOverrideSubmission(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer le dépassement</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>Cet engagement dépasse le plafond actuellement disponible.</p>
+                <ul className="list-disc space-y-1 pl-5">
+                  {pendingOverrideSubmission?.messages.map((message) => (
+                    <li key={message}>{message}</li>
+                  ))}
+                </ul>
+                <p>Voulez-vous créer l&apos;engagement malgré ce dépassement&nbsp;?</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Revenir au formulaire</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!pendingOverrideSubmission) return;
+                const submission = pendingOverrideSubmission.data;
+                setPendingOverrideSubmission(null);
+                await submitEngagement(submission);
+              }}
+            >
+              Confirmer le dépassement
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };

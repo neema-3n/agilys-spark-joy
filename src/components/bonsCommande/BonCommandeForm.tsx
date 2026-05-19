@@ -36,7 +36,9 @@ const formSchema = z
     numero: z.string().min(1, 'Le numéro est requis'),
     dateCommande: z.string().min(1, 'La date est requise'),
     fournisseurId: z.string().min(1, 'Le fournisseur est requis'),
-    engagementId: z.string().optional(),
+    engagementId: z.string().min(1, "L'engagement est requis").refine((value) => value !== 'none', {
+      message: "L'engagement est requis",
+    }),
     projetId: z.string().optional(),
     objet: z.string().min(1, "L'objet est requis"),
     montant: z.string().min(1, 'Le montant est requis'),
@@ -96,7 +98,7 @@ export const BonCommandeForm = ({
       numero: '',
       dateCommande: format(new Date(), 'yyyy-MM-dd'),
       fournisseurId: '',
-      engagementId: 'none',
+      engagementId: '',
       projetId: 'none',
       objet: '',
       montant: '',
@@ -112,7 +114,7 @@ export const BonCommandeForm = ({
         numero: bonCommande.numero,
         dateCommande: bonCommande.dateCommande,
         fournisseurId: bonCommande.fournisseurId,
-        engagementId: bonCommande.engagementId || 'none',
+        engagementId: bonCommande.engagementId || '',
         projetId: bonCommande.projetId || 'none',
         objet: bonCommande.objet,
         montant: bonCommande.montant.toString(),
@@ -146,7 +148,7 @@ export const BonCommandeForm = ({
         numero,
         dateCommande: format(new Date(), 'yyyy-MM-dd'),
         fournisseurId: '',
-        engagementId: 'none',
+        engagementId: '',
         projetId: 'none',
         objet: '',
         montant: '',
@@ -156,6 +158,28 @@ export const BonCommandeForm = ({
       });
     });
   }, [bonCommande, form, onGenererNumero, selectedEngagement]);
+
+  const watchedEngagementId = form.watch('engagementId');
+  const isPinnedToEngagement = !!selectedEngagement;
+  const hasEngagementSource =
+    watchedEngagementId !== undefined &&
+    watchedEngagementId !== '' &&
+    watchedEngagementId !== 'none';
+  const lockInheritedBonCommandeFields = !bonCommande && hasEngagementSource;
+
+  useEffect(() => {
+    if (bonCommande || selectedEngagement || !watchedEngagementId || watchedEngagementId === 'none') return;
+    const engagement = engagements.find((item) => item.id === watchedEngagementId);
+    if (!engagement) return;
+
+    form.setValue('fournisseurId', engagement.fournisseurId || '', { shouldDirty: true });
+    form.setValue('projetId', engagement.projetId || 'none', { shouldDirty: true });
+    form.setValue('objet', engagement.objet, { shouldDirty: true });
+    form.setValue('montant', engagement.montant.toString(), { shouldDirty: true });
+    form.setValue('observations', `Créé depuis l'engagement ${engagement.numero}`, {
+      shouldDirty: true,
+    });
+  }, [bonCommande, engagements, form, selectedEngagement, watchedEngagementId]);
 
   useEffect(() => {
     onDirtyChange?.(form.formState.isDirty);
@@ -180,7 +204,7 @@ export const BonCommandeForm = ({
         numero: values.numero,
         dateCommande: values.dateCommande,
         fournisseurId: values.fournisseurId,
-        engagementId: values.engagementId && values.engagementId !== 'none' ? values.engagementId : undefined,
+        engagementId: values.engagementId,
         projetId: values.projetId && values.projetId !== 'none' ? values.projetId : undefined,
         objet: values.objet,
         montant: parseFloat(values.montant),
@@ -244,7 +268,11 @@ export const BonCommandeForm = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Fournisseur</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={isReadOnly || lockInheritedBonCommandeFields}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Sélectionner un fournisseur" />
@@ -269,14 +297,17 @@ export const BonCommandeForm = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Engagement</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={isReadOnly || isPinnedToEngagement}
+                    >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Optionnel" />
+                          <SelectValue placeholder="Sélectionner un engagement" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="none">-- Aucun --</SelectItem>
                         {engagementsValides.map((engagement) => (
                           <SelectItem key={engagement.id} value={engagement.id}>
                             {engagement.numero} - {engagement.objet}
@@ -295,7 +326,11 @@ export const BonCommandeForm = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Projet</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={isReadOnly || lockInheritedBonCommandeFields}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Optionnel" />

@@ -62,11 +62,13 @@ export const PaiementStats = ({ paiements }: PaiementStatsProps) => {
         title="Montant aujourd'hui"
         value={stats.montantAujourdHui}
         icon={TrendingUp}
+        showCurrencyCode
       />
       <StatsCard
         title="Montant ce mois"
         value={stats.montantCeMois}
         icon={Banknote}
+        showCurrencyCode
       />
     </div>
   );

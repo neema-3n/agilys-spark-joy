@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AmountWithCurrencyCode } from '@/components/ui/amount-with-currency-code';
 import { Building2, CheckCircle2, XCircle, TrendingUp } from 'lucide-react';
 import { FournisseurStats as FournisseurStatsType } from '@/types/fournisseur.types';
 import { formatMontant } from '@/lib/utils';
@@ -60,7 +61,9 @@ export const FournisseurStats = ({ stats }: FournisseurStatsProps) => {
           <TrendingUp className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatMontant(stats.montantTotalEngage)}</div>
+          <div className="text-2xl font-bold">
+            <AmountWithCurrencyCode amount={formatMontant(stats.montantTotalEngage)} />
+          </div>
           <p className="text-xs text-muted-foreground">
             {stats.nombreEngagementsTotal} engagements
           </p>

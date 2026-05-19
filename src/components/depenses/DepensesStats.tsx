@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AmountWithCurrencyCode } from '@/components/ui/amount-with-currency-code';
 import { Wallet, CheckCircle, FileCheck, Banknote, AlertCircle } from 'lucide-react';
 import { useMemo } from 'react';
 import type { Depense } from '@/types/depense.types';
@@ -47,7 +48,9 @@ export const DepenseStatsCards = ({ depenses }: DepenseStatsCardsProps) => {
           <Wallet className="h-5 w-5 text-primary" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold mb-1">{formatMontant(stats.montantTotal)}</div>
+          <div className="text-2xl font-bold mb-1">
+            <AmountWithCurrencyCode amount={formatMontant(stats.montantTotal)} />
+          </div>
           <p className="text-xs text-muted-foreground">
             {stats.total} dépense{stats.total > 1 ? 's' : ''}
           </p>
@@ -62,7 +65,9 @@ export const DepenseStatsCards = ({ depenses }: DepenseStatsCardsProps) => {
           <CheckCircle className="h-5 w-5 text-secondary" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold mb-1">{formatMontant(stats.montantValidee)}</div>
+          <div className="text-2xl font-bold mb-1">
+            <AmountWithCurrencyCode amount={formatMontant(stats.montantValidee)} />
+          </div>
           <p className="text-xs text-secondary">
             {stats.validee} dépense{stats.validee > 1 ? 's' : ''}
           </p>
@@ -77,7 +82,9 @@ export const DepenseStatsCards = ({ depenses }: DepenseStatsCardsProps) => {
           <FileCheck className="h-5 w-5 text-accent" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold mb-1">{formatMontant(stats.montantOrdonnancee)}</div>
+          <div className="text-2xl font-bold mb-1">
+            <AmountWithCurrencyCode amount={formatMontant(stats.montantOrdonnancee)} />
+          </div>
           <p className="text-xs text-accent">
             {stats.ordonnancee} dépense{stats.ordonnancee > 1 ? 's' : ''}
           </p>
@@ -92,7 +99,9 @@ export const DepenseStatsCards = ({ depenses }: DepenseStatsCardsProps) => {
           <Banknote className="h-5 w-5 text-green-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold mb-1">{formatMontant(stats.montantPayee)}</div>
+          <div className="text-2xl font-bold mb-1">
+            <AmountWithCurrencyCode amount={formatMontant(stats.montantPayee)} />
+          </div>
           <p className="text-xs text-green-600">
             {stats.payee} dépense{stats.payee > 1 ? 's' : ''}
           </p>

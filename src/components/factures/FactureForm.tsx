@@ -47,6 +47,16 @@ const factureSchema = z.object({
   montantTTC: z.coerce.number().positive('Le montant TTC est requis'),
   montantNetPaye: z.coerce.number().positive('Le montant net paye est requis'),
   observations: z.string().optional(),
+}).superRefine((data, ctx) => {
+  const hasBonCommande = !!data.bonCommandeId && data.bonCommandeId !== 'none';
+  const hasEngagement = !!data.engagementId && data.engagementId !== 'none';
+  if (!hasBonCommande && !hasEngagement) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['bonCommandeId'],
+      message: 'Sélectionnez un engagement ou un bon de commande.',
+    });
+  }
 });
 
 export interface FactureFormProps {
@@ -66,13 +76,22 @@ export interface FactureFormProps {
     objet?: string;
     montant?: number;
   }>;
-  engagements: Array<{ id: string; numero: string }>;
+  engagements: Array<{
+    id: string;
+    numero: string;
+    fournisseurId?: string;
+    ligneBudgetaireId?: string;
+    projetId?: string;
+    objet?: string;
+    montant?: number;
+  }>;
   lignesBudgetaires: Array<{ id: string; libelle: string }>;
   projets: Array<{ id: string; nom: string; code: string }>;
   currentClientId: string;
   currentExerciceId: string;
   onGenererNumero: () => Promise<string>;
   initialBonCommandeId?: string;
+  initialEngagementId?: string;
   submitLabel?: string;
   scrollAreaClassName?: string;
   useScrollArea?: boolean;
@@ -92,6 +111,7 @@ export const FactureForm = ({
   currentExerciceId,
   onGenererNumero,
   initialBonCommandeId,
+  initialEngagementId,
   submitLabel,
   scrollAreaClassName = 'h-[72vh] pr-4',
   useScrollArea = true,
@@ -145,12 +165,13 @@ export const FactureForm = ({
 
   useEffect(() => {
     initializedRef.current = false;
-  }, [facture?.id, initialBonCommandeId]);
+  }, [facture?.id, initialBonCommandeId, initialEngagementId]);
 
   useEffect(() => {
     if (initializedRef.current) return;
 
     if (!facture && initialBonCommandeId && bonsCommande.length === 0) return;
+    if (!facture && initialEngagementId && engagements.length === 0) return;
 
     if (facture) {
       const normalizedChargePrincipale = normalizeChargePrincipaleForEditor(
@@ -193,19 +214,22 @@ export const FactureForm = ({
       const selectedBC = initialBonCommandeId
         ? bonsCommande.find((bc) => bc.id === initialBonCommandeId)
         : undefined;
-      const montantTTC = selectedBC?.montant || 0;
+      const selectedEngagement = !selectedBC && initialEngagementId
+        ? engagements.find((engagement) => engagement.id === initialEngagementId)
+        : undefined;
+      const montantTTC = selectedBC?.montant || selectedEngagement?.montant || 0;
       const montantHT = montantTTC > 0 ? Number((montantTTC / 1.2).toFixed(2)) : 0;
 
       form.reset({
         numero,
         dateFacture: format(new Date(), 'yyyy-MM-dd'),
         dateEcheance: '',
-        fournisseurId: selectedBC?.fournisseur_id || '',
+        fournisseurId: selectedBC?.fournisseur_id || selectedEngagement?.fournisseurId || '',
         bonCommandeId: selectedBC?.id || 'none',
-        engagementId: selectedBC?.engagement_id || 'none',
-        ligneBudgetaireId: selectedBC?.ligne_budgetaire_id || 'none',
-        projetId: selectedBC?.projet_id || 'none',
-        objet: selectedBC?.objet || '',
+        engagementId: selectedBC?.engagement_id || selectedEngagement?.id || 'none',
+        ligneBudgetaireId: selectedBC?.ligne_budgetaire_id || selectedEngagement?.ligneBudgetaireId || 'none',
+        projetId: selectedBC?.projet_id || selectedEngagement?.projetId || 'none',
+        objet: selectedBC?.objet || selectedEngagement?.objet || '',
         numeroFactureFournisseur: '',
         montantHT,
         montantTTC,
@@ -220,7 +244,7 @@ export const FactureForm = ({
     setChargePrincipaleMode('nature');
     setNatureCompteChargeId(undefined);
     setCompteChargeId(undefined);
-  }, [facture, onGenererNumero, initialBonCommandeId, bonsCommande, form]);
+  }, [facture, onGenererNumero, initialBonCommandeId, initialEngagementId, bonsCommande, engagements, form]);
 
   const currentFinanceState = useMemo(
     () =>
@@ -253,6 +277,55 @@ export const FactureForm = ({
       setCompteChargeId(nature.compteDefautId);
     }
   }, [chargePrincipaleMode, natureCompteChargeId, naturesCompte]);
+
+  const watchedBonCommandeId = form.watch('bonCommandeId');
+  const watchedEngagementId = form.watch('engagementId');
+  const hasSelectedBonCommande = !!watchedBonCommandeId && watchedBonCommandeId !== 'none';
+  const hasSelectedEngagement = !!watchedEngagementId && watchedEngagementId !== 'none';
+  const isHydratedFromBonCommande = !facture && hasSelectedBonCommande;
+  const isHydratedFromEngagement = !facture && !hasSelectedBonCommande && hasSelectedEngagement;
+  const lockFactureInheritedFields = isHydratedFromBonCommande || isHydratedFromEngagement;
+  const lockBonCommandeField = !!initialBonCommandeId;
+  const lockEngagementField = !!initialEngagementId || isHydratedFromBonCommande;
+
+  useEffect(() => {
+    if (facture) return;
+
+    const selectedBC =
+      watchedBonCommandeId && watchedBonCommandeId !== 'none'
+        ? bonsCommande.find((item) => item.id === watchedBonCommandeId)
+        : undefined;
+
+    if (selectedBC) {
+      const montantTTC = selectedBC.montant || 0;
+      const montantHT = montantTTC > 0 ? Number((montantTTC / 1.2).toFixed(2)) : 0;
+      form.setValue('fournisseurId', selectedBC.fournisseur_id || '', { shouldDirty: true });
+      form.setValue('engagementId', selectedBC.engagement_id || 'none', { shouldDirty: true });
+      form.setValue('ligneBudgetaireId', selectedBC.ligne_budgetaire_id || 'none', { shouldDirty: true });
+      form.setValue('projetId', selectedBC.projet_id || 'none', { shouldDirty: true });
+      form.setValue('objet', selectedBC.objet || '', { shouldDirty: true });
+      form.setValue('montantHT', montantHT, { shouldDirty: true });
+      form.setValue('montantTTC', montantTTC, { shouldDirty: true });
+      form.setValue('montantNetPaye', montantTTC, { shouldDirty: true });
+      return;
+    }
+
+    const selectedEngagement =
+      watchedEngagementId && watchedEngagementId !== 'none'
+        ? engagements.find((item) => item.id === watchedEngagementId)
+        : undefined;
+
+    if (selectedEngagement) {
+      const montant = selectedEngagement.montant || 0;
+      form.setValue('fournisseurId', selectedEngagement.fournisseurId || '', { shouldDirty: true });
+      form.setValue('ligneBudgetaireId', selectedEngagement.ligneBudgetaireId || 'none', { shouldDirty: true });
+      form.setValue('projetId', selectedEngagement.projetId || 'none', { shouldDirty: true });
+      form.setValue('objet', selectedEngagement.objet || '', { shouldDirty: true });
+      form.setValue('montantHT', montant, { shouldDirty: true });
+      form.setValue('montantTTC', montant, { shouldDirty: true });
+      form.setValue('montantNetPaye', montant, { shouldDirty: true });
+    }
+  }, [bonsCommande, engagements, facture, form, watchedBonCommandeId, watchedEngagementId]);
 
   const breakdown = computeFinancialBreakdown(
     form.watch('montantHT') || 0,
@@ -323,7 +396,7 @@ export const FactureForm = ({
         <div className="rounded-md border p-4 md:p-5">
           <div className="grid gap-4 md:grid-cols-2">
             <FormField control={form.control} name="numero" render={({ field }) => (
-              <FormItem><FormLabel>Numero AGILYS</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              <FormItem><FormLabel>Numero AGILYS</FormLabel><FormControl><Input {...field} readOnly /></FormControl><FormMessage /></FormItem>
             )} />
             <FormField control={form.control} name="numeroFactureFournisseur" render={({ field }) => (
               <FormItem><FormLabel>Numero facture fournisseur</FormLabel><FormControl><Input {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
@@ -337,7 +410,7 @@ export const FactureForm = ({
             <FormField control={form.control} name="fournisseurId" render={({ field }) => (
               <FormItem>
                 <FormLabel>Fournisseur</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={lockFactureInheritedFields}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Selectionner un fournisseur" /></SelectTrigger></FormControl>
                   <SelectContent>
                     {fournisseurs.map((item) => <SelectItem key={item.id} value={item.id}>{item.nom} - {item.code}</SelectItem>)}
@@ -347,12 +420,12 @@ export const FactureForm = ({
               </FormItem>
             )} />
             <FormField control={form.control} name="objet" render={({ field }) => (
-              <FormItem><FormLabel>Objet</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Objet</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
             )} />
             <FormField control={form.control} name="bonCommandeId" render={({ field }) => (
               <FormItem>
                 <FormLabel>Bon de commande</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={lockBonCommandeField}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Aucun bon de commande" /></SelectTrigger></FormControl>
                   <SelectContent>
                     <SelectItem value="none">Aucun</SelectItem>
@@ -365,7 +438,7 @@ export const FactureForm = ({
             <FormField control={form.control} name="engagementId" render={({ field }) => (
               <FormItem>
                 <FormLabel>Engagement</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={lockEngagementField}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Aucun engagement" /></SelectTrigger></FormControl>
                   <SelectContent>
                     <SelectItem value="none">Aucun</SelectItem>
@@ -378,7 +451,7 @@ export const FactureForm = ({
             <FormField control={form.control} name="ligneBudgetaireId" render={({ field }) => (
               <FormItem>
                 <FormLabel>Ligne budgetaire</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={lockFactureInheritedFields}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Aucune ligne budgetaire" /></SelectTrigger></FormControl>
                   <SelectContent>
                     <SelectItem value="none">Aucune</SelectItem>
@@ -391,7 +464,7 @@ export const FactureForm = ({
             <FormField control={form.control} name="projetId" render={({ field }) => (
               <FormItem>
                 <FormLabel>Projet</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={lockFactureInheritedFields}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Aucun projet" /></SelectTrigger></FormControl>
                   <SelectContent>
                     <SelectItem value="none">Aucun</SelectItem>

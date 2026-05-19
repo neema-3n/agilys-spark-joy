@@ -1,6 +1,7 @@
 import { StatsCard } from '@/components/ui/stats-card';
 import { Folder, PlayCircle, CheckCircle, Wallet, TrendingUp, DollarSign } from 'lucide-react';
 import { useProjetStats } from '@/hooks/useProjets';
+import { formatMontant } from '@/lib/utils';
 
 export const ProjetStats = () => {
   const { stats, isLoading } = useProjetStats();
@@ -9,7 +10,6 @@ export const ProjetStats = () => {
     return <div>Chargement des statistiques...</div>;
   }
 
-  const budgetDisponible = stats.budgetTotalAlloue - stats.budgetTotalConsomme;
   const tauxExecutionGlobal = stats.budgetTotalAlloue > 0
     ? (stats.budgetTotalConsomme / stats.budgetTotalAlloue) * 100
     : 0;
@@ -36,14 +36,16 @@ export const ProjetStats = () => {
       />
       <StatsCard
         title="Budget total alloué"
-        value={`${(stats.budgetTotalAlloue / 1000000).toFixed(1)}M €`}
+        value={`${formatMontant(stats.budgetTotalAlloue / 1000000, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}M`}
         icon={Wallet}
+        showCurrencyCode
         color="text-primary"
       />
       <StatsCard
         title="Budget consommé"
-        value={`${(stats.budgetTotalConsomme / 1000000).toFixed(1)}M €`}
+        value={`${formatMontant(stats.budgetTotalConsomme / 1000000, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}M`}
         icon={DollarSign}
+        showCurrencyCode
         color="text-accent"
         trend={`${tauxExecutionGlobal.toFixed(1)}% du total`}
       />

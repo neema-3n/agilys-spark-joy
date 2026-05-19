@@ -12,7 +12,6 @@ import { AnnulerMultipleDepensesDialog } from '@/components/depenses/AnnulerMult
 import { useDepenses } from '@/hooks/useDepenses';
 import { useEngagements } from '@/hooks/useEngagements';
 import { useFactures } from '@/hooks/useFactures';
-import { useReservations } from '@/hooks/useReservations';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { useSnapshotState } from '@/hooks/useSnapshotState';
 import type { DepenseFormData } from '@/types/depense.types';
@@ -59,7 +58,6 @@ import { useClientPagination } from '@/hooks/useClientPagination';
 type DepensesLocationState = {
   initialEngagementId?: string;
   initialFactureId?: string;
-  initialReservationId?: string;
 };
 
 const Depenses = () => {
@@ -91,7 +89,7 @@ const Depenses = () => {
     'tous' | 'brouillon' | 'validee' | 'ordonnancee' | 'payee' | 'annulee'
   >('tous');
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
-  const [sourceFilter, setSourceFilter] = useState<'tous' | 'facture' | 'engagement' | 'reservation' | 'direct'>('tous');
+  const [sourceFilter, setSourceFilter] = useState<'tous' | 'facture' | 'engagement'>('tous');
   const [dateDebut, setDateDebut] = useState('');
   const [dateFin, setDateFin] = useState('');
   const [montantMin, setMontantMin] = useState('');
@@ -108,13 +106,8 @@ const Depenses = () => {
     isCreateMode && typeof (location.state as DepensesLocationState | null)?.initialFactureId === 'string'
       ? ((location.state as DepensesLocationState).initialFactureId ?? undefined)
       : undefined;
-  const initialReservationId =
-    isCreateMode && typeof (location.state as DepensesLocationState | null)?.initialReservationId === 'string'
-      ? ((location.state as DepensesLocationState).initialReservationId ?? undefined)
-      : undefined;
   const { engagements, isLoading: isEngagementsLoading } = useEngagements();
   const { factures, isLoading: isFacturesLoading } = useFactures();
-  const { reservations, isLoading: isReservationsLoading } = useReservations();
 
   const filteredDepenses = useMemo(() => {
     const searchLower = searchTerm.trim().toLowerCase();
@@ -123,9 +116,7 @@ const Depenses = () => {
       .filter((depense) => {
         if (sourceFilter === 'tous') return true;
         if (sourceFilter === 'facture') return !!depense.factureId;
-        if (sourceFilter === 'engagement') return !!depense.engagementId;
-        if (sourceFilter === 'reservation') return !!depense.reservationCreditId;
-        return !depense.factureId && !depense.engagementId && !depense.reservationCreditId;
+        return !!depense.engagementId;
       })
       .filter((depense) => (!dateDebut ? true : depense.dateDepense >= dateDebut))
       .filter((depense) => (!dateFin ? true : depense.dateDepense <= dateFin))
@@ -354,15 +345,9 @@ const Depenses = () => {
     () => factures.find((facture) => facture.id === initialFactureId),
     [factures, initialFactureId]
   );
-  const selectedReservation = useMemo(
-    () => reservations.find((reservation) => reservation.id === initialReservationId),
-    [reservations, initialReservationId]
-  );
-
   const isWaitingForPreselection =
     (Boolean(initialEngagementId) && isEngagementsLoading && !selectedEngagement) ||
-    (Boolean(initialFactureId) && isFacturesLoading && !selectedFacture) ||
-    (Boolean(initialReservationId) && isReservationsLoading && !selectedReservation);
+    (Boolean(initialFactureId) && isFacturesLoading && !selectedFacture);
 
   const handleSingleSubmit = useCallback(
     async (data: DepenseFormData) => {
@@ -406,16 +391,12 @@ const Depenses = () => {
       navigate(`/app/factures/${initialFactureId}`);
       return;
     }
-    if (initialReservationId) {
-      navigate(`/app/reservations/${initialReservationId}`);
-      return;
-    }
     if (initialEngagementId) {
       navigate(`/app/engagements/${initialEngagementId}`);
       return;
     }
     navigate('/app/depenses');
-  }, [initialEngagementId, navigate, routeEditDepenseId]);
+  }, [initialEngagementId, initialFactureId, navigate, routeEditDepenseId]);
 
   const { guard } = useFocusedEditorGuard({
     active: isEditorMode,
@@ -498,11 +479,10 @@ const Depenses = () => {
             <Card>
               <CardContent className="pt-6">
                 <DepenseForm
-                  key={`${isCreateMode ? 'create' : routeEditDepenseId || 'unknown'}-${initialEngagementId || 'none'}-${initialFactureId || 'none'}-${initialReservationId || 'none'}`}
+                  key={`${isCreateMode ? 'create' : routeEditDepenseId || 'unknown'}-${initialEngagementId || 'none'}-${initialFactureId || 'none'}`}
                   depense={editingDepense}
                   preSelectedEngagement={selectedEngagement}
                   preSelectedFacture={selectedFacture}
-                  preSelectedReservation={selectedReservation}
                   onSubmit={handleSingleSubmit}
                   onCancel={handleSingleCancel}
                   onDirtyChange={setIsDepenseDirty}
@@ -635,8 +615,6 @@ const Depenses = () => {
                           <SelectItem value="tous">Toutes les sources</SelectItem>
                           <SelectItem value="facture">Issue de facture</SelectItem>
                           <SelectItem value="engagement">Issue d&apos;engagement</SelectItem>
-                          <SelectItem value="reservation">Issue de réservation</SelectItem>
-                          <SelectItem value="direct">Directe</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

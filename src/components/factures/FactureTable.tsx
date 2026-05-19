@@ -197,7 +197,7 @@ export const FactureTable = ({
                 Valider
               </DropdownMenuItem>
             )}
-            {facture.statut === 'validee' && (
+            {(facture.statut === 'validee' || facture.statut === 'payee') && (
               <>
                 <DropdownMenuItem onClick={() => onCreerDepense(facture)}>
                   <FileText className="mr-2 h-4 w-4" />

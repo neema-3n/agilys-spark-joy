@@ -197,12 +197,6 @@ const Reservations = () => {
     });
   }, [navigate]);
 
-  const handleCreerDepenseUrgence = useCallback((reservationId: string) => {
-    navigate('/app/depenses/create', {
-      state: { initialReservationId: reservationId },
-    });
-  }, [navigate]);
-
   const handleNavigateToEntity = useCallback(
     (type: string, id: string) => {
       switch (type) {
@@ -429,7 +423,6 @@ const Reservations = () => {
             currentIndex={snapshotIndex}
             totalCount={reservations.length}
             onCreerEngagement={() => handleCreerEngagement(snapshotReservation.id)}
-            onCreerDepenseUrgence={() => handleCreerDepenseUrgence(snapshotReservation.id)}
             onAnnuler={() => handleAnnulerFromSnapshot(snapshotReservation.id)}
             onNavigateToEntity={handleNavigateToEntity}
           />
@@ -530,7 +523,6 @@ const Reservations = () => {
               onCreerEngagement={handleCreerEngagement}
               onAnnuler={handleAnnulationRequest}
               onDelete={handleDelete}
-              onCreerDepenseUrgence={handleCreerDepenseUrgence}
               onViewDetails={handleOpenSnapshot}
               selection={{ selectedIds, allSelected, toggleOne, toggleAll }}
               stickyHeader

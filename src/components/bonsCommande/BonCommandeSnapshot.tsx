@@ -3,6 +3,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { SnapshotBase } from '@/components/shared/SnapshotBase';
+import { SnapshotLinkedEntitiesCard } from '@/components/shared/SnapshotLinkedEntitiesCard';
+import { SnapshotPrimaryCard } from '@/components/shared/SnapshotPrimaryCard';
 import type { BonCommande } from '@/types/bonCommande.types';
 import { formatMontant, formatDate } from '@/lib/snapshot-utils';
 import { ShoppingCart, Building2, FileText, FolderOpen, Calendar, Truck, ClipboardCheck, Receipt } from 'lucide-react';
@@ -138,7 +140,7 @@ export const BonCommandeSnapshot = ({
           Réceptionner
         </Button>
       )}
-      {onCreateFacture && bonCommande.statut === 'receptionne' && (
+      {onCreateFacture && bonCommande.engagementId && bonCommande.statut === 'receptionne' && (
         <Button size="sm" variant="secondary" onClick={onCreateFacture}>
           Créer une facture
         </Button>
@@ -169,59 +171,78 @@ export const BonCommandeSnapshot = ({
       onNavigate={onNavigate}
       actions={actions}
     >
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5" />
-              Informations principales
-            </CardTitle>
-            <Badge variant={statut.variant}>{statut.label}</Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">{statut.description}</p>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Montant</p>
-                <p className="text-2xl font-bold text-primary">{formatMontant(bonCommande.montant)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Montant facturé</p>
-                <p className="text-lg font-semibold">{formatMontant(montantFacture)}</p>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Progression de facturation</span>
-                  <span className="font-medium">{progression.toFixed(0)}%</span>
-                </div>
-                <Progress value={progression} className="h-2" />
-              </div>
+      <SnapshotPrimaryCard
+        icon={<ShoppingCart className="h-5 w-5" />}
+        statusBadge={<Badge variant={statut.variant}>{statut.label}</Badge>}
+        metrics={[
+          {
+            label: 'Montant',
+            value: formatMontant(bonCommande.montant),
+            tone: 'primary',
+          },
+          {
+            label: 'Montant facturé',
+            value: formatMontant(montantFacture),
+          },
+          {
+            label: 'Reste à facturer',
+            value: formatMontant(Math.max(bonCommande.montant - montantFacture, 0)),
+            tone: montantFacture >= bonCommande.montant ? 'success' : 'warning',
+          },
+        ]}
+        details={[
+          {
+            label: 'Objet',
+            value: bonCommande.objet,
+          },
+          {
+            label: 'Date commande',
+            value: formatDate(bonCommande.dateCommande),
+          },
+          {
+            label: 'Statut opérationnel',
+            value: statut.description,
+          },
+        ]}
+        footer={
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Progression de facturation</span>
+              <span className="font-medium">{progression.toFixed(0)}%</span>
             </div>
-            <div className="space-y-3">
-              {entityButton(
-                'Fournisseur',
-                bonCommande.fournisseur?.nom || 'Non renseigné',
-                <Building2 className="h-4 w-4" />,
-                bonCommande.fournisseur?.id ? () => handleEntityClick('fournisseur', bonCommande.fournisseur?.id) : undefined,
-              )}
-              {entityButton(
-                'Engagement lié',
-                bonCommande.engagement?.numero || 'Aucun',
-                <FileText className="h-4 w-4" />,
-                bonCommande.engagement?.id ? () => handleEntityClick('engagement', bonCommande.engagement?.id) : undefined,
-              )}
-              {entityButton(
-                'Projet',
-                bonCommande.projet?.nom || 'Non renseigné',
-                <FolderOpen className="h-4 w-4" />,
-                bonCommande.projet?.id ? () => handleEntityClick('projet', bonCommande.projet?.id) : undefined,
-              )}
-            </div>
+            <Progress value={progression} className="h-2" />
           </div>
-        </CardContent>
-      </Card>
+        }
+      />
+
+      <SnapshotLinkedEntitiesCard
+        items={[
+          {
+            key: 'fournisseur',
+            label: 'Fournisseur',
+            value: bonCommande.fournisseur?.nom || 'Non renseigné',
+            description: bonCommande.fournisseur?.code,
+            icon: <Building2 className="h-4 w-4" />,
+            onClick: bonCommande.fournisseur?.id ? () => handleEntityClick('fournisseur', bonCommande.fournisseur?.id) : undefined,
+          },
+          {
+            key: 'engagement',
+            label: 'Engagement lié',
+            value: bonCommande.engagement?.numero || 'Aucun',
+            description: bonCommande.engagement?.objet,
+            icon: <FileText className="h-4 w-4" />,
+            onClick: bonCommande.engagement?.id ? () => handleEntityClick('engagement', bonCommande.engagement?.id) : undefined,
+          },
+          {
+            key: 'projet',
+            label: 'Projet',
+            value: bonCommande.projet?.nom || 'Non renseigné',
+            description: bonCommande.projet?.code,
+            icon: <FolderOpen className="h-4 w-4" />,
+            onClick: bonCommande.projet?.id ? () => handleEntityClick('projet', bonCommande.projet?.id) : undefined,
+          },
+        ]}
+      />
 
       <Card>
         <CardHeader>

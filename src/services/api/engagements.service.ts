@@ -173,15 +173,6 @@ export const createEngagementFromReservation = async (
   // Calculer le montant de l'engagement
   const montant = additionalData.montant !== undefined ? additionalData.montant : Number(reservation.montant);
   
-  // Valider que le montant ne dépasse pas le disponible de la réservation
-  const montantDisponible = await getMontantDisponibleReservation(reservationId);
-  
-  if (montant > montantDisponible) {
-    throw new Error(
-      `Le montant de l'engagement (${montant.toLocaleString()} FCFA) dépasse le montant disponible de la réservation (${montantDisponible.toLocaleString()} FCFA)`
-    );
-  }
-
   // Utiliser les données du formulaire en priorité, avec fallback sur la réservation
   const engagementData: EngagementFormData = {
     ligneBudgetaireId: additionalData.ligneBudgetaireId || reservation.ligne_budgetaire_id,

@@ -10,6 +10,7 @@ export const MOCK_CLIENTS: Client[] = [
     statut: 'actif',
     moneyFormat: {
       locale: 'fr-FR',
+      currencyCode: 'XAF',
       thousandsSeparator: 'space',
       decimalSeparator: 'comma',
       minimumFractionDigits: 0,
@@ -25,6 +26,7 @@ export const MOCK_CLIENTS: Client[] = [
     statut: 'inactif',
     moneyFormat: {
       locale: 'fr-FR',
+      currencyCode: 'XOF',
       thousandsSeparator: 'space',
       decimalSeparator: 'comma',
       minimumFractionDigits: 0,
@@ -40,6 +42,7 @@ export const MOCK_CLIENTS: Client[] = [
     statut: 'inactif',
     moneyFormat: {
       locale: 'fr-FR',
+      currencyCode: 'XOF',
       thousandsSeparator: 'space',
       decimalSeparator: 'comma',
       minimumFractionDigits: 0,

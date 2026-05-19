@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { DollarSign, TrendingUp, FileText, AlertCircle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { MOCK_ENGAGEMENTS } from '@/services/mockData/engagements.mock';
+import { formatMontant } from '@/lib/utils';
 
 const executionData = [
   { mois: 'Jan', budget: 12000000, engage: 8000000, paye: 6000000 },
@@ -56,7 +57,7 @@ const Dashboard = () => {
   const stats = [
     {
       title: 'Budget Total',
-      value: '150 000 000',
+      value: formatMontant(150000000),
       icon: DollarSign,
       trend: '+12.5% vs année précédente',
       trendUp: true,
@@ -64,7 +65,7 @@ const Dashboard = () => {
     },
     {
       title: 'Engagements',
-      value: '89 500 000',
+      value: formatMontant(89500000),
       icon: TrendingUp,
       trend: '59.7% du budget',
       trendUp: true,
@@ -72,7 +73,7 @@ const Dashboard = () => {
     },
     {
       title: 'Factures Payées',
-      value: '56 000 000',
+      value: formatMontant(56000000),
       icon: FileText,
       trend: '37.3% du budget',
       trendUp: false,
@@ -80,7 +81,7 @@ const Dashboard = () => {
     },
     {
       title: 'En Attente',
-      value: '33 500 000',
+      value: formatMontant(33500000),
       icon: AlertCircle,
       trend: '22.3% à traiter',
       trendUp: false,
@@ -103,6 +104,7 @@ const Dashboard = () => {
             title={stat.title}
             value={stat.value}
             icon={stat.icon}
+            showCurrencyCode
             trend={stat.trend}
             trendUp={stat.trendUp}
             color={stat.color}
@@ -131,7 +133,7 @@ const Dashboard = () => {
                   tick={{ fill: 'hsl(var(--muted-foreground))' }}
                 />
                 <Tooltip 
-                  formatter={(value) => `${(value as number).toLocaleString()}`}
+                  formatter={(value) => formatMontant(value as number)}
                   contentStyle={{
                     backgroundColor: 'hsl(var(--card))',
                     border: '1px solid hsl(var(--border))',
@@ -168,7 +170,7 @@ const Dashboard = () => {
                   </div>
                   <div className="text-right ml-4 flex-shrink-0">
                     <p className="font-semibold text-foreground whitespace-nowrap">
-                      {eng.montant.toLocaleString()}
+                      {formatMontant(eng.montant)}
                     </p>
                     <Badge variant={getStatusVariant(eng.statut)} className="mt-1">
                       {getStatusLabel(eng.statut)}

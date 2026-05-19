@@ -12,7 +12,7 @@ import {
 import { ListColumn, ListTable } from '@/components/lists/ListTable';
 import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/selectionColumn';
 import { formatCurrency, cn } from '@/lib/utils';
-import { Edit, Trash2, Eye, MoreHorizontal, XCircle, CheckCircle, AlertOctagon } from 'lucide-react';
+import { Edit, Trash2, Eye, MoreHorizontal, XCircle, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { ReservationCredit } from '@/types/reservation.types';
@@ -23,7 +23,6 @@ interface ReservationTableProps {
   onCreerEngagement?: (reservationId: string) => void;
   onAnnuler?: (reservationId: string) => void;
   onDelete?: (reservationId: string) => void;
-  onCreerDepenseUrgence?: (reservationId: string) => void;
   onViewDetails?: (reservationId: string) => void;
   selection?: ListSelectionHandlers;
   stickyHeader?: boolean;
@@ -70,7 +69,6 @@ export const ReservationTable = ({
   onCreerEngagement,
   onAnnuler,
   onDelete,
-  onCreerDepenseUrgence,
   onViewDetails,
   selection,
   stickyHeader = false,
@@ -214,13 +212,6 @@ export const ReservationTable = ({
                   </DropdownMenuItem>
                 )}
 
-                {isActive && onCreerDepenseUrgence && (
-                  <DropdownMenuItem onClick={() => onCreerDepenseUrgence(reservation.id)} disabled={solde === 0}>
-                    <AlertOctagon className="h-4 w-4 mr-2" />
-                    Dépense urgente
-                  </DropdownMenuItem>
-                )}
-
                 {isActive && onAnnuler && (
                   <>
                     <DropdownMenuSeparator />
@@ -261,7 +252,7 @@ export const ReservationTable = ({
 
       return baseColumns;
     },
-    [onAnnuler, onCreerDepenseUrgence, onCreerEngagement, onDelete, onEdit, onViewDetails, selection]
+    [onAnnuler, onCreerEngagement, onDelete, onEdit, onViewDetails, selection]
   );
 
   return (

@@ -2,6 +2,7 @@ import { Action, LigneBudgetaire, Programme, Section } from '@/types/budget.type
 import type { Compte } from '@/types/compte.types';
 import type { Enveloppe } from '@/types/enveloppe.types';
 import { SnapshotBase } from '@/components/shared/SnapshotBase';
+import { SnapshotPrimaryCard } from '@/components/shared/SnapshotPrimaryCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -86,61 +87,35 @@ export const LigneBudgetaireSnapshot = ({
       onNavigate={onNavigate}
       actions={actions}
     >
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <LayoutList className="h-5 w-5" />
-            Synthèse budgétaire
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-1">
-            <p className="text-sm text-muted-foreground">Montant initial</p>
-            <p className="text-xl font-semibold">{formatMontant(ligne.montantInitial)}</p>
-          </div>
-          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-1">
-            <p className="text-sm text-muted-foreground">Montant modifié</p>
-            <p className="text-xl font-semibold text-primary">{formatMontant(ligne.montantModifie)}</p>
-          </div>
-          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-1">
-            <p className="text-sm text-muted-foreground">Réservé</p>
-            <p className="text-lg font-medium text-orange-600">{formatMontant(ligne.montantReserve || 0)}</p>
-          </div>
-          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-1">
-            <p className="text-sm text-muted-foreground">Engagé</p>
-            <p className="text-lg font-medium text-red-600">{formatMontant(ligne.montantEngage)}</p>
-          </div>
-          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-1">
-            <p className="text-sm text-muted-foreground">Liquidé</p>
-            <p className="text-lg font-medium text-blue-600">{formatMontant(ligne.montantLiquide)}</p>
-          </div>
-          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-1">
-            <p className="text-sm text-muted-foreground">Payé</p>
-            <p className="text-lg font-medium text-green-600">{formatMontant(ligne.montantPaye)}</p>
-          </div>
-          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-1">
-            <p className="text-sm text-muted-foreground">Disponible</p>
-            <p className="text-xl font-semibold text-primary">{formatMontant(ligne.disponible)}</p>
-          </div>
-          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-2">
-            <p className="text-sm text-muted-foreground">Taux d'exécution</p>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline">{tauxExecution}%</Badge>
-              <div className="h-2 w-24 bg-muted rounded-full overflow-hidden">
-                <div className="h-2 bg-primary" style={{ width: `${Math.min(tauxExecution, 100)}%` }} />
-              </div>
+      <SnapshotPrimaryCard
+        icon={<LayoutList className="h-5 w-5" />}
+        title="Synthèse budgétaire"
+        metrics={[
+          { label: 'Montant initial', value: formatMontant(ligne.montantInitial) },
+          { label: 'Montant modifié', value: formatMontant(ligne.montantModifie), tone: 'primary' },
+          { label: 'Réservé', value: formatMontant(ligne.montantReserve || 0), tone: 'warning' },
+          { label: 'Engagé', value: formatMontant(ligne.montantEngage), tone: 'danger' },
+          { label: 'Liquidé', value: formatMontant(ligne.montantLiquide), tone: 'primary' },
+          { label: 'Payé', value: formatMontant(ligne.montantPaye), tone: 'success' },
+          { label: 'Disponible', value: formatMontant(ligne.disponible), tone: 'success' },
+        ]}
+        details={[
+          { label: "Taux d'exécution", value: <Badge variant="outline">{tauxExecution}%</Badge> },
+          { label: 'Statut', value: <BudgetStatusBadge status={ligne.statut} /> },
+          { label: 'Créée le', value: formatDate(ligne.dateCreation) },
+        ]}
+        footer={
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Taux d'exécution</span>
+              <span className="font-medium">{tauxExecution}%</span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div className="h-2 bg-primary" style={{ width: `${Math.min(tauxExecution, 100)}%` }} />
             </div>
           </div>
-          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-1">
-            <p className="text-sm text-muted-foreground">Statut</p>
-            <BudgetStatusBadge status={ligne.statut} />
-          </div>
-          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-1">
-            <p className="text-sm text-muted-foreground">Créée le</p>
-            <p className="text-sm font-medium">{formatDate(ligne.dateCreation)}</p>
-          </div>
-        </CardContent>
-      </Card>
+        }
+      />
 
       <Card>
         <CardHeader>

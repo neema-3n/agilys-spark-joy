@@ -4,6 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { SnapshotBase } from '@/components/shared/SnapshotBase';
+import { SnapshotLinkedEntitiesCard } from '@/components/shared/SnapshotLinkedEntitiesCard';
+import { SnapshotPrimaryCard } from '@/components/shared/SnapshotPrimaryCard';
 import type { Depense } from '@/types/depense.types';
 import type { Paiement } from '@/types/paiement.types';
 import { formatMontant, formatDate, formatDateTime, getEntityUrl } from '@/lib/snapshot-utils';
@@ -203,148 +205,114 @@ export const DepenseSnapshot = ({
       onNavigate={onNavigate}
       actions={actionButtons()}
     >
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Wallet className="h-5 w-5" />
-              Informations principales
-            </CardTitle>
-            {getStatutBadge(depense.statut)}
+      <SnapshotPrimaryCard
+        icon={<Wallet className="h-5 w-5" />}
+        statusBadge={getStatutBadge(depense.statut)}
+        metrics={[
+          {
+            label: 'Montant total',
+            value: formatMontant(depense.montant),
+            tone: 'primary',
+          },
+          {
+            label: 'Montant payé',
+            value: formatMontant(depense.montantPaye),
+          },
+          {
+            label: 'Solde à payer',
+            value: formatMontant(montantRestant),
+            tone: montantRestant > 0 ? 'primary' : 'success',
+          },
+        ]}
+        details={[
+          {
+            label: 'Bénéficiaire / Fournisseur',
+            value: depense.fournisseur?.nom || depense.beneficiaire || 'Non renseigné',
+          },
+          {
+            label: 'Date de dépense',
+            value: formatDate(depense.dateDepense),
+          },
+          {
+            label: 'Objet',
+            value: depense.objet,
+          },
+        ]}
+        footer={
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Progression de paiement</span>
+              <span className="font-medium">{pourcentagePaye.toFixed(0)}%</span>
+            </div>
+            <Progress value={pourcentagePaye} className="h-2" />
           </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">Montant total</p>
-                <p className="text-2xl font-bold text-primary">{formatMontant(depense.montant)}</p>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Montant payé</span>
-                  <span className="font-medium">{formatMontant(depense.montantPaye)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Solde à payer</span>
-                  <span className="font-medium text-primary">{formatMontant(montantRestant)}</span>
-                </div>
-                <Progress value={pourcentagePaye} className="h-2" />
-                <p className="text-xs text-muted-foreground text-right">
-                  {pourcentagePaye.toFixed(0)}% payé
-                </p>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Bénéficiaire / Fournisseur</p>
-              <p className="font-medium">
-                {depense.fournisseur?.nom || depense.beneficiaire || 'Non renseigné'}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        }
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FolderOpen className="h-5 w-5" />
-            Références liées
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {depense.engagement && (
-            <div
-              className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
-              onClick={() => handleEntityClick('engagement', depense.engagementId)}
-            >
-              <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">Engagement</p>
-                <p className="text-sm text-muted-foreground truncate">{depense.engagement.numero}</p>
-              </div>
-            </div>
-          )}
-
-          {depense.reservationCredit && (
-            <div
-              className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
-              onClick={() => handleEntityClick('reservation', depense.reservationCreditId)}
-            >
-              <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">Réservation de crédit</p>
-                <p className="text-sm text-muted-foreground truncate">
-                  {depense.reservationCredit.numero} ({depense.reservationCredit.statut})
-                </p>
-              </div>
-            </div>
-          )}
-
-          {depense.ligneBudgetaire && (
-            <div
-              className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
-              onClick={() => handleEntityClick('ligne-budgetaire', depense.ligneBudgetaireId)}
-            >
-              <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">Ligne budgétaire</p>
-                <p className="text-sm text-muted-foreground truncate">
-                  {depense.ligneBudgetaire.libelle}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Disponible: {formatMontant(depense.ligneBudgetaire.disponible)}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {depense.facture && (
-            <div
-              className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
-              onClick={() => handleEntityClick('facture', depense.factureId)}
-            >
-              <Receipt className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">Facture</p>
-                <p className="text-sm text-muted-foreground truncate">
-                  {depense.facture.numero} ({formatMontant(depense.facture.montantTTC)})
-                </p>
-              </div>
-            </div>
-          )}
-
-          {depense.projet && (
-            <div
-              className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
-              onClick={() => handleEntityClick('projet', depense.projetId)}
-            >
-              <FolderOpen className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">Projet</p>
-                <p className="text-sm text-muted-foreground truncate">
-                  {depense.projet.code} - {depense.projet.nom}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {depense.fournisseur && (
-            <div
-              className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
-              onClick={() => handleEntityClick('fournisseur', depense.fournisseurId)}
-            >
-              <Building2 className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">Fournisseur</p>
-                <p className="text-sm text-muted-foreground truncate">
-                  {depense.fournisseur.nom} ({depense.fournisseur.code})
-                </p>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <SnapshotLinkedEntitiesCard
+        title="Entités liées"
+        items={[
+          depense.facture
+            ? {
+                key: 'facture',
+                label: 'Facture',
+                value: depense.facture.numero,
+                description: formatMontant(depense.facture.montantTTC),
+                icon: <Receipt className="h-4 w-4" />,
+                onClick: () => handleEntityClick('facture', depense.factureId),
+              }
+            : null,
+          depense.engagement
+            ? {
+                key: 'engagement',
+                label: 'Engagement',
+                value: depense.engagement.numero,
+                description: depense.engagement.objet,
+                icon: <FileText className="h-4 w-4" />,
+                onClick: () => handleEntityClick('engagement', depense.engagementId),
+              }
+            : null,
+          depense.reservationCredit
+            ? {
+                key: 'reservation',
+                label: 'Réservation de crédit',
+                value: depense.reservationCredit.numero,
+                description: depense.reservationCredit.statut,
+                icon: <FileText className="h-4 w-4" />,
+                onClick: () => handleEntityClick('reservation', depense.reservationCreditId),
+              }
+            : null,
+          depense.ligneBudgetaire
+            ? {
+                key: 'ligne-budgetaire',
+                label: 'Ligne budgétaire',
+                value: depense.ligneBudgetaire.libelle,
+                description: `Disponible: ${formatMontant(depense.ligneBudgetaire.disponible)}`,
+                icon: <FileText className="h-4 w-4" />,
+                onClick: () => handleEntityClick('ligne-budgetaire', depense.ligneBudgetaireId),
+              }
+            : null,
+          depense.projet
+            ? {
+                key: 'projet',
+                label: 'Projet',
+                value: `${depense.projet.code} - ${depense.projet.nom}`,
+                icon: <FolderOpen className="h-4 w-4" />,
+                onClick: () => handleEntityClick('projet', depense.projetId),
+              }
+            : null,
+          depense.fournisseur
+            ? {
+                key: 'fournisseur',
+                label: 'Fournisseur',
+                value: `${depense.fournisseur.nom} (${depense.fournisseur.code})`,
+                icon: <Building2 className="h-4 w-4" />,
+                onClick: () => handleEntityClick('fournisseur', depense.fournisseurId),
+              }
+            : null,
+        ].filter(Boolean)}
+        emptyMessage="Aucune entité liée."
+      />
 
       <Card>
         <CardHeader>

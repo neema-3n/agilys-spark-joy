@@ -14,6 +14,7 @@ type FormatMontantOptions = Intl.NumberFormatOptions & {
 
 const DEFAULT_MONEY_FORMAT: Required<MoneyFormatSettings> = {
   locale: 'fr-FR',
+  currencyCode: '',
   thousandsSeparator: 'space',
   decimalSeparator: 'comma',
   minimumFractionDigits: 0,
@@ -39,6 +40,7 @@ const normalizeMoneyFormat = (
   settings?: MoneyFormatSettings | null,
 ): Required<MoneyFormatSettings> => ({
   locale: settings?.locale || DEFAULT_MONEY_FORMAT.locale,
+  currencyCode: settings?.currencyCode?.trim().toUpperCase() || DEFAULT_MONEY_FORMAT.currencyCode,
   thousandsSeparator: settings?.thousandsSeparator || DEFAULT_MONEY_FORMAT.thousandsSeparator,
   decimalSeparator: settings?.decimalSeparator || DEFAULT_MONEY_FORMAT.decimalSeparator,
   minimumFractionDigits:

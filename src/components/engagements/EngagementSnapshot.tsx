@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import type { Engagement } from '@/types/engagement.types';
 import { SnapshotBase } from '@/components/shared/SnapshotBase';
+import { SnapshotLinkedEntitiesCard } from '@/components/shared/SnapshotLinkedEntitiesCard';
+import { SnapshotPrimaryCard } from '@/components/shared/SnapshotPrimaryCard';
 import { formatMontant, formatDate, formatDateTime, getEntityUrl } from '@/lib/snapshot-utils';
 import { useEcrituresBySource } from '@/hooks/useEcrituresComptables';
 import { useGenerateEcritures } from '@/hooks/useGenerateEcritures';
@@ -25,6 +27,7 @@ interface EngagementSnapshotProps {
   onValider?: () => void;
   onAnnuler?: () => void;
   onCreerBonCommande?: () => void;
+  onCreerFacture?: () => void;
   onCreerDepense?: () => void;
   onNavigateToEntity?: (type: string, id: string) => void;
 }
@@ -41,6 +44,7 @@ export const EngagementSnapshot = ({
   onValider,
   onAnnuler,
   onCreerBonCommande,
+  onCreerFacture,
   onCreerDepense,
   onNavigateToEntity,
 }: EngagementSnapshotProps) => {
@@ -114,9 +118,16 @@ export const EngagementSnapshot = ({
           Valider
         </Button>
       )}
-      {(engagement.statut === 'valide' || engagement.statut === 'engage') && onCreerBonCommande && (
+      {(engagement.statut === 'valide' || engagement.statut === 'engage') &&
+      engagement.fournisseurId &&
+      onCreerBonCommande && (
         <Button variant="outline" size="sm" onClick={onCreerBonCommande}>
           Créer un bon de commande
+        </Button>
+      )}
+      {(engagement.statut === 'valide' || engagement.statut === 'engage') && onCreerFacture && (
+        <Button variant="outline" size="sm" onClick={onCreerFacture}>
+          Créer une facture
         </Button>
       )}
       {(engagement.statut === 'valide' || engagement.statut === 'engage') && onCreerDepense && (
@@ -144,136 +155,94 @@ export const EngagementSnapshot = ({
       onNavigate={onNavigate}
       actions={actions}
     >
-      {/* Informations principales */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Informations principales
-            </CardTitle>
-            {getStatutBadge(engagement.statut)}
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Objet</p>
-              <p className="text-xl font-semibold">{engagement.objet}</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Montant initial</p>
-                <p className="text-2xl font-bold text-primary">{formatMontant(engagement.montant)}</p>
+      <SnapshotPrimaryCard
+        icon={<FileText className="h-5 w-5" />}
+        statusBadge={getStatutBadge(engagement.statut)}
+        metrics={[
+          {
+            label: 'Montant initial',
+            value: formatMontant(engagement.montant),
+            tone: 'primary',
+          },
+          {
+            label: 'Montant utilisé',
+            value: formatMontant(montantUtilise),
+          },
+          {
+            label: 'Solde disponible',
+            value: formatMontant(solde),
+            tone: solde > 0 ? 'success' : 'warning',
+          },
+        ]}
+        details={[
+          {
+            label: 'Objet',
+            value: engagement.objet,
+          },
+          {
+            label: 'Date de création',
+            value: formatDate(engagement.dateCreation),
+          },
+          {
+            label: 'Bénéficiaire',
+            value: engagement.beneficiaire || 'Non renseigné',
+          },
+        ]}
+        footer={
+          engagement.statut !== 'brouillon' ? (
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Progression d'utilisation</span>
+                <span className="font-medium">{progressionUtilisation.toFixed(1)}%</span>
               </div>
-              
-              {engagement.statut !== 'brouillon' && (
-                <>
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Montant utilisé</p>
-                    <p className="text-lg font-semibold">{formatMontant(montantUtilise)}</p>
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Solde disponible</p>
-                    <p className="text-lg font-semibold">{formatMontant(solde)}</p>
-                  </div>
-                </>
-              )}
+              <Progress value={progressionUtilisation} className="h-2" />
             </div>
+          ) : null
+        }
+      />
 
-            <div className="space-y-4">
-              {engagement.ligneBudgetaire && (
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
-                     onClick={() => handleEntityClick('ligne-budgetaire', engagement.ligneBudgetaireId)}>
-                  <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">Ligne budgétaire</p>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {engagement.ligneBudgetaire.libelle}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Disponible: {formatMontant(engagement.ligneBudgetaire.disponible)}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {engagement.beneficiaire && (
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Bénéficiaire</p>
-                  <p className="font-medium">{engagement.beneficiaire}</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {engagement.statut !== 'brouillon' && (
-            <div className="pt-4 border-t">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Progression d'utilisation</span>
-                  <span className="font-medium">{progressionUtilisation.toFixed(1)}%</span>
-                </div>
-                <Progress value={progressionUtilisation} className="h-2" />
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Entités liées */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FolderOpen className="h-5 w-5" />
-            Entités liées
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {engagement.fournisseur && (
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
-                 onClick={() => engagement.fournisseurId && handleEntityClick('fournisseur', engagement.fournisseurId)}>
-              <Building2 className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">Fournisseur</p>
-                <p className="text-sm text-muted-foreground truncate">
-                  {engagement.fournisseur.nom} ({engagement.fournisseur.code})
-                </p>
-              </div>
-            </div>
-          )}
-
-          {engagement.projet && (
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
-                 onClick={() => engagement.projetId && handleEntityClick('projet', engagement.projetId)}>
-              <FolderOpen className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">Projet</p>
-                <p className="text-sm text-muted-foreground truncate">
-                  {engagement.projet.code} - {engagement.projet.nom}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {engagement.reservationCredit && (
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
-                 onClick={() => engagement.reservationCreditId && handleEntityClick('reservation', engagement.reservationCreditId)}>
-              <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">Réservation de crédit</p>
-                <p className="text-sm text-muted-foreground truncate">
-                  {engagement.reservationCredit.numero}
-                </p>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <SnapshotLinkedEntitiesCard
+        items={[
+          engagement.ligneBudgetaire
+            ? {
+                key: 'ligne-budgetaire',
+                label: 'Ligne budgétaire',
+                value: engagement.ligneBudgetaire.libelle,
+                description: `Disponible: ${formatMontant(engagement.ligneBudgetaire.disponible)}`,
+                icon: <FileText className="h-4 w-4" />,
+                onClick: () => handleEntityClick('ligne-budgetaire', engagement.ligneBudgetaireId),
+              }
+            : null,
+          engagement.fournisseur
+            ? {
+                key: 'fournisseur',
+                label: 'Fournisseur',
+                value: `${engagement.fournisseur.nom} (${engagement.fournisseur.code})`,
+                icon: <Building2 className="h-4 w-4" />,
+                onClick: () => engagement.fournisseurId && handleEntityClick('fournisseur', engagement.fournisseurId),
+              }
+            : null,
+          engagement.projet
+            ? {
+                key: 'projet',
+                label: 'Projet',
+                value: `${engagement.projet.code} - ${engagement.projet.nom}`,
+                icon: <FolderOpen className="h-4 w-4" />,
+                onClick: () => engagement.projetId && handleEntityClick('projet', engagement.projetId),
+              }
+            : null,
+          engagement.reservationCredit
+            ? {
+                key: 'reservation',
+                label: 'Réservation de crédit',
+                value: engagement.reservationCredit.numero,
+                icon: <FileText className="h-4 w-4" />,
+                onClick: () => engagement.reservationCreditId && handleEntityClick('reservation', engagement.reservationCreditId),
+              }
+            : null,
+        ].filter(Boolean)}
+        emptyMessage="Aucune entité liée."
+      />
 
       {/* Dates importantes */}
       <Card>

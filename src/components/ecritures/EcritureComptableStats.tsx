@@ -23,16 +23,19 @@ export const EcritureComptableStats = ({ stats }: EcritureComptableStatsProps) =
         title="Total Débits"
         value={formatMontant(stats.montantTotalDebit)}
         icon={TrendingDown}
+        showCurrencyCode
       />
       <StatsCard
         title="Total Crédits"
         value={formatMontant(stats.montantTotalCredit)}
         icon={TrendingUp}
+        showCurrencyCode
       />
       <StatsCard
         title="Équilibre"
         value={formatMontant(stats.montantTotalDebit - stats.montantTotalCredit)}
         icon={Activity}
+        showCurrencyCode
       />
     </div>
   );

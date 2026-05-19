@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import type { Facture } from '@/types/facture.types';
 import { SnapshotBase } from '@/components/shared/SnapshotBase';
+import { SnapshotLinkedEntitiesCard } from '@/components/shared/SnapshotLinkedEntitiesCard';
+import { SnapshotPrimaryCard } from '@/components/shared/SnapshotPrimaryCard';
 import { formatMontant, formatDate, formatDateTime, getEntityUrl } from '@/lib/snapshot-utils';
 import { useEcrituresBySource } from '@/hooks/useEcrituresComptables';
 import { useGenerateEcritures } from '@/hooks/useGenerateEcritures';
@@ -136,7 +138,7 @@ export const FactureSnapshot = ({
           Marquer comme payée
         </Button>
       )}
-      {facture.statut === 'validee' && onCreerDepense && (
+      {(facture.statut === 'validee' || facture.statut === 'payee') && onCreerDepense && (
         <Button variant="outline" size="sm" onClick={onCreerDepense}>
           Créer une dépense
         </Button>
@@ -161,177 +163,114 @@ export const FactureSnapshot = ({
       onNavigate={onNavigate}
       actions={actions}
     >
-      {/* Section 1: Informations principales */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Informations principales
-            </CardTitle>
-            {getStatutBadge(facture.statut)}
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Numéro facture</p>
-              <p className="font-medium">{facture.numero}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Date facture</p>
-              <p className="font-medium">{formatDate(facture.dateFacture)}</p>
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Objet</p>
-            <p className="font-medium">{facture.objet}</p>
-          </div>
-
-          {facture.numeroFactureFournisseur && (
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Numéro facture fournisseur</p>
-              <p className="font-medium">{facture.numeroFactureFournisseur}</p>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-4">
-            {facture.dateEcheance && (
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Date d'échéance</p>
-                <p className="font-medium">{formatDate(facture.dateEcheance)}</p>
+      <SnapshotPrimaryCard
+        icon={<FileText className="h-5 w-5" />}
+        statusBadge={getStatutBadge(facture.statut)}
+        metrics={[
+          {
+            label: 'Montant TTC',
+            value: formatMontant(facture.montantTTC),
+            tone: 'primary',
+          },
+          {
+            label: 'Montant HT',
+            value: formatMontant(facture.montantHT),
+          },
+          {
+            label: 'TVA',
+            value: formatMontant(facture.montantTVA),
+          },
+          {
+            label: 'Solde restant',
+            value: formatMontant(solde),
+            tone: solde > 0 ? 'warning' : 'success',
+          },
+        ]}
+        details={[
+          {
+            label: 'Date facture',
+            value: formatDate(facture.dateFacture),
+          },
+          {
+            label: 'Objet',
+            value: facture.objet,
+          },
+          {
+            label: 'Numéro fournisseur',
+            value: facture.numeroFactureFournisseur || '—',
+          },
+          {
+            label: 'Échéance',
+            value: facture.dateEcheance ? formatDate(facture.dateEcheance) : '—',
+          },
+          {
+            label: 'Validation',
+            value: facture.dateValidation ? formatDate(facture.dateValidation) : '—',
+          },
+        ]}
+        footer={
+          facture.statut !== 'brouillon' ? (
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Montant liquidé</span>
+                <span className="font-medium">{formatMontant(facture.montantLiquide)}</span>
               </div>
-            )}
-            {facture.dateValidation && (
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Date de validation</p>
-                <p className="font-medium">{formatDate(facture.dateValidation)}</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              <Progress value={progressionPaiement} className="h-2" />
+            </div>
+          ) : null
+        }
+      />
 
-      {/* Section 2: Montants */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Montants
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Montant HT</p>
-              <p className="text-lg font-semibold">{formatMontant(facture.montantHT)}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">TVA</p>
-              <p className="text-lg font-semibold">{formatMontant(facture.montantTVA)}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Montant TTC</p>
-              <p className="text-lg font-semibold text-primary">{formatMontant(facture.montantTTC)}</p>
-            </div>
-          </div>
-
-          {facture.statut !== 'brouillon' && (
-            <>
-              <div className="pt-4 border-t">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Montant liquidé</span>
-                    <span className="font-medium">{formatMontant(facture.montantLiquide)}</span>
-                  </div>
-                  <Progress value={progressionPaiement} className="h-2" />
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Solde restant</span>
-                    <span className="font-semibold">{formatMontant(solde)}</span>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Section 3: Entités liées */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FolderOpen className="h-5 w-5" />
-            Entités liées
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {facture.fournisseur && (
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
-                 onClick={() => handleEntityClick('fournisseur', facture.fournisseurId)}>
-              <Building2 className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">Fournisseur</p>
-                <p className="text-sm text-muted-foreground truncate">
-                  {facture.fournisseur.nom} ({facture.fournisseur.code})
-                </p>
-              </div>
-            </div>
-          )}
-
-          {facture.bonCommande && (
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
-                 onClick={() => facture.bonCommandeId && handleEntityClick('bon-commande', facture.bonCommandeId)}>
-              <ShoppingCart className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">Bon de commande</p>
-                <p className="text-sm text-muted-foreground truncate">
-                  {facture.bonCommande.numero}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {facture.engagement && (
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
-                 onClick={() => facture.engagementId && handleEntityClick('engagement', facture.engagementId)}>
-              <FileCheck className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">Engagement</p>
-                <p className="text-sm text-muted-foreground truncate">
-                  {facture.engagement.numero}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {facture.ligneBudgetaire && (
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
-                 onClick={() => facture.ligneBudgetaireId && handleEntityClick('ligne-budgetaire', facture.ligneBudgetaireId)}>
-              <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">Ligne budgétaire</p>
-                <p className="text-sm text-muted-foreground truncate">
-                  {facture.ligneBudgetaire.libelle}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {facture.projet && (
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
-                 onClick={() => facture.projetId && handleEntityClick('projet', facture.projetId)}>
-              <FolderOpen className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">Projet</p>
-                <p className="text-sm text-muted-foreground truncate">
-                  {facture.projet.nom}
-                </p>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <SnapshotLinkedEntitiesCard
+        items={[
+          facture.fournisseur
+            ? {
+                key: 'fournisseur',
+                label: 'Fournisseur',
+                value: `${facture.fournisseur.nom} (${facture.fournisseur.code})`,
+                icon: <Building2 className="h-4 w-4" />,
+                onClick: () => handleEntityClick('fournisseur', facture.fournisseurId),
+              }
+            : null,
+          facture.bonCommande
+            ? {
+                key: 'bon-commande',
+                label: 'Bon de commande',
+                value: facture.bonCommande.numero,
+                icon: <ShoppingCart className="h-4 w-4" />,
+                onClick: () => facture.bonCommandeId && handleEntityClick('bon-commande', facture.bonCommandeId),
+              }
+            : null,
+          facture.engagement
+            ? {
+                key: 'engagement',
+                label: 'Engagement',
+                value: facture.engagement.numero,
+                icon: <FileCheck className="h-4 w-4" />,
+                onClick: () => facture.engagementId && handleEntityClick('engagement', facture.engagementId),
+              }
+            : null,
+          facture.ligneBudgetaire
+            ? {
+                key: 'ligne-budgetaire',
+                label: 'Ligne budgétaire',
+                value: facture.ligneBudgetaire.libelle,
+                icon: <FileText className="h-4 w-4" />,
+                onClick: () => facture.ligneBudgetaireId && handleEntityClick('ligne-budgetaire', facture.ligneBudgetaireId),
+              }
+            : null,
+          facture.projet
+            ? {
+                key: 'projet',
+                label: 'Projet',
+                value: facture.projet.nom,
+                icon: <FolderOpen className="h-4 w-4" />,
+                onClick: () => facture.projetId && handleEntityClick('projet', facture.projetId),
+              }
+            : null,
+        ].filter(Boolean)}
+        emptyMessage="Aucune entité liée."
+      />
 
       {/* Observations */}
       {facture.observations && (

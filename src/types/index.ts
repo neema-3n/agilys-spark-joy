@@ -35,6 +35,7 @@ export type DecimalSeparator = 'comma' | 'dot';
 
 export interface MoneyFormatSettings {
   locale?: string;
+  currencyCode?: string;
   thousandsSeparator?: ThousandsSeparator;
   decimalSeparator?: DecimalSeparator;
   minimumFractionDigits?: number;

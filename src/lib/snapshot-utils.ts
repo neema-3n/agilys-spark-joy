@@ -36,8 +36,12 @@ export const getEntityUrl = (type: string, id: string): string => {
     'engagement': '/app/engagements',
     'facture': '/app/factures',
     'bon-commande': '/app/bons-commande',
+    'bonCommande': '/app/bons-commande',
     'reservation': '/app/reservations',
+    'reservationCredit': '/app/reservations',
     'ligne-budgetaire': '/app/budgets',
+    'ligneBudgetaire': '/app/budgets',
+    'depense': '/app/depenses',
   };
 
   const basePath = entityRoutes[type] || '/app';

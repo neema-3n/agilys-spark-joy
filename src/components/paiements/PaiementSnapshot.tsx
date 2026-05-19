@@ -2,6 +2,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SnapshotBase } from '@/components/shared/SnapshotBase';
+import { SnapshotLinkedEntitiesCard } from '@/components/shared/SnapshotLinkedEntitiesCard';
+import { SnapshotPrimaryCard } from '@/components/shared/SnapshotPrimaryCard';
 import type { Paiement } from '@/types/paiement.types';
 import { formatMontant, formatDate } from '@/lib/snapshot-utils';
 import { Building2, Calendar, CreditCard, FileText, Pencil, Wallet } from 'lucide-react';
@@ -74,78 +76,85 @@ export const PaiementSnapshot = ({
       onNavigate={onNavigate}
       actions={actions}
     >
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Wallet className="h-5 w-5" />
-              Informations principales
-            </CardTitle>
-            <Badge
-              variant={
-                paiement.statut === 'valide'
-                  ? 'success'
-                  : paiement.statut === 'brouillon'
-                    ? 'secondary'
-                    : 'destructive'
-              }
-            >
-              {paiement.statut === 'valide'
-                ? 'Validé'
+      <SnapshotPrimaryCard
+        icon={<Wallet className="h-5 w-5" />}
+        statusBadge={
+          <Badge
+            variant={
+              paiement.statut === 'valide'
+                ? 'success'
                 : paiement.statut === 'brouillon'
-                  ? 'Brouillon'
-                  : 'Annulé'}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Montant payé</p>
-              <p className="text-2xl font-bold text-primary">{formatMontant(paiement.montant)}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Date de paiement</p>
-              <p className="font-medium">{formatDate(paiement.datePaiement)}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Mode de paiement</p>
-              <p className="font-medium">{modeLabels[paiement.modePaiement] || paiement.modePaiement}</p>
-            </div>
-          </div>
-          <div className="space-y-3">
-            <button
-              type="button"
-              onClick={() => paiement.depense?.id && onNavigateToEntity?.('depense', paiement.depense.id)}
-              className={`flex w-full items-start gap-3 rounded-lg border p-3 text-left transition ${
-                paiement.depense?.id && onNavigateToEntity ? 'cursor-pointer hover:bg-muted' : 'bg-muted/30'
-              }`}
-            >
-              <FileText className="mt-0.5 h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-xs text-muted-foreground">Dépense liée</p>
-                <p className="font-medium">{paiement.depense?.numero || paiement.objet || 'Paiement direct'}</p>
-              </div>
-            </button>
+                  ? 'secondary'
+                  : 'destructive'
+            }
+          >
+            {paiement.statut === 'valide'
+              ? 'Validé'
+              : paiement.statut === 'brouillon'
+                ? 'Brouillon'
+                : 'Annulé'}
+          </Badge>
+        }
+        metrics={[
+          {
+            label: 'Montant payé',
+            value: formatMontant(paiement.montant),
+            tone: 'primary',
+          },
+          {
+            label: 'Mode de paiement',
+            value: modeLabels[paiement.modePaiement] || paiement.modePaiement,
+          },
+        ]}
+        details={[
+          {
+            label: 'Date de paiement',
+            value: formatDate(paiement.datePaiement),
+          },
+          {
+            label: 'Référence de paiement',
+            value: paiement.referencePaiement || '—',
+          },
+          {
+            label: 'Compte de trésorerie',
+            value: paiement.compteTresorerie
+              ? `${paiement.compteTresorerie.code} - ${paiement.compteTresorerie.libelle}`
+              : '—',
+          },
+          {
+            label: 'Bénéficiaire',
+            value: paiement.depense?.fournisseur?.nom || paiement.beneficiaire || 'Non renseigné',
+          },
+        ]}
+      />
 
-            <button
-              type="button"
-              onClick={() =>
-                paiement.depense?.fournisseur?.id && onNavigateToEntity?.('fournisseur', paiement.depense.fournisseur.id)
-              }
-              className={`flex w-full items-start gap-3 rounded-lg border p-3 text-left transition ${
-                paiement.depense?.fournisseur?.id && onNavigateToEntity ? 'cursor-pointer hover:bg-muted' : 'bg-muted/30'
-              }`}
-            >
-              <Building2 className="mt-0.5 h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-xs text-muted-foreground">Bénéficiaire / Fournisseur</p>
-                <p className="font-medium">{paiement.depense?.fournisseur?.nom || paiement.beneficiaire || 'Non renseigné'}</p>
-              </div>
-            </button>
-          </div>
-        </CardContent>
-      </Card>
+      <SnapshotLinkedEntitiesCard
+        items={[
+          {
+            key: 'depense',
+            label: 'Dépense liée',
+            value: paiement.depense?.numero || paiement.objet || 'Paiement direct',
+            description: paiement.depense?.objet || 'Paiement non rattaché à une dépense',
+            icon: <FileText className="h-4 w-4" />,
+            onClick:
+              paiement.depense?.id && onNavigateToEntity
+                ? () => onNavigateToEntity('depense', paiement.depense!.id)
+                : undefined,
+          },
+          {
+            key: 'fournisseur',
+            label: 'Fournisseur',
+            value: paiement.depense?.fournisseur?.nom || paiement.beneficiaire || 'Non renseigné',
+            description: paiement.depense?.fournisseur?.code,
+            icon: <Building2 className="h-4 w-4" />,
+            onClick:
+              paiement.depense?.fournisseur?.id && onNavigateToEntity
+                ? () => onNavigateToEntity('fournisseur', paiement.depense!.fournisseur!.id)
+                : undefined,
+          },
+        ]}
+        emptyMessage="Aucune entité liée."
+      />
 
       <Card>
         <CardHeader>
@@ -174,18 +183,6 @@ export const PaiementSnapshot = ({
           <div>
             <p className="text-sm text-muted-foreground">Retraits</p>
             <p className="font-medium">{formatMontant(paiement.totalRetraits || 0)}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Référence</p>
-            <p className="font-medium">{paiement.referencePaiement || '—'}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Compte de trésorerie</p>
-            <p className="font-medium">
-              {paiement.compteTresorerie
-                ? `${paiement.compteTresorerie.code} - ${paiement.compteTresorerie.libelle}`
-                : '—'}
-            </p>
           </div>
         </CardContent>
       </Card>

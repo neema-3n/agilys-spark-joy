@@ -87,6 +87,9 @@ export const createDepense = async (
   clientId: string,
   userId: string
 ): Promise<Depense> => {
+  if (!depense.engagementId && !depense.factureId) {
+    throw new Error("Une dépense doit être rattachée à un engagement ou à une facture.");
+  }
   const cleanedData = cleanData(toSnakeCase(depense));
   
   const { data, error } = await supabase.functions.invoke('create-depense', {
@@ -126,7 +129,7 @@ export const updateDepense = async (
   // 1. Récupérer la dépense actuelle
   const { data: currentDepense, error: fetchError } = await supabase
     .from('depenses')
-    .select('statut')
+    .select('statut, engagement_id, facture_id')
     .eq('id', id)
     .single();
 
@@ -153,6 +156,12 @@ export const updateDepense = async (
   }
 
   // 4. Procéder à la modification
+  const finalEngagementId = updates.engagementId ?? currentDepense.engagement_id;
+  const finalFactureId = updates.factureId ?? currentDepense.facture_id;
+  if (!finalEngagementId && !finalFactureId) {
+    throw new Error("Une dépense doit rester rattachée à un engagement ou à une facture.");
+  }
+
   const cleanedData = cleanData(toSnakeCase(updates));
   
   const { data, error } = await supabase

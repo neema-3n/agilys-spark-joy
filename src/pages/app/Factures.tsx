@@ -71,9 +71,17 @@ export default function Factures() {
   const routeEditFactureId = editMatch?.params.factureId;
   const isEditMode = !!routeEditFactureId;
   const isEditorMode = isCreateMode || isEditMode;
+  type FacturesLocationState = {
+    initialBonCommandeId?: string;
+    initialEngagementId?: string;
+  };
   const initialBonCommandeId =
-    isCreateMode && typeof (location.state as { initialBonCommandeId?: unknown } | null)?.initialBonCommandeId === 'string'
-      ? ((location.state as { initialBonCommandeId?: string }).initialBonCommandeId ?? undefined)
+    isCreateMode && typeof (location.state as FacturesLocationState | null)?.initialBonCommandeId === 'string'
+      ? ((location.state as FacturesLocationState).initialBonCommandeId ?? undefined)
+      : undefined;
+  const initialEngagementId =
+    isCreateMode && typeof (location.state as FacturesLocationState | null)?.initialEngagementId === 'string'
+      ? ((location.state as FacturesLocationState).initialEngagementId ?? undefined)
       : undefined;
   
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
@@ -318,12 +326,14 @@ export default function Factures() {
       case 'fournisseur':
         navigate(`/app/fournisseurs/${id}`);
         break;
+      case 'bon-commande':
       case 'bonCommande':
         navigate(`/app/bons-commande/${id}`);
         break;
       case 'engagement':
         navigate(`/app/engagements/${id}`);
         break;
+      case 'ligne-budgetaire':
       case 'ligneBudgetaire':
         navigate(`/app/budgets/${id}?tab=lignes`);
         break;
@@ -338,8 +348,16 @@ export default function Factures() {
       navigate(`/app/factures/${routeEditFactureId}`);
       return;
     }
+    if (initialBonCommandeId) {
+      navigate(`/app/bons-commande/${initialBonCommandeId}`);
+      return;
+    }
+    if (initialEngagementId) {
+      navigate(`/app/engagements/${initialEngagementId}`);
+      return;
+    }
     navigate('/app/factures');
-  }, [navigate, routeEditFactureId]);
+  }, [initialBonCommandeId, initialEngagementId, navigate, routeEditFactureId]);
 
   const { guard } = useFocusedEditorGuard({
     active: isEditorMode,
@@ -436,20 +454,21 @@ export default function Factures() {
             <Card>
               <CardContent className="pt-6">
                 <FactureForm
-                  key={`${isCreateMode ? 'create' : routeEditFactureId || 'unknown'}-${initialBonCommandeId || 'none'}`}
+                  key={`${isCreateMode ? 'create' : routeEditFactureId || 'unknown'}-${initialBonCommandeId || 'none'}-${initialEngagementId || 'none'}`}
                   facture={editorFacture}
                   onSubmit={handleSingleSubmit}
                   onCancel={handleSingleCancel}
                   onDirtyChange={setIsFactureDirty}
                   fournisseurs={fournisseurs}
                   bonsCommande={bonsCommande}
-                  engagements={engagements.filter(e => e.statut === 'valide')}
+                  engagements={engagements.filter((engagement) => engagement.statut === 'valide' || engagement.statut === 'engage')}
                   lignesBudgetaires={lignesBudgetaires.filter(lb => lb.statut === 'actif')}
                   projets={projets}
                   currentClientId={currentClient?.id || ''}
                   currentExerciceId={currentExercice?.id || ''}
                   onGenererNumero={handleGenererNumero}
                   initialBonCommandeId={initialBonCommandeId}
+                  initialEngagementId={initialEngagementId}
                   submitLabel={editorFacture ? 'Enregistrer' : 'Créer la facture'}
                   useScrollArea={false}
                 />

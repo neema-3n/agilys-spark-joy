@@ -27,6 +27,7 @@ export const SearchResultsSummary = ({
         title="Montant initial"
         value={formatMontant(totals.montantInitial)}
         icon={Layers3}
+        showCurrencyCode
         color="text-primary"
         trend="Base budgétaire"
         density="compact"
@@ -35,6 +36,7 @@ export const SearchResultsSummary = ({
         title="Montant modifié"
         value={formatMontant(totals.montantModifie)}
         icon={WalletCards}
+        showCurrencyCode
         color="text-secondary"
         trend="Après ajustements"
         trendUp={true}
@@ -44,6 +46,7 @@ export const SearchResultsSummary = ({
         title="Réservé"
         value={formatMontant(totals.montantReserve)}
         icon={ShieldCheck}
+        showCurrencyCode
         color="text-orange-500"
         trend="Crédits réservés"
         density="compact"
@@ -52,6 +55,7 @@ export const SearchResultsSummary = ({
         title="Engagé"
         value={formatMontant(totals.montantEngage)}
         icon={FileClock}
+        showCurrencyCode
         color="text-red-500"
         trend="Montants engagés"
         density="compact"
@@ -60,6 +64,7 @@ export const SearchResultsSummary = ({
         title="Liquidé"
         value={formatMontant(totals.montantLiquide)}
         icon={Landmark}
+        showCurrencyCode
         color="text-blue-500"
         trend="En liquidation"
         density="compact"
@@ -68,6 +73,7 @@ export const SearchResultsSummary = ({
         title="Payé"
         value={formatMontant(totals.montantPaye)}
         icon={CircleDollarSign}
+        showCurrencyCode
         color="text-emerald-500"
         trend="Déjà payés"
         trendUp={true}
@@ -77,6 +83,7 @@ export const SearchResultsSummary = ({
         title="Disponible"
         value={formatMontant(totals.disponible)}
         icon={BadgeEuro}
+        showCurrencyCode
         color="text-primary"
         trend="Solde mobilisable"
         trendUp={true}

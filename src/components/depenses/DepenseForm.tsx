@@ -27,7 +27,6 @@ import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
 import { useFournisseurs } from '@/hooks/useFournisseurs';
 import { useProjets } from '@/hooks/useProjets';
 import { useEngagements } from '@/hooks/useEngagements';
-import { useReservations } from '@/hooks/useReservations';
 import { useFactures } from '@/hooks/useFactures';
 import { useComptes } from '@/hooks/useComptes';
 import { useNaturesCompte } from '@/hooks/useNaturesCompte';
@@ -43,7 +42,6 @@ import {
 } from '@/lib/financial-utils';
 import type { Depense, DepenseFormData } from '@/types/depense.types';
 import type { Engagement } from '@/types/engagement.types';
-import type { ReservationCredit } from '@/types/reservation.types';
 import type { Facture } from '@/types/facture.types';
 import type {
   ChargePrincipaleMode,
@@ -52,7 +50,6 @@ import type {
 
 const depenseSchema = z.object({
   engagementId: z.string().optional(),
-  reservationCreditId: z.string().optional(),
   ligneBudgetaireId: z.string().optional(),
   factureId: z.string().optional(),
   fournisseurId: z.string().optional(),
@@ -66,6 +63,16 @@ const depenseSchema = z.object({
   modePaiement: z.string().optional(),
   referencePaiement: z.string().optional(),
   observations: z.string().optional(),
+}).superRefine((data, ctx) => {
+  const hasEngagement = !!data.engagementId;
+  const hasFacture = !!data.factureId;
+  if (!hasEngagement && !hasFacture) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['engagementId'],
+      message: 'Sélectionnez un engagement ou une facture.',
+    });
+  }
 });
 
 type DepenseSchemaValues = z.infer<typeof depenseSchema>;
@@ -76,7 +83,6 @@ interface DepenseFormProps {
   onCancel: () => void;
   onDirtyChange?: (isDirty: boolean) => void;
   preSelectedEngagement?: Engagement;
-  preSelectedReservation?: ReservationCredit;
   preSelectedFacture?: Facture;
   submitLabel?: string;
   useScrollArea?: boolean;
@@ -88,7 +94,6 @@ export const DepenseForm = ({
   onCancel,
   onDirtyChange,
   preSelectedEngagement,
-  preSelectedReservation,
   preSelectedFacture,
   submitLabel,
   useScrollArea = true,
@@ -97,7 +102,6 @@ export const DepenseForm = ({
   const { fournisseurs } = useFournisseurs();
   const { projets } = useProjets();
   const { engagements } = useEngagements();
-  const { reservations } = useReservations();
   const { factures } = useFactures();
   const { comptes } = useComptes();
   const { naturesCompte } = useNaturesCompte();
@@ -107,9 +111,7 @@ export const DepenseForm = ({
     [comptes]
   );
 
-  const [typeImputation, setTypeImputation] = useState<
-    'engagement' | 'reservation' | 'facture' | 'direct'
-  >('direct');
+  const [typeImputation, setTypeImputation] = useState<'engagement' | 'facture'>('engagement');
   const [typeBeneficiaire, setTypeBeneficiaire] = useState<'fournisseur' | 'direct'>(
     'fournisseur'
   );
@@ -122,7 +124,7 @@ export const DepenseForm = ({
   const initialEditorStateRef = useRef<string | null>(null);
 
   const serializeEditorState = (
-    currentTypeImputation: 'engagement' | 'reservation' | 'facture' | 'direct',
+    currentTypeImputation: 'engagement' | 'facture',
     currentTypeBeneficiaire: 'fournisseur' | 'direct',
     currentVentilations: FinancialVentilation[],
     currentChargePrincipaleMode: ChargePrincipaleMode,
@@ -142,7 +144,6 @@ export const DepenseForm = ({
     resolver: zodResolver(depenseSchema),
     defaultValues: {
       engagementId: '',
-      reservationCreditId: '',
       ligneBudgetaireId: '',
       factureId: '',
       fournisseurId: '',
@@ -170,7 +171,7 @@ export const DepenseForm = ({
 
   useEffect(() => {
     initializedRef.current = false;
-  }, [depense?.id, preSelectedEngagement?.id, preSelectedReservation?.id, preSelectedFacture?.id]);
+  }, [depense?.id, preSelectedEngagement?.id, preSelectedFacture?.id]);
 
   useEffect(() => {
     if (initializedRef.current) return;
@@ -184,7 +185,6 @@ export const DepenseForm = ({
 
       form.reset({
         engagementId: depense.engagementId || '',
-        reservationCreditId: depense.reservationCreditId || '',
         ligneBudgetaireId: depense.ligneBudgetaireId || '',
         factureId: depense.factureId || '',
         fournisseurId: depense.fournisseurId || '',
@@ -205,11 +205,7 @@ export const DepenseForm = ({
       setCompteChargeId(normalizedChargePrincipale.compteChargeId);
       const nextTypeImputation = depense.factureId
         ? 'facture'
-        : depense.engagementId
-          ? 'engagement'
-          : depense.reservationCreditId
-            ? 'reservation'
-            : 'direct';
+        : 'engagement';
       const nextTypeBeneficiaire = depense.fournisseurId ? 'fournisseur' : 'direct';
       setTypeImputation(nextTypeImputation);
       setTypeBeneficiaire(nextTypeBeneficiaire);
@@ -227,8 +223,6 @@ export const DepenseForm = ({
 
     const selectedFacture = preSelectedFacture || undefined;
     const selectedEngagement = preSelectedEngagement || undefined;
-    const selectedReservation = preSelectedReservation || undefined;
-
     if (selectedFacture) {
       const normalizedChargePrincipale = normalizeChargePrincipaleForEditor(
         selectedFacture.chargePrincipaleMode,
@@ -240,7 +234,6 @@ export const DepenseForm = ({
       setTypeBeneficiaire('fournisseur');
       form.reset({
         engagementId: selectedFacture.engagementId || '',
-        reservationCreditId: '',
         ligneBudgetaireId: selectedFacture.ligneBudgetaireId || '',
         factureId: selectedFacture.id,
         fournisseurId: selectedFacture.fournisseurId,
@@ -276,7 +269,6 @@ export const DepenseForm = ({
       setTypeBeneficiaire(selectedEngagement.fournisseurId ? 'fournisseur' : 'direct');
       form.reset({
         engagementId: selectedEngagement.id,
-        reservationCreditId: selectedEngagement.reservationCreditId || '',
         ligneBudgetaireId: selectedEngagement.ligneBudgetaireId || '',
         factureId: '',
         fournisseurId: selectedEngagement.fournisseurId || '',
@@ -301,37 +293,7 @@ export const DepenseForm = ({
       return;
     }
 
-    if (selectedReservation) {
-      setTypeImputation('reservation');
-      setTypeBeneficiaire('direct');
-      form.reset({
-        engagementId: '',
-        reservationCreditId: selectedReservation.id,
-        ligneBudgetaireId: selectedReservation.ligneBudgetaireId,
-        factureId: '',
-        fournisseurId: '',
-        beneficiaire: selectedReservation.beneficiaire || '',
-        projetId: selectedReservation.projetId || '',
-        objet: selectedReservation.objet,
-        montantHT: selectedReservation.montant,
-        montantTTC: selectedReservation.montant,
-        montantNetPaye: selectedReservation.montant,
-        dateDepense: format(new Date(), 'yyyy-MM-dd'),
-        modePaiement: '',
-        referencePaiement: '',
-        observations: '',
-      });
-      initialEditorStateRef.current = serializeEditorState(
-        'reservation',
-        'direct',
-        [],
-        'nature',
-      );
-      initializedRef.current = true;
-      return;
-    }
-
-    setTypeImputation('direct');
+    setTypeImputation('engagement');
     setTypeBeneficiaire('fournisseur');
     setVentilations([]);
     setChargePrincipaleMode('nature');
@@ -339,7 +301,6 @@ export const DepenseForm = ({
     setCompteChargeId(undefined);
     form.reset({
       engagementId: '',
-      reservationCreditId: '',
       ligneBudgetaireId: '',
       factureId: '',
       fournisseurId: '',
@@ -354,14 +315,76 @@ export const DepenseForm = ({
       referencePaiement: '',
       observations: '',
     });
-    initialEditorStateRef.current = serializeEditorState('direct', 'fournisseur', [], 'nature');
+    initialEditorStateRef.current = serializeEditorState('engagement', 'fournisseur', [], 'nature');
     initializedRef.current = true;
   }, [
     depense,
     form,
     preSelectedEngagement,
     preSelectedFacture,
-    preSelectedReservation,
+  ]);
+
+  const watchedEngagementId = form.watch('engagementId');
+  const hasSelectedEngagement = !!watchedEngagementId;
+  const manualSelectedEngagement = useMemo(
+    () => engagements.find((engagement) => engagement.id === watchedEngagementId),
+    [engagements, watchedEngagementId]
+  );
+  const manualSelectedFacture = useMemo(
+    () => factures.find((facture) => facture.id === watchedFactureId),
+    [factures, watchedFactureId]
+  );
+
+  useEffect(() => {
+    if (depense || preSelectedEngagement || preSelectedFacture) return;
+
+    if (typeImputation === 'engagement' && manualSelectedEngagement) {
+      setTypeBeneficiaire(manualSelectedEngagement.fournisseurId ? 'fournisseur' : 'direct');
+      form.setValue('factureId', '', { shouldDirty: true });
+      form.setValue('ligneBudgetaireId', manualSelectedEngagement.ligneBudgetaireId || '', { shouldDirty: true });
+      form.setValue('fournisseurId', manualSelectedEngagement.fournisseurId || '', { shouldDirty: true });
+      form.setValue('beneficiaire', manualSelectedEngagement.beneficiaire || '', { shouldDirty: true });
+      form.setValue('projetId', manualSelectedEngagement.projetId || '', { shouldDirty: true });
+      form.setValue('objet', manualSelectedEngagement.objet, { shouldDirty: true });
+      form.setValue('montantHT', manualSelectedEngagement.solde || manualSelectedEngagement.montant, { shouldDirty: true });
+      form.setValue('montantTTC', manualSelectedEngagement.solde || manualSelectedEngagement.montant, { shouldDirty: true });
+      form.setValue('montantNetPaye', manualSelectedEngagement.solde || manualSelectedEngagement.montant, { shouldDirty: true });
+      setVentilations([]);
+      setChargePrincipaleMode('nature');
+      setNatureCompteChargeId(undefined);
+      setCompteChargeId(undefined);
+    }
+
+    if (typeImputation === 'facture' && manualSelectedFacture) {
+      const normalizedChargePrincipale = normalizeChargePrincipaleForEditor(
+        manualSelectedFacture.chargePrincipaleMode,
+        manualSelectedFacture.natureCompteChargeId,
+        manualSelectedFacture.compteChargeId,
+      );
+      setTypeBeneficiaire('fournisseur');
+      form.setValue('engagementId', manualSelectedFacture.engagementId || '', { shouldDirty: true });
+      form.setValue('ligneBudgetaireId', manualSelectedFacture.ligneBudgetaireId || '', { shouldDirty: true });
+      form.setValue('fournisseurId', manualSelectedFacture.fournisseurId, { shouldDirty: true });
+      form.setValue('beneficiaire', '', { shouldDirty: true });
+      form.setValue('projetId', manualSelectedFacture.projetId || '', { shouldDirty: true });
+      form.setValue('objet', manualSelectedFacture.objet, { shouldDirty: true });
+      form.setValue('montantHT', manualSelectedFacture.montantHT, { shouldDirty: true });
+      form.setValue('montantTTC', manualSelectedFacture.montantTTC, { shouldDirty: true });
+      form.setValue('montantNetPaye', manualSelectedFacture.montantNetPaye || manualSelectedFacture.montantTTC, { shouldDirty: true });
+      setVentilations(manualSelectedFacture.ventilations || []);
+      setChargePrincipaleMode(normalizedChargePrincipale.chargePrincipaleMode);
+      setNatureCompteChargeId(normalizedChargePrincipale.natureCompteChargeId);
+      setCompteChargeId(normalizedChargePrincipale.compteChargeId);
+    }
+  }, [
+    depense,
+    factures,
+    form,
+    manualSelectedEngagement,
+    manualSelectedFacture,
+    preSelectedEngagement,
+    preSelectedFacture,
+    typeImputation,
   ]);
 
   const currentEditorState = useMemo(
@@ -405,6 +428,15 @@ export const DepenseForm = ({
     ventilations
   );
   const coherenceErrors = getCoherenceErrors(breakdown);
+  const lockImputationSource = !!preSelectedEngagement || !!preSelectedFacture;
+  const lockTypeBeneficiaire =
+    !!preSelectedFacture ||
+    (typeImputation === 'engagement' && hasSelectedEngagement);
+  const lockDepenseInheritedFields =
+    !!preSelectedFacture ||
+    (!!preSelectedEngagement && typeImputation === 'engagement') ||
+    (typeImputation === 'facture' && !!watchedFactureId) ||
+    (typeImputation === 'engagement' && hasSelectedEngagement);
 
   const handleSubmit = async (values: DepenseSchemaValues) => {
     const resolvedChargePrincipale = hasInheritedFinancialStructure
@@ -435,7 +467,7 @@ export const DepenseForm = ({
 
     const payload: DepenseFormData = {
       engagementId: values.engagementId || undefined,
-      reservationCreditId: values.reservationCreditId || undefined,
+      reservationCreditId: undefined,
       ligneBudgetaireId: values.ligneBudgetaireId || undefined,
       factureId: values.factureId || undefined,
       fournisseurId: typeBeneficiaire === 'fournisseur' ? values.fournisseurId || undefined : undefined,
@@ -478,14 +510,13 @@ export const DepenseForm = ({
                 <Select
                   value={typeImputation}
                   onValueChange={(value) =>
-                    setTypeImputation(value as 'engagement' | 'reservation' | 'facture' | 'direct')
+                    setTypeImputation(value as 'engagement' | 'facture')
                   }
+                  disabled={lockImputationSource}
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="direct">Direct</SelectItem>
                     <SelectItem value="engagement">Depuis engagement</SelectItem>
-                    <SelectItem value="reservation">Depuis reservation</SelectItem>
                     <SelectItem value="facture">Depuis facture</SelectItem>
                   </SelectContent>
                 </Select>
@@ -498,6 +529,7 @@ export const DepenseForm = ({
                   onValueChange={(value) =>
                     setTypeBeneficiaire(value as 'fournisseur' | 'direct')
                   }
+                  disabled={lockTypeBeneficiaire}
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -514,37 +546,16 @@ export const DepenseForm = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Engagement</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={!!preSelectedEngagement}
+                      >
                         <FormControl>
                           <SelectTrigger><SelectValue placeholder="Sélectionner un engagement" /></SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           {engagements.map((item) => (
-                            <SelectItem key={item.id} value={item.id}>
-                              {item.numero}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              ) : null}
-
-              {typeImputation === 'reservation' ? (
-                <FormField
-                  control={form.control}
-                  name="reservationCreditId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Réservation</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger><SelectValue placeholder="Sélectionner une réservation" /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {reservations.map((item) => (
                             <SelectItem key={item.id} value={item.id}>
                               {item.numero}
                             </SelectItem>
@@ -564,7 +575,11 @@ export const DepenseForm = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Facture</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={!!preSelectedFacture}
+                      >
                         <FormControl>
                           <SelectTrigger><SelectValue placeholder="Sélectionner une facture" /></SelectTrigger>
                         </FormControl>
@@ -588,7 +603,7 @@ export const DepenseForm = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Ligne budgétaire</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={lockDepenseInheritedFields}>
                       <FormControl>
                         <SelectTrigger><SelectValue placeholder="Sélectionner une ligne budgétaire" /></SelectTrigger>
                       </FormControl>
@@ -612,7 +627,7 @@ export const DepenseForm = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Fournisseur</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={lockDepenseInheritedFields}>
                         <FormControl>
                           <SelectTrigger><SelectValue placeholder="Sélectionner un fournisseur" /></SelectTrigger>
                         </FormControl>
@@ -635,7 +650,7 @@ export const DepenseForm = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Bénéficiaire</FormLabel>
-                      <FormControl><Input {...field} value={field.value || ''} /></FormControl>
+                      <FormControl><Input {...field} value={field.value || ''} disabled={lockDepenseInheritedFields} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -648,7 +663,7 @@ export const DepenseForm = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Projet</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={lockDepenseInheritedFields}>
                       <FormControl>
                         <SelectTrigger><SelectValue placeholder="Sélectionner un projet" /></SelectTrigger>
                       </FormControl>
@@ -671,7 +686,7 @@ export const DepenseForm = ({
                 render={({ field }) => (
                   <FormItem className="md:col-span-2">
                     <FormLabel>Objet</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
+                    <FormControl><Input {...field} disabled={lockDepenseInheritedFields} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

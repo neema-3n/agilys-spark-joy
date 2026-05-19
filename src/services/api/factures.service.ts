@@ -214,6 +214,9 @@ export const facturesService = {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Non authentifié');
+      if (!facture.bonCommandeId && !facture.engagementId) {
+        throw new Error("Une facture doit être rattachée à un engagement ou à un bon de commande.");
+      }
 
       // Appeler l'edge function pour créer la facture avec numéro généré atomiquement
       const { data, error } = await supabase.functions.invoke('create-facture', {
@@ -280,7 +283,7 @@ export const facturesService = {
     // 1. Récupérer la facture actuelle
     const { data: currentFacture, error: fetchError } = await supabase
       .from('factures')
-      .select('statut, bon_commande_id, montant_ttc')
+      .select('statut, bon_commande_id, engagement_id, montant_ttc')
       .eq('id', id)
       .single();
 
@@ -312,6 +315,12 @@ export const facturesService = {
     // 5. Vérifier que la facture peut être modifiée
     if (currentFacture.statut !== 'brouillon' && currentFacture.statut !== 'validee' && !isAnnulation) {
       throw new Error('Seules les factures en brouillon ou validées peuvent être modifiées');
+    }
+
+    const finalBonCommandeId = facture.bonCommandeId ?? currentFacture.bon_commande_id;
+    const finalEngagementId = facture.engagementId ?? currentFacture.engagement_id;
+    if (!finalBonCommandeId && !finalEngagementId) {
+      throw new Error("Une facture doit rester rattachée à un engagement ou à un bon de commande.");
     }
 
     // 6. Vérifier le montant si un BC est lié (dans l'ancienne OU la nouvelle facture)

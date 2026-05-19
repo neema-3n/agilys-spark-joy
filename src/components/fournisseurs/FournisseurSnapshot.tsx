@@ -1,5 +1,6 @@
 import { Fournisseur } from '@/types/fournisseur.types';
 import { SnapshotBase } from '@/components/shared/SnapshotBase';
+import { SnapshotPrimaryCard } from '@/components/shared/SnapshotPrimaryCard';
 import { BaseSnapshotProps } from '@/types/snapshot.types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -59,59 +60,31 @@ export const FournisseurSnapshot = ({
       actions={actions}
       {...snapshotProps}
     >
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Montant total engagé
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatMontant(fournisseur.montantTotalEngage)}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Nombre d'engagements
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{fournisseur.nombreEngagements}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Informations générales */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
-            Informations générales
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-            <div className="text-muted-foreground">Code</div>
-            <div className="font-medium">{fournisseur.code}</div>
-            <div className="text-muted-foreground">Nom complet</div>
-            <div className="font-medium">{fournisseur.nom}</div>
-            <div className="text-muted-foreground">Nom court</div>
-            <div>{fournisseur.nomCourt || '-'}</div>
-            <div className="text-muted-foreground">Type</div>
-            <div>{getTypeFournisseurLabel(fournisseur.typeFournisseur)}</div>
-            <div className="text-muted-foreground">Catégorie</div>
-            <div>{fournisseur.categorie || '-'}</div>
-            <div className="text-muted-foreground">Statut</div>
-            <div>{getStatutBadge(fournisseur.statut)}</div>
-            <div className="text-muted-foreground">Date première collaboration</div>
-            <div>{formatDate(fournisseur.datePremiereCollaboration)}</div>
-            <div className="text-muted-foreground">Dernier engagement</div>
-            <div>{formatDate(fournisseur.dernierEngagementDate)}</div>
-          </div>
-        </CardContent>
-      </Card>
+      <SnapshotPrimaryCard
+        icon={<Building2 className="h-5 w-5" />}
+        title="Informations principales"
+        statusBadge={getStatutBadge(fournisseur.statut)}
+        metrics={[
+          {
+            label: 'Montant total engagé',
+            value: formatMontant(fournisseur.montantTotalEngage),
+            tone: 'primary',
+          },
+          {
+            label: "Nombre d'engagements",
+            value: fournisseur.nombreEngagements,
+          },
+        ]}
+        details={[
+          { label: 'Code', value: fournisseur.code },
+          { label: 'Nom complet', value: fournisseur.nom },
+          { label: 'Nom court', value: fournisseur.nomCourt || '-' },
+          { label: 'Type', value: getTypeFournisseurLabel(fournisseur.typeFournisseur) },
+          { label: 'Catégorie', value: fournisseur.categorie || '-' },
+          { label: 'Date première collaboration', value: formatDate(fournisseur.datePremiereCollaboration) },
+          { label: 'Dernier engagement', value: formatDate(fournisseur.dernierEngagementDate) },
+        ]}
+      />
 
       {/* Coordonnées */}
       <Card>

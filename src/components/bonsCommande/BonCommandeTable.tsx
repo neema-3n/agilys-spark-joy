@@ -212,7 +212,7 @@ export const BonCommandeTable = ({
                 </DropdownMenuItem>
               )}
 
-              {bc.statut === 'receptionne' && onCreateFacture && (
+              {bc.statut === 'receptionne' && bc.engagementId && onCreateFacture && (
                 <DropdownMenuItem onClick={() => onCreateFacture(bc.id)}>
                   <Receipt className="h-4 w-4 mr-2" />
                   Créer une facture

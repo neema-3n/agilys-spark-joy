@@ -38,6 +38,7 @@ export const ReservationStats = ({ reservations }: ReservationStatsProps) => {
         title="Montant Actif"
         value={formatCurrency(stats.montantActif)}
         icon={DollarSign}
+        showCurrencyCode
         color="text-secondary"
         trend="En réservation active"
         trendUp={true}
@@ -46,6 +47,7 @@ export const ReservationStats = ({ reservations }: ReservationStatsProps) => {
         title="Montant Utilisé"
         value={formatCurrency(stats.montantUtilise)}
         icon={CheckCircle}
+        showCurrencyCode
         color="text-accent"
         trend="Consommés"
         trendUp={true}

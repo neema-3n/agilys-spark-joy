@@ -49,6 +49,7 @@ import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
 import { useListSelection } from '@/hooks/useListSelection';
 import { useClientPagination } from '@/hooks/useClientPagination';
 import { Input } from '@/components/ui/input';
+import { useDepenses } from '@/hooks/useDepenses';
 
 type PaiementLocationState = {
   initialDepenseId?: string;
@@ -64,6 +65,7 @@ export default function Paiements() {
   const isEditMode = !!editMatch;
   const { paiements, isLoading, annulerPaiement, createPaiement, updatePaiement, validerPaiement } =
     usePaiements();
+  const { depenses, isLoading: isDepensesLoading } = useDepenses();
   const [search, setSearch] = useState('');
   const [statutFilter, setStatutFilter] = useState<'tous' | 'brouillon' | 'valide' | 'annule'>('tous');
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
@@ -72,7 +74,7 @@ export default function Paiements() {
   const [isPaiementDirty, setIsPaiementDirty] = useState(false);
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   const [modeFilter, setModeFilter] = useState<'tous' | 'virement' | 'cheque' | 'especes' | 'carte' | 'autre'>('tous');
-  const [sourceFilter, setSourceFilter] = useState<'tous' | 'depense' | 'direct'>('tous');
+  const [sourceFilter, setSourceFilter] = useState<'tous' | 'depense'>('tous');
   const [dateDebut, setDateDebut] = useState('');
   const [dateFin, setDateFin] = useState('');
   const [montantMin, setMontantMin] = useState('');
@@ -82,6 +84,12 @@ export default function Paiements() {
     typeof (location.state as PaiementLocationState | null)?.initialDepenseId === 'string'
       ? ((location.state as PaiementLocationState).initialDepenseId ?? undefined)
       : undefined;
+  const selectedDepense = useMemo(
+    () => depenses.find((item) => item.id === initialDepenseId),
+    [depenses, initialDepenseId]
+  );
+  const isWaitingForPreselection =
+    Boolean(initialDepenseId) && isDepensesLoading && !selectedDepense;
   const editingPaiement = useMemo(
     () => (isEditMode ? paiements.find((item) => item.id === paiementId) : undefined),
     [isEditMode, paiementId, paiements]
@@ -92,13 +100,7 @@ export default function Paiements() {
     return paiements
       .filter((p) => (statutFilter === 'tous' ? true : p.statut === statutFilter))
       .filter((p) => (modeFilter === 'tous' ? true : p.modePaiement === modeFilter))
-      .filter((p) =>
-        sourceFilter === 'tous'
-          ? true
-          : sourceFilter === 'depense'
-            ? !!p.depenseId
-            : !p.depenseId
-      )
+      .filter((p) => (sourceFilter === 'tous' ? true : !!p.depenseId))
       .filter((p) => (!dateDebut ? true : p.datePaiement >= dateDebut))
       .filter((p) => (!dateFin ? true : p.datePaiement <= dateFin))
       .filter((p) => (!montantMin ? true : p.montant >= Number(montantMin)))
@@ -270,14 +272,14 @@ export default function Paiements() {
                 ? `Modifier ${editingPaiement?.numero || 'le paiement'}`
                 : initialDepenseId
                   ? 'Nouveau paiement sur dépense'
-                  : 'Nouveau paiement direct'
+                  : 'Nouveau paiement'
             }
             description={
               isEditMode
                 ? 'Modifiez un brouillon de paiement dans un espace de travail dédié.'
                 : initialDepenseId
                 ? 'Enregistrez le paiement depuis la dépense sélectionnée.'
-                : 'Créez un paiement dans un espace de travail dédié.'
+                : 'Sélectionnez la dépense à régler avant de saisir le paiement.'
             }
             sticky={false}
             actions={
@@ -288,28 +290,36 @@ export default function Paiements() {
             }
           />
 
-          <Card>
-            <CardContent className="pt-6">
-              {isEditMode && !editingPaiement ? (
-                <div className="py-8 text-center text-muted-foreground">Chargement du paiement...</div>
-              ) : isEditMode && editingPaiement?.statut !== 'brouillon' ? (
-                <div className="py-8 text-center text-muted-foreground">
-                  Seuls les paiements en brouillon peuvent être modifiés.
-                </div>
-              ) : (
-                <PaiementForm
-                  key={isEditMode ? `edit-${paiementId}` : `create-${initialDepenseId || 'direct'}`}
-                  paiement={editingPaiement}
-                  initialDepenseId={initialDepenseId}
-                  onSubmit={handleSingleSubmit}
-                  onCancel={handleSingleCancel}
-                  onDirtyChange={setIsPaiementDirty}
-                  submitLabel="Valider le paiement"
-                  useScrollArea={false}
-                />
-              )}
-            </CardContent>
-          </Card>
+          {isWaitingForPreselection ? (
+            <div className="rounded-xl border border-dashed p-8 text-center">
+              <p className="text-sm text-muted-foreground">
+                Chargement des données source du paiement...
+              </p>
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="pt-6">
+                {isEditMode && !editingPaiement ? (
+                  <div className="py-8 text-center text-muted-foreground">Chargement du paiement...</div>
+                ) : isEditMode && editingPaiement?.statut !== 'brouillon' ? (
+                  <div className="py-8 text-center text-muted-foreground">
+                    Seuls les paiements en brouillon peuvent être modifiés.
+                  </div>
+                ) : (
+                  <PaiementForm
+                    key={isEditMode ? `edit-${paiementId}` : `create-${initialDepenseId || 'direct'}`}
+                    paiement={editingPaiement}
+                    initialDepenseId={initialDepenseId}
+                    onSubmit={handleSingleSubmit}
+                    onCancel={handleSingleCancel}
+                    onDirtyChange={setIsPaiementDirty}
+                    submitLabel="Valider le paiement"
+                    useScrollArea={false}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          )}
         </>
       ) : isSnapshotOpen && snapshotPaiement ? (
         <PaiementSnapshot
@@ -345,7 +355,7 @@ export default function Paiements() {
             description="Gestion et suivi des paiements effectués"
             sticky={false}
             scrollProgress={scrollProgress}
-            actions={<Button onClick={handleCreate}><Plus className="mr-2 h-4 w-4" />Nouveau paiement direct</Button>}
+            actions={<Button onClick={handleCreate}><Plus className="mr-2 h-4 w-4" />Nouveau paiement</Button>}
           />
 
           <div className="space-y-6">
@@ -430,7 +440,6 @@ export default function Paiements() {
                         <SelectContent>
                           <SelectItem value="tous">Toutes les sources</SelectItem>
                           <SelectItem value="depense">Paiements sur dépense</SelectItem>
-                          <SelectItem value="direct">Paiements directs</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

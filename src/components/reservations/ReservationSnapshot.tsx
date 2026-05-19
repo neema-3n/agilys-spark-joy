@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { SnapshotBase } from '@/components/shared/SnapshotBase';
+import { SnapshotLinkedEntitiesCard } from '@/components/shared/SnapshotLinkedEntitiesCard';
+import { SnapshotPrimaryCard } from '@/components/shared/SnapshotPrimaryCard';
 import type { ReservationCredit } from '@/types/reservation.types';
 import { formatDate, formatDateTime, formatMontant, getEntityUrl } from '@/lib/snapshot-utils';
 import { useEcrituresBySource } from '@/hooks/useEcrituresComptables';
@@ -21,7 +23,6 @@ interface ReservationSnapshotProps {
   currentIndex: number;
   totalCount: number;
   onCreerEngagement?: () => void;
-  onCreerDepenseUrgence?: () => void;
   onAnnuler?: () => void;
   onNavigateToEntity?: (type: string, id: string) => void;
 }
@@ -35,7 +36,6 @@ export const ReservationSnapshot = ({
   currentIndex,
   totalCount,
   onCreerEngagement,
-  onCreerDepenseUrgence,
   onAnnuler,
   onNavigateToEntity,
 }: ReservationSnapshotProps) => {
@@ -102,11 +102,6 @@ export const ReservationSnapshot = ({
           Créer un engagement
         </Button>
       )}
-      {reservation.statut === 'active' && onCreerDepenseUrgence && (
-        <Button variant="outline" size="sm" onClick={onCreerDepenseUrgence}>
-          Dépense urgente
-        </Button>
-      )}
       {(reservation.statut === 'active' || reservation.statut === 'utilisee') && onAnnuler && (
         <Button variant="destructive" size="sm" onClick={onAnnuler}>
           Annuler
@@ -130,78 +125,70 @@ export const ReservationSnapshot = ({
       onNavigate={onNavigate}
       actions={actions}
     >
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Informations principales
-            </CardTitle>
-            {getStatutBadge(reservation.statut)}
-          </div>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">Montant réservé</p>
-            <p className="text-2xl font-bold text-primary">{formatMontant(reservation.montant)}</p>
-            <p className="text-sm text-muted-foreground">
-              Engagé: <span className="font-medium">{formatMontant(montantEngage)}</span>
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Solde: <span className="font-medium">{formatMontant(solde)}</span>
-            </p>
-          </div>
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">Bénéficiaire / Projet</p>
-            <p className="font-medium">
-              {reservation.projet?.nom || reservation.beneficiaire || 'Non renseigné'}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <SnapshotPrimaryCard
+        icon={<FileText className="h-5 w-5" />}
+        statusBadge={getStatutBadge(reservation.statut)}
+        metrics={[
+          {
+            label: 'Montant réservé',
+            value: formatMontant(reservation.montant),
+            tone: 'primary',
+          },
+          {
+            label: 'Montant engagé',
+            value: formatMontant(montantEngage),
+          },
+          {
+            label: 'Solde disponible',
+            value: formatMontant(solde),
+            tone: solde > 0 ? 'success' : 'warning',
+          },
+        ]}
+        details={[
+          {
+            label: 'Objet',
+            value: reservation.objet,
+          },
+          {
+            label: 'Bénéficiaire / Projet',
+            value: reservation.projet?.nom || reservation.beneficiaire || 'Non renseigné',
+          },
+          {
+            label: 'Date de réservation',
+            value: formatDate(reservation.dateReservation),
+          },
+          {
+            label: "Date d'expiration",
+            value: reservation.dateExpiration ? formatDate(reservation.dateExpiration) : '—',
+          },
+        ]}
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FolderOpen className="h-5 w-5" />
-            Références liées
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {reservation.ligneBudgetaire && (
-            <div
-              className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
-              onClick={() => handleEntityClick('ligne-budgetaire', reservation.ligneBudgetaireId)}
-            >
-              <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">Ligne budgétaire</p>
-                <p className="text-sm text-muted-foreground truncate">
-                  {reservation.ligneBudgetaire.libelle}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Disponible: {formatMontant(reservation.ligneBudgetaire.disponible)}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {reservation.projet && (
-            <div
-              className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
-              onClick={() => handleEntityClick('projet', reservation.projetId)}
-            >
-              <FolderOpen className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">Projet</p>
-                <p className="text-sm text-muted-foreground truncate">
-                  {reservation.projet.code} - {reservation.projet.nom}
-                </p>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <SnapshotLinkedEntitiesCard
+        title="Entités liées"
+        items={[
+          reservation.ligneBudgetaire
+            ? {
+                key: 'ligne-budgetaire',
+                label: 'Ligne budgétaire',
+                value: reservation.ligneBudgetaire.libelle,
+                description: `Disponible: ${formatMontant(reservation.ligneBudgetaire.disponible)}`,
+                icon: <FileText className="h-4 w-4" />,
+                onClick: () => handleEntityClick('ligne-budgetaire', reservation.ligneBudgetaireId),
+              }
+            : null,
+          reservation.projet
+            ? {
+                key: 'projet',
+                label: 'Projet',
+                value: `${reservation.projet.code} - ${reservation.projet.nom}`,
+                icon: <FolderOpen className="h-4 w-4" />,
+                onClick: () => handleEntityClick('projet', reservation.projetId),
+              }
+            : null,
+        ].filter(Boolean)}
+        emptyMessage="Aucune entité liée."
+      />
 
       {reservation.engagements && reservation.engagements.length > 0 && (
         <Card>
