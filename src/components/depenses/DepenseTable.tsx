@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, CheckCircle, FileCheck, Banknote, XCircle, Trash, Eye, Pencil } from 'lucide-react';
+import { MoreHorizontal, CheckCircle, Banknote, XCircle, Trash, Eye, Pencil } from 'lucide-react';
 import { ListColumn, ListTable } from '@/components/lists/ListTable';
 import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/selectionColumn';
 import { formatCurrency } from '@/lib/utils';
@@ -18,7 +18,6 @@ interface DepenseTableProps {
   depenses: Depense[];
   onEdit?: (depense: Depense) => void;
   onValider?: (id: string) => void;
-  onOrdonnancer?: (id: string) => void;
   onEnregistrerPaiement?: (id: string) => void;
   onAnnuler?: (id: string) => void;
   onDelete?: (id: string) => void;
@@ -35,7 +34,6 @@ export const DepenseTable = ({
   depenses,
   onEdit,
   onValider,
-  onOrdonnancer,
   onEnregistrerPaiement,
   onAnnuler,
   onDelete,
@@ -55,7 +53,6 @@ export const DepenseTable = ({
     const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'; label: string }> = {
       brouillon: { variant: 'outline', label: 'Brouillon' },
       validee: { variant: 'success', label: 'Validée' },
-      ordonnancee: { variant: 'secondary', label: 'Ordonnancée' },
       payee: { variant: 'success', label: 'Payée' },
       annulee: { variant: 'destructive', label: 'Annulée' },
     };
@@ -216,17 +213,7 @@ export const DepenseTable = ({
               </>
             )}
 
-            {depense.statut === 'validee' && onOrdonnancer && (
-              <DropdownMenuItem
-                onClick={() => onOrdonnancer(depense.id)}
-                disabled={disableActions}
-              >
-                <FileCheck className="h-4 w-4 mr-2" />
-                Ordonnancer
-              </DropdownMenuItem>
-            )}
-
-            {depense.statut === 'ordonnancee' &&
+            {depense.statut === 'validee' &&
               depense.montant > depense.montantPaye &&
               onEnregistrerPaiement && (
                 <DropdownMenuItem

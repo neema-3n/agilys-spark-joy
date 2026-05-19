@@ -89,25 +89,6 @@ export const useDepenses = () => {
     },
   });
 
-  const ordonnancerMutation = useMutation({
-    mutationFn: (id: string) => depensesService.ordonnancerDepense(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['depenses'] });
-      queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
-      toast({
-        title: 'Succès',
-        description: 'Dépense ordonnancée avec succès',
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: 'Erreur',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
   const marquerPayeeMutation = useMutation({
     mutationFn: ({ 
       id, 
@@ -271,7 +252,6 @@ export const useDepenses = () => {
     createDepenseFromEngagement: createFromEngagementMutation.mutateAsync,
     updateDepense: updateMutation.mutateAsync,
     validerDepense: validerMutation.mutateAsync,
-    ordonnancerDepense: ordonnancerMutation.mutateAsync,
     marquerPayee: marquerPayeeMutation.mutateAsync,
     payerDepense,
     annulerDepense: annulerMutation.mutateAsync,

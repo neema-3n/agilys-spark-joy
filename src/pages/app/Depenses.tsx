@@ -67,7 +67,6 @@ const Depenses = () => {
     createDepense,
     updateDepense,
     validerDepense,
-    ordonnancerDepense,
     annulerDepense,
     annulerMultipleDepenses,
     deleteDepense,
@@ -86,7 +85,7 @@ const Depenses = () => {
   const [isDepenseDirty, setIsDepenseDirty] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statutFilter, setStatutFilter] = useState<
-    'tous' | 'brouillon' | 'validee' | 'ordonnancee' | 'payee' | 'annulee'
+    'tous' | 'brouillon' | 'validee' | 'payee' | 'annulee'
   >('tous');
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<'tous' | 'facture' | 'engagement'>('tous');
@@ -227,18 +226,6 @@ const Depenses = () => {
     [validerDepense]
   );
 
-  const handleOrdonnancer = useCallback(
-    async (id: string) => {
-      try {
-        setIsSubmittingAction(true);
-        await ordonnancerDepense(id);
-      } finally {
-        setIsSubmittingAction(false);
-      }
-    },
-    [ordonnancerDepense]
-  );
-
   const handleOpenEnregistrerPaiement = (id: string) => {
     navigate('/app/paiements/create', {
       state: { initialDepenseId: id },
@@ -273,13 +260,6 @@ const Depenses = () => {
     await Promise.all(candidates.map((depense) => validerDepense(depense.id)));
     clearSelection();
   }, [selectedDepenses, validerDepense, clearSelection]);
-
-  const handleBatchOrdonnancer = useCallback(async () => {
-    const candidates = selectedDepenses.filter((depense) => depense.statut === 'validee');
-    if (candidates.length === 0) return;
-    await Promise.all(candidates.map((depense) => ordonnancerDepense(depense.id)));
-    clearSelection();
-  }, [selectedDepenses, ordonnancerDepense, clearSelection]);
 
   const handleOpenBatchAnnuler = useCallback(() => {
     const candidates = selectedDepenses.filter(
@@ -365,7 +345,6 @@ const Depenses = () => {
 
   const hasSelection = selectedIds.size > 0;
   const hasBrouillonsSelected = selectedDepenses.some((depense) => depense.statut === 'brouillon');
-  const hasValideesSelected = selectedDepenses.some((depense) => depense.statut === 'validee');
   const hasAnnulablesSelected = selectedDepenses.some(
     (depense) => depense.statut !== 'annulee' && depense.statut !== 'payee'
   );
@@ -506,7 +485,6 @@ const Depenses = () => {
             totalCount={depenses.length}
             onNavigateToEntity={handleNavigateToEntity}
             onValider={handleValider}
-            onOrdonnancer={handleOrdonnancer}
             onEnregistrerPaiement={handleOpenEnregistrerPaiement}
             onAnnuler={handleOpenAnnuler}
             onDelete={handleOpenDelete}
@@ -549,7 +527,6 @@ const Depenses = () => {
                           { value: 'tous', label: 'Tous' },
                           { value: 'brouillon', label: 'Brouillon' },
                           { value: 'validee', label: 'Validée' },
-                          { value: 'ordonnancee', label: 'Ordonnancée' },
                           { value: 'payee', label: 'Payée' },
                           { value: 'annulee', label: 'Annulée' },
                         ].map((option) => (
@@ -574,9 +551,6 @@ const Depenses = () => {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem disabled={!hasBrouillonsSelected} onClick={handleBatchValider}>
                           Valider les brouillons
-                        </DropdownMenuItem>
-                        <DropdownMenuItem disabled={!hasValideesSelected} onClick={handleBatchOrdonnancer}>
-                          Ordonnancer les validées
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem 
@@ -643,7 +617,6 @@ const Depenses = () => {
                 onViewDetails={handleOpenSnapshot}
                 onEdit={handleEdit}
                 onValider={handleValider}
-                onOrdonnancer={handleOrdonnancer}
                 onEnregistrerPaiement={handleOpenEnregistrerPaiement}
                 onAnnuler={handleOpenAnnuler}
                 onDelete={handleOpenDelete}

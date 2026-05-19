@@ -45,7 +45,7 @@ interface FactureTableProps {
   onEdit: (facture: Facture) => void;
   onDelete: (id: string) => void;
   onValider: (id: string) => void;
-  onMarquerPayee: (id: string) => void;
+  onMarquerSoldee: (id: string) => void;
   onAnnuler: (id: string) => void;
   onCreerDepense: (facture: Facture) => void;
   onViewDetails: (factureId: string) => void;
@@ -61,7 +61,7 @@ export const FactureTable = ({
   onEdit,
   onDelete,
   onValider,
-  onMarquerPayee,
+  onMarquerSoldee,
   onAnnuler,
   onCreerDepense,
   onViewDetails,
@@ -145,7 +145,7 @@ export const FactureTable = ({
     },
     {
       id: 'paye',
-      header: 'Liquidé',
+      header: 'Soldé',
       align: 'right',
       render: (facture) => formatMontant(facture.montantLiquide || 0),
     },
@@ -197,7 +197,13 @@ export const FactureTable = ({
                 Valider
               </DropdownMenuItem>
             )}
-            {(facture.statut === 'validee' || facture.statut === 'payee') && (
+            {facture.statut === 'validee' && (
+              <DropdownMenuItem onClick={() => onMarquerSoldee(facture.id)}>
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Marquer comme soldée
+              </DropdownMenuItem>
+            )}
+            {(facture.statut === 'validee' || facture.statut === 'soldee') && (
               <>
                 <DropdownMenuItem onClick={() => onCreerDepense(facture)}>
                   <FileText className="mr-2 h-4 w-4" />
@@ -205,7 +211,7 @@ export const FactureTable = ({
                 </DropdownMenuItem>
               </>
             )}
-            {facture.statut !== 'payee' && facture.statut !== 'annulee' && (
+            {facture.statut !== 'soldee' && facture.statut !== 'annulee' && (
               <DropdownMenuItem onClick={() => onAnnuler(facture.id)}>
                 <XCircle className="mr-2 h-4 w-4" />
                 Annuler

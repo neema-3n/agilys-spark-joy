@@ -1,4 +1,4 @@
-export type StatutDepense = 'brouillon' | 'validee' | 'ordonnancee' | 'payee' | 'annulee';
+export type StatutDepense = 'brouillon' | 'validee' | 'payee' | 'annulee';
 export type ModePaiement = 'virement' | 'cheque' | 'especes' | 'carte' | 'autre';
 
 export interface Depense {
@@ -95,12 +95,10 @@ export interface DepenseStats {
   nombreTotal: number;
   nombreBrouillon: number;
   nombreValidee: number;
-  nombreOrdonnancee: number;
   nombrePayee: number;
   montantTotal: number;
   montantBrouillon: number;
   montantValidee: number;
-  montantOrdonnancee: number;
   montantPayee: number;
 }
 

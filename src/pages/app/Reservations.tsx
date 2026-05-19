@@ -56,7 +56,7 @@ const Reservations = () => {
   const [annulationReservationId, setAnnulationReservationId] = useState<string | null>(null);
   const [motifAnnulation, setMotifAnnulation] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [statutFilter, setStatutFilter] = useState<'tous' | 'active' | 'utilisee' | 'annulee' | 'expiree'>('tous');
+  const [statutFilter, setStatutFilter] = useState<'tous' | 'brouillon' | 'active' | 'convertie' | 'annulee' | 'expiree'>('tous');
   const [isReservationDirty, setIsReservationDirty] = useState(false);
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   const [dateDebut, setDateDebut] = useState('');
@@ -457,7 +457,8 @@ const Reservations = () => {
                       {[
                         { value: 'tous', label: 'Tous' },
                         { value: 'active', label: 'Active' },
-                        { value: 'utilisee', label: 'Utilisée' },
+                        { value: 'brouillon', label: 'Brouillon' },
+                        { value: 'convertie', label: 'Convertie' },
                         { value: 'annulee', label: 'Annulée' },
                         { value: 'expiree', label: 'Expirée' },
                       ].map((option) => (

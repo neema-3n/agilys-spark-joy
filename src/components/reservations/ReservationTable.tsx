@@ -47,15 +47,17 @@ const formatDate = (dateString: string) => format(new Date(dateString), 'dd/MM/y
 
 const getStatutBadge = (statut: ReservationCredit['statut']) => {
   const variants: Record<ReservationCredit['statut'], 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'> = {
+    brouillon: 'outline',
     active: 'success',
-    utilisee: 'secondary',
+    convertie: 'secondary',
     annulee: 'destructive',
     expiree: 'outline',
   };
 
   const labels: Record<ReservationCredit['statut'], string> = {
+    brouillon: 'Brouillon',
     active: 'Active',
-    utilisee: 'Utilisée',
+    convertie: 'Convertie',
     annulee: 'Annulée',
     expiree: 'Expirée',
   };
@@ -198,7 +200,7 @@ export const ReservationTable = ({
                   </DropdownMenuItem>
                 )}
 
-                {isActive && onEdit && (
+                {(reservation.statut === 'brouillon' || isActive) && onEdit && (
                   <DropdownMenuItem onClick={() => onEdit(reservation.id)}>
                     <Edit className="h-4 w-4 mr-2" />
                     Modifier

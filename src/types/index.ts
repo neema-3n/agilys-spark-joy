@@ -9,17 +9,14 @@ export type AppRole =
 
 export type StatutEngagement = 
   | 'brouillon' 
-  | 'en_attente' 
   | 'valide' 
-  | 'rejete' 
-  | 'engage';
+  | 'annule';
 
 export type StatutFacture = 
   | 'brouillon' 
-  | 'en_attente' 
   | 'validee' 
-  | 'payee' 
-  | 'rejetee';
+  | 'soldee' 
+  | 'annulee';
 
 export interface User {
   id: string;

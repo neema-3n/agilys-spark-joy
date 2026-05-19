@@ -16,31 +16,31 @@ export interface FieldDefinition {
 
 export const OPERATION_FIELDS: Record<TypeOperation, FieldDefinition[]> = {
   reservation: [
-    { value: 'statut', label: 'Statut', type: 'select', options: ['active', 'utilisee', 'annulee', 'expiree'] },
+    { value: 'statut', label: 'Statut', type: 'select', options: ['brouillon', 'active', 'convertie', 'annulee', 'expiree'] },
     { value: 'montant', label: 'Montant', type: 'number' },
     { value: 'beneficiaire', label: 'Bénéficiaire', type: 'text' },
     { value: 'objet', label: 'Objet', type: 'text' },
   ],
   engagement: [
-    { value: 'statut', label: 'Statut', type: 'select', options: ['brouillon', 'valide', 'engage', 'liquide', 'annule'] },
+    { value: 'statut', label: 'Statut', type: 'select', options: ['brouillon', 'valide', 'annule'] },
     { value: 'montant', label: 'Montant', type: 'number' },
     { value: 'beneficiaire', label: 'Bénéficiaire', type: 'text' },
     { value: 'objet', label: 'Objet', type: 'text' },
   ],
   bon_commande: [
-    { value: 'statut', label: 'Statut', type: 'select', options: ['brouillon', 'valide', 'en_cours', 'receptionne', 'facture', 'annule'] },
+    { value: 'statut', label: 'Statut', type: 'select', options: ['brouillon', 'emis', 'receptionne', 'annule'] },
     { value: 'montant', label: 'Montant', type: 'number' },
     { value: 'objet', label: 'Objet', type: 'text' },
   ],
   facture: [
-    { value: 'statut', label: 'Statut', type: 'select', options: ['brouillon', 'validee', 'payee', 'annulee'] },
+    { value: 'statut', label: 'Statut', type: 'select', options: ['brouillon', 'validee', 'soldee', 'annulee'] },
     { value: 'montant_ht', label: 'Montant HT', type: 'number' },
     { value: 'montant_ttc', label: 'Montant TTC', type: 'number' },
     { value: 'montant_net_paye', label: 'Montant net payé', type: 'number' },
     { value: 'objet', label: 'Objet', type: 'text' },
   ],
   depense: [
-    { value: 'statut', label: 'Statut', type: 'select', options: ['brouillon', 'validee', 'ordonnancee', 'payee', 'annulee'] },
+    { value: 'statut', label: 'Statut', type: 'select', options: ['brouillon', 'validee', 'payee', 'annulee'] },
     { value: 'montant', label: 'Montant', type: 'number' },
     { value: 'beneficiaire', label: 'Bénéficiaire', type: 'text' },
     { value: 'objet', label: 'Objet', type: 'text' },

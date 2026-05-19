@@ -282,7 +282,7 @@ export const PaiementForm = ({
                   <Select onValueChange={field.onChange} value={field.value || initialDepenseId || ''} disabled={!!initialDepenseId}>
                     <FormControl><SelectTrigger><SelectValue placeholder="Sélectionner une dépense" /></SelectTrigger></FormControl>
                     <SelectContent>
-                      {depenses.filter((item) => item.statut === 'ordonnancee' || item.statut === 'payee').map((item) => (
+                      {depenses.filter((item) => item.statut === 'validee' || item.statut === 'payee').map((item) => (
                         <SelectItem key={item.id} value={item.id}>{item.numero}</SelectItem>
                       ))}
                     </SelectContent>

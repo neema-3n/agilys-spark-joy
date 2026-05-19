@@ -296,20 +296,6 @@ export const validerEngagement = async (id: string): Promise<Engagement> => {
 
   if (error) throw error;
 
-  // 3. Générer les écritures comptables automatiquement (en arrière-plan)
-  try {
-    await supabase.functions.invoke('generate-ecritures-comptables', {
-      body: {
-        typeOperation: 'engagement',
-        sourceId: id,
-        clientId: engagement.client_id,
-        exerciceId: engagement.exercice_id
-      }
-    });
-  } catch (error) {
-    console.error('Erreur lors de la génération des écritures:', error);
-  }
-
   return toCamelCase(data);
 };
 

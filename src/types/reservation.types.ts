@@ -9,7 +9,7 @@ export interface ReservationCredit {
   projetId?: string;
   dateReservation: string;
   dateExpiration?: string;
-  statut: 'active' | 'utilisee' | 'annulee' | 'expiree';
+  statut: 'brouillon' | 'active' | 'convertie' | 'annulee' | 'expiree';
   motifAnnulation?: string;
   createdBy?: string;
   createdAt: string;

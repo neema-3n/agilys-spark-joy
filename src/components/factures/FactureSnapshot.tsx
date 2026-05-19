@@ -35,8 +35,8 @@ interface FactureSnapshotProps {
   /** Valider la facture (change le statut en "validée") */
   onValider?: () => void;
   
-  /** Marquer la facture comme payée */
-  onMarquerPayee?: () => void;
+  /** Marquer la facture comme soldée */
+  onMarquerSoldee?: () => void;
   
   /** Annuler la facture */
   onAnnuler?: () => void;
@@ -61,7 +61,7 @@ export const FactureSnapshot = ({
   totalCount,
   onEdit,
   onValider,
-  onMarquerPayee,
+  onMarquerSoldee,
   onAnnuler,
   onCreerDepense,
   onNavigateToEntity,
@@ -89,14 +89,14 @@ export const FactureSnapshot = ({
     const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'> = {
       brouillon: 'outline',
       validee: 'success',
-      payee: 'success',
+      soldee: 'success',
       annulee: 'destructive',
     };
 
     const labels: Record<string, string> = {
       brouillon: 'Brouillon',
       validee: 'Validée',
-      payee: 'Payée',
+      soldee: 'Soldée',
       annulee: 'Annulée',
     };
 
@@ -133,12 +133,12 @@ export const FactureSnapshot = ({
           Valider
         </Button>
       )}
-      {facture.statut === 'validee' && onMarquerPayee && (
-        <Button size="sm" onClick={onMarquerPayee}>
-          Marquer comme payée
+      {facture.statut === 'validee' && onMarquerSoldee && (
+        <Button size="sm" onClick={onMarquerSoldee}>
+          Marquer comme soldée
         </Button>
       )}
-      {(facture.statut === 'validee' || facture.statut === 'payee') && onCreerDepense && (
+      {(facture.statut === 'validee' || facture.statut === 'soldee') && onCreerDepense && (
         <Button variant="outline" size="sm" onClick={onCreerDepense}>
           Créer une dépense
         </Button>

@@ -9,7 +9,7 @@ interface FactureStatsProps {
     nombreTotal: number;
     nombreBrouillon: number;
     nombreValidee: number;
-    nombrePayee: number;
+    nombreSoldee: number;
     montantTotal: number;
     montantBrouillon: number;
     montantValidee: number;
@@ -23,7 +23,7 @@ export const FactureStats = ({ factures, stats: globalStats }: FactureStatsProps
     nombreTotal: factures.length,
     nombreBrouillon: factures.filter(f => f.statut === 'brouillon').length,
     nombreValidee: factures.filter(f => f.statut === 'validee').length,
-    nombrePayee: factures.filter(f => f.statut === 'payee').length,
+    nombreSoldee: factures.filter(f => f.statut === 'soldee').length,
     montantTotal: factures.reduce((sum, f) => sum + f.montantTTC, 0),
     montantBrouillon: factures.filter(f => f.statut === 'brouillon').reduce((sum, f) => sum + f.montantTTC, 0),
     montantValidee: factures.filter(f => f.statut === 'validee').reduce((sum, f) => sum + f.montantTTC, 0),
@@ -56,8 +56,8 @@ export const FactureStats = ({ factures, stats: globalStats }: FactureStatsProps
         trendUp={true}
       />
       <StatsCard
-        title="Liquidé"
-        value={stats.nombrePayee.toString()}
+        title="Soldées"
+        value={stats.nombreSoldee.toString()}
         icon={DollarSign}
         color="text-accent"
         trend={formatMontant(stats.montantLiquide)}

@@ -456,15 +456,15 @@ export const facturesService = {
     }
 
     return this.update(id, {
-      statut: 'payee',
+      statut: 'soldee',
     });
   },
 
   async annuler(id: string, motif: string): Promise<Facture> {
     const facture = await this.getById(id);
 
-    if (facture.statut === 'payee') {
-      throw new Error('Une facture payée ne peut pas être annulée');
+    if (facture.statut === 'soldee') {
+      throw new Error('Une facture soldée ne peut pas être annulée');
     }
 
     // 1. Vérifier s'il existe des écritures validées
@@ -508,7 +508,7 @@ export const facturesService = {
     nombreTotal: number;
     nombreBrouillon: number;
     nombreValidee: number;
-    nombrePayee: number;
+    nombreSoldee: number;
     montantTotal: number;
     montantBrouillon: number;
     montantValidee: number;
@@ -531,7 +531,7 @@ export const facturesService = {
       nombreTotal: data.length,
       nombreBrouillon: data.filter(f => f.statut === 'brouillon').length,
       nombreValidee: data.filter(f => f.statut === 'validee').length,
-      nombrePayee: data.filter(f => f.statut === 'payee').length,
+      nombreSoldee: data.filter(f => f.statut === 'soldee').length,
       montantTotal: data.reduce((sum, f) => sum + parseFloat(f.montant_ttc.toString()), 0),
       montantBrouillon: data.filter(f => f.statut === 'brouillon').reduce((sum, f) => sum + parseFloat(f.montant_ttc.toString()), 0),
       montantValidee: data.filter(f => f.statut === 'validee').reduce((sum, f) => sum + parseFloat(f.montant_ttc.toString()), 0),

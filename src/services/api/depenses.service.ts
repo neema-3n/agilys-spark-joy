@@ -179,7 +179,7 @@ export const validerDepense = async (id: string): Promise<Depense> => {
   // 1. Récupérer la dépense pour avoir client_id et exercice_id
   const { data: depense, error: fetchError } = await supabase
     .from('depenses')
-    .select('client_id, exercice_id')
+    .select('client_id, exercice_id, facture_id')
     .eq('id', id)
     .single();
 
@@ -206,66 +206,20 @@ export const validerDepense = async (id: string): Promise<Depense> => {
 
   if (error) throw error;
 
-  // 3. Générer les écritures comptables automatiquement
-  try {
-    await supabase.functions.invoke('generate-ecritures-comptables', {
-      body: {
-        typeOperation: 'depense',
-        sourceId: id,
-        clientId: depense.client_id,
-        exerciceId: depense.exercice_id
-      }
-    });
-  } catch (error) {
-    console.error('Erreur lors de la génération des écritures:', error);
-  }
-
-  return toCamelCase(data) as Depense;
-};
-
-export const ordonnancerDepense = async (id: string): Promise<Depense> => {
-  // 1. Récupérer la dépense pour avoir client_id et exercice_id
-  const { data: depense, error: fetchError } = await supabase
-    .from('depenses')
-    .select('client_id, exercice_id')
-    .eq('id', id)
-    .single();
-
-  if (fetchError) throw fetchError;
-
-  // 2. Mettre à jour le statut
-  const { data, error } = await supabase
-    .from('depenses')
-    .update({
-      statut: 'ordonnancee',
-      date_ordonnancement: new Date().toISOString().split('T')[0],
-    })
-    .eq('id', id)
-    .select(`
-      *,
-      engagement:engagements(id, numero, montant),
-      reservation_credit:reservations_credits(id, numero, montant, statut),
-      ligne_budgetaire:lignes_budgetaires(id, libelle, disponible),
-      facture:factures(id, numero, montant_ttc, statut),
-      fournisseur:fournisseurs(id, nom, code),
-      projet:projets(id, code, nom)
-    `)
-    .single();
-
-  if (error) throw error;
-
-  // 3. Générer les écritures comptables automatiquement
-  try {
-    await supabase.functions.invoke('generate-ecritures-comptables', {
-      body: {
-        typeOperation: 'depense',
-        sourceId: id,
-        clientId: depense.client_id,
-        exerciceId: depense.exercice_id
-      }
-    });
-  } catch (error) {
-    console.error('Erreur lors de la génération des écritures:', error);
+  // 3. Générer les écritures comptables automatiquement seulement si la dépense ne dérive pas d'une facture
+  if (!depense.facture_id) {
+    try {
+      await supabase.functions.invoke('generate-ecritures-comptables', {
+        body: {
+          typeOperation: 'depense',
+          sourceId: id,
+          clientId: depense.client_id,
+          exerciceId: depense.exercice_id
+        }
+      });
+    } catch (error) {
+      console.error('Erreur lors de la génération des écritures:', error);
+    }
   }
 
   return toCamelCase(data) as Depense;
@@ -280,7 +234,7 @@ export const marquerPayee = async (
   // 1. Récupérer la dépense
   const { data: depense, error: fetchError } = await supabase
     .from('depenses')
-    .select('montant, client_id, exercice_id')
+    .select('montant, client_id, exercice_id, facture_id')
     .eq('id', id)
     .single();
 
@@ -310,18 +264,20 @@ export const marquerPayee = async (
 
   if (error) throw error;
 
-  // 3. Générer les écritures comptables automatiquement
-  try {
-    await supabase.functions.invoke('generate-ecritures-comptables', {
-      body: {
-        typeOperation: 'depense',
-        sourceId: id,
-        clientId: depense.client_id,
-        exerciceId: depense.exercice_id
-      }
-    });
-  } catch (error) {
-    console.error('Erreur lors de la génération des écritures:', error);
+  // 3. Générer les écritures comptables automatiquement seulement si la dépense ne dérive pas d'une facture
+  if (!depense.facture_id) {
+    try {
+      await supabase.functions.invoke('generate-ecritures-comptables', {
+        body: {
+          typeOperation: 'depense',
+          sourceId: id,
+          clientId: depense.client_id,
+          exerciceId: depense.exercice_id
+        }
+      });
+    } catch (error) {
+      console.error('Erreur lors de la génération des écritures:', error);
+    }
   }
 
   return toCamelCase(data) as Depense;

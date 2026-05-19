@@ -200,7 +200,7 @@ export const updateReservation = async (
 export const utiliserReservation = async (id: string): Promise<ReservationCredit> => {
   const { data, error } = await supabase
     .from('reservations_credits')
-    .update({ statut: 'utilisee' })
+    .update({ statut: 'convertie' })
     .eq('id', id)
     .select(`
       *,

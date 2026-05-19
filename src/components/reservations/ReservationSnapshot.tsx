@@ -7,11 +7,6 @@ import { SnapshotLinkedEntitiesCard } from '@/components/shared/SnapshotLinkedEn
 import { SnapshotPrimaryCard } from '@/components/shared/SnapshotPrimaryCard';
 import type { ReservationCredit } from '@/types/reservation.types';
 import { formatDate, formatDateTime, formatMontant, getEntityUrl } from '@/lib/snapshot-utils';
-import { useEcrituresBySource } from '@/hooks/useEcrituresComptables';
-import { useGenerateEcritures } from '@/hooks/useGenerateEcritures';
-import { useClient } from '@/contexts/ClientContext';
-import { useExercice } from '@/contexts/ExerciceContext';
-import { EcrituresSection } from '@/components/ecritures/EcrituresSection';
 import { useNavigate } from 'react-router-dom';
 
 interface ReservationSnapshotProps {
@@ -40,35 +35,20 @@ export const ReservationSnapshot = ({
   onNavigateToEntity,
 }: ReservationSnapshotProps) => {
   const navigate = useNavigate();
-  const { currentClient } = useClient();
-  const { currentExercice } = useExercice();
-  const { ecritures, isLoading: ecrituresLoading } = useEcrituresBySource('reservation', reservation.id);
-  const generateMutation = useGenerateEcritures();
-
-  const handleGenerateEcritures = () => {
-    if (!currentClient?.id || !currentExercice?.id) return;
-    
-    generateMutation.mutate({
-      typeOperation: 'reservation',
-      sourceId: reservation.id,
-      clientId: currentClient.id,
-      exerciceId: currentExercice.id
-    });
-  };
-
-  const canGenerateEcritures = reservation.statut === 'active' || reservation.statut === 'utilisee';
 
   const getStatutBadge = (statut: ReservationCredit['statut']) => {
     const variants: Record<ReservationCredit['statut'], 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'> = {
+      brouillon: 'outline',
       active: 'success',
-      utilisee: 'secondary',
+      convertie: 'secondary',
       annulee: 'destructive',
       expiree: 'outline',
     };
 
     const labels: Record<ReservationCredit['statut'], string> = {
+      brouillon: 'Brouillon',
       active: 'Active',
-      utilisee: 'Utilisée',
+      convertie: 'Convertie',
       annulee: 'Annulée',
       expiree: 'Expirée',
     };
@@ -102,7 +82,7 @@ export const ReservationSnapshot = ({
           Créer un engagement
         </Button>
       )}
-      {(reservation.statut === 'active' || reservation.statut === 'utilisee') && onAnnuler && (
+      {(reservation.statut === 'active' || reservation.statut === 'convertie') && onAnnuler && (
         <Button variant="destructive" size="sm" onClick={onAnnuler}>
           Annuler
         </Button>
@@ -269,15 +249,6 @@ export const ReservationSnapshot = ({
           </div>
         </CardContent>
       </Card>
-
-      {/* Écritures comptables */}
-      <EcrituresSection
-        ecritures={ecritures}
-        isLoading={ecrituresLoading}
-        onGenerate={canGenerateEcritures ? handleGenerateEcritures : undefined}
-        isGenerating={generateMutation.isPending}
-        disabledReason={!canGenerateEcritures ? "Les écritures ne peuvent être générées que pour les réservations actives ou utilisées" : undefined}
-      />
     </SnapshotBase>
   );
 };

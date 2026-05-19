@@ -66,18 +66,6 @@ export const useBonsCommande = () => {
     },
   });
 
-  const mettreEnCoursMutation = useMutation({
-    mutationFn: (id: string) => bonsCommandeService.mettreEnCours(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bons-commande'] });
-      queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
-      toast.success('Bon de commande mis en cours');
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la mise en cours du bon de commande');
-    },
-  });
-
   const receptionnerMutation = useMutation({
     mutationFn: ({ id, date }: { id: string; date: string }) => 
       bonsCommandeService.receptionner(id, date),
@@ -113,7 +101,6 @@ export const useBonsCommande = () => {
     deleteBonCommande: deleteMutation.mutateAsync,
     genererNumero: genererNumeroMutation.mutateAsync,
     validerBonCommande: validerMutation.mutateAsync,
-    mettreEnCours: mettreEnCoursMutation.mutateAsync,
     receptionnerBonCommande: receptionnerMutation.mutateAsync,
     annulerBonCommande: annulerMutation.mutateAsync,
   };

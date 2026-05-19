@@ -7,6 +7,11 @@ import { SnapshotPrimaryCard } from '@/components/shared/SnapshotPrimaryCard';
 import type { Paiement } from '@/types/paiement.types';
 import { formatMontant, formatDate } from '@/lib/snapshot-utils';
 import { Building2, Calendar, FileText, Pencil, Wallet } from 'lucide-react';
+import { useEcrituresBySource } from '@/hooks/useEcrituresComptables';
+import { useGenerateEcritures } from '@/hooks/useGenerateEcritures';
+import { useClient } from '@/contexts/ClientContext';
+import { useExercice } from '@/contexts/ExerciceContext';
+import { EcrituresSection } from '@/components/ecritures/EcrituresSection';
 
 interface PaiementSnapshotProps {
   paiement: Paiement;
@@ -43,6 +48,24 @@ export const PaiementSnapshot = ({
   onValidate,
   onNavigateToEntity,
 }: PaiementSnapshotProps) => {
+  const { currentClient } = useClient();
+  const { currentExercice } = useExercice();
+  const { ecritures, isLoading: ecrituresLoading } = useEcrituresBySource('paiement', paiement.id);
+  const generateMutation = useGenerateEcritures();
+
+  const handleGenerateEcritures = () => {
+    if (!currentClient?.id || !currentExercice?.id) return;
+
+    generateMutation.mutate({
+      typeOperation: 'paiement',
+      sourceId: paiement.id,
+      clientId: currentClient.id,
+      exerciceId: currentExercice.id,
+    });
+  };
+
+  const canGenerateEcritures = paiement.statut === 'valide';
+
   const actions = (
     <div className="flex flex-wrap gap-2">
       {onEdit && paiement.statut === 'brouillon' && (
@@ -167,6 +190,14 @@ export const PaiementSnapshot = ({
           <p className="text-sm text-muted-foreground">{paiement.observations || 'Aucune observation.'}</p>
         </CardContent>
       </Card>
+
+      <EcrituresSection
+        ecritures={ecritures}
+        isLoading={ecrituresLoading}
+        onGenerate={canGenerateEcritures ? handleGenerateEcritures : undefined}
+        isGenerating={generateMutation.isPending}
+        disabledReason={!canGenerateEcritures ? "Les écritures ne peuvent être générées que pour les paiements validés." : undefined}
+      />
     </SnapshotBase>
   );
 };

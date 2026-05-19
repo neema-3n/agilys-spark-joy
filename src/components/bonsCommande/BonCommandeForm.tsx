@@ -89,7 +89,6 @@ export const BonCommandeForm = ({
   const isReadOnly =
     !!bonCommande &&
     (bonCommande.statut === 'receptionne' ||
-      bonCommande.statut === 'facture' ||
       bonCommande.statut === 'annule');
 
   const form = useForm<z.infer<typeof formSchema>>({

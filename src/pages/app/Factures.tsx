@@ -209,7 +209,7 @@ export default function Factures() {
     clearSelection();
   }, [selectedFactures, validerFacture, clearSelection]);
 
-  const handleBatchMarquerPayee = useCallback(async () => {
+  const handleBatchMarquerSoldee = useCallback(async () => {
     const candidates = selectedFactures.filter((facture) => facture.statut === 'validee');
     if (candidates.length === 0) return;
     await Promise.all(candidates.map((facture) => marquerPayee(facture.id)));
@@ -398,7 +398,7 @@ export default function Factures() {
     { value: 'tous', label: 'Tous' },
     { value: 'brouillon', label: 'Brouillon' },
     { value: 'validee', label: 'Validée' },
-    { value: 'payee', label: 'Payée' },
+    { value: 'soldee', label: 'Soldée' },
     { value: 'annulee', label: 'Annulée' },
   ];
 
@@ -461,7 +461,7 @@ export default function Factures() {
                   onDirtyChange={setIsFactureDirty}
                   fournisseurs={fournisseurs}
                   bonsCommande={bonsCommande}
-                  engagements={engagements.filter((engagement) => engagement.statut === 'valide' || engagement.statut === 'engage')}
+                  engagements={engagements.filter((engagement) => engagement.statut === 'valide')}
                   lignesBudgetaires={lignesBudgetaires.filter(lb => lb.statut === 'actif')}
                   projets={projets}
                   currentClientId={currentClient?.id || ''}
@@ -491,10 +491,10 @@ export default function Factures() {
             totalCount={factures.length}
             onNavigateToEntity={handleNavigateToEntity}
             onValider={snapshotFacture.statut === 'brouillon' ? () => validerFacture(snapshotFacture.id) : undefined}
-            onMarquerPayee={snapshotFacture.statut === 'validee' ? () => marquerPayee(snapshotFacture.id) : undefined}
-            onAnnuler={snapshotFacture.statut !== 'annulee' && snapshotFacture.statut !== 'payee' ? () => handleAnnuler(snapshotFacture.id) : undefined}
+            onMarquerSoldee={snapshotFacture.statut === 'validee' ? () => marquerPayee(snapshotFacture.id) : undefined}
+            onAnnuler={snapshotFacture.statut !== 'annulee' && snapshotFacture.statut !== 'soldee' ? () => handleAnnuler(snapshotFacture.id) : undefined}
             onEdit={snapshotFacture.statut === 'brouillon' ? () => handleEdit(snapshotFacture.id) : undefined}
-            onCreerDepense={(snapshotFacture.statut === 'validee' || snapshotFacture.statut === 'payee') ? () => handleCreateDepenseFromFacture(snapshotFacture) : undefined}
+            onCreerDepense={(snapshotFacture.statut === 'validee' || snapshotFacture.statut === 'soldee') ? () => handleCreateDepenseFromFacture(snapshotFacture) : undefined}
           />
         ) : isSnapshotOpen && isSnapshotLoading ? (
           <div className="py-12 text-center text-muted-foreground">Chargement du snapshot...</div>
@@ -555,9 +555,9 @@ export default function Factures() {
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           disabled={!hasValideesSelected}
-                          onClick={handleBatchMarquerPayee}
+                          onClick={handleBatchMarquerSoldee}
                         >
-                          Marquer comme payées
+                          Marquer comme soldées
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem disabled={!hasSelection} onClick={() => clearSelection()}>
@@ -629,7 +629,7 @@ export default function Factures() {
                 onEdit={(facture) => handleEdit(facture.id)}
                 onDelete={deleteFacture}
                 onValider={validerFacture}
-                onMarquerPayee={marquerPayee}
+                onMarquerSoldee={marquerPayee}
                 onAnnuler={handleAnnuler}
                 onCreerDepense={handleCreateDepenseFromFacture}
                 onViewDetails={handleOpenSnapshot}

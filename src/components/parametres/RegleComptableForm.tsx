@@ -13,6 +13,11 @@ import { useClient } from '@/contexts/ClientContext';
 import { ConditionsBuilder } from './ConditionsBuilder';
 import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
 import {
+  ACCOUNTING_OPERATION_TYPES,
+  getAccountingPolicy,
+  isAccountingEnabledForOperation,
+} from '@/lib/accounting-policy';
+import {
   NATURE_VENTILATION_LABELS,
   POINT_COMPTABLE_LABELS,
   ROLE_LIGNE_LABELS,
@@ -31,8 +36,6 @@ import type {
   SourceMontantComptable,
   TypeOperation,
 } from '@/types/regle-comptable.types';
-
-const ACCOUNTING_OPERATION_TYPES: TypeOperation[] = ['facture', 'depense', 'paiement'];
 
 const SENS_LABELS: Record<SensVentilation, string> = {
   ajout: 'Ajout',
@@ -83,16 +86,17 @@ export function RegleComptableForm({
   const [ordre, setOrdre] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const normalizedTypeOperation = isAccountingEnabledForOperation(typeOperation) ? typeOperation : 'facture';
+  const policy = useMemo(() => getAccountingPolicy(normalizedTypeOperation), [normalizedTypeOperation]);
   const comptesOptions = useMemo(
     () => comptes.filter((compte) => compte.statut === 'actif').sort((a, b) => a.numero.localeCompare(b.numero)),
     [comptes],
   );
 
   const getDefaultSourceMontant = useCallback((operation: TypeOperation, role: RoleLigneComptable): SourceMontantComptable => {
-    if (role === 'ventilation') return 'ventilation_montant';
-    if (role === 'reglement_tresorerie') return 'montant';
-    if (operation === 'depense') return 'montant';
-    return 'montant_ht';
+    const operationPolicy = getAccountingPolicy(isAccountingEnabledForOperation(operation) ? operation : 'facture');
+    const allowed = operationPolicy.allowedSourceMontantsByRole[role];
+    return allowed[0] ?? operationPolicy.defaultSourceMontant;
   }, []);
 
   useEffect(() => {
@@ -106,8 +110,11 @@ export function RegleComptableForm({
       setDateDebut(source.dateDebut || '');
       setDateFin(source.dateFin || '');
       setTypeOperation(source.typeOperation || defaultTypeOperation);
-      setPointComptable(source.pointComptable || 'constatation');
-      setRoleLigne(source.roleLigne || 'charge_principale');
+      const sourceTypeOperation = isAccountingEnabledForOperation(source.typeOperation || defaultTypeOperation)
+        ? (source.typeOperation || defaultTypeOperation)
+        : 'facture';
+      setPointComptable(source.pointComptable || getAccountingPolicy(sourceTypeOperation).defaultPoint);
+      setRoleLigne(source.roleLigne || getAccountingPolicy(sourceTypeOperation).defaultRole);
       setSourceMontant(source.sourceMontant || getDefaultSourceMontant(source.typeOperation || defaultTypeOperation, source.roleLigne || 'charge_principale'));
       setDebitSource(source.debitSource || 'compte_fixe');
       setCreditSource(source.creditSource || 'compte_fixe');
@@ -128,10 +135,11 @@ export function RegleComptableForm({
     setDateDebut('');
     setDateFin('');
     setTypeOperation(defaultTypeOperation);
-    setPointComptable('constatation');
-    setRoleLigne(defaultTypeOperation === 'paiement' ? 'reglement_tresorerie' : 'charge_principale');
-    setSourceMontant(getDefaultSourceMontant(defaultTypeOperation, defaultTypeOperation === 'paiement' ? 'reglement_tresorerie' : 'charge_principale'));
-    setDebitSource(defaultTypeOperation === 'paiement' ? 'compte_fixe' : 'charge_principale');
+    const defaultPolicy = getAccountingPolicy(isAccountingEnabledForOperation(defaultTypeOperation) ? defaultTypeOperation : 'facture');
+    setPointComptable(defaultPolicy.defaultPoint);
+    setRoleLigne(defaultPolicy.defaultRole);
+    setSourceMontant(defaultPolicy.defaultSourceMontant);
+    setDebitSource(defaultPolicy.allowedAccountSources.includes('charge_principale') ? 'charge_principale' : 'compte_fixe');
     setCreditSource('compte_fixe');
     setSensVentilation(undefined);
     setNatureVentilation(undefined);
@@ -143,8 +151,29 @@ export function RegleComptableForm({
   }, [regle, initialValues, defaultTypeOperation]);
 
   useEffect(() => {
+    if (!policy.allowedPoints.includes(pointComptable)) {
+      setPointComptable(policy.defaultPoint);
+    }
+
+    if (!policy.allowedRoles.includes(roleLigne)) {
+      setRoleLigne(policy.defaultRole);
+      return;
+    }
+
+    const allowedSourceMontants = policy.allowedSourceMontantsByRole[roleLigne];
+    if (!allowedSourceMontants.includes(sourceMontant)) {
+      setSourceMontant(getDefaultSourceMontant(typeOperation, roleLigne));
+    }
+
+    if (!policy.allowedAccountSources.includes(debitSource)) {
+      setDebitSource(policy.allowedAccountSources[0]);
+    }
+
+    if (!policy.allowedAccountSources.includes(creditSource)) {
+      setCreditSource(policy.allowedAccountSources[0]);
+    }
+
     if (roleLigne === 'ventilation') {
-      setSourceMontant('ventilation_montant');
       if (!sensVentilation) setSensVentilation('ajout');
       if (!natureVentilation) setNatureVentilation('taxe');
       return;
@@ -153,16 +182,21 @@ export function RegleComptableForm({
     setSensVentilation(undefined);
     setNatureVentilation(undefined);
 
-    if (roleLigne === 'charge_principale') {
-      setSourceMontant(getDefaultSourceMontant(typeOperation, roleLigne));
+    if (roleLigne === 'charge_principale' && policy.allowedAccountSources.includes('charge_principale')) {
       setDebitSource('charge_principale');
     }
-
-    if (roleLigne === 'reglement_tresorerie') {
-      setPointComptable('reglement');
-      setSourceMontant(getDefaultSourceMontant(typeOperation, roleLigne));
-    }
-  }, [getDefaultSourceMontant, natureVentilation, roleLigne, sensVentilation, typeOperation]);
+  }, [
+    creditSource,
+    debitSource,
+    getDefaultSourceMontant,
+    natureVentilation,
+    pointComptable,
+    policy,
+    roleLigne,
+    sensVentilation,
+    sourceMontant,
+    typeOperation,
+  ]);
 
   const initialSnapshot = useMemo(
     () => JSON.stringify({
@@ -302,7 +336,9 @@ export function RegleComptableForm({
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {Object.entries(POINT_COMPTABLE_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                  policy.allowedPoints.includes(value as PointComptable) ? (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ) : null
                 ))}
               </SelectContent>
             </Select>
@@ -321,7 +357,9 @@ export function RegleComptableForm({
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {Object.entries(ROLE_LIGNE_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                  policy.allowedRoles.includes(value as RoleLigneComptable) ? (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ) : null
                 ))}
               </SelectContent>
             </Select>
@@ -332,7 +370,9 @@ export function RegleComptableForm({
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {Object.entries(SOURCE_MONTANT_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                  policy.allowedSourceMontantsByRole[roleLigne].includes(value as SourceMontantComptable) ? (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ) : null
                 ))}
               </SelectContent>
             </Select>
@@ -370,14 +410,16 @@ export function RegleComptableForm({
           <div className="space-y-3 rounded-md border p-4">
             <div>
               <Label>Source du compte debit *</Label>
-              <Select value={debitSource} onValueChange={(value: SourceCompteComptable) => setDebitSource(value)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(SOURCE_COMPTE_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Select value={debitSource} onValueChange={(value: SourceCompteComptable) => setDebitSource(value)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(SOURCE_COMPTE_LABELS).map(([value, label]) => (
+                      policy.allowedAccountSources.includes(value as SourceCompteComptable) ? (
+                        <SelectItem key={value} value={value}>{label}</SelectItem>
+                      ) : null
+                    ))}
+                  </SelectContent>
+                </Select>
             </div>
             {debitSource === 'compte_fixe' ? (
               <div>
@@ -401,14 +443,16 @@ export function RegleComptableForm({
           <div className="space-y-3 rounded-md border p-4">
             <div>
               <Label>Source du compte credit *</Label>
-              <Select value={creditSource} onValueChange={(value: SourceCompteComptable) => setCreditSource(value)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(SOURCE_COMPTE_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Select value={creditSource} onValueChange={(value: SourceCompteComptable) => setCreditSource(value)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(SOURCE_COMPTE_LABELS).map(([value, label]) => (
+                      policy.allowedAccountSources.includes(value as SourceCompteComptable) ? (
+                        <SelectItem key={value} value={value}>{label}</SelectItem>
+                      ) : null
+                    ))}
+                  </SelectContent>
+                </Select>
             </div>
             {creditSource === 'compte_fixe' ? (
               <div>

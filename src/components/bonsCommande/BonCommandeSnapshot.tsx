@@ -9,11 +9,6 @@ import type { BonCommande } from '@/types/bonCommande.types';
 import { formatMontant, formatDate } from '@/lib/snapshot-utils';
 import { ShoppingCart, Building2, FileText, FolderOpen, Calendar, Truck, ClipboardCheck, Receipt } from 'lucide-react';
 import { ReactNode } from 'react';
-import { useEcrituresBySource } from '@/hooks/useEcrituresComptables';
-import { useGenerateEcritures } from '@/hooks/useGenerateEcritures';
-import { useClient } from '@/contexts/ClientContext';
-import { useExercice } from '@/contexts/ExerciceContext';
-import { EcrituresSection } from '@/components/ecritures/EcrituresSection';
 
 interface BonCommandeSnapshotProps {
   bonCommande: BonCommande;
@@ -25,7 +20,6 @@ interface BonCommandeSnapshotProps {
   totalCount: number;
   onEdit?: () => void;
   onValider?: () => void;
-  onMettreEnCours?: () => void;
   onReceptionner?: () => void;
   onAnnuler?: () => void;
   onCreateFacture?: () => void;
@@ -34,28 +28,22 @@ interface BonCommandeSnapshotProps {
 
 const variants: Record<BonCommande['statut'], 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'> = {
   brouillon: 'outline',
-  valide: 'success',
-  en_cours: 'secondary',
+  emis: 'success',
   receptionne: 'success',
-  facture: 'secondary',
   annule: 'destructive',
 };
 
 const labels: Record<BonCommande['statut'], string> = {
   brouillon: 'Brouillon',
-  valide: 'Validé',
-  en_cours: 'En cours',
+  emis: 'Émis',
   receptionne: 'Réceptionné',
-  facture: 'Facturé',
   annule: 'Annulé',
 };
 
 const descriptions: Record<BonCommande['statut'], string> = {
   brouillon: 'En cours de préparation',
-  valide: 'Prêt à être exécuté',
-  en_cours: 'Commande en exécution',
+  emis: 'Commande transmise au fournisseur',
   receptionne: 'Livraison confirmée',
-  facture: 'Factures associées',
   annule: 'Commande annulée',
 };
 
@@ -90,30 +78,11 @@ export const BonCommandeSnapshot = ({
   totalCount,
   onEdit,
   onValider,
-  onMettreEnCours,
   onReceptionner,
   onAnnuler,
   onCreateFacture,
   onNavigateToEntity,
 }: BonCommandeSnapshotProps) => {
-  const { currentClient } = useClient();
-  const { currentExercice } = useExercice();
-  const { ecritures, isLoading: ecrituresLoading } = useEcrituresBySource('bon_commande', bonCommande.id);
-  const generateMutation = useGenerateEcritures();
-
-  const handleGenerateEcritures = () => {
-    if (!currentClient?.id || !currentExercice?.id) return;
-    
-    generateMutation.mutate({
-      typeOperation: 'bon_commande',
-      sourceId: bonCommande.id,
-      clientId: currentClient.id,
-      exerciceId: currentExercice.id
-    });
-  };
-
-  const canGenerateEcritures = bonCommande.statut !== 'brouillon';
-
   const statut = { variant: variants[bonCommande.statut] || 'outline', label: labels[bonCommande.statut] || bonCommande.statut, description: descriptions[bonCommande.statut] || '' };
   const montantFacture = bonCommande.montantFacture || 0;
   const progression = bonCommande.montant > 0 ? (montantFacture / bonCommande.montant) * 100 : 0;
@@ -127,15 +96,10 @@ export const BonCommandeSnapshot = ({
       )}
       {onValider && bonCommande.statut === 'brouillon' && (
         <Button size="sm" onClick={onValider}>
-          Valider
+          Émettre
         </Button>
       )}
-      {onMettreEnCours && bonCommande.statut === 'valide' && (
-        <Button size="sm" variant="secondary" onClick={onMettreEnCours}>
-          Mettre en cours
-        </Button>
-      )}
-      {onReceptionner && bonCommande.statut === 'en_cours' && (
+      {onReceptionner && bonCommande.statut === 'emis' && (
         <Button size="sm" variant="secondary" onClick={onReceptionner}>
           Réceptionner
         </Button>
@@ -145,7 +109,7 @@ export const BonCommandeSnapshot = ({
           Créer une facture
         </Button>
       )}
-      {onAnnuler && bonCommande.statut !== 'facture' && bonCommande.statut !== 'annule' && (
+      {onAnnuler && bonCommande.statut !== 'annule' && (
         <Button size="sm" variant="destructive" onClick={onAnnuler}>
           Annuler
         </Button>
@@ -185,7 +149,7 @@ export const BonCommandeSnapshot = ({
             value: formatMontant(montantFacture),
           },
           {
-            label: 'Reste à facturer',
+            label: 'Reste à couvrir',
             value: formatMontant(Math.max(bonCommande.montant - montantFacture, 0)),
             tone: montantFacture >= bonCommande.montant ? 'success' : 'warning',
           },
@@ -262,15 +226,6 @@ export const BonCommandeSnapshot = ({
           </div>
         </CardContent>
       </Card>
-
-      {/* Écritures comptables */}
-      <EcrituresSection
-        ecritures={ecritures}
-        isLoading={ecrituresLoading}
-        onGenerate={canGenerateEcritures ? handleGenerateEcritures : undefined}
-        isGenerating={generateMutation.isPending}
-        disabledReason={!canGenerateEcritures ? "Les écritures ne peuvent être générées que pour les bons de commande validés" : undefined}
-      />
     </SnapshotBase>
   );
 };

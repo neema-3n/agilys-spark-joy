@@ -29,9 +29,9 @@ import {
   SOURCE_MONTANT_LABELS,
   TYPE_OPERATION_LABELS,
 } from '@/lib/regles-comptables-fields';
+import { ACCOUNTING_OPERATION_TYPES } from '@/lib/accounting-policy';
 import type { TypeOperation, RegleComptable } from '@/types/regle-comptable.types';
-
-const TYPE_OPERATIONS: TypeOperation[] = ['facture', 'depense', 'paiement'];
+const TYPE_OPERATIONS: TypeOperation[] = ACCOUNTING_OPERATION_TYPES;
 
 export const ReglesComptablesManager = () => {
   const navigate = useNavigate();

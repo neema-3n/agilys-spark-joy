@@ -11,14 +11,13 @@ export const BonCommandeStats = ({ bonsCommande }: BonCommandeStatsProps) => {
   const stats = {
     total: bonsCommande.length,
     brouillon: bonsCommande.filter(bc => bc.statut === 'brouillon').length,
-    valide: bonsCommande.filter(bc => bc.statut === 'valide' || bc.statut === 'en_cours').length,
+    emis: bonsCommande.filter(bc => bc.statut === 'emis').length,
     receptionne: bonsCommande.filter(bc => bc.statut === 'receptionne').length,
-    facture: bonsCommande.filter(bc => bc.statut === 'facture').length,
     montantTotal: bonsCommande.reduce((sum, bc) => sum + bc.montant, 0),
     montantBrouillon: bonsCommande.filter(bc => bc.statut === 'brouillon').reduce((sum, bc) => sum + bc.montant, 0),
-    montantValide: bonsCommande.filter(bc => bc.statut === 'valide' || bc.statut === 'en_cours').reduce((sum, bc) => sum + bc.montant, 0),
+    montantEmis: bonsCommande.filter(bc => bc.statut === 'emis').reduce((sum, bc) => sum + bc.montant, 0),
     montantReceptionne: bonsCommande.filter(bc => bc.statut === 'receptionne').reduce((sum, bc) => sum + bc.montant, 0),
-    montantFacture: bonsCommande.filter(bc => bc.statut === 'facture').reduce((sum, bc) => sum + bc.montant, 0),
+    montantFacture: bonsCommande.reduce((sum, bc) => sum + (bc.montantFacture || 0), 0),
   };
 
   return (
@@ -39,11 +38,11 @@ export const BonCommandeStats = ({ bonsCommande }: BonCommandeStatsProps) => {
         trend={formatMontant(stats.montantBrouillon)}
       />
       <StatsCard
-        title="Validés / En cours"
-        value={stats.valide.toString()}
+        title="Émis"
+        value={stats.emis.toString()}
         icon={CheckCircle}
         color="text-secondary"
-        trend={formatMontant(stats.montantValide)}
+        trend={formatMontant(stats.montantEmis)}
         trendUp={true}
       />
       <StatsCard
@@ -55,11 +54,11 @@ export const BonCommandeStats = ({ bonsCommande }: BonCommandeStatsProps) => {
         trendUp={true}
       />
       <StatsCard
-        title="Facturés"
-        value={stats.facture.toString()}
+        title="Montant facturé"
+        value={formatMontant(stats.montantFacture)}
         icon={DollarSign}
         color="text-green-600"
-        trend={formatMontant(stats.montantFacture)}
+        trend={`${stats.receptionne} réceptionné${stats.receptionne > 1 ? 's' : ''}`}
         trendUp={true}
       />
     </div>

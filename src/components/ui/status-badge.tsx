@@ -39,7 +39,7 @@ export const StatusBadge = ({
 export const FACTURE_STATUS_CONFIG: Record<string, StatusConfig> = {
   brouillon: { variant: 'outline', label: 'Brouillon', icon: FileText },
   validee: { variant: 'success', label: 'Validée', icon: CheckCircle },
-  payee: { variant: 'success', label: 'Payée', icon: CheckCircle },
+  soldee: { variant: 'success', label: 'Soldée', icon: CheckCircle },
   annulee: { variant: 'destructive', label: 'Annulée', icon: XCircle },
   default: { variant: 'outline', label: 'Brouillon', icon: FileText },
 };
@@ -51,9 +51,8 @@ export const FactureStatusBadge = ({ status }: { status: string }) => (
 // Bon de commande status badges
 export const BON_COMMANDE_STATUS_CONFIG: Record<string, StatusConfig> = {
   brouillon: { variant: 'outline', label: 'Brouillon', icon: FileText },
-  valide: { variant: 'default', label: 'Validé', icon: CheckCircle },
+  emis: { variant: 'default', label: 'Émis', icon: CheckCircle },
   receptionne: { variant: 'warning', label: 'Réceptionné', icon: Truck },
-  facture: { variant: 'success', label: 'Facturé', icon: Receipt },
   annule: { variant: 'destructive', label: 'Annulé', icon: XCircle },
   default: { variant: 'outline', label: 'Brouillon', icon: FileText },
 };
@@ -66,7 +65,6 @@ export const BonCommandeStatusBadge = ({ status }: { status: string }) => (
 export const DEPENSE_STATUS_CONFIG: Record<string, StatusConfig> = {
   brouillon: { variant: 'outline', label: 'Brouillon', icon: FileText },
   validee: { variant: 'default', label: 'Validée', icon: CheckCircle },
-  ordonnancee: { variant: 'warning', label: 'Ordonnancée', icon: Clock },
   payee: { variant: 'success', label: 'Payée', icon: CheckCircle },
   annulee: { variant: 'destructive', label: 'Annulée', icon: XCircle },
   default: { variant: 'outline', label: 'Brouillon', icon: FileText },
@@ -78,11 +76,12 @@ export const DepenseStatusBadge = ({ status }: { status: string }) => (
 
 // Réservation status badges
 export const RESERVATION_STATUS_CONFIG: Record<string, StatusConfig> = {
+  brouillon: { variant: 'outline', label: 'Brouillon', icon: FileText },
   active: { variant: 'default', label: 'Active', icon: CheckCircle },
-  utilisee: { variant: 'success', label: 'Utilisée', icon: CheckCircle },
+  convertie: { variant: 'success', label: 'Convertie', icon: CheckCircle },
   annulee: { variant: 'destructive', label: 'Annulée', icon: XCircle },
   expiree: { variant: 'secondary', label: 'Expirée', icon: Clock },
-  default: { variant: 'outline', label: 'Active', icon: CheckCircle },
+  default: { variant: 'outline', label: 'Brouillon', icon: FileText },
 };
 
 export const ReservationStatusBadge = ({ status }: { status: string }) => (

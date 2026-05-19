@@ -1,4 +1,4 @@
-export type StatutEngagement = 'brouillon' | 'valide' | 'engage' | 'liquide' | 'annule';
+export type StatutEngagement = 'brouillon' | 'valide' | 'annule';
 
 export interface Engagement {
   id: string;

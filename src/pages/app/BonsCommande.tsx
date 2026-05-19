@@ -74,7 +74,7 @@ const BonsCommande = () => {
   const [annulationBonCommandeId, setAnnulationBonCommandeId] = useState<string | undefined>();
   const [searchTerm, setSearchTerm] = useState('');
   const [isBonCommandeDirty, setIsBonCommandeDirty] = useState(false);
-  const [statutFilter, setStatutFilter] = useState<'tous' | 'brouillon' | 'valide' | 'en_cours' | 'receptionne' | 'facture' | 'annule'>(
+  const [statutFilter, setStatutFilter] = useState<'tous' | 'brouillon' | 'emis' | 'receptionne' | 'annule'>(
     'tous'
   );
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
@@ -92,7 +92,6 @@ const BonsCommande = () => {
     deleteBonCommande,
     genererNumero,
     validerBonCommande,
-    mettreEnCours,
     receptionnerBonCommande,
     annulerBonCommande,
   } = useBonsCommande();
@@ -295,10 +294,8 @@ const BonsCommande = () => {
   const statutOptions: { value: typeof statutFilter; label: string }[] = [
     { value: 'tous', label: 'Tous' },
     { value: 'brouillon', label: 'Brouillon' },
-    { value: 'valide', label: 'Validé' },
-    { value: 'en_cours', label: 'En cours' },
+    { value: 'emis', label: 'Émis' },
     { value: 'receptionne', label: 'Réceptionné' },
-    { value: 'facture', label: 'Facturé' },
     { value: 'annule', label: 'Annulé' },
   ];
 
@@ -417,10 +414,9 @@ const BonsCommande = () => {
                   totalCount={bonsCommande.length}
                   onEdit={() => handleEdit(snapshotBonCommande.id)}
                   onValider={snapshotBonCommande.statut === 'brouillon' ? () => validerBonCommande(snapshotBonCommande.id) : undefined}
-                  onMettreEnCours={snapshotBonCommande.statut === 'valide' ? () => mettreEnCours(snapshotBonCommande.id) : undefined}
-                  onReceptionner={snapshotBonCommande.statut === 'en_cours' ? () => handleReceptionner(snapshotBonCommande.id) : undefined}
+                  onReceptionner={snapshotBonCommande.statut === 'emis' ? () => handleReceptionner(snapshotBonCommande.id) : undefined}
                   onAnnuler={
-                    snapshotBonCommande.statut !== 'facture' && snapshotBonCommande.statut !== 'annule'
+                    snapshotBonCommande.statut !== 'annule'
                       ? () => handleAnnuler(snapshotBonCommande.id)
                       : undefined
                   }
@@ -531,12 +527,11 @@ const BonsCommande = () => {
                     }
                   >
                     <BonCommandeTable
-                      bonsCommande={paginatedItems}
-                      onEdit={handleEdit}
-                      onValider={validerBonCommande}
-                      onMettreEnCours={mettreEnCours}
-                      onReceptionner={handleReceptionner}
-                      onAnnuler={handleAnnuler}
+                bonsCommande={paginatedItems}
+                onEdit={handleEdit}
+                onValider={validerBonCommande}
+                onReceptionner={handleReceptionner}
+                onAnnuler={handleAnnuler}
                       onDelete={deleteBonCommande}
                       onCreateFacture={handleCreateFacture}
                       onViewDetails={openBonCommandeSnapshot}

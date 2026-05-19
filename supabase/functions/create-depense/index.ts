@@ -128,32 +128,34 @@ Deno.serve(async (req) => {
       throw new Error(patchError.message);
     }
 
-    console.log('create-depense: Generating ecritures comptables');
+    if (!facture_id) {
+      console.log('create-depense: Generating ecritures comptables');
 
-    const { data: ecrituresResult, error: ecrituresError } = await supabase.functions.invoke(
-      'generate-ecritures-comptables',
-      {
-        body: {
-          typeOperation: 'depense',
-          sourceId: data.id,
-          clientId: client_id,
-          exerciceId: exercice_id
+      const { data: ecrituresResult, error: ecrituresError } = await supabase.functions.invoke(
+        'generate-ecritures-comptables',
+        {
+          body: {
+            typeOperation: 'depense',
+            sourceId: data.id,
+            clientId: client_id,
+            exerciceId: exercice_id
+          }
         }
+      );
+
+      if (ecrituresError) {
+        console.error('create-depense: Error generating ecritures', ecrituresError);
+        throw new Error('La depense a ete creee mais la generation des ecritures comptables a echoue.');
       }
-    );
 
-    if (ecrituresError) {
-      console.error('create-depense: Error generating ecritures', ecrituresError);
-      throw new Error('La depense a ete creee mais la generation des ecritures comptables a echoue.');
+      if (!ecrituresResult?.success) {
+        const comptaError = ecrituresResult?.error || 'Generation des ecritures comptables incomplete.';
+        console.error('create-depense: Incomplete accounting generation', ecrituresResult);
+        throw new Error(comptaError);
+      }
+
+      console.log('create-depense: Ecritures generated successfully');
     }
-
-    if (!ecrituresResult?.success) {
-      const comptaError = ecrituresResult?.error || 'Generation des ecritures comptables incomplete.';
-      console.error('create-depense: Incomplete accounting generation', ecrituresResult);
-      throw new Error(comptaError);
-    }
-
-    console.log('create-depense: Ecritures generated successfully');
 
     return new Response(JSON.stringify({
       ...data,

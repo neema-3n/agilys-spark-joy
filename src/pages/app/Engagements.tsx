@@ -70,7 +70,7 @@ const Engagements = () => {
   const [annulationEngagementId, setAnnulationEngagementId] = useState<string | null>(null);
   const [motifAnnulation, setMotifAnnulation] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [statutFilter, setStatutFilter] = useState<'tous' | 'brouillon' | 'valide' | 'engage' | 'liquide' | 'annule'>('tous');
+  const [statutFilter, setStatutFilter] = useState<'tous' | 'brouillon' | 'valide' | 'annule'>('tous');
   const [isEngagementDirty, setIsEngagementDirty] = useState(false);
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<'tous' | 'reservation' | 'direct'>('tous');
@@ -490,12 +490,12 @@ const Engagements = () => {
                 snapshotEngagement.statut === 'valide' ? () => handleCreerBonCommande(snapshotEngagement.id) : undefined
               }
               onCreerFacture={
-                snapshotEngagement.statut === 'valide' || snapshotEngagement.statut === 'engage'
+                snapshotEngagement.statut === 'valide'
                   ? () => handleCreerFacture(snapshotEngagement.id)
                   : undefined
               }
               onCreerDepense={
-                snapshotEngagement.statut === 'valide' || snapshotEngagement.statut === 'engage'
+                snapshotEngagement.statut === 'valide'
                   ? () => handleCreerDepense(snapshotEngagement.id)
                   : undefined
               }
@@ -540,8 +540,6 @@ const Engagements = () => {
                           { value: 'tous', label: 'Tous' },
                           { value: 'brouillon', label: 'Brouillon' },
                           { value: 'valide', label: 'Validé' },
-                          { value: 'engage', label: 'Engagé' },
-                          { value: 'liquide', label: 'Liquidé' },
                           { value: 'annule', label: 'Annulé' },
                         ].map((option) => (
                           <DropdownMenuItem key={option.value} onClick={() => setStatutFilter(option.value as any)}>

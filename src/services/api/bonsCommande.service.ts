@@ -175,8 +175,8 @@ export const bonsCommandeService = {
 
     if (fetchError) throw fetchError;
     
-    if (currentBC.statut !== 'brouillon' && currentBC.statut !== 'valide') {
-      throw new Error('Seuls les bons de commande en brouillon ou validés peuvent être modifiés');
+    if (currentBC.statut !== 'brouillon' && currentBC.statut !== 'emis') {
+      throw new Error('Seuls les bons de commande en brouillon ou émis peuvent être modifiés');
     }
 
     const { data, error } = await supabase
@@ -261,7 +261,7 @@ export const bonsCommandeService = {
     const { data, error } = await supabase
       .from('bons_commande')
       .update({
-        statut: 'valide',
+        statut: 'emis',
         date_validation: new Date().toISOString().split('T')[0],
       })
       .eq('id', id)
@@ -276,64 +276,6 @@ export const bonsCommandeService = {
 
     if (error) throw error;
 
-    // Générer les écritures comptables automatiquement
-    try {
-      await supabase.functions.invoke('generate-ecritures-comptables', {
-        body: {
-          typeOperation: 'bon_commande',
-          sourceId: id,
-          clientId: bc.client_id,
-          exerciceId: bc.exercice_id
-        }
-      });
-    } catch (error) {
-      console.error('Erreur lors de la génération des écritures:', error);
-    }
-
-    return mapBonCommandeFromDB(data);
-  },
-
-  async mettreEnCours(id: string): Promise<BonCommande> {
-    const { data: bc, error: fetchError } = await supabase
-      .from('bons_commande')
-      .select('statut, client_id, exercice_id')
-      .eq('id', id)
-      .single();
-
-    if (fetchError) throw fetchError;
-    if (bc.statut !== 'valide') {
-      throw new Error('Seuls les bons de commande validés peuvent être mis en cours');
-    }
-
-    const { data, error } = await supabase
-      .from('bons_commande')
-      .update({ statut: 'en_cours' })
-      .eq('id', id)
-      .select(`
-        *,
-        fournisseurs(id, nom, code),
-        engagements(id, numero),
-        lignes_budgetaires(id, libelle),
-        projets(id, nom)
-      `)
-      .single();
-
-    if (error) throw error;
-
-    // Générer les écritures comptables automatiquement
-    try {
-      await supabase.functions.invoke('generate-ecritures-comptables', {
-        body: {
-          typeOperation: 'bon_commande',
-          sourceId: id,
-          clientId: bc.client_id,
-          exerciceId: bc.exercice_id
-        }
-      });
-    } catch (error) {
-      console.error('Erreur lors de la génération des écritures:', error);
-    }
-
     return mapBonCommandeFromDB(data);
   },
 
@@ -345,8 +287,8 @@ export const bonsCommandeService = {
       .single();
 
     if (fetchError) throw fetchError;
-    if (bc.statut !== 'en_cours') {
-      throw new Error('Seuls les bons de commande en cours peuvent être réceptionnés');
+    if (bc.statut !== 'emis') {
+      throw new Error('Seuls les bons de commande émis peuvent être réceptionnés');
     }
 
     const { data, error } = await supabase
@@ -367,20 +309,6 @@ export const bonsCommandeService = {
 
     if (error) throw error;
 
-    // Générer les écritures comptables automatiquement
-    try {
-      await supabase.functions.invoke('generate-ecritures-comptables', {
-        body: {
-          typeOperation: 'bon_commande',
-          sourceId: id,
-          clientId: bc.client_id,
-          exerciceId: bc.exercice_id
-        }
-      });
-    } catch (error) {
-      console.error('Erreur lors de la génération des écritures:', error);
-    }
-
     return mapBonCommandeFromDB(data);
   },
 
@@ -392,11 +320,20 @@ export const bonsCommandeService = {
       .single();
 
     if (fetchError) throw fetchError;
-    if (bc.statut === 'facture') {
-      throw new Error('Impossible d\'annuler un bon de commande déjà facturé');
-    }
     if (bc.statut === 'annule') {
       throw new Error('Ce bon de commande est déjà annulé');
+    }
+
+    const { data: facturesLiees, error: facturesError } = await supabase
+      .from('factures')
+      .select('id')
+      .eq('bon_commande_id', id)
+      .neq('statut', 'annulee')
+      .limit(1);
+
+    if (facturesError) throw facturesError;
+    if (facturesLiees && facturesLiees.length > 0) {
+      throw new Error('Impossible d\'annuler un bon de commande déjà utilisé par une facture active');
     }
 
     const { data, error } = await supabase

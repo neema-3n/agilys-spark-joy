@@ -8,11 +8,6 @@ import { SnapshotBase } from '@/components/shared/SnapshotBase';
 import { SnapshotLinkedEntitiesCard } from '@/components/shared/SnapshotLinkedEntitiesCard';
 import { SnapshotPrimaryCard } from '@/components/shared/SnapshotPrimaryCard';
 import { formatMontant, formatDate, formatDateTime, getEntityUrl } from '@/lib/snapshot-utils';
-import { useEcrituresBySource } from '@/hooks/useEcrituresComptables';
-import { useGenerateEcritures } from '@/hooks/useGenerateEcritures';
-import { useClient } from '@/contexts/ClientContext';
-import { useExercice } from '@/contexts/ExerciceContext';
-import { EcrituresSection } from '@/components/ecritures/EcrituresSection';
 import { useNavigate } from 'react-router-dom';
 
 interface EngagementSnapshotProps {
@@ -49,38 +44,17 @@ export const EngagementSnapshot = ({
   onNavigateToEntity,
 }: EngagementSnapshotProps) => {
   const navigate = useNavigate();
-  const { currentClient } = useClient();
-  const { currentExercice } = useExercice();
-  const { ecritures, isLoading: ecrituresLoading } = useEcrituresBySource('engagement', engagement.id);
-  const generateMutation = useGenerateEcritures();
-
-  const handleGenerateEcritures = () => {
-    if (!currentClient?.id || !currentExercice?.id) return;
-    
-    generateMutation.mutate({
-      typeOperation: 'engagement',
-      sourceId: engagement.id,
-      clientId: currentClient.id,
-      exerciceId: currentExercice.id
-    });
-  };
-
-  const canGenerateEcritures = engagement.statut !== 'brouillon';
 
   const getStatutBadge = (statut: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'> = {
       brouillon: 'outline',
       valide: 'success',
-      engage: 'success',
-      liquide: 'success',
       annule: 'destructive',
     };
 
     const labels: Record<string, string> = {
       brouillon: 'Brouillon',
       valide: 'Validé',
-      engage: 'Engagé',
-      liquide: 'Liquidé',
       annule: 'Annulé',
     };
 
@@ -118,19 +92,19 @@ export const EngagementSnapshot = ({
           Valider
         </Button>
       )}
-      {(engagement.statut === 'valide' || engagement.statut === 'engage') &&
+      {engagement.statut === 'valide' &&
       engagement.fournisseurId &&
       onCreerBonCommande && (
         <Button variant="outline" size="sm" onClick={onCreerBonCommande}>
           Créer un bon de commande
         </Button>
       )}
-      {(engagement.statut === 'valide' || engagement.statut === 'engage') && onCreerFacture && (
+      {engagement.statut === 'valide' && onCreerFacture && (
         <Button variant="outline" size="sm" onClick={onCreerFacture}>
           Créer une facture
         </Button>
       )}
-      {(engagement.statut === 'valide' || engagement.statut === 'engage') && onCreerDepense && (
+      {engagement.statut === 'valide' && onCreerDepense && (
         <Button variant="outline" size="sm" onClick={onCreerDepense}>
           Créer une dépense
         </Button>
@@ -319,15 +293,6 @@ export const EngagementSnapshot = ({
           </div>
         </CardContent>
       </Card>
-
-      {/* Écritures comptables */}
-      <EcrituresSection
-        ecritures={ecritures}
-        isLoading={ecrituresLoading}
-        onGenerate={canGenerateEcritures ? handleGenerateEcritures : undefined}
-        isGenerating={generateMutation.isPending}
-        disabledReason={!canGenerateEcritures ? "Les écritures ne peuvent être générées que pour les opérations validées" : undefined}
-      />
     </SnapshotBase>
   );
 };

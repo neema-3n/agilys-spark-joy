@@ -1,6 +1,6 @@
 import type { ChargePrincipaleMode, FinancialVentilation } from './financial.types';
 
-export type StatutFacture = 'brouillon' | 'validee' | 'payee' | 'annulee';
+export type StatutFacture = 'brouillon' | 'validee' | 'soldee' | 'annulee';
 
 export interface Facture {
   id: string;
@@ -70,7 +70,7 @@ export interface FactureStats {
   nombreTotal: number;
   nombreBrouillon: number;
   nombreValidee: number;
-  nombrePayee: number;
+  nombreSoldee: number;
   montantTotal: number;
   montantBrouillon: number;
   montantValidee: number;

@@ -38,8 +38,6 @@ const getStatusBadge = (statut: Engagement['statut']) => {
   const variants: Record<Engagement['statut'], { variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'; label: string }> = {
     brouillon: { variant: 'outline', label: 'Brouillon' },
     valide: { variant: 'success', label: 'Validé' },
-    engage: { variant: 'success', label: 'Engagé' },
-    liquide: { variant: 'success', label: 'Liquidé' },
     annule: { variant: 'destructive', label: 'Annulé' },
   };
   const config = variants[statut] || variants.brouillon;
@@ -195,7 +193,7 @@ export const EngagementTable = ({
                 </>
               )}
 
-              {(engagement.statut === 'valide' || engagement.statut === 'engage') && (
+              {engagement.statut === 'valide' && (
                 <>
                   {onCreerBonCommande && engagement.fournisseurId && (
                     <DropdownMenuItem onClick={() => onCreerBonCommande(engagement.id)}>

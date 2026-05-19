@@ -22,12 +22,10 @@ const getStatusVariant = (statut: string) => {
   switch (statut) {
     case 'valide':
       return 'success';
-    case 'engage':
-      return 'secondary';
-    case 'en_attente':
-      return 'warning';
     case 'brouillon':
       return 'outline';
+    case 'annule':
+      return 'destructive';
     default:
       return 'default';
   }
@@ -37,14 +35,10 @@ const getStatusLabel = (statut: string) => {
   switch (statut) {
     case 'valide':
       return 'Validé';
-    case 'engage':
-      return 'Engagé';
-    case 'en_attente':
-      return 'En attente';
     case 'brouillon':
       return 'Brouillon';
-    case 'rejete':
-      return 'Rejeté';
+    case 'annule':
+      return 'Annulé';
     default:
       return statut;
   }

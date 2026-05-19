@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AmountWithCurrencyCode } from '@/components/ui/amount-with-currency-code';
-import { Wallet, CheckCircle, FileCheck, Banknote, AlertCircle } from 'lucide-react';
+import { Wallet, CheckCircle, Banknote, AlertCircle } from 'lucide-react';
 import { useMemo } from 'react';
 import type { Depense } from '@/types/depense.types';
 import { formatMontant } from '@/lib/utils';
@@ -14,32 +14,28 @@ export const DepenseStatsCards = ({ depenses }: DepenseStatsCardsProps) => {
     const total = depenses.length;
     const brouillon = depenses.filter(d => d.statut === 'brouillon').length;
     const validee = depenses.filter(d => d.statut === 'validee').length;
-    const ordonnancee = depenses.filter(d => d.statut === 'ordonnancee').length;
     const payee = depenses.filter(d => d.statut === 'payee').length;
     
     const montantTotal = depenses.reduce((sum, d) => sum + d.montant, 0);
     const montantBrouillon = depenses.filter(d => d.statut === 'brouillon').reduce((sum, d) => sum + d.montant, 0);
     const montantValidee = depenses.filter(d => d.statut === 'validee').reduce((sum, d) => sum + d.montant, 0);
-    const montantOrdonnancee = depenses.filter(d => d.statut === 'ordonnancee').reduce((sum, d) => sum + d.montant, 0);
     const montantPayee = depenses.filter(d => d.statut === 'payee').reduce((sum, d) => sum + d.montant, 0);
 
     return {
       total,
       brouillon,
       validee,
-      ordonnancee,
       payee,
       montantTotal,
       montantBrouillon,
       montantValidee,
-      montantOrdonnancee,
       montantPayee,
       tauxExecution: montantTotal > 0 ? (montantPayee / montantTotal) * 100 : 0,
     };
   }, [depenses]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
       <Card className="hover:shadow-primary transition-shadow">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -70,23 +66,6 @@ export const DepenseStatsCards = ({ depenses }: DepenseStatsCardsProps) => {
           </div>
           <p className="text-xs text-secondary">
             {stats.validee} dépense{stats.validee > 1 ? 's' : ''}
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card className="hover:shadow-primary transition-shadow">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Ordonnancées
-          </CardTitle>
-          <FileCheck className="h-5 w-5 text-accent" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold mb-1">
-            <AmountWithCurrencyCode amount={formatMontant(stats.montantOrdonnancee)} />
-          </div>
-          <p className="text-xs text-accent">
-            {stats.ordonnancee} dépense{stats.ordonnancee > 1 ? 's' : ''}
           </p>
         </CardContent>
       </Card>

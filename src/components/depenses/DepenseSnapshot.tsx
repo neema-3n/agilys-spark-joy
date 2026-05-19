@@ -14,6 +14,7 @@ import { useGenerateEcritures } from '@/hooks/useGenerateEcritures';
 import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { EcrituresSection } from '@/components/ecritures/EcrituresSection';
+import { shouldShowAccountingForDepense } from '@/lib/accounting-policy';
 import { useNavigate } from 'react-router-dom';
 
 interface DepenseSnapshotProps {
@@ -28,7 +29,6 @@ interface DepenseSnapshotProps {
   totalCount: number;
   onNavigateToEntity?: (type: string, id: string) => void;
   onValider?: (id: string) => void;
-  onOrdonnancer?: (id: string) => void;
   onEdit?: (id: string) => void;
   onEnregistrerPaiement?: (id: string) => void;
   onAnnuler?: (id: string) => void;
@@ -48,7 +48,6 @@ export const DepenseSnapshot = ({
   totalCount,
   onNavigateToEntity,
   onValider,
-  onOrdonnancer,
   onEdit,
   onEnregistrerPaiement,
   onAnnuler,
@@ -58,10 +57,15 @@ export const DepenseSnapshot = ({
   const navigate = useNavigate();
   const { currentClient } = useClient();
   const { currentExercice } = useExercice();
-  const { ecritures, isLoading: ecrituresLoading } = useEcrituresBySource('depense', depense.id);
+  const showAccountingSection = shouldShowAccountingForDepense(depense.factureId);
+  const { ecritures, isLoading: ecrituresLoading } = useEcrituresBySource(
+    showAccountingSection ? 'depense' : undefined,
+    showAccountingSection ? depense.id : undefined,
+  );
   const generateMutation = useGenerateEcritures();
 
   const handleGenerateEcritures = () => {
+    if (!showAccountingSection) return;
     if (!currentClient?.id || !currentExercice?.id) return;
     
     generateMutation.mutate({
@@ -72,7 +76,7 @@ export const DepenseSnapshot = ({
     });
   };
 
-  const canGenerateEcritures = depense.statut !== 'brouillon';
+  const canGenerateEcritures = showAccountingSection && depense.statut !== 'brouillon';
 
   const montantRestant = depense.montant - depense.montantPaye;
   const pourcentagePaye = depense.montant > 0 ? (depense.montantPaye / depense.montant) * 100 : 0;
@@ -80,7 +84,6 @@ export const DepenseSnapshot = ({
     const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'> = {
       brouillon: 'outline',
       validee: 'success',
-      ordonnancee: 'secondary',
       payee: 'success',
       annulee: 'destructive',
     };
@@ -88,7 +91,6 @@ export const DepenseSnapshot = ({
     const labels: Record<string, string> = {
       brouillon: 'Brouillon',
       validee: 'Validée',
-      ordonnancee: 'Ordonnancée',
       payee: 'Payée',
       annulee: 'Annulée',
     };
@@ -121,19 +123,6 @@ export const DepenseSnapshot = ({
       );
     }
 
-    if (onOrdonnancer && depense.statut === 'validee') {
-      buttons.push(
-        <Button
-          key="ordonnancer"
-          size="sm"
-          onClick={() => onOrdonnancer(depense.id)}
-          disabled={disableActions}
-        >
-          Ordonnancer
-        </Button>
-      );
-    }
-
     if (onEdit && depense.statut === 'brouillon') {
       buttons.push(
         <Button
@@ -148,7 +137,7 @@ export const DepenseSnapshot = ({
       );
     }
 
-    if (onEnregistrerPaiement && depense.statut === 'ordonnancee' && montantRestant > 0) {
+    if (onEnregistrerPaiement && depense.statut === 'validee' && montantRestant > 0) {
       buttons.push(
         <Button
           key="paiement"
@@ -433,14 +422,15 @@ export const DepenseSnapshot = ({
         </CardContent>
       </Card>
 
-      {/* Écritures comptables */}
-      <EcrituresSection
-        ecritures={ecritures}
-        isLoading={ecrituresLoading}
-        onGenerate={canGenerateEcritures ? handleGenerateEcritures : undefined}
-        isGenerating={generateMutation.isPending}
-        disabledReason={!canGenerateEcritures ? "Les écritures ne peuvent être générées que pour les dépenses validées" : undefined}
-      />
+      {showAccountingSection ? (
+        <EcrituresSection
+          ecritures={ecritures}
+          isLoading={ecrituresLoading}
+          onGenerate={canGenerateEcritures ? handleGenerateEcritures : undefined}
+          isGenerating={generateMutation.isPending}
+          disabledReason={!canGenerateEcritures ? "Les écritures ne peuvent être générées que pour les dépenses validées" : undefined}
+        />
+      ) : null}
     </SnapshotBase>
   );
 };

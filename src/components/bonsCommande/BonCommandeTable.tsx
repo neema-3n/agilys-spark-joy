@@ -21,7 +21,6 @@ interface BonCommandeTableProps {
   bonsCommande: BonCommande[];
   onEdit?: (id: string) => void;
   onValider?: (id: string) => void;
-  onMettreEnCours?: (id: string) => void;
   onReceptionner?: (id: string) => void;
   onAnnuler?: (id: string) => void;
   onDelete?: (id: string) => void;
@@ -46,10 +45,8 @@ const formatDate = (dateString?: string | null): string => {
 const getStatutBadge = (statut: BonCommande['statut']) => {
   const variants: Record<BonCommande['statut'], { variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'; label: string }> = {
     brouillon: { variant: 'outline', label: 'Brouillon' },
-    valide: { variant: 'success', label: 'Validé' },
-    en_cours: { variant: 'secondary', label: 'En cours' },
+    emis: { variant: 'success', label: 'Émis' },
     receptionne: { variant: 'success', label: 'Réceptionné' },
-    facture: { variant: 'secondary', label: 'Facturé' },
     annule: { variant: 'destructive', label: 'Annulé' },
   };
 
@@ -61,7 +58,6 @@ export const BonCommandeTable = ({
   bonsCommande,
   onEdit,
   onValider,
-  onMettreEnCours,
   onReceptionner,
   onAnnuler,
   onDelete,
@@ -198,14 +194,7 @@ export const BonCommandeTable = ({
                 </>
               )}
 
-              {bc.statut === 'valide' && onMettreEnCours && (
-                <DropdownMenuItem onClick={() => onMettreEnCours(bc.id)}>
-                  <Truck className="h-4 w-4 mr-2" />
-                  Mettre en cours
-                </DropdownMenuItem>
-              )}
-
-              {bc.statut === 'en_cours' && onReceptionner && (
+              {bc.statut === 'emis' && onReceptionner && (
                 <DropdownMenuItem onClick={() => onReceptionner(bc.id)}>
                   <PackageCheck className="h-4 w-4 mr-2" />
                   Réceptionner
@@ -219,7 +208,7 @@ export const BonCommandeTable = ({
                 </DropdownMenuItem>
               )}
 
-              {bc.statut !== 'facture' && bc.statut !== 'annule' && onAnnuler && (
+              {bc.statut !== 'annule' && onAnnuler && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => onAnnuler(bc.id)}>

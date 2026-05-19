@@ -82,13 +82,13 @@ export const tresorerieService = {
   },
 
   async getPrevisions(clientId: string, exerciceId: string): Promise<PrevisionTresorerie[]> {
-    // Récupérer les dépenses ordonnancées non encore payées pour les prévisions
+    // Récupérer les dépenses validées non encore payées pour les prévisions
     const { data: depenses, error } = await supabase
       .from('depenses')
       .select('montant, montant_paye, date_depense')
       .eq('client_id', clientId)
       .eq('exercice_id', exerciceId)
-      .in('statut', ['ordonnancee', 'validee']);
+      .in('statut', ['validee', 'payee']);
 
     if (error) throw error;
 

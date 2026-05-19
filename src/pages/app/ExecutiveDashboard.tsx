@@ -583,9 +583,9 @@ const ExecutiveDashboard = () => {
       },
       {
         key: 'depense',
-        label: 'Dépense (ordonnancée)',
+        label: 'Dépense validée',
         amount: sumBy(
-          filteredDepenses.filter((item) => item.statut === 'ordonnancee' || item.statut === 'payee'),
+          filteredDepenses.filter((item) => item.statut === 'validee' || item.statut === 'payee'),
           (item) => item.montant,
         ),
         rate: 0,
