@@ -160,7 +160,6 @@ const Projets = () => {
           onSubmit={handleSubmit}
           onCancel={handleSingleCancel}
           onDirtyChange={setIsProjetDirty}
-          submitLabel={selectedProjet ? 'Enregistrer les modifications' : 'Créer le projet'}
         />
       </div>
     );

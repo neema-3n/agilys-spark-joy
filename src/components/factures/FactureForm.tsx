@@ -7,7 +7,6 @@ import { AlertCircle, CircleCheckBig } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
@@ -31,6 +30,7 @@ import {
   sumTaxVentilations,
 } from '@/lib/financial-utils';
 import type { ChargePrincipaleMode, FinancialVentilation } from '@/types/financial.types';
+import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
 
 const factureSchema = z.object({
   numero: z.string().min(1, 'Le numéro est requis'),
@@ -537,10 +537,12 @@ export const FactureForm = ({
           content
         )}
 
-        <div className="mt-4 flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onCancel}>Annuler</Button>
-          <Button type="submit">{submitLabel || (facture ? 'Enregistrer' : 'Creer la facture')}</Button>
-        </div>
+        <SinglePageFormFooter
+          mode={facture ? 'edit' : 'create'}
+          onCancel={onCancel}
+          submitLabel={submitLabel}
+          className="mt-4"
+        />
       </form>
     </Form>
   );

@@ -157,7 +157,6 @@ const TresorerieRapprochements = () => {
           }}
           onCancel={handleSingleCancel}
           onDirtyChange={setIsRapprochementDirty}
-          submitLabel="Créer le rapprochement"
         />
       </div>
     );

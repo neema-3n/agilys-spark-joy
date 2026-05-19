@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
+import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
 
 const scenarioSchema = z.object({
   code: z.string().min(1, 'Code requis'),
@@ -36,7 +36,7 @@ export function ScenarioForm({
   onSubmit,
   onCancel,
   onDirtyChange,
-  submitLabel = 'Créer le scénario',
+  submitLabel,
 }: ScenarioFormProps) {
   const { currentClient } = useClient();
   const { exercices } = useExercice();
@@ -199,14 +199,12 @@ export function ScenarioForm({
           </div>
         </div>
 
-        <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Annuler
-          </Button>
-          <Button type="submit" disabled={form.formState.isSubmitting}>
-            {submitLabel}
-          </Button>
-        </div>
+        <SinglePageFormFooter
+          mode={scenario ? 'edit' : 'create'}
+          onCancel={onCancel}
+          isSubmitting={form.formState.isSubmitting}
+          submitLabel={submitLabel}
+        />
       </form>
     </Form>
   );

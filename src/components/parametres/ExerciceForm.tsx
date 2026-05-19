@@ -14,7 +14,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -22,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
 
 export const exerciceSchema = z.object({
   libelle: z.string()
@@ -231,14 +231,12 @@ export function ExerciceForm({ exercice, onSubmit, onCancel, onDirtyChange }: Ex
           />
         </div>
 
-        <div className="flex justify-end gap-2 border-t pt-4">
-          <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
-            Annuler
-          </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Enregistrement...' : exercice ? 'Mettre à jour' : 'Créer'}
-          </Button>
-        </div>
+        <SinglePageFormFooter
+          mode={exercice ? 'edit' : 'create'}
+          onCancel={onCancel}
+          isSubmitting={isSubmitting}
+          className="gap-2 pt-4"
+        />
       </form>
     </Form>
   );

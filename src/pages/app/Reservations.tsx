@@ -385,7 +385,6 @@ const Reservations = () => {
           onSubmit={handleSave}
           onCancel={handleSingleCancel}
           onDirtyChange={setIsReservationDirty}
-          submitLabel={editingReservation ? 'Enregistrer les modifications' : 'Créer la réservation'}
         />
       </div>
     );

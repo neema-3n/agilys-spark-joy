@@ -3,7 +3,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -30,6 +29,7 @@ import { useEngagements } from '@/hooks/useEngagements';
 import { useFactures } from '@/hooks/useFactures';
 import { useComptes } from '@/hooks/useComptes';
 import { normalizeChargePrincipaleForEditor } from '@/lib/charge-principale-utils';
+import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
 import type { Depense, DepenseFormData } from '@/types/depense.types';
 import type { Engagement } from '@/types/engagement.types';
 import type { Facture } from '@/types/facture.types';
@@ -698,12 +698,11 @@ export const DepenseForm = ({
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         {useScrollArea ? <ScrollArea className="h-[72vh] pr-4">{body}</ScrollArea> : body}
 
-        <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Annuler
-          </Button>
-          <Button type="submit">{submitLabel || (depense ? 'Enregistrer' : 'Créer la dépense')}</Button>
-        </div>
+        <SinglePageFormFooter
+          mode={depense ? 'edit' : 'create'}
+          onCancel={onCancel}
+          submitLabel={submitLabel}
+        />
       </form>
     </Form>
   );

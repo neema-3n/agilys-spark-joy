@@ -4,11 +4,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useComptesTresorerie } from '@/hooks/useComptesTresorerie';
 import type { OperationTresorerie, OperationTresorerieFormData } from '@/types/operation-tresorerie.types';
+import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
 
 export const operationSchema = z.object({
   dateOperation: z.string().min(1, 'Date requise'),
@@ -41,7 +41,7 @@ interface OperationTresorerieFormProps {
   onSubmit: (data: OperationTresorerieFormData) => Promise<void>;
   onCancel: () => void;
   onDirtyChange?: (isDirty: boolean) => void;
-  submitLabel: string;
+  submitLabel?: string;
 }
 
 export const OperationTresorerieForm = ({ operation, onSubmit, onCancel, onDirtyChange, submitLabel }: OperationTresorerieFormProps) => {
@@ -167,10 +167,12 @@ export const OperationTresorerieForm = ({ operation, onSubmit, onCancel, onDirty
           )} />
         </div>
 
-        <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={onCancel}>Annuler</Button>
-          <Button type="submit" disabled={form.formState.isSubmitting}>{submitLabel}</Button>
-        </div>
+        <SinglePageFormFooter
+          mode={operation ? 'edit' : 'create'}
+          onCancel={onCancel}
+          isSubmitting={form.formState.isSubmitting}
+          submitLabel={submitLabel}
+        />
       </form>
     </Form>
   );

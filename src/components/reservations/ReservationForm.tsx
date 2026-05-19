@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
 import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
 import { useProjets } from '@/hooks/useProjets';
 import { useExercice } from '@/contexts/ExerciceContext';
@@ -40,7 +40,7 @@ export const ReservationForm = ({
   onSubmit,
   onCancel,
   onDirtyChange,
-  submitLabel = 'Créer la réservation',
+  submitLabel,
 }: ReservationFormProps) => {
   const { lignes: lignesBudgetaires = [] } = useLignesBudgetaires();
   const { projets = [] } = useProjets();
@@ -278,14 +278,12 @@ export const ReservationForm = ({
             )}
           </div>
 
-          <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Annuler
-            </Button>
-            <Button type="submit" disabled={form.formState.isSubmitting}>
-              {submitLabel}
-            </Button>
-          </div>
+          <SinglePageFormFooter
+            mode={reservation ? 'edit' : 'create'}
+            onCancel={onCancel}
+            isSubmitting={form.formState.isSubmitting}
+            submitLabel={submitLabel}
+          />
         </form>
       </Form>
     </div>

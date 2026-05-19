@@ -4,11 +4,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useComptesTresorerie } from '@/hooks/useComptesTresorerie';
 import type { RapprochementBancaireFormData } from '@/types/rapprochement-bancaire.types';
+import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
 
 const rapprochementSchema = z.object({
   compteId: z.string().min(1, 'Compte requis'),
@@ -37,7 +37,7 @@ export function RapprochementBancaireForm({
   onSubmit,
   onCancel,
   onDirtyChange,
-  submitLabel = 'Créer le rapprochement',
+  submitLabel,
 }: RapprochementBancaireFormProps) {
   const { comptes } = useComptesTresorerie();
   const comptesBancaires = useMemo(() => comptes.filter((compte) => compte.type === 'banque'), [comptes]);
@@ -140,14 +140,12 @@ export function RapprochementBancaireForm({
           />
         </div>
 
-        <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Annuler
-          </Button>
-          <Button type="submit" disabled={form.formState.isSubmitting}>
-            {submitLabel}
-          </Button>
-        </div>
+        <SinglePageFormFooter
+          mode="create"
+          onCancel={onCancel}
+          isSubmitting={form.formState.isSubmitting}
+          submitLabel={submitLabel}
+        />
       </form>
     </Form>
   );

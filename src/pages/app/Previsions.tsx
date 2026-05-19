@@ -151,7 +151,6 @@ const Previsions = () => {
           }}
           onCancel={handleSingleCancel}
           onDirtyChange={setIsScenarioDirty}
-          submitLabel={editingScenario ? 'Enregistrer les modifications' : 'Créer le scénario'}
         />
       </div>
     );

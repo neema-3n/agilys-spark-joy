@@ -193,7 +193,7 @@ export const ActionDialog = ({
             disabled={!form.formState.isValid}
             onClick={form.handleSubmit(handleSubmit)}
           >
-            {action ? 'Modifier' : 'Créer'}
+            {action ? 'Enregistrer' : 'Créer'}
           </Button>
         </DialogFooter>
       </DialogContent>

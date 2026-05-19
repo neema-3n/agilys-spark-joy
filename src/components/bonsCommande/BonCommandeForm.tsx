@@ -20,9 +20,9 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
+import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
 import { BonCommande, CreateBonCommandeInput, UpdateBonCommandeInput } from '@/types/bonCommande.types';
 import type { Engagement } from '@/types/engagement.types';
 import { useClient } from '@/contexts/ClientContext';
@@ -445,16 +445,12 @@ export const BonCommandeForm = ({
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         {useScrollArea ? <ScrollArea className="h-[72vh] pr-4">{content}</ScrollArea> : content}
 
-        <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            {isReadOnly ? 'Fermer' : 'Annuler'}
-          </Button>
-          {!isReadOnly && (
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Enregistrement...' : submitLabel || (bonCommande ? 'Mettre à jour' : 'Créer')}
-            </Button>
-          )}
-        </div>
+        <SinglePageFormFooter
+          mode={isReadOnly ? 'readonly' : bonCommande ? 'edit' : 'create'}
+          onCancel={onCancel}
+          isSubmitting={isSubmitting}
+          submitLabel={submitLabel}
+        />
       </form>
     </Form>
   );

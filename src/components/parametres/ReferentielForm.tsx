@@ -5,10 +5,10 @@ import * as z from 'zod';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import type { ParametreReferentiel } from '@/types/referentiel.types';
+import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
 
 export const referentielSchema = z.object({
   code: z.string().min(1, 'Le code est requis').max(50, 'Maximum 50 caracteres'),
@@ -162,14 +162,12 @@ export function ReferentielForm({
           </div>
         ) : null}
 
-        <div className="flex justify-end gap-2 border-t pt-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Annuler
-          </Button>
-          <Button type="submit" disabled={isSystemValue}>
-            {referentiel ? 'Mettre a jour' : 'Creer'}
-          </Button>
-        </div>
+        <SinglePageFormFooter
+          mode={referentiel ? 'edit' : 'create'}
+          onCancel={onCancel}
+          isSubmitting={form.formState.isSubmitting || isSystemValue}
+          className="gap-2 pt-4"
+        />
       </form>
     </Form>
   );

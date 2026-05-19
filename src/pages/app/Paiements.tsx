@@ -313,7 +313,6 @@ export default function Paiements() {
                     onSubmit={handleSingleSubmit}
                     onCancel={handleSingleCancel}
                     onDirtyChange={setIsPaiementDirty}
-                    submitLabel="Valider le paiement"
                     useScrollArea={false}
                   />
                 )}

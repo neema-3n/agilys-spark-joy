@@ -12,7 +12,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -22,6 +21,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { formatMontantWithSettings } from '@/lib/utils';
+import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
 
 const moneyFormatSchema = z
   .object({
@@ -314,14 +314,12 @@ export function MoneyFormatForm({
           </p>
         </div>
 
-        <div className="flex justify-end gap-2 border-t pt-4">
-          <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
-            Annuler
-          </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
-          </Button>
-        </div>
+        <SinglePageFormFooter
+          mode="edit"
+          onCancel={onCancel}
+          isSubmitting={isSubmitting}
+          className="gap-2 pt-4"
+        />
       </form>
     </Form>
   );

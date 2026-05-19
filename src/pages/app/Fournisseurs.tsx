@@ -278,7 +278,6 @@ const Fournisseurs = () => {
           onSubmit={handleSubmit}
           onCancel={handleSingleCancel}
           onDirtyChange={setIsFournisseurDirty}
-          submitLabel={editingFournisseur ? 'Enregistrer les modifications' : 'Créer le fournisseur'}
         />
       </div>
     );

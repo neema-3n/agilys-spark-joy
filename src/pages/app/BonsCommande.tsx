@@ -395,7 +395,6 @@ const BonsCommande = () => {
                     onCancel={handleSingleCancel}
                     onDirtyChange={setIsBonCommandeDirty}
                     onGenererNumero={handleGenererNumero}
-                    submitLabel={routeEditingBonCommande ? 'Enregistrer' : 'Créer le bon de commande'}
                     useScrollArea={false}
                   />
                 </CardContent>

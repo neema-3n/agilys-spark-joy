@@ -240,7 +240,7 @@ export const ModificationBudgetaireDialog = ({
             disabled={!isFormValid()}
             onClick={(e) => { e.preventDefault(); handleSubmit(e); }}
           >
-            Créer la modification
+            Créer
           </Button>
         </DialogFooter>
       </DialogContent>

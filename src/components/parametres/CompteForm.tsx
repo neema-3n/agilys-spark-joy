@@ -4,10 +4,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useReferentiels } from '@/hooks/useReferentiels';
 import type { Compte } from '@/types/compte.types';
+import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
 
 const createCompteSchema = (comptes: Compte[]) =>
   z
@@ -244,14 +244,12 @@ export function CompteForm({ compte, comptes, onSubmit, onCancel, onDirtyChange 
           />
         </div>
 
-        <div className="flex justify-end gap-2 border-t pt-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Annuler
-          </Button>
-          <Button type="submit">
-            {compte ? 'Mettre a jour' : 'Creer'}
-          </Button>
-        </div>
+        <SinglePageFormFooter
+          mode={compte ? 'edit' : 'create'}
+          onCancel={onCancel}
+          isSubmitting={form.formState.isSubmitting}
+          className="gap-2 pt-4"
+        />
       </form>
     </Form>
   );

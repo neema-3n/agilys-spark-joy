@@ -154,7 +154,7 @@ export const SectionDialog = ({
             disabled={!form.formState.isValid}
             onClick={form.handleSubmit(handleSubmit)}
           >
-            {section ? 'Modifier' : 'Créer'}
+            {section ? 'Enregistrer' : 'Créer'}
           </Button>
         </DialogFooter>
       </DialogContent>

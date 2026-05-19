@@ -486,7 +486,6 @@ const Depenses = () => {
                   onSubmit={handleSingleSubmit}
                   onCancel={handleSingleCancel}
                   onDirtyChange={setIsDepenseDirty}
-                  submitLabel={editingDepense ? 'Enregistrer' : 'Créer la dépense'}
                   useScrollArea={false}
                 />
               </CardContent>

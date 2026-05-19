@@ -12,7 +12,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -22,6 +21,7 @@ import {
 } from '@/components/ui/select';
 import { useReferentiels } from '@/hooks/useReferentiels';
 import type { Enveloppe } from '@/types/enveloppe.types';
+import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
 
 export const enveloppeSchema = z.object({
   code: z.string().min(1, 'Le code est requis').max(20, 'Le code est trop long').regex(/^[A-Z0-9-_]+$/, 'Code: lettres majuscules, chiffres, tirets'),
@@ -215,14 +215,12 @@ export function EnveloppeForm({ enveloppe, onSubmit, onCancel, onDirtyChange }: 
           />
         </div>
 
-        <div className="flex justify-end gap-2 border-t pt-4">
-          <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
-            Annuler
-          </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Enregistrement...' : enveloppe ? 'Enregistrer' : 'Créer'}
-          </Button>
-        </div>
+        <SinglePageFormFooter
+          mode={enveloppe ? 'edit' : 'create'}
+          onCancel={onCancel}
+          isSubmitting={isSubmitting}
+          className="gap-2 pt-4"
+        />
       </form>
     </Form>
   );

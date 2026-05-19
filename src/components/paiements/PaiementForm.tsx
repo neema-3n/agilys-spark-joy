@@ -4,7 +4,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -21,6 +20,7 @@ import { useFournisseurs } from '@/hooks/useFournisseurs';
 import { useProjets } from '@/hooks/useProjets';
 import { useComptesTresorerie } from '@/hooks/useComptesTresorerie';
 import { Paiement, PaiementFormData } from '@/types/paiement.types';
+import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
 
 const formSchema = z.object({
   depenseId: z.string().min(1, 'La dépense est requise'),
@@ -98,6 +98,10 @@ export const PaiementForm = ({
     const targetDepenseId = initialDepenseId || watchedDepenseId || paiement?.depenseId;
     return targetDepenseId ? depenses.find((item) => item.id === targetDepenseId) : undefined;
   }, [depenses, initialDepenseId, paiement?.depenseId, watchedDepenseId]);
+
+  useEffect(() => {
+    setSubmitStatus(paiement?.statut === 'valide' ? 'valide' : 'brouillon');
+  }, [paiement?.id, paiement?.statut]);
 
   const ligneBudgetaireOptions = useMemo(() => {
     if (!linkedDepense?.ligneBudgetaire) return lignesBudgetaires;
@@ -405,6 +409,19 @@ export const PaiementForm = ({
                   <FormMessage />
                 </FormItem>
               )} />
+              <FormItem>
+                <FormLabel>Statut à l&apos;enregistrement</FormLabel>
+                <Select
+                  onValueChange={(value) => setSubmitStatus(value as 'brouillon' | 'valide')}
+                  value={submitStatus}
+                >
+                  <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                  <SelectContent>
+                    <SelectItem value="brouillon">Brouillon</SelectItem>
+                    <SelectItem value="valide">Validé</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormItem>
               <FormField control={form.control} name="referencePaiement" render={({ field }) => (
                 <FormItem><FormLabel>Référence</FormLabel><FormControl><Input {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
               )} />
@@ -422,24 +439,12 @@ export const PaiementForm = ({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         {useScrollArea ? <ScrollArea className="h-[72vh] pr-4">{content}</ScrollArea> : content}
-        <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={onCancel}>Annuler</Button>
-          <Button
-            type="submit"
-            variant="outline"
-            disabled={isSubmitting}
-            onClick={() => setSubmitStatus('brouillon')}
-          >
-            {isSubmitting ? 'Enregistrement...' : paiement ? 'Mettre à jour le brouillon' : 'Enregistrer en brouillon'}
-          </Button>
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            onClick={() => setSubmitStatus('valide')}
-          >
-            {isSubmitting ? 'Enregistrement...' : submitLabel || 'Valider le paiement'}
-          </Button>
-        </div>
+        <SinglePageFormFooter
+          mode={paiement ? 'edit' : 'create'}
+          onCancel={onCancel}
+          isSubmitting={isSubmitting}
+          submitLabel={submitLabel}
+        />
       </form>
     </Form>
   );

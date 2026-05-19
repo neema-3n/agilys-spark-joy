@@ -11,6 +11,7 @@ import { useReglesComptables } from '@/hooks/useReglesComptables';
 import { useComptes } from '@/hooks/useComptes';
 import { useClient } from '@/contexts/ClientContext';
 import { ConditionsBuilder } from './ConditionsBuilder';
+import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
 import {
   NATURE_VENTILATION_LABELS,
   POINT_COMPTABLE_LABELS,
@@ -469,14 +470,12 @@ export function RegleComptableForm({
         </div>
       </div>
 
-      <div className="flex justify-end gap-2 border-t pt-4">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Annuler
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Enregistrement...' : regle ? 'Mettre a jour' : 'Creer'}
-        </Button>
-      </div>
+      <SinglePageFormFooter
+        mode={regle ? 'edit' : 'create'}
+        onCancel={onCancel}
+        isSubmitting={isSubmitting}
+        className="gap-2 pt-4"
+      />
     </form>
   );
 }

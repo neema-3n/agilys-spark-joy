@@ -469,7 +469,6 @@ const Engagements = () => {
                     onSubmit={handleSingleSubmit}
                     onCancel={handleSingleCancel}
                     onDirtyChange={setIsEngagementDirty}
-                    submitLabel={routeEditingEngagement ? "Enregistrer l'engagement" : "Créer l'engagement"}
                   />
                 </CardContent>
               </Card>

@@ -63,7 +63,7 @@ const TresorerieOperations = () => {
             </Button>
           }
         />
-        <OperationTresorerieForm onSubmit={handleSubmit} onCancel={handleSingleCancel} onDirtyChange={setIsOperationDirty} submitLabel="Créer l'opération" />
+        <OperationTresorerieForm onSubmit={handleSubmit} onCancel={handleSingleCancel} onDirtyChange={setIsOperationDirty} />
       </div>
     );
   }

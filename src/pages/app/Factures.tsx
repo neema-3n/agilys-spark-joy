@@ -469,7 +469,6 @@ export default function Factures() {
                   onGenererNumero={handleGenererNumero}
                   initialBonCommandeId={initialBonCommandeId}
                   initialEngagementId={initialEngagementId}
-                  submitLabel={editorFacture ? 'Enregistrer' : 'Créer la facture'}
                   useScrollArea={false}
                 />
               </CardContent>

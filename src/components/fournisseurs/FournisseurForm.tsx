@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent } from '@/components/ui/card';
+import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
 import type { Fournisseur } from '@/types/fournisseur.types';
 
 export const fournisseurSchema = z.object({
@@ -120,7 +121,7 @@ interface FournisseurFormProps {
   onSubmit: (data: FournisseurFormValues) => Promise<void>;
   onCancel: () => void;
   onDirtyChange?: (isDirty: boolean) => void;
-  submitLabel: string;
+  submitLabel?: string;
 }
 
 export const FournisseurForm = ({
@@ -341,12 +342,12 @@ export const FournisseurForm = ({
           </CardContent>
         </Card>
 
-        <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Annuler
-          </Button>
-          <Button type="submit">{submitLabel}</Button>
-        </div>
+        <SinglePageFormFooter
+          mode={fournisseur ? 'edit' : 'create'}
+          onCancel={onCancel}
+          isSubmitting={form.formState.isSubmitting}
+          submitLabel={submitLabel}
+        />
       </form>
     </Form>
   );

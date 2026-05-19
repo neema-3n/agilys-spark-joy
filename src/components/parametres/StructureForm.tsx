@@ -13,8 +13,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
 
 export const structureSchema = z.object({
   code: z.string().min(1, 'Le code est requis').max(20, 'Maximum 20 caractères'),
@@ -175,14 +175,12 @@ export function StructureForm({ structure, onSubmit, onCancel, onDirtyChange }: 
           )}
         />
 
-        <div className="flex justify-end gap-2 border-t pt-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Annuler
-          </Button>
-          <Button type="submit">
-            {structure ? 'Mettre à jour' : 'Créer'}
-          </Button>
-        </div>
+        <SinglePageFormFooter
+          mode={structure ? 'edit' : 'create'}
+          onCancel={onCancel}
+          isSubmitting={form.formState.isSubmitting}
+          className="gap-2 pt-4"
+        />
       </form>
     </Form>
   );

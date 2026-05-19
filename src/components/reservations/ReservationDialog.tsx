@@ -279,7 +279,7 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation, pre
             disabled={isSubmitting}
             onClick={form.handleSubmit(handleSubmit)}
           >
-            {isSubmitting ? 'Enregistrement...' : reservation ? 'Modifier' : 'Créer'}
+            {isSubmitting ? 'Enregistrement...' : reservation ? 'Enregistrer' : 'Créer'}
           </Button>
         </DialogFooter>
       </DialogContent>

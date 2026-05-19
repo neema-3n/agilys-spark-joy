@@ -5,7 +5,6 @@ import { z } from 'zod';
 import type { Action, LigneBudgetaire, Programme, Section } from '@/types/budget.types';
 import type { Compte } from '@/types/compte.types';
 import type { Enveloppe } from '@/types/enveloppe.types';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -22,6 +21,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
 
 const ligneBudgetaireSchema = z.object({
   actionId: z.string().min(1, 'Veuillez sélectionner une action budgétaire'),
@@ -356,14 +356,12 @@ export const LigneBudgetaireForm = ({
           />
         </div>
 
-        <div className="flex justify-end gap-3 border-t pt-6">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Annuler
-          </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Enregistrement...' : submitLabel || (ligne ? 'Enregistrer la ligne' : 'Créer la ligne')}
-          </Button>
-        </div>
+        <SinglePageFormFooter
+          mode={ligne ? 'edit' : 'create'}
+          onCancel={onCancel}
+          isSubmitting={isSubmitting}
+          submitLabel={submitLabel}
+        />
       </form>
     </Form>
   );

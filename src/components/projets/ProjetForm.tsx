@@ -6,7 +6,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,6 +16,7 @@ import { cn } from '@/lib/utils';
 import type { Projet } from '@/types/projet.types';
 import { useReferentiels } from '@/hooks/useReferentiels';
 import { useEnveloppes } from '@/hooks/useEnveloppes';
+import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
 
 export const projetFormSchema = z.object({
   code: z.string().min(1, 'Le code est requis'),
@@ -76,7 +76,7 @@ interface ProjetFormProps {
   onSubmit: (data: Omit<ProjetFormValues, 'dateDebut' | 'dateFin'> & { dateDebut: string; dateFin: string }) => Promise<void>;
   onCancel: () => void;
   onDirtyChange?: (isDirty: boolean) => void;
-  submitLabel: string;
+  submitLabel?: string;
 }
 
 export const ProjetForm = ({ projet, onSubmit, onCancel, onDirtyChange, submitLabel }: ProjetFormProps) => {
@@ -282,12 +282,12 @@ export const ProjetForm = ({ projet, onSubmit, onCancel, onDirtyChange, submitLa
           </CardContent>
         </Card>
 
-        <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Annuler
-          </Button>
-          <Button type="submit">{submitLabel}</Button>
-        </div>
+        <SinglePageFormFooter
+          mode={projet ? 'edit' : 'create'}
+          onCancel={onCancel}
+          isSubmitting={form.formState.isSubmitting}
+          submitLabel={submitLabel}
+        />
       </form>
     </Form>
   );

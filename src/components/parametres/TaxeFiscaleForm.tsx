@@ -5,13 +5,13 @@ import * as z from 'zod';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { VENTILATION_NATURE_LABELS, VENTILATION_SENS_LABELS } from '@/lib/financial-utils';
 import type { Compte } from '@/types/compte.types';
 import type { CreateTaxeFiscaleInput, TaxeFiscale, UpdateTaxeFiscaleInput } from '@/types/fiscalite.types';
 import type { VentilationNature, VentilationSens } from '@/types/financial.types';
+import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
 
 const taxeFiscaleSchema = z.object({
   code: z.string().min(1, 'Le code est requis').max(50, 'Maximum 50 caracteres'),
@@ -257,10 +257,12 @@ export function TaxeFiscaleForm({
           </FormItem>
         )} />
 
-        <div className="flex justify-end gap-2 border-t pt-4">
-          <Button type="button" variant="outline" onClick={onCancel}>Annuler</Button>
-          <Button type="submit">{taxeFiscale ? 'Mettre a jour' : 'Creer'}</Button>
-        </div>
+        <SinglePageFormFooter
+          mode={taxeFiscale ? 'edit' : 'create'}
+          onCancel={onCancel}
+          isSubmitting={form.formState.isSubmitting}
+          className="gap-2 pt-4"
+        />
       </form>
     </Form>
   );

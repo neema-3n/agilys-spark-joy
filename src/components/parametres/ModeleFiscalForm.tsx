@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { CreateModeleFiscalInput, ModeleFiscal, TaxeFiscale, UpdateModeleFiscalInput } from '@/types/fiscalite.types';
+import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
 
 const modeleFiscalSchema = z.object({
   code: z.string().min(1, 'Le code est requis').max(50, 'Maximum 50 caracteres'),
@@ -231,10 +232,12 @@ export function ModeleFiscalForm({
           </FormItem>
         )} />
 
-        <div className="flex justify-end gap-2 border-t pt-4">
-          <Button type="button" variant="outline" onClick={onCancel}>Annuler</Button>
-          <Button type="submit">{modeleFiscal ? 'Mettre a jour' : 'Creer'}</Button>
-        </div>
+        <SinglePageFormFooter
+          mode={modeleFiscal ? 'edit' : 'create'}
+          onCancel={onCancel}
+          isSubmitting={form.formState.isSubmitting}
+          className="gap-2 pt-4"
+        />
       </form>
     </Form>
   );

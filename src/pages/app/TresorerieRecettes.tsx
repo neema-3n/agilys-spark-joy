@@ -77,7 +77,6 @@ const TresorerieRecettes = () => {
           onSubmit={handleSubmit}
           onCancel={handleSingleCancel}
           onDirtyChange={setIsRecetteDirty}
-          submitLabel={selectedRecette ? 'Enregistrer les modifications' : 'Créer la recette'}
         />
       </div>
     );

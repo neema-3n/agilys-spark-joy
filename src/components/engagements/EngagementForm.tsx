@@ -31,6 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
 import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
 import { useFournisseurs } from '@/hooks/useFournisseurs';
 import { useProjets } from '@/hooks/useProjets';
@@ -457,14 +458,12 @@ export const EngagementForm = ({
           />
         </div>
 
-          <div className="flex justify-end gap-3 border-t pt-6">
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Annuler
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Enregistrement...' : submitLabel || (engagement ? "Enregistrer l'engagement" : "Créer l'engagement")}
-            </Button>
-          </div>
+          <SinglePageFormFooter
+            mode={engagement ? 'edit' : 'create'}
+            onCancel={onCancel}
+            isSubmitting={isSubmitting}
+            submitLabel={submitLabel}
+          />
         </form>
       </Form>
 

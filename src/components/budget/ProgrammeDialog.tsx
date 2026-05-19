@@ -193,7 +193,7 @@ export const ProgrammeDialog = ({
             disabled={!form.formState.isValid}
             onClick={form.handleSubmit(handleSubmit)}
           >
-            {programme ? 'Modifier' : 'Créer'}
+            {programme ? 'Enregistrer' : 'Créer'}
           </Button>
         </DialogFooter>
       </DialogContent>

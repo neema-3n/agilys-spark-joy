@@ -518,7 +518,6 @@ const Budgets = () => {
                   onSubmit={handleSingleSubmit}
                   onCancel={handleSingleCancel}
                   onDirtyChange={setIsLigneDirty}
-                  submitLabel={routeEditingLigne ? 'Enregistrer la ligne' : 'Créer la ligne'}
                 />
               </CardContent>
             </Card>
