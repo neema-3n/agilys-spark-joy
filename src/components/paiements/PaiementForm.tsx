@@ -19,18 +19,8 @@ import { useDepenses } from '@/hooks/useDepenses';
 import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
 import { useFournisseurs } from '@/hooks/useFournisseurs';
 import { useProjets } from '@/hooks/useProjets';
-import { useComptes } from '@/hooks/useComptes';
-import { useNaturesCompte } from '@/hooks/useNaturesCompte';
 import { useComptesTresorerie } from '@/hooks/useComptesTresorerie';
 import { Paiement, PaiementFormData } from '@/types/paiement.types';
-import { ChargePrincipaleField } from '@/components/finance/ChargePrincipaleField';
-import { FinancialQualificationSection } from '@/components/finance/FinancialQualificationSection';
-import {
-  normalizeChargePrincipaleForEditor,
-  resolveChargePrincipale,
-} from '@/lib/charge-principale-utils';
-import { computeFinancialBreakdown, getCoherenceErrors } from '@/lib/financial-utils';
-import type { ChargePrincipaleMode, FinancialVentilation } from '@/types/financial.types';
 
 const formSchema = z.object({
   depenseId: z.string().min(1, 'La dépense est requise'),
@@ -40,9 +30,7 @@ const formSchema = z.object({
   beneficiaire: z.string().optional(),
   projetId: z.string().optional(),
   objet: z.string().optional(),
-  montantHT: z.coerce.number().positive('Le montant HT est requis'),
-  montantTTC: z.coerce.number().positive('Le montant TTC est requis'),
-  montantNetPaye: z.coerce.number().positive('Le montant net payé est requis'),
+  montant: z.coerce.number().positive('Le montant du paiement est requis'),
   datePaiement: z.string().min(1, 'La date est requise'),
   modePaiement: z.enum(['virement', 'cheque', 'especes', 'carte', 'autre']),
   compteTresorerieId: z.string().min(1, 'Le compte de trésorerie est requis'),
@@ -73,40 +61,13 @@ export const PaiementForm = ({
   const { lignes: lignesBudgetaires } = useLignesBudgetaires();
   const { fournisseurs } = useFournisseurs();
   const { projets } = useProjets();
-  const { comptes } = useComptes();
-  const { naturesCompte } = useNaturesCompte();
   const { comptesActifs: comptesTresorerie, isLoading: loadingComptesTresorerie } =
     useComptesTresorerie();
 
-  const comptesCharge = useMemo(
-    () => comptes.filter((compte) => compte.type === 'charge' && compte.statut === 'actif'),
-    [comptes]
-  );
-  const [modeSource] = useState<'depense'>('depense');
-  const [ventilations, setVentilations] = useState<FinancialVentilation[]>([]);
-  const [chargePrincipaleMode, setChargePrincipaleMode] = useState<ChargePrincipaleMode>('nature');
-  const [natureCompteChargeId, setNatureCompteChargeId] = useState<string>();
-  const [compteChargeId, setCompteChargeId] = useState<string>();
   const [submitStatus, setSubmitStatus] = useState<'brouillon' | 'valide'>('brouillon');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const initializedRef = useRef(false);
-  const initialEditorStateRef = useRef<string | null>(null);
   const hydratedDepenseIdRef = useRef<string | null>(null);
-
-  const serializeEditorState = (
-    currentModeSource: 'depense' | 'direct',
-    currentVentilations: FinancialVentilation[],
-    currentChargePrincipaleMode: ChargePrincipaleMode,
-    currentNatureCompteChargeId?: string,
-    currentCompteChargeId?: string,
-  ) =>
-    JSON.stringify({
-      modeSource: currentModeSource,
-      ventilations: currentVentilations,
-      chargePrincipaleMode: currentChargePrincipaleMode,
-      natureCompteChargeId: currentNatureCompteChargeId ?? null,
-      compteChargeId: currentCompteChargeId ?? null,
-    });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -118,9 +79,7 @@ export const PaiementForm = ({
       beneficiaire: '',
       projetId: '',
       objet: '',
-      montantHT: 0,
-      montantTTC: 0,
-      montantNetPaye: 0,
+      montant: 0,
       datePaiement: new Date().toISOString().split('T')[0],
       modePaiement: 'virement',
       compteTresorerieId: '',
@@ -128,6 +87,7 @@ export const PaiementForm = ({
       observations: '',
     },
   });
+
   const watchedDepenseId = form.watch('depenseId');
   const selectedDepenseId = initialDepenseId || watchedDepenseId || '';
   const selectedDepense = useMemo(
@@ -138,6 +98,7 @@ export const PaiementForm = ({
     const targetDepenseId = initialDepenseId || watchedDepenseId || paiement?.depenseId;
     return targetDepenseId ? depenses.find((item) => item.id === targetDepenseId) : undefined;
   }, [depenses, initialDepenseId, paiement?.depenseId, watchedDepenseId]);
+
   const ligneBudgetaireOptions = useMemo(() => {
     if (!linkedDepense?.ligneBudgetaire) return lignesBudgetaires;
     const linkedLineId = linkedDepense.ligneBudgetaireId || linkedDepense.ligneBudgetaire.id;
@@ -154,6 +115,7 @@ export const PaiementForm = ({
       },
     ];
   }, [lignesBudgetaires, linkedDepense]);
+
   const fournisseurOptions = useMemo(() => {
     if (!linkedDepense?.fournisseur) return fournisseurs;
     const linkedFournisseurId = linkedDepense.fournisseurId || linkedDepense.fournisseur.id;
@@ -173,6 +135,7 @@ export const PaiementForm = ({
       },
     ];
   }, [fournisseurs, linkedDepense]);
+
   const projetOptions = useMemo(() => {
     if (!linkedDepense?.projet) return projets;
     const linkedProjetId = linkedDepense.projetId || linkedDepense.projet.id;
@@ -180,31 +143,11 @@ export const PaiementForm = ({
       return projets;
     }
 
-    return [
-      ...projets,
-      {
-        ...linkedDepense.projet,
-      },
-    ];
+    return [...projets, { ...linkedDepense.projet }];
   }, [linkedDepense, projets]);
-  const hasInheritedFinancialStructure =
-    !!linkedDepense?.factureId && (modeSource === 'depense' || !!paiement?.depenseId || !!initialDepenseId);
-  const lockPaiementInheritedFields = !!selectedDepenseId;
-
-  const setUnifiedFinancialAmount = (amount: number) => {
-    form.setValue('montantHT', amount, { shouldDirty: true, shouldValidate: true });
-    form.setValue('montantTTC', amount, { shouldDirty: true, shouldValidate: true });
-    form.setValue('montantNetPaye', amount, { shouldDirty: true, shouldValidate: true });
-  };
 
   const hydrateFromDepense = (depenseSource: typeof depenses[number], depenseSourceId: string) => {
-    const normalizedChargePrincipale = normalizeChargePrincipaleForEditor(
-      depenseSource.chargePrincipaleMode,
-      depenseSource.natureCompteChargeId,
-      depenseSource.compteChargeId,
-    );
     const montantRestant = depenseSource.montant - depenseSource.montantPaye;
-
     form.reset({
       depenseId: depenseSourceId,
       engagementId: depenseSource.engagementId || '',
@@ -213,26 +156,13 @@ export const PaiementForm = ({
       beneficiaire: depenseSource.beneficiaire || '',
       projetId: depenseSource.projetId || depenseSource.projet?.id || '',
       objet: depenseSource.objet,
-      montantHT: depenseSource.montantHT || montantRestant || depenseSource.montant,
-      montantTTC: depenseSource.montantTTC || montantRestant || depenseSource.montant,
-      montantNetPaye: montantRestant || depenseSource.montantNetPaye || depenseSource.montant,
+      montant: montantRestant || depenseSource.montant,
       datePaiement: new Date().toISOString().split('T')[0],
       modePaiement: 'virement',
       compteTresorerieId: '',
       referencePaiement: '',
       observations: '',
     });
-    setVentilations(depenseSource.ventilations || []);
-    setChargePrincipaleMode(normalizedChargePrincipale.chargePrincipaleMode);
-    setNatureCompteChargeId(normalizedChargePrincipale.natureCompteChargeId);
-    setCompteChargeId(normalizedChargePrincipale.compteChargeId);
-    initialEditorStateRef.current = serializeEditorState(
-      'depense',
-      depenseSource.ventilations || [],
-      normalizedChargePrincipale.chargePrincipaleMode,
-      normalizedChargePrincipale.natureCompteChargeId,
-      normalizedChargePrincipale.compteChargeId,
-    );
   };
 
   useEffect(() => {
@@ -240,11 +170,6 @@ export const PaiementForm = ({
     if (initialDepenseId && !selectedDepense) return;
 
     if (paiement) {
-      const normalizedChargePrincipale = normalizeChargePrincipaleForEditor(
-        paiement.chargePrincipaleMode,
-        paiement.natureCompteChargeId,
-        paiement.compteChargeId,
-      );
       form.reset({
         depenseId: paiement.depenseId || '',
         engagementId: paiement.engagementId || '',
@@ -253,26 +178,13 @@ export const PaiementForm = ({
         beneficiaire: paiement.beneficiaire || '',
         projetId: paiement.projetId || '',
         objet: paiement.objet || '',
-        montantHT: paiement.montantHT || paiement.montant,
-        montantTTC: paiement.montantTTC || paiement.montant,
-        montantNetPaye: paiement.montantNetPaye || paiement.montant,
+        montant: paiement.montant,
         datePaiement: paiement.datePaiement,
         modePaiement: paiement.modePaiement,
         compteTresorerieId: paiement.compteTresorerieId || '',
         referencePaiement: paiement.referencePaiement || '',
         observations: paiement.observations || '',
       });
-      setVentilations(paiement.ventilations || []);
-      setChargePrincipaleMode(normalizedChargePrincipale.chargePrincipaleMode);
-      setNatureCompteChargeId(normalizedChargePrincipale.natureCompteChargeId);
-      setCompteChargeId(normalizedChargePrincipale.compteChargeId);
-      initialEditorStateRef.current = serializeEditorState(
-        'depense',
-        paiement.ventilations || [],
-        normalizedChargePrincipale.chargePrincipaleMode,
-        normalizedChargePrincipale.natureCompteChargeId,
-        normalizedChargePrincipale.compteChargeId,
-      );
       initializedRef.current = true;
       return;
     }
@@ -292,100 +204,36 @@ export const PaiementForm = ({
       beneficiaire: '',
       projetId: '',
       objet: '',
-      montantHT: 0,
-      montantTTC: 0,
-      montantNetPaye: 0,
+      montant: 0,
       datePaiement: new Date().toISOString().split('T')[0],
       modePaiement: 'virement',
       compteTresorerieId: '',
       referencePaiement: '',
       observations: '',
     });
-    setVentilations([]);
-    setChargePrincipaleMode('nature');
-    setNatureCompteChargeId(undefined);
-    setCompteChargeId(undefined);
     hydratedDepenseIdRef.current = null;
-    initialEditorStateRef.current = serializeEditorState('depense', [], 'nature');
     initializedRef.current = true;
   }, [form, initialDepenseId, paiement, selectedDepense]);
 
   useEffect(() => {
-    if (paiement || modeSource !== 'depense' || !selectedDepenseId || !selectedDepense) return;
+    if (paiement || !selectedDepenseId || !selectedDepense) return;
     if (hydratedDepenseIdRef.current === selectedDepense.id) return;
 
     hydrateFromDepense(selectedDepense, selectedDepenseId);
     hydratedDepenseIdRef.current = selectedDepense.id;
-  }, [form, modeSource, paiement, selectedDepense, selectedDepenseId]);
+  }, [form, paiement, selectedDepense, selectedDepenseId]);
 
-  const currentEditorState = useMemo(
-    () =>
-      serializeEditorState(
-        modeSource,
-        ventilations,
-        chargePrincipaleMode,
-        natureCompteChargeId,
-        compteChargeId,
-      ),
-    [modeSource, ventilations, chargePrincipaleMode, natureCompteChargeId, compteChargeId]
-  );
-
-  const isDirty =
-    form.formState.isDirty ||
-    (initialEditorStateRef.current !== null &&
-      initialEditorStateRef.current !== currentEditorState);
+  const isDirty = form.formState.isDirty;
 
   useEffect(() => {
     onDirtyChange?.(isDirty);
   }, [isDirty, onDirtyChange]);
 
-  useEffect(() => {
-    return () => onDirtyChange?.(false);
-  }, [onDirtyChange]);
+  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
 
-  useEffect(() => {
-    if (chargePrincipaleMode !== 'nature' || !natureCompteChargeId) return;
-    const nature = naturesCompte.find((item) => item.id === natureCompteChargeId);
-    if (nature?.compteDefautId) {
-      setCompteChargeId(nature.compteDefautId);
-    }
-  }, [chargePrincipaleMode, natureCompteChargeId, naturesCompte]);
-
-  const breakdown = computeFinancialBreakdown(
-    form.watch('montantHT') || 0,
-    form.watch('montantTTC') || 0,
-    form.watch('montantNetPaye') || 0,
-    ventilations
-  );
-  const coherenceErrors = getCoherenceErrors(breakdown);
+  const lockPaiementInheritedFields = !!selectedDepenseId;
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
-    const resolvedChargePrincipale = hasInheritedFinancialStructure
-      ? {
-          chargePrincipaleMode: undefined,
-          natureCompteChargeId: undefined,
-          compteChargeId: undefined,
-          error: undefined,
-        }
-      : resolveChargePrincipale({
-          mode: chargePrincipaleMode,
-          natureCompteId: natureCompteChargeId,
-          compteChargeId,
-          naturesCompte,
-        });
-
-    if (resolvedChargePrincipale.error) {
-      form.setError('objet', { type: 'manual', message: resolvedChargePrincipale.error });
-      return;
-    }
-
-    if (!hasInheritedFinancialStructure && coherenceErrors.length > 0) {
-      form.setError('montantNetPaye', { type: 'manual', message: coherenceErrors[0] });
-      return;
-    }
-
-    const montantExecution = values.montantNetPaye;
-
     const payload: PaiementFormData = {
       depenseId: values.depenseId || initialDepenseId,
       engagementId: values.engagementId || undefined,
@@ -394,21 +242,12 @@ export const PaiementForm = ({
       beneficiaire: values.beneficiaire || undefined,
       projetId: values.projetId || undefined,
       objet: values.objet || undefined,
-      montant: montantExecution,
-      montantHT: hasInheritedFinancialStructure ? montantExecution : values.montantHT,
-      montantTTC: hasInheritedFinancialStructure ? montantExecution : values.montantTTC,
-      montantNetPaye: montantExecution,
-      totalAjouts: hasInheritedFinancialStructure ? 0 : breakdown.totalAjouts,
-      totalRetraits: hasInheritedFinancialStructure ? 0 : breakdown.totalRetraits,
+      montant: values.montant,
       datePaiement: values.datePaiement,
       modePaiement: values.modePaiement,
       compteTresorerieId: values.compteTresorerieId,
       referencePaiement: values.referencePaiement || undefined,
       observations: values.observations || undefined,
-      chargePrincipaleMode: resolvedChargePrincipale.chargePrincipaleMode,
-      natureCompteChargeId: resolvedChargePrincipale.natureCompteChargeId,
-      compteChargeId: resolvedChargePrincipale.compteChargeId,
-      ventilations: hasInheritedFinancialStructure ? [] : ventilations,
       statut: submitStatus,
     };
 
@@ -427,7 +266,7 @@ export const PaiementForm = ({
         <div className="space-y-1">
           <h3 className="text-lg font-semibold tracking-tight">Noyau de saisie</h3>
           <p className="text-sm text-muted-foreground">
-            Définissez la source du paiement et ses rattachements.
+            Définissez la dépense réglée et les rattachements hérités du paiement.
           </p>
         </div>
         <Card>
@@ -450,14 +289,14 @@ export const PaiementForm = ({
 
               <FormField control={form.control} name="ligneBudgetaireId" render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Ligne budgétaire</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled={lockPaiementInheritedFields}>
-                      <FormControl><SelectTrigger><SelectValue placeholder="Sélectionner une ligne budgétaire" /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        {ligneBudgetaireOptions.map((item) => (
-                          <SelectItem key={item.id} value={item.id}>{item.libelle}</SelectItem>
-                        ))}
-                      </SelectContent>
+                  <FormLabel>Ligne budgétaire</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={lockPaiementInheritedFields}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Sélectionner une ligne budgétaire" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      {ligneBudgetaireOptions.map((item) => (
+                        <SelectItem key={item.id} value={item.id}>{item.libelle}</SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                   <FormMessage />
                 </FormItem>
@@ -465,14 +304,14 @@ export const PaiementForm = ({
 
               <FormField control={form.control} name="fournisseurId" render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Fournisseur</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled={lockPaiementInheritedFields}>
-                      <FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un fournisseur" /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        {fournisseurOptions.map((item) => (
-                          <SelectItem key={item.id} value={item.id}>{item.nom} - {item.code}</SelectItem>
-                        ))}
-                      </SelectContent>
+                  <FormLabel>Fournisseur</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={lockPaiementInheritedFields}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un fournisseur" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      {fournisseurOptions.map((item) => (
+                        <SelectItem key={item.id} value={item.id}>{item.nom} - {item.code}</SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                   <FormMessage />
                 </FormItem>
@@ -488,14 +327,14 @@ export const PaiementForm = ({
 
               <FormField control={form.control} name="projetId" render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Projet</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled={lockPaiementInheritedFields}>
-                      <FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un projet" /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        {projetOptions.map((item) => (
-                          <SelectItem key={item.id} value={item.id}>{item.code} - {item.nom}</SelectItem>
-                        ))}
-                      </SelectContent>
+                  <FormLabel>Projet</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={lockPaiementInheritedFields}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un projet" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      {projetOptions.map((item) => (
+                        <SelectItem key={item.id} value={item.id}>{item.code} - {item.nom}</SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                   <FormMessage />
                 </FormItem>
@@ -508,78 +347,24 @@ export const PaiementForm = ({
                   <FormMessage />
                 </FormItem>
               )} />
+
+              <FormField control={form.control} name="montant" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Montant du paiement</FormLabel>
+                  <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
             </div>
           </CardContent>
         </Card>
       </section>
 
-      <FinancialQualificationSection
-        mode={hasInheritedFinancialStructure ? 'inherited' : 'editable'}
-        title="Qualification financière"
-        editableDescription="Qualifiez comptablement le montant du paiement et vérifiez sa ventilation."
-        inheritedDescription="Le règlement hérite de la facture source. Seul le montant du paiement reste saisissable."
-        chargeField={
-          <ChargePrincipaleField
-            mode={chargePrincipaleMode}
-            onModeChange={setChargePrincipaleMode}
-            natureCompteId={natureCompteChargeId}
-            onNatureCompteIdChange={setNatureCompteChargeId}
-            compteChargeId={compteChargeId}
-            onCompteChargeIdChange={setCompteChargeId}
-            naturesCompte={naturesCompte}
-            comptesCharge={comptesCharge}
-          />
-        }
-        amountFields={
-          <div className="grid gap-4 md:grid-cols-3">
-            <FormField control={form.control} name="montantHT" render={({ field }) => (
-              <FormItem><FormLabel>Montant HT</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-            )} />
-            <FormField control={form.control} name="montantTTC" render={({ field }) => (
-              <FormItem><FormLabel>Montant TTC</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-            )} />
-            <FormField control={form.control} name="montantNetPaye" render={({ field }) => (
-              <FormItem><FormLabel>Montant net payé</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-            )} />
-          </div>
-        }
-        inheritedAmountField={
-          <FormField
-            control={form.control}
-            name="montantNetPaye"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Montant du paiement</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={field.value}
-                    onChange={(event) => {
-                      const amount = Number(event.target.value) || 0;
-                      field.onChange(amount);
-                      setUnifiedFinancialAmount(amount);
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        }
-        ventilations={ventilations}
-        onVentilationsChange={setVentilations}
-        totalAjouts={breakdown.totalAjouts}
-        totalRetraits={breakdown.totalRetraits}
-        coherenceError={coherenceErrors[0]}
-        ventilationEntityLabel="le paiement"
-      />
-
       <section className="space-y-3">
         <div className="space-y-1">
-          <h3 className="text-lg font-semibold tracking-tight">Informations annexes</h3>
+          <h3 className="text-lg font-semibold tracking-tight">Informations de règlement</h3>
           <p className="text-sm text-muted-foreground">
-            Renseignez les informations de règlement utiles au suivi du paiement.
+            Renseignez les informations de trésorerie et de règlement du paiement.
           </p>
         </div>
         <Card>

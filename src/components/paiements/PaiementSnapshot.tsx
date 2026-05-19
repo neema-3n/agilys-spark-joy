@@ -6,7 +6,7 @@ import { SnapshotLinkedEntitiesCard } from '@/components/shared/SnapshotLinkedEn
 import { SnapshotPrimaryCard } from '@/components/shared/SnapshotPrimaryCard';
 import type { Paiement } from '@/types/paiement.types';
 import { formatMontant, formatDate } from '@/lib/snapshot-utils';
-import { Building2, Calendar, CreditCard, FileText, Pencil, Wallet } from 'lucide-react';
+import { Building2, Calendar, FileText, Pencil, Wallet } from 'lucide-react';
 
 interface PaiementSnapshotProps {
   paiement: Paiement;
@@ -155,37 +155,6 @@ export const PaiementSnapshot = ({
         ]}
         emptyMessage="Aucune entité liée."
       />
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
-            Détails financiers
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-3">
-          <div>
-            <p className="text-sm text-muted-foreground">Montant HT</p>
-            <p className="font-semibold">{formatMontant(paiement.montantHT || paiement.montant)}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Montant TTC</p>
-            <p className="font-semibold">{formatMontant(paiement.montantTTC || paiement.montant)}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Montant net payé</p>
-            <p className="font-semibold">{formatMontant(paiement.montantNetPaye || paiement.montant)}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Ajouts</p>
-            <p className="font-medium">{formatMontant(paiement.totalAjouts || 0)}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Retraits</p>
-            <p className="font-medium">{formatMontant(paiement.totalRetraits || 0)}</p>
-          </div>
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader>

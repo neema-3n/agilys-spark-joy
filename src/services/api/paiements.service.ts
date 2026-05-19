@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Paiement, PaiementFormData } from "@/types/paiement.types";
-import type { FinancialVentilation } from '@/types/financial.types';
 
 // Utility functions
 const toCamelCase = (obj: any): any => {
@@ -28,8 +27,6 @@ const toSnakeCase = (obj: any): any => {
   }
   return obj;
 };
-
-const parseVentilations = (value: any): FinancialVentilation[] => (Array.isArray(value) ? value : []);
 
 // Récupérer tous les paiements d'un exercice
 export const getPaiements = async (exerciceId: string, clientId: string): Promise<Paiement[]> => {
@@ -71,16 +68,7 @@ export const getPaiements = async (exerciceId: string, clientId: string): Promis
     return {
       ...paiementData,
       ecritures_count: ecrituresCount,
-      montant_ht: paie.montant_ht ?? paie.montant,
-      montant_ttc: paie.montant_ttc ?? paie.montant,
-      montant_net_paye: paie.montant_net_paye ?? paie.montant,
-      total_ajouts: paie.total_ajouts ?? 0,
-      total_retraits: paie.total_retraits ?? 0,
-      charge_principale_mode: paie.charge_principale_mode ?? 'nature',
-      nature_compte_charge_id: paie.nature_compte_charge_id ?? null,
-      compte_charge_id: paie.compte_charge_id ?? null,
       compte_tresorerie_id: paie.compte_tresorerie_id ?? null,
-      ventilations: parseVentilations(paie.ventilations),
     };
   });
 
@@ -103,13 +91,6 @@ export const getPaiementsByDepense = async (depenseId: string): Promise<Paiement
   return toCamelCase(
     (data || []).map((paiement) => ({
       ...paiement,
-      montant_ht: paiement.montant_ht ?? paiement.montant,
-      montant_ttc: paiement.montant_ttc ?? paiement.montant,
-      montant_net_paye: paiement.montant_net_paye ?? paiement.montant,
-      total_ajouts: paiement.total_ajouts ?? 0,
-      total_retraits: paiement.total_retraits ?? 0,
-      charge_principale_mode: paiement.charge_principale_mode ?? 'nature',
-      ventilations: parseVentilations(paiement.ventilations),
     }))
   );
 };
@@ -208,16 +189,7 @@ export const updatePaiement = async (
 
   return toCamelCase({
     ...data,
-    montant_ht: data.montant_ht ?? data.montant,
-    montant_ttc: data.montant_ttc ?? data.montant,
-    montant_net_paye: data.montant_net_paye ?? data.montant,
-    total_ajouts: data.total_ajouts ?? 0,
-    total_retraits: data.total_retraits ?? 0,
-    charge_principale_mode: data.charge_principale_mode ?? 'nature',
-    nature_compte_charge_id: data.nature_compte_charge_id ?? null,
-    compte_charge_id: data.compte_charge_id ?? null,
     compte_tresorerie_id: data.compte_tresorerie_id ?? null,
-    ventilations: parseVentilations(data.ventilations),
   });
 };
 

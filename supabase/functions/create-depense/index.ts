@@ -26,14 +26,8 @@ Deno.serve(async (req) => {
       client_id,
       objet,
       montant,
-      montant_ht,
-      montant_ttc,
-      montant_net_paye,
-      total_ajouts,
-      total_retraits,
       date_depense,
       engagement_id,
-      reservation_credit_id,
       ligne_budgetaire_id,
       facture_id,
       fournisseur_id,
@@ -41,10 +35,7 @@ Deno.serve(async (req) => {
       projet_id,
       mode_paiement,
       reference_paiement,
-      charge_principale_mode,
-      nature_compte_charge_id,
       compte_charge_id,
-      ventilations,
       observations,
       user_id,
     } = await req.json();
@@ -55,7 +46,6 @@ Deno.serve(async (req) => {
       objet,
       montant,
       engagement_id,
-      reservation_credit_id,
       ligne_budgetaire_id,
     });
 
@@ -64,8 +54,8 @@ Deno.serve(async (req) => {
       throw new Error('Champs requis manquants');
     }
 
-    if (!engagement_id && !reservation_credit_id && !ligne_budgetaire_id) {
-      throw new Error('Au moins une imputation budgétaire est requise (engagement, réservation ou ligne budgétaire)');
+    if (!engagement_id && !facture_id) {
+      throw new Error("Une dépense doit être rattachée à un engagement ou à une facture.");
     }
 
     // Appeler la fonction PostgreSQL
@@ -76,7 +66,7 @@ Deno.serve(async (req) => {
       p_montant: montant,
       p_date_depense: date_depense,
       p_engagement_id: engagement_id || null,
-      p_reservation_credit_id: reservation_credit_id || null,
+      p_reservation_credit_id: null,
       p_ligne_budgetaire_id: ligne_budgetaire_id || null,
       p_facture_id: facture_id || null,
       p_fournisseur_id: fournisseur_id || null,
@@ -109,7 +99,7 @@ Deno.serve(async (req) => {
       // Autres erreurs
       if (errorMessage.includes('violates check constraint')) {
         if (errorMessage.includes('engagement_id')) {
-          errorMessage = '❌ Une dépense doit être rattachée à au moins un engagement, une réservation ou une ligne budgétaire';
+          errorMessage = '❌ Une dépense doit être rattachée à un engagement ou à une facture';
         } else if (errorMessage.includes('montant')) {
           errorMessage = '❌ Le montant doit être positif';
         }
@@ -129,15 +119,7 @@ Deno.serve(async (req) => {
     const { error: patchError } = await supabase
       .from('depenses')
       .update({
-        montant_ht: montant_ht ?? montant,
-        montant_ttc: montant_ttc ?? montant,
-        montant_net_paye: montant_net_paye ?? montant,
-        total_ajouts: total_ajouts ?? 0,
-        total_retraits: total_retraits ?? 0,
-        charge_principale_mode: charge_principale_mode ?? 'nature',
-        nature_compte_charge_id: nature_compte_charge_id || null,
         compte_charge_id: compte_charge_id || null,
-        ventilations: ventilations || [],
       })
       .eq('id', data.id);
 
@@ -175,15 +157,7 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({
       ...data,
-      montant_ht: montant_ht ?? montant,
-      montant_ttc: montant_ttc ?? montant,
-      montant_net_paye: montant_net_paye ?? montant,
-      total_ajouts: total_ajouts ?? 0,
-      total_retraits: total_retraits ?? 0,
-      charge_principale_mode: charge_principale_mode ?? 'nature',
-      nature_compte_charge_id: nature_compte_charge_id || null,
       compte_charge_id: compte_charge_id || null,
-      ventilations: ventilations || [],
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

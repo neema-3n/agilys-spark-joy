@@ -8,7 +8,7 @@ export type TypeOperation =
 
 export type PointComptable = 'constatation' | 'reglement';
 export type RoleLigneComptable = 'charge_principale' | 'ventilation' | 'reglement_tresorerie';
-export type SourceMontantComptable = 'montant_ht' | 'montant_ttc' | 'montant_net_paye' | 'ventilation_montant';
+export type SourceMontantComptable = 'montant' | 'montant_ht' | 'montant_ttc' | 'montant_net_paye' | 'ventilation_montant';
 export type SourceCompteComptable = 'compte_fixe' | 'charge_principale';
 export type SensVentilation = 'ajout' | 'retrait';
 export type NatureVentilation = 'taxe' | 'retenue' | 'redevance' | 'frais' | 'autre';

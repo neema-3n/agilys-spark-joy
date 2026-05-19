@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -68,7 +68,9 @@ export function RegleComptableForm({
   const [typeOperation, setTypeOperation] = useState<TypeOperation>(defaultTypeOperation);
   const [pointComptable, setPointComptable] = useState<PointComptable>('constatation');
   const [roleLigne, setRoleLigne] = useState<RoleLigneComptable>('charge_principale');
-  const [sourceMontant, setSourceMontant] = useState<SourceMontantComptable>('montant_ht');
+  const [sourceMontant, setSourceMontant] = useState<SourceMontantComptable>(
+    defaultTypeOperation === 'paiement' ? 'montant' : defaultTypeOperation === 'depense' ? 'montant' : 'montant_ht'
+  );
   const [debitSource, setDebitSource] = useState<SourceCompteComptable>('charge_principale');
   const [creditSource, setCreditSource] = useState<SourceCompteComptable>('compte_fixe');
   const [sensVentilation, setSensVentilation] = useState<SensVentilation | undefined>();
@@ -85,6 +87,13 @@ export function RegleComptableForm({
     [comptes],
   );
 
+  const getDefaultSourceMontant = useCallback((operation: TypeOperation, role: RoleLigneComptable): SourceMontantComptable => {
+    if (role === 'ventilation') return 'ventilation_montant';
+    if (role === 'reglement_tresorerie') return 'montant';
+    if (operation === 'depense') return 'montant';
+    return 'montant_ht';
+  }, []);
+
   useEffect(() => {
     const source = regle || initialValues;
 
@@ -98,7 +107,7 @@ export function RegleComptableForm({
       setTypeOperation(source.typeOperation || defaultTypeOperation);
       setPointComptable(source.pointComptable || 'constatation');
       setRoleLigne(source.roleLigne || 'charge_principale');
-      setSourceMontant(source.sourceMontant || 'montant_ht');
+      setSourceMontant(source.sourceMontant || getDefaultSourceMontant(source.typeOperation || defaultTypeOperation, source.roleLigne || 'charge_principale'));
       setDebitSource(source.debitSource || 'compte_fixe');
       setCreditSource(source.creditSource || 'compte_fixe');
       setSensVentilation(source.sensVentilation);
@@ -120,7 +129,7 @@ export function RegleComptableForm({
     setTypeOperation(defaultTypeOperation);
     setPointComptable('constatation');
     setRoleLigne(defaultTypeOperation === 'paiement' ? 'reglement_tresorerie' : 'charge_principale');
-    setSourceMontant(defaultTypeOperation === 'paiement' ? 'montant_net_paye' : 'montant_ht');
+    setSourceMontant(getDefaultSourceMontant(defaultTypeOperation, defaultTypeOperation === 'paiement' ? 'reglement_tresorerie' : 'charge_principale'));
     setDebitSource(defaultTypeOperation === 'paiement' ? 'compte_fixe' : 'charge_principale');
     setCreditSource('compte_fixe');
     setSensVentilation(undefined);
@@ -144,15 +153,15 @@ export function RegleComptableForm({
     setNatureVentilation(undefined);
 
     if (roleLigne === 'charge_principale') {
-      setSourceMontant('montant_ht');
+      setSourceMontant(getDefaultSourceMontant(typeOperation, roleLigne));
       setDebitSource('charge_principale');
     }
 
     if (roleLigne === 'reglement_tresorerie') {
       setPointComptable('reglement');
-      setSourceMontant('montant_net_paye');
+      setSourceMontant(getDefaultSourceMontant(typeOperation, roleLigne));
     }
-  }, [roleLigne, sensVentilation, natureVentilation]);
+  }, [getDefaultSourceMontant, natureVentilation, roleLigne, sensVentilation, typeOperation]);
 
   const initialSnapshot = useMemo(
     () => JSON.stringify({
@@ -165,7 +174,7 @@ export function RegleComptableForm({
       typeOperation: regle?.typeOperation || initialValues?.typeOperation || defaultTypeOperation,
       pointComptable: regle?.pointComptable || initialValues?.pointComptable || 'constatation',
       roleLigne: regle?.roleLigne || initialValues?.roleLigne || 'charge_principale',
-      sourceMontant: regle?.sourceMontant || initialValues?.sourceMontant || 'montant_ht',
+      sourceMontant: regle?.sourceMontant || initialValues?.sourceMontant || getDefaultSourceMontant(regle?.typeOperation || initialValues?.typeOperation || defaultTypeOperation, regle?.roleLigne || initialValues?.roleLigne || 'charge_principale'),
       debitSource: regle?.debitSource || initialValues?.debitSource || 'compte_fixe',
       creditSource: regle?.creditSource || initialValues?.creditSource || 'compte_fixe',
       sensVentilation: regle?.sensVentilation || initialValues?.sensVentilation,

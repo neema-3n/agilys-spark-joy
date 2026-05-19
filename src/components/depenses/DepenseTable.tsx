@@ -116,7 +116,7 @@ export const DepenseTable = ({
     },
     {
       id: 'montant',
-      header: 'Montant TTC',
+      header: 'Montant',
       align: 'right',
       render: (depense) => (
         <span className="font-medium tabular-nums">{formatMontant(depense.montant)}</span>

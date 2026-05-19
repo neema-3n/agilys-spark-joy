@@ -42,19 +42,13 @@ export const OPERATION_FIELDS: Record<TypeOperation, FieldDefinition[]> = {
   depense: [
     { value: 'statut', label: 'Statut', type: 'select', options: ['brouillon', 'validee', 'ordonnancee', 'payee', 'annulee'] },
     { value: 'montant', label: 'Montant', type: 'number' },
-    { value: 'montant_ht', label: 'Montant HT', type: 'number' },
-    { value: 'montant_ttc', label: 'Montant TTC', type: 'number' },
-    { value: 'montant_net_paye', label: 'Montant net payé', type: 'number' },
     { value: 'beneficiaire', label: 'Bénéficiaire', type: 'text' },
     { value: 'objet', label: 'Objet', type: 'text' },
     { value: 'mode_paiement', label: 'Mode de paiement', type: 'select', options: ['virement', 'cheque', 'especes', 'carte', 'autre'] },
   ],
   paiement: [
-    { value: 'statut', label: 'Statut', type: 'select', options: ['valide', 'annule'] },
+    { value: 'statut', label: 'Statut', type: 'select', options: ['brouillon', 'valide', 'annule'] },
     { value: 'montant', label: 'Montant', type: 'number' },
-    { value: 'montant_ht', label: 'Montant HT', type: 'number' },
-    { value: 'montant_ttc', label: 'Montant TTC', type: 'number' },
-    { value: 'montant_net_paye', label: 'Montant net payé', type: 'number' },
     { value: 'mode_paiement', label: 'Mode de paiement', type: 'select', options: ['virement', 'cheque', 'especes', 'carte', 'autre'] },
     { value: 'reference_paiement', label: 'Référence', type: 'text' },
   ],
@@ -81,6 +75,7 @@ export const ROLE_LIGNE_LABELS: Record<RoleLigneComptable, string> = {
 };
 
 export const SOURCE_MONTANT_LABELS: Record<SourceMontantComptable, string> = {
+  montant: 'Montant',
   montant_ht: 'Montant HT',
   montant_ttc: 'Montant TTC',
   montant_net_paye: 'Montant net payé',

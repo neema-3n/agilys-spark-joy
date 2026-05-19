@@ -251,31 +251,6 @@ export const useDepenses = () => {
     },
   });
 
-  const createFromReservationMutation = useMutation({
-    mutationFn: (data: any) => {
-      if (!currentExercice?.id || !currentClient?.id || !user?.id) {
-        return Promise.reject(new Error('Données requises manquantes'));
-      }
-      return depensesService.createDepenseFromReservation(
-        data,
-        currentExercice.id,
-        currentClient.id,
-        user.id
-      );
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['depenses'] });
-      queryClient.invalidateQueries({ queryKey: ['reservations'] });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: 'Erreur',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
   // Fonction simplifiée pour payer une dépense
   const payerDepense = async (id: string) => {
     const today = new Date().toISOString().split('T')[0];
@@ -294,7 +269,6 @@ export const useDepenses = () => {
     createDepense: createMutation.mutateAsync,
     createDepenseFromFacture: createFromFactureMutation.mutateAsync,
     createDepenseFromEngagement: createFromEngagementMutation.mutateAsync,
-    createDepenseFromReservation: createFromReservationMutation.mutateAsync,
     updateDepense: updateMutation.mutateAsync,
     validerDepense: validerMutation.mutateAsync,
     ordonnancerDepense: ordonnancerMutation.mutateAsync,

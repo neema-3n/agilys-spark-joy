@@ -1,6 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Depense, DepenseFormData } from '@/types/depense.types';
-import type { FinancialVentilation } from '@/types/financial.types';
 
 // Conversion helpers
 const toCamelCase = (obj: any): any => {
@@ -39,8 +38,6 @@ const cleanData = (obj: any): any => {
   return cleaned;
 };
 
-const parseVentilations = (value: any): FinancialVentilation[] => (Array.isArray(value) ? value : []);
-
 export const getDepenses = async (exerciceId: string, clientId: string): Promise<Depense[]> => {
   const { data, error } = await supabase
     .from('depenses')
@@ -66,15 +63,7 @@ export const getDepenses = async (exerciceId: string, clientId: string): Promise
     return {
       ...depenseData,
       ecritures_count: ecrituresCount,
-      montant_ht: dep.montant_ht ?? dep.montant,
-      montant_ttc: dep.montant_ttc ?? dep.montant,
-      montant_net_paye: dep.montant_net_paye ?? dep.montant,
-      total_ajouts: dep.total_ajouts ?? 0,
-      total_retraits: dep.total_retraits ?? 0,
-      charge_principale_mode: dep.charge_principale_mode ?? 'nature',
-      nature_compte_charge_id: dep.nature_compte_charge_id ?? null,
       compte_charge_id: dep.compte_charge_id ?? null,
-      ventilations: parseVentilations(dep.ventilations),
     };
   });
   
@@ -182,13 +171,7 @@ export const updateDepense = async (
   if (error) throw error;
   return toCamelCase({
     ...data,
-    montant_ht: data.montant_ht ?? data.montant,
-    montant_ttc: data.montant_ttc ?? data.montant,
-    montant_net_paye: data.montant_net_paye ?? data.montant,
-    total_ajouts: data.total_ajouts ?? 0,
-    total_retraits: data.total_retraits ?? 0,
-    charge_principale_mode: data.charge_principale_mode ?? 'nature',
-    ventilations: parseVentilations(data.ventilations),
+    compte_charge_id: data.compte_charge_id ?? null,
   }) as Depense;
 };
 
@@ -520,7 +503,6 @@ export const createDepenseFromFacture = async (
   const depenseFormData = {
     factureId: data.factureId,
     engagementId: factureData.engagement_id || undefined,
-    reservationCreditId: undefined,
     ligneBudgetaireId: factureData.ligne_budgetaire_id || undefined,
     fournisseurId: factureData.fournisseur_id,
     beneficiaire: undefined,
@@ -554,8 +536,7 @@ export const createDepenseFromEngagement = async (
       *,
       fournisseur:fournisseurs!fournisseur_id(*),
       ligne_budgetaire:lignes_budgetaires!ligne_budgetaire_id(*),
-      projet:projets!projet_id(*),
-      reservation_credit:reservations_credits!reservation_credit_id(*)
+      projet:projets!projet_id(*)
     `)
     .eq('id', data.engagementId)
     .single();
@@ -585,7 +566,6 @@ export const createDepenseFromEngagement = async (
   // 3. Construire les données
   const depenseFormData = {
     engagementId: data.engagementId,
-    reservationCreditId: engagementData.reservation_credit_id || undefined,
     ligneBudgetaireId: engagementData.ligne_budgetaire_id,
     fournisseurId: engagementData.fournisseur_id || undefined,
     beneficiaire: engagementData.beneficiaire || undefined,
@@ -596,85 +576,6 @@ export const createDepenseFromEngagement = async (
     modePaiement: data.modePaiement,
     referencePaiement: data.referencePaiement,
     observations: data.observations || `Créée depuis l'engagement ${engagementData.numero}`,
-  };
-
-  return createDepense(depenseFormData, exerciceId, clientId, userId);
-};
-
-/**
- * Crée une dépense d'urgence depuis une réservation (cas exceptionnel)
- */
-export const createDepenseFromReservation = async (
-  data: any,
-  exerciceId: string,
-  clientId: string,
-  userId: string
-): Promise<Depense> => {
-  console.log('💳 createDepenseFromReservation - Début', { reservationId: data.reservationCreditId });
-  
-  // 1. Vérifier la justification
-  if (!data.justificationUrgence || data.justificationUrgence.trim().length < 10) {
-    throw new Error('Justification d\'urgence requise (minimum 10 caractères)');
-  }
-
-  // 2. Récupérer la réservation
-  const { data: reservationData, error: reservationError } = await supabase
-    .from('reservations_credits')
-    .select(`
-      *,
-      ligne_budgetaire:lignes_budgetaires!ligne_budgetaire_id(*),
-      projet:projets!projet_id(*)
-    `)
-    .eq('id', data.reservationCreditId)
-    .single();
-
-  if (reservationError || !reservationData) {
-    throw new Error('Réservation introuvable');
-  }
-
-  if (reservationData.statut !== 'active') {
-    throw new Error('Seules les réservations actives peuvent générer une dépense');
-  }
-
-  // 3. Calculer le solde disponible
-  const { data: engagementsExistants } = await supabase
-    .from('engagements')
-    .select('montant')
-    .eq('reservation_credit_id', data.reservationCreditId)
-    .neq('statut', 'annule');
-
-  const { data: depensesExistantes } = await supabase
-    .from('depenses')
-    .select('montant')
-    .eq('reservation_credit_id', data.reservationCreditId)
-    .neq('statut', 'annulee');
-
-  const montantEngage = (engagementsExistants || []).reduce((sum, e) => sum + Number(e.montant), 0);
-  const montantDepense = (depensesExistantes || []).reduce((sum, d) => sum + Number(d.montant), 0);
-  const soldeDisponible = Number(reservationData.montant) - montantEngage - montantDepense;
-
-  if (data.montant > soldeDisponible) {
-    throw new Error(`Montant invalide. Solde disponible : ${soldeDisponible.toFixed(2)} €`);
-  }
-
-  // 4. Limite métier
-  const LIMITE_URGENCE = 5000;
-  if (data.montant > LIMITE_URGENCE) {
-    throw new Error(`Pour les montants > ${LIMITE_URGENCE}€, veuillez créer un engagement puis une facture`);
-  }
-
-  // 5. Construire les données
-  const depenseFormData = {
-    reservationCreditId: data.reservationCreditId,
-    ligneBudgetaireId: reservationData.ligne_budgetaire_id,
-    beneficiaire: data.beneficiaire || reservationData.beneficiaire,
-    projetId: reservationData.projet_id || undefined,
-    objet: data.objet,
-    montant: data.montant,
-    dateDepense: data.dateDepense,
-    modePaiement: data.modePaiement,
-    referencePaiement: data.referencePaiement,
-    observations: `[URGENCE] ${data.justificationUrgence}\n\n${data.observations || ''}`,
   };
 
   return createDepense(depenseFormData, exerciceId, clientId, userId);

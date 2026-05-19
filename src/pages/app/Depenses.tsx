@@ -629,7 +629,7 @@ const Depenses = () => {
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Montant TTC</label>
+                      <label className="text-sm font-medium">Montant</label>
                       <div className="grid grid-cols-2 gap-2">
                         <Input type="number" placeholder="Min" value={montantMin} onChange={(e) => setMontantMin(e.target.value)} />
                         <Input type="number" placeholder="Max" value={montantMax} onChange={(e) => setMontantMax(e.target.value)} />

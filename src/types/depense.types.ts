@@ -1,5 +1,3 @@
-import type { ChargePrincipaleMode, FinancialVentilation } from './financial.types';
-
 export type StatutDepense = 'brouillon' | 'validee' | 'ordonnancee' | 'payee' | 'annulee';
 export type ModePaiement = 'virement' | 'cheque' | 'especes' | 'carte' | 'autre';
 
@@ -11,11 +9,6 @@ export interface Depense {
   dateDepense: string;
   objet: string;
   montant: number;
-  montantHT: number;
-  montantTTC: number;
-  montantNetPaye: number;
-  totalAjouts: number;
-  totalRetraits: number;
   montantPaye: number;
   
   // Relations optionnelles
@@ -26,10 +19,7 @@ export interface Depense {
   fournisseurId?: string;
   beneficiaire?: string;
   projetId?: string;
-  chargePrincipaleMode: ChargePrincipaleMode;
-  natureCompteChargeId?: string;
   compteChargeId?: string;
-  ventilations: FinancialVentilation[];
   
   // Workflow
   statut: StatutDepense;
@@ -87,7 +77,6 @@ export interface Depense {
 
 export interface DepenseFormData {
   engagementId?: string;
-  reservationCreditId?: string;
   ligneBudgetaireId?: string;
   factureId?: string;
   fournisseurId?: string;
@@ -95,19 +84,11 @@ export interface DepenseFormData {
   projetId?: string;
   objet: string;
   montant: number;
-  montantHT?: number;
-  montantTTC?: number;
-  montantNetPaye?: number;
-  totalAjouts?: number;
-  totalRetraits?: number;
   dateDepense: string;
   modePaiement?: ModePaiement;
   referencePaiement?: string;
   observations?: string;
-  chargePrincipaleMode?: ChargePrincipaleMode;
-  natureCompteChargeId?: string;
   compteChargeId?: string;
-  ventilations?: FinancialVentilation[];
 }
 
 export interface DepenseStats {
@@ -141,17 +122,4 @@ export interface CreateDepenseFromEngagementData {
   modePaiement?: ModePaiement;
   referencePaiement?: string;
   observations?: string;
-}
-
-// Création de dépense d'urgence depuis une réservation
-export interface CreateDepenseFromReservationData {
-  reservationCreditId: string;
-  montant: number;
-  objet: string;
-  dateDepense: string;
-  beneficiaire?: string;
-  modePaiement?: ModePaiement;
-  referencePaiement?: string;
-  observations?: string;
-  justificationUrgence: string;
 }

@@ -498,6 +498,7 @@ export type Database = {
         Row: {
           beneficiaire: string | null
           client_id: string
+          compte_charge_id: string | null
           created_at: string
           created_by: string | null
           date_depense: string
@@ -526,6 +527,7 @@ export type Database = {
         Insert: {
           beneficiaire?: string | null
           client_id: string
+          compte_charge_id?: string | null
           created_at?: string
           created_by?: string | null
           date_depense?: string
@@ -554,6 +556,7 @@ export type Database = {
         Update: {
           beneficiaire?: string | null
           client_id?: string
+          compte_charge_id?: string | null
           created_at?: string
           created_by?: string | null
           date_depense?: string
@@ -580,6 +583,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "depenses_compte_charge_id_fkey"
+            columns: ["compte_charge_id"]
+            isOneToOne: false
+            referencedRelation: "comptes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "depenses_created_by_fkey"
             columns: ["created_by"]
@@ -1569,9 +1579,6 @@ export type Database = {
           ligne_budgetaire_id: string | null
           mode_paiement: string
           montant: number
-          montant_ht: number
-          montant_net_paye: number
-          montant_ttc: number
           motif_annulation: string | null
           numero: string
           objet: string | null
@@ -1579,12 +1586,6 @@ export type Database = {
           projet_id: string | null
           reference_paiement: string | null
           statut: string
-          total_ajouts: number
-          total_retraits: number
-          charge_principale_mode: string
-          nature_compte_charge_id: string | null
-          compte_charge_id: string | null
-          ventilations: Json
           beneficiaire: string | null
           updated_at: string
         }
@@ -1603,9 +1604,6 @@ export type Database = {
           ligne_budgetaire_id?: string | null
           mode_paiement: string
           montant: number
-          montant_ht?: number
-          montant_net_paye?: number
-          montant_ttc?: number
           motif_annulation?: string | null
           numero: string
           objet?: string | null
@@ -1613,12 +1611,6 @@ export type Database = {
           projet_id?: string | null
           reference_paiement?: string | null
           statut?: string
-          total_ajouts?: number
-          total_retraits?: number
-          charge_principale_mode?: string
-          nature_compte_charge_id?: string | null
-          compte_charge_id?: string | null
-          ventilations?: Json
           beneficiaire?: string | null
           updated_at?: string
         }
@@ -1637,9 +1629,6 @@ export type Database = {
           ligne_budgetaire_id?: string | null
           mode_paiement?: string
           montant?: number
-          montant_ht?: number
-          montant_net_paye?: number
-          montant_ttc?: number
           motif_annulation?: string | null
           numero?: string
           objet?: string | null
@@ -1647,12 +1636,6 @@ export type Database = {
           projet_id?: string | null
           reference_paiement?: string | null
           statut?: string
-          total_ajouts?: number
-          total_retraits?: number
-          charge_principale_mode?: string
-          nature_compte_charge_id?: string | null
-          compte_charge_id?: string | null
-          ventilations?: Json
           beneficiaire?: string | null
           updated_at?: string
         }
