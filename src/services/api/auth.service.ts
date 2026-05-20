@@ -3,8 +3,8 @@ import { User, AppRole } from '@/types';
 
 export const authService = {
   // Connexion
-  login: async (email: string, password: string): Promise<{ user?: User; error?: string }> => {
-    const { data, error } = await supabase.auth.signInWithPassword({
+  login: async (email: string, password: string): Promise<{ error?: string }> => {
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password
     });
@@ -13,16 +13,7 @@ export const authService = {
       return { error: error.message };
     }
 
-    if (!data.user) {
-      return { error: 'Utilisateur non trouvé' };
-    }
-
-    // Récupérer le profil et les rôles
-    const user = await authService.getUserWithRoles(data.user.id);
-    if (!user) {
-      return { error: 'Erreur lors du chargement du profil' };
-    }
-    return { user };
+    return {};
   },
 
   // Inscription

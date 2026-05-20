@@ -234,7 +234,7 @@ export const CompteTresorerieDialog = ({
               </Button>
               <Button type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {compte ? 'Enregistrer' : 'Créer'}
+                {initialData ? 'Enregistrer' : 'Créer'}
               </Button>
             </div>
           </form>

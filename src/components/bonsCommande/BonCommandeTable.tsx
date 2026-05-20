@@ -247,7 +247,7 @@ export const BonCommandeTable = ({
 
       return baseColumns;
     },
-    [onAnnuler, onCreateFacture, onDelete, onEdit, onMettreEnCours, onReceptionner, onValider, onViewDetails, selection]
+    [onAnnuler, onCreateFacture, onDelete, onEdit, onReceptionner, onValider, onViewDetails, selection]
   );
 
   return (
