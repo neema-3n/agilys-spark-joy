@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
@@ -37,6 +38,10 @@ export const projetFormSchema = z.object({
 });
 
 type ProjetFormValues = z.infer<typeof projetFormSchema>;
+export type ProjetFormSubmitData = Omit<ProjetFormValues, 'dateDebut' | 'dateFin'> & {
+  dateDebut: string;
+  dateFin: string;
+};
 
 const defaultValues: ProjetFormValues = {
   code: '',
@@ -73,7 +78,7 @@ const getInitialValues = (projet?: Projet | null): ProjetFormValues =>
 
 interface ProjetFormProps {
   projet?: Projet | null;
-  onSubmit: (data: Omit<ProjetFormValues, 'dateDebut' | 'dateFin'> & { dateDebut: string; dateFin: string }) => Promise<void>;
+  onSubmit: (data: ProjetFormSubmitData) => Promise<void>;
   onCancel: () => void;
   onDirtyChange?: (isDirty: boolean) => void;
   submitLabel?: string;

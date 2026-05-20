@@ -1,10 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Edit2, Trash2, Calendar, User, Wallet } from 'lucide-react';
+import { Edit2, Trash2, Calendar, User } from 'lucide-react';
 import { Projet } from '@/types/projet.types';
 import { format } from 'date-fns';
+import { formatMontant } from '@/lib/utils';
+import { ProjetStatusBadge } from '@/components/ui/status-badge';
+import {
+  ProjetPrioriteBadge,
+  getProjetBudgetConsumptionRate,
+  getProjetBudgetDisponible,
+} from '@/components/projets/projet-ui';
 
 interface ProjetCardProps {
   projet: Projet;
@@ -14,31 +20,9 @@ interface ProjetCardProps {
   canEdit?: boolean;
 }
 
-const getStatutColor = (statut: string) => {
-  const colors: Record<string, string> = {
-    planifie: 'bg-muted text-muted-foreground',
-    en_cours: 'bg-primary text-primary-foreground',
-    en_attente: 'bg-accent text-accent-foreground',
-    termine: 'bg-secondary text-secondary-foreground',
-    annule: 'bg-destructive text-destructive-foreground',
-  };
-  return colors[statut] || 'bg-muted';
-};
-
-const getPrioriteColor = (priorite?: string) => {
-  const colors: Record<string, string> = {
-    haute: 'bg-destructive text-destructive-foreground',
-    moyenne: 'bg-accent text-accent-foreground',
-    basse: 'bg-muted text-muted-foreground',
-  };
-  return colors[priorite || 'moyenne'] || 'bg-muted';
-};
-
 export const ProjetCard = ({ projet, onView, onEdit, onDelete, canEdit = true }: ProjetCardProps) => {
-  const budgetDisponible = projet.budgetAlloue - projet.budgetConsomme;
-  const tauxConsommation = projet.budgetAlloue > 0 
-    ? (projet.budgetConsomme / projet.budgetAlloue) * 100 
-    : 0;
+  const budgetDisponible = getProjetBudgetDisponible(projet);
+  const tauxConsommation = getProjetBudgetConsumptionRate(projet);
 
   return (
     <Card className="hover:shadow-primary transition-shadow">
@@ -49,14 +33,8 @@ export const ProjetCard = ({ projet, onView, onEdit, onDelete, canEdit = true }:
               <Badge variant="outline" className="text-xs">
                 {projet.code}
               </Badge>
-              <Badge className={getStatutColor(projet.statut)}>
-                {projet.statut.replace('_', ' ')}
-              </Badge>
-              {projet.priorite && (
-                <Badge className={getPrioriteColor(projet.priorite)}>
-                  {projet.priorite}
-                </Badge>
-              )}
+              <ProjetStatusBadge status={projet.statut} />
+              <ProjetPrioriteBadge priorite={projet.priorite} />
             </div>
             <CardTitle className="text-lg">
               {onView ? (
@@ -107,19 +85,19 @@ export const ProjetCard = ({ projet, onView, onEdit, onDelete, canEdit = true }:
           <div>
             <div className="text-xs text-muted-foreground">Budget alloué</div>
             <div className="text-sm font-medium">
-              {projet.budgetAlloue.toLocaleString()} €
+              {formatMontant(projet.budgetAlloue)}
             </div>
           </div>
           <div>
             <div className="text-xs text-muted-foreground">Consommé</div>
             <div className="text-sm font-medium">
-              {projet.budgetConsomme.toLocaleString()} €
+              {formatMontant(projet.budgetConsomme)}
             </div>
           </div>
           <div>
             <div className="text-xs text-muted-foreground">Disponible</div>
             <div className="text-sm font-medium">
-              {budgetDisponible.toLocaleString()} €
+              {formatMontant(budgetDisponible)}
             </div>
           </div>
         </div>

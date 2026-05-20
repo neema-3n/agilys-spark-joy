@@ -42,6 +42,7 @@ export const getEntityUrl = (type: string, id: string): string => {
     'ligne-budgetaire': '/app/budgets',
     'ligneBudgetaire': '/app/budgets',
     'depense': '/app/depenses',
+    'paiement': '/app/paiements',
   };
 
   const basePath = entityRoutes[type] || '/app';

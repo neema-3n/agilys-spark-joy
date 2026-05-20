@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, TrendingUp, CheckCircle, XCircle, Clock, FileText, Truck, Receipt, Building2, Wallet } from 'lucide-react';
+import { AlertCircle, TrendingUp, CheckCircle, XCircle, Clock, FileText, Truck, Receipt, Building2, Wallet, CalendarRange, PlayCircle } from 'lucide-react';
 
 export type StatusVariant = 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success';
 
@@ -154,4 +154,18 @@ export const PAIEMENT_STATUS_CONFIG: Record<string, StatusConfig> = {
 
 export const PaiementStatusBadge = ({ status }: { status: string }) => (
   <StatusBadge status={status} config={PAIEMENT_STATUS_CONFIG} />
+);
+
+// Projet status badges
+export const PROJET_STATUS_CONFIG: Record<string, StatusConfig> = {
+  planifie: { variant: 'outline', label: 'Planifié', icon: CalendarRange },
+  en_cours: { variant: 'default', label: 'En cours', icon: PlayCircle },
+  en_attente: { variant: 'warning', label: 'En attente', icon: Clock },
+  termine: { variant: 'success', label: 'Terminé', icon: CheckCircle },
+  annule: { variant: 'destructive', label: 'Annulé', icon: XCircle },
+  default: { variant: 'outline', label: 'Planifié', icon: CalendarRange },
+};
+
+export const ProjetStatusBadge = ({ status }: { status: string }) => (
+  <StatusBadge status={status} config={PROJET_STATUS_CONFIG} />
 );
