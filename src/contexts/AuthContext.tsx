@@ -128,9 +128,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     const result = await authService.login(email, password);
-    if (result.user) {
-      setUser(result.user);
-      // Récupérer immédiatement la session pour éviter un flash avant l'événement Supabase
+    if (!result.error) {
+      // Récupérer immédiatement la session pour éviter un flash avant l'événement Supabase.
       const { data } = await supabase.auth.getSession();
       setSession(data.session);
       return { success: true };
