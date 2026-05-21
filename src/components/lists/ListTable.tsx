@@ -29,6 +29,7 @@ interface ListTableProps<T> {
   stickyHeader?: boolean;
   stickyHeaderOffset?: number;
   scrollContainerClassName?: string;
+  containerClassName?: string;
   footer?: ReactNode;
 }
 
@@ -47,6 +48,7 @@ export const ListTable = <T,>({
   stickyHeader = false,
   stickyHeaderOffset = 0,
   scrollContainerClassName,
+  containerClassName,
   footer,
 }: ListTableProps<T>) => {
   const isMobile = useIsMobile();
@@ -79,7 +81,7 @@ export const ListTable = <T,>({
   }, [items, columns]);
 
   return (
-    <div className="rounded-md border">
+    <div className={cn('rounded-none border', containerClassName)}>
       {isMobile && hasHorizontalOverflow && (
         <div className="flex items-center gap-2 border-b bg-muted/20 px-3 py-2 text-[11px] text-muted-foreground">
           <ArrowRightLeft className="h-3.5 w-3.5 shrink-0" />
@@ -97,11 +99,10 @@ export const ListTable = <T,>({
                 <TableHead
                   key={column.id}
                   className={cn(
-                    'h-10 px-3 text-[11px] sm:h-12 sm:px-4 sm:text-xs',
+                    'h-10 border-b border-blue-200 bg-blue-100/80 px-3 text-[11px] font-bold text-slate-900 sm:h-12 sm:px-4 sm:text-xs',
                     column.className,
                     getAlignClass(column.align),
-                    stickyHeader &&
-                      'sticky top-[var(--sticky-offset,0px)] z-30 bg-background shadow-sm border-b'
+                    stickyHeader && 'sticky top-[var(--sticky-offset,0px)] z-30 shadow-sm'
                   )}
                   style={
                     stickyHeader
