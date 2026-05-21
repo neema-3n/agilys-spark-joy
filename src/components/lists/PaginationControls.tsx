@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PaginationControlsProps {
   currentPage: number;
@@ -36,6 +37,7 @@ export function PaginationControls({
   itemLabel,
   showKeyboardHint = true,
 }: PaginationControlsProps) {
+  const isMobile = useIsMobile();
   const startIndex = (currentPage - 1) * pageSize + 1;
   const endIndex = Math.min(currentPage * pageSize, totalCount);
 
@@ -76,7 +78,7 @@ export function PaginationControls({
     return pages;
   };
 
-  const pageNumbers = getPageNumbers();
+  const pageNumbers = isMobile ? [currentPage] : getPageNumbers();
 
   if (totalCount === 0) {
     return (
@@ -87,9 +89,9 @@ export function PaginationControls({
   }
 
   return (
-    <div className="flex flex-col gap-2 py-2 px-3 sm:px-4 w-full max-w-4xl mx-auto">
-      <div className="flex flex-wrap items-center gap-2 justify-between">
-        <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 px-3 py-3 sm:px-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground sm:text-sm">
           {isFetching && <Loader2 className="h-4 w-4 animate-spin" />}
           <span>
             Affichage <span className="font-medium text-foreground">{startIndex}-{endIndex}</span> sur{' '}
@@ -97,17 +99,17 @@ export function PaginationControls({
           </span>
         </div>
 
-        <div className="flex flex-1 justify-center order-3 w-full sm:w-auto sm:order-none">
+        <div className="order-3 flex w-full justify-center sm:order-none sm:flex-1">
           <div className="flex items-center gap-1.5">
             <Button
               variant="outline"
               size="sm"
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage === 1 || isLoading}
-              className="gap-1"
+              className="gap-1 px-3"
             >
               <ChevronLeft className="h-4 w-4" />
-              Précédent
+              {!isMobile && 'Précédent'}
             </Button>
 
             {pageNumbers.map((page, idx) => {
@@ -127,7 +129,7 @@ export function PaginationControls({
                   onClick={() => onPageChange(page)}
                   disabled={isLoading}
                   className={cn(
-                    'min-w-[34px] px-2',
+                    'min-w-[38px] px-3',
                     page === currentPage && 'pointer-events-none'
                   )}
                 >
@@ -141,15 +143,15 @@ export function PaginationControls({
               size="sm"
               onClick={() => onPageChange(currentPage + 1)}
               disabled={currentPage === totalPages || isLoading}
-              className="gap-1"
+              className="gap-1 px-3"
             >
-              Suivant
+              {!isMobile && 'Suivant'}
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
-        <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-muted-foreground">
+        <div className="flex items-center gap-1 text-xs text-muted-foreground sm:gap-2 sm:text-sm">
           <span>Afficher</span>
           <Select
             value={pageSize.toString()}
@@ -167,11 +169,11 @@ export function PaginationControls({
               ))}
             </SelectContent>
           </Select>
-          <span>par page</span>
+          <span className={cn(isMobile && 'sr-only')}>par page</span>
         </div>
       </div>
 
-      {showKeyboardHint && (
+      {showKeyboardHint && !isMobile && (
         <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
           <Keyboard className="h-3 w-3" />
           <span>

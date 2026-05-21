@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
   Table,
@@ -8,6 +8,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { ArrowRightLeft } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export type ListColumn<T> = {
   id: string;
@@ -47,9 +49,47 @@ export const ListTable = <T,>({
   scrollContainerClassName,
   footer,
 }: ListTableProps<T>) => {
+  const isMobile = useIsMobile();
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [hasHorizontalOverflow, setHasHorizontalOverflow] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  useEffect(() => {
+    const element = scrollRef.current;
+    if (!element) return;
+
+    const updateScrollState = () => {
+      const overflow = element.scrollWidth > element.clientWidth + 1;
+      const right = element.scrollLeft + element.clientWidth < element.scrollWidth - 1;
+      setHasHorizontalOverflow(overflow);
+      setCanScrollRight(overflow && right);
+    };
+
+    updateScrollState();
+    element.addEventListener('scroll', updateScrollState, { passive: true });
+
+    const resizeObserver = new ResizeObserver(updateScrollState);
+    resizeObserver.observe(element);
+    Array.from(element.children).forEach((child) => resizeObserver.observe(child));
+
+    return () => {
+      element.removeEventListener('scroll', updateScrollState);
+      resizeObserver.disconnect();
+    };
+  }, [items, columns]);
+
   return (
     <div className="rounded-md border">
-      <div className={cn('overflow-auto', scrollContainerClassName)}>
+      {isMobile && hasHorizontalOverflow && (
+        <div className="flex items-center gap-2 border-b bg-muted/20 px-3 py-2 text-[11px] text-muted-foreground">
+          <ArrowRightLeft className="h-3.5 w-3.5 shrink-0" />
+          <span>Balayez horizontalement pour voir toutes les colonnes.</span>
+        </div>
+      )}
+      <div ref={scrollRef} className={cn('relative overflow-auto', scrollContainerClassName)}>
+        {isMobile && canScrollRight && (
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-8 bg-gradient-to-l from-background via-background/90 to-transparent" />
+        )}
         <Table className="min-w-full border-separate border-spacing-0" noWrapper>
           <TableHeader>
             <TableRow>
@@ -57,6 +97,7 @@ export const ListTable = <T,>({
                 <TableHead
                   key={column.id}
                   className={cn(
+                    'h-10 px-3 text-[11px] sm:h-12 sm:px-4 sm:text-xs',
                     column.className,
                     getAlignClass(column.align),
                     stickyHeader &&
@@ -92,7 +133,11 @@ export const ListTable = <T,>({
                   {columns.map((column) => (
                     <TableCell
                       key={column.id}
-                      className={cn(column.cellClassName, getAlignClass(column.align))}
+                      className={cn(
+                        'px-3 py-3 text-[13px] sm:p-4 sm:text-sm',
+                        column.cellClassName,
+                        getAlignClass(column.align)
+                      )}
                     >
                       {column.render(item)}
                     </TableCell>
