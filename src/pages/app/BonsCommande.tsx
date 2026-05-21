@@ -38,6 +38,7 @@ import { useClientPagination } from '@/hooks/useClientPagination';
 import { useListSelection } from '@/hooks/useListSelection';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Select,
   SelectContent,
@@ -83,6 +84,7 @@ const BonsCommande = () => {
   const [dateFin, setDateFin] = useState('');
   const [montantMin, setMontantMin] = useState('');
   const [montantMax, setMontantMax] = useState('');
+  const isMobile = useIsMobile();
 
   const {
     bonsCommande,
@@ -470,20 +472,24 @@ const BonsCommande = () => {
                             onToggle={() => setIsAdvancedFiltersOpen((open) => !open)}
                             activeCount={activeAdvancedFiltersCount}
                           />,
-                          <DropdownMenu key="batch-actions">
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="outline">Actions groupées</Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem disabled={!hasBrouillonsSelected} onClick={handleBatchValider}>
-                                Valider les brouillons
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem disabled={selectedIds.size === 0} onClick={clearSelection}>
-                                Effacer la sélection
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>,
+                          ...(!isMobile || selectedIds.size > 0
+                            ? [
+                                <DropdownMenu key="batch-actions">
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="outline">Actions groupées</Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem disabled={!hasBrouillonsSelected} onClick={handleBatchValider}>
+                                      Valider les brouillons
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem disabled={selectedIds.size === 0} onClick={clearSelection}>
+                                      Effacer la sélection
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>,
+                              ]
+                            : []),
                         ]}
                       />
                     }

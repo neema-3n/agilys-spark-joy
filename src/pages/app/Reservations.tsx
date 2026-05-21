@@ -24,6 +24,7 @@ import {
 } from '@/components/lists/AdvancedFiltersPanel';
 import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
 import { useClientPagination } from '@/hooks/useClientPagination';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useListSelection } from '@/hooks/useListSelection';
 import {
   DropdownMenu,
@@ -63,6 +64,7 @@ const Reservations = () => {
   const [dateFin, setDateFin] = useState('');
   const [montantMin, setMontantMin] = useState('');
   const [montantMax, setMontantMax] = useState('');
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { reservationId } = useParams<{ reservationId?: string }>();
   const isCreateRoute = !!useMatch('/app/reservations/create');
@@ -476,16 +478,20 @@ const Reservations = () => {
                     onToggle={() => setIsAdvancedFiltersOpen((open) => !open)}
                     activeCount={activeAdvancedFiltersCount}
                   />,
-                  <DropdownMenu key="batch-actions">
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline">Actions groupées</Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem disabled={selectedIds.size === 0} onClick={clearSelection}>
-                        Effacer la sélection
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>,
+                  ...(!isMobile || selectedIds.size > 0
+                    ? [
+                        <DropdownMenu key="batch-actions">
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline">Actions groupées</Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem disabled={selectedIds.size === 0} onClick={clearSelection}>
+                              Effacer la sélection
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>,
+                      ]
+                    : []),
                 ]}
               />
             }

@@ -54,6 +54,7 @@ import { CTA_REVEAL_STYLES, useHeaderCtaReveal } from '@/hooks/useHeaderCtaRevea
 import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
 import { Input } from '@/components/ui/input';
 import { useClientPagination } from '@/hooks/useClientPagination';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 type DepensesLocationState = {
   initialEngagementId?: string;
@@ -93,6 +94,7 @@ const Depenses = () => {
   const [dateFin, setDateFin] = useState('');
   const [montantMin, setMontantMin] = useState('');
   const [montantMax, setMontantMax] = useState('');
+  const isMobile = useIsMobile();
   const isCreateMode = !!createMatch;
   const routeEditDepenseId = editMatch?.params.depenseId;
   const isEditMode = !!routeEditDepenseId;
@@ -542,34 +544,38 @@ const Depenses = () => {
                       onToggle={() => setIsAdvancedFiltersOpen((open) => !open)}
                       activeCount={activeAdvancedFiltersCount}
                     />,
-                    <DropdownMenu key="batch">
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline">
-                          Actions groupées
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem disabled={!hasBrouillonsSelected} onClick={handleBatchValider}>
-                          Valider les brouillons
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          disabled={!hasAnnulablesSelected} 
-                          onClick={handleOpenBatchAnnuler}
-                          className="text-destructive focus:text-destructive"
-                        >
-                          Annuler les dépenses sélectionnées
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem disabled={!hasSelection} onClick={clearSelection}>
-                          Effacer la sélection
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleExportDepenses}>
-                          Exporter (toutes les dépenses filtrées)
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>,
+                    ...(!isMobile || hasSelection
+                      ? [
+                          <DropdownMenu key="batch">
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline">
+                                Actions groupées
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem disabled={!hasBrouillonsSelected} onClick={handleBatchValider}>
+                                Valider les brouillons
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                disabled={!hasAnnulablesSelected} 
+                                onClick={handleOpenBatchAnnuler}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                Annuler les dépenses sélectionnées
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem disabled={!hasSelection} onClick={clearSelection}>
+                                Effacer la sélection
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={handleExportDepenses}>
+                                Exporter (toutes les dépenses filtrées)
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>,
+                        ]
+                      : []),
                   ]}
                 />
               }
