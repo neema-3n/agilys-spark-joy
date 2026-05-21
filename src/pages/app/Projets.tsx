@@ -53,6 +53,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { PrioriteProjet, StatutProjet } from '@/types/projet.types';
 import { useReferentiels } from '@/hooks/useReferentiels';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Projets = () => {
   const { toast } = useToast();
@@ -83,6 +84,7 @@ const Projets = () => {
   const [batchPrioriteDialogOpen, setBatchPrioriteDialogOpen] = useState(false);
   const [batchStatutValue, setBatchStatutValue] = useState<StatutProjet>('planifie');
   const [batchPrioriteValue, setBatchPrioriteValue] = useState<PrioriteProjet>('moyenne');
+  const isMobile = useIsMobile();
   const { data: typesProjet = [] } = useReferentiels('type_projet');
   const selectedProjet = useMemo(
     () => (projetId ? projets.find((projet) => projet.id === projetId) || null : null),
@@ -409,29 +411,33 @@ const Projets = () => {
                 onToggle={() => setIsAdvancedFiltersOpen((open) => !open)}
                 activeCount={activeAdvancedFiltersCount}
               />,
-              <DropdownMenu key="batch-actions">
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline">Actions groupées</Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    disabled={selectedIds.size === 0}
-                    onClick={() => setBatchStatutDialogOpen(true)}
-                  >
-                    Modifier le statut
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    disabled={selectedIds.size === 0}
-                    onClick={() => setBatchPrioriteDialogOpen(true)}
-                  >
-                    Modifier la priorité
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem disabled={selectedIds.size === 0} onClick={clearSelection}>
-                    Effacer la sélection
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>,
+              ...(!isMobile || selectedIds.size > 0
+                ? [
+                    <DropdownMenu key="batch-actions">
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline">Actions groupées</Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          disabled={selectedIds.size === 0}
+                          onClick={() => setBatchStatutDialogOpen(true)}
+                        >
+                          Modifier le statut
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={selectedIds.size === 0}
+                          onClick={() => setBatchPrioriteDialogOpen(true)}
+                        >
+                          Modifier la priorité
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem disabled={selectedIds.size === 0} onClick={clearSelection}>
+                          Effacer la sélection
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>,
+                  ]
+                : []),
             ]}
           />
         }

@@ -50,6 +50,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Fournisseurs = () => {
   const { fournisseurId } = useParams<{ fournisseurId: string }>();
@@ -69,6 +70,7 @@ const Fournisseurs = () => {
   const [engagementsMax, setEngagementsMax] = useState('');
   const [montantMin, setMontantMin] = useState('');
   const [montantMax, setMontantMax] = useState('');
+  const isMobile = useIsMobile();
 
   // Helper pour récupérer le fournisseur depuis l'ID
   const editingFournisseur = useMemo(
@@ -355,20 +357,24 @@ const Fournisseurs = () => {
                         ))}
                       </DropdownMenuContent>
                     </DropdownMenu>,
-                    <DropdownMenu key="batch-actions">
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline">Actions groupées</Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem disabled={!hasSelection} onClick={() => clearSelection()}>
-                          Effacer la sélection
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleExportFournisseurs}>
-                          Exporter (tous les fournisseurs filtrés)
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>,
+                    ...(!isMobile || hasSelection
+                      ? [
+                          <DropdownMenu key="batch-actions">
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline">Actions groupées</Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem disabled={!hasSelection} onClick={() => clearSelection()}>
+                                Effacer la sélection
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={handleExportFournisseurs}>
+                                Exporter (tous les fournisseurs filtrés)
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>,
+                        ]
+                      : []),
                     <AdvancedFiltersToggleButton
                       key="advanced-filters"
                       open={isAdvancedFiltersOpen}

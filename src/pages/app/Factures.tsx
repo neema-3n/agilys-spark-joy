@@ -58,6 +58,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function Factures() {
   const navigate = useNavigate();
@@ -88,6 +89,7 @@ export default function Factures() {
   const [annulationFactureId, setAnnulationFactureId] = useState<string | undefined>();
   const [isFactureDirty, setIsFactureDirty] = useState(false);
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   // Pagination côté serveur
   const {
@@ -540,35 +542,39 @@ export default function Factures() {
                       onToggle={() => setIsAdvancedFiltersOpen((open) => !open)}
                       activeCount={activeAdvancedFiltersCount}
                     />,
-                    <DropdownMenu key="batch-actions">
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline">
-                          Actions groupées
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          disabled={!hasBrouillonsSelected}
-                          onClick={handleBatchValider}
-                        >
-                          Valider les brouillons
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          disabled={!hasValideesSelected}
-                          onClick={handleBatchMarquerSoldee}
-                        >
-                          Marquer comme soldées
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem disabled={!hasSelection} onClick={() => clearSelection()}>
-                          Effacer la sélection
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleExportFactures}>
-                          Exporter (toutes les factures filtrées)
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>,
+                    ...(!isMobile || hasSelection
+                      ? [
+                          <DropdownMenu key="batch-actions">
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline">
+                                Actions groupées
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                disabled={!hasBrouillonsSelected}
+                                onClick={handleBatchValider}
+                              >
+                                Valider les brouillons
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                disabled={!hasValideesSelected}
+                                onClick={handleBatchMarquerSoldee}
+                              >
+                                Marquer comme soldées
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem disabled={!hasSelection} onClick={() => clearSelection()}>
+                                Effacer la sélection
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={handleExportFactures}>
+                                Exporter (toutes les factures filtrées)
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>,
+                        ]
+                      : []),
                   ]}
                 />
               }
