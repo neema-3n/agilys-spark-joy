@@ -1,5 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AmountWithCurrencyCode } from '@/components/ui/amount-with-currency-code';
+import { StatsCard } from '@/components/ui/stats-card';
 import { Wallet, CheckCircle, Banknote, AlertCircle } from 'lucide-react';
 import { useMemo } from 'react';
 import type { Depense } from '@/types/depense.types';
@@ -36,71 +35,42 @@ export const DepenseStatsCards = ({ depenses }: DepenseStatsCardsProps) => {
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-      <Card className="hover:shadow-primary transition-shadow">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Total Dépenses
-          </CardTitle>
-          <Wallet className="h-5 w-5 text-primary" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold mb-1">
-            <AmountWithCurrencyCode amount={formatMontant(stats.montantTotal)} />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {stats.total} dépense{stats.total > 1 ? 's' : ''}
-          </p>
-        </CardContent>
-      </Card>
+      <StatsCard
+        title="Total Dépenses"
+        value={formatMontant(stats.montantTotal)}
+        icon={Wallet}
+        showCurrencyCode
+        color="text-blue-700"
+        trend={`${stats.total} dépense${stats.total > 1 ? 's' : ''}`}
+      />
 
-      <Card className="hover:shadow-primary transition-shadow">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Validées
-          </CardTitle>
-          <CheckCircle className="h-5 w-5 text-secondary" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold mb-1">
-            <AmountWithCurrencyCode amount={formatMontant(stats.montantValidee)} />
-          </div>
-          <p className="text-xs text-secondary">
-            {stats.validee} dépense{stats.validee > 1 ? 's' : ''}
-          </p>
-        </CardContent>
-      </Card>
+      <StatsCard
+        title="Validées"
+        value={formatMontant(stats.montantValidee)}
+        icon={CheckCircle}
+        showCurrencyCode
+        color="text-emerald-700"
+        trend={`${stats.validee} dépense${stats.validee > 1 ? 's' : ''}`}
+        trendUp
+      />
 
-      <Card className="hover:shadow-primary transition-shadow">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Payées
-          </CardTitle>
-          <Banknote className="h-5 w-5 text-green-600" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold mb-1">
-            <AmountWithCurrencyCode amount={formatMontant(stats.montantPayee)} />
-          </div>
-          <p className="text-xs text-green-600">
-            {stats.payee} dépense{stats.payee > 1 ? 's' : ''}
-          </p>
-        </CardContent>
-      </Card>
+      <StatsCard
+        title="Payées"
+        value={formatMontant(stats.montantPayee)}
+        icon={Banknote}
+        showCurrencyCode
+        color="text-cyan-700"
+        trend={`${stats.payee} dépense${stats.payee > 1 ? 's' : ''}`}
+        trendUp
+      />
 
-      <Card className="hover:shadow-primary transition-shadow">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Taux d'exécution
-          </CardTitle>
-          <AlertCircle className="h-5 w-5 text-primary" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold mb-1">{stats.tauxExecution.toFixed(1)}%</div>
-          <p className="text-xs text-muted-foreground">
-            {stats.brouillon} en brouillon
-          </p>
-        </CardContent>
-      </Card>
+      <StatsCard
+        title="Taux d'exécution"
+        value={`${stats.tauxExecution.toFixed(1)}%`}
+        icon={AlertCircle}
+        color="text-amber-600"
+        trend={`${stats.brouillon} en brouillon`}
+      />
     </div>
   );
 };

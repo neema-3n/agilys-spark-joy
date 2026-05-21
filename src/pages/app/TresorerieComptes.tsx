@@ -30,10 +30,10 @@ const TresorerieComptes = () => {
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatsCard title="Solde total" value={formatCurrency(stats?.soldeTotal || 0)} icon={Wallet} showCurrencyCode />
-        <StatsCard title="Banques" value={`${stats?.nombreBanques || 0}`} icon={Landmark} />
-        <StatsCard title="Caisses" value={`${stats?.nombreCaisses || 0}`} icon={WalletCards} />
-        <StatsCard title="Comptes actifs" value={`${stats?.nombreTotal || 0}`} icon={Wallet} />
+        <StatsCard title="Solde total" value={formatCurrency(stats?.soldeTotal || 0)} icon={Wallet} showCurrencyCode color="text-blue-700" />
+        <StatsCard title="Banques" value={`${stats?.nombreBanques || 0}`} icon={Landmark} color="text-cyan-700" />
+        <StatsCard title="Caisses" value={`${stats?.nombreCaisses || 0}`} icon={WalletCards} color="text-amber-600" />
+        <StatsCard title="Comptes actifs" value={`${stats?.nombreTotal || 0}`} icon={Wallet} color="text-emerald-700" />
       </div>
 
       <Card>
