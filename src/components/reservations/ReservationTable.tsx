@@ -241,13 +241,15 @@ export const ReservationTable = ({
       ];
 
       if (selection) {
+        const selectionColumn = buildSelectionColumn({
+          selection,
+          getId: (reservation) => reservation.id,
+          getLabel: (reservation) => `Sélectionner ${reservation.numero}`,
+          allLabel: 'Sélectionner toutes les réservations',
+        });
+
         return [
-          buildSelectionColumn({
-            selection,
-            getId: (reservation) => reservation.id,
-            getLabel: (reservation) => `Sélectionner ${reservation.numero}`,
-            allLabel: 'Sélectionner toutes les réservations',
-          }),
+          selectionColumn,
           ...baseColumns,
         ];
       }

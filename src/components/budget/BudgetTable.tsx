@@ -762,27 +762,27 @@ export const BudgetTable = ({
           <div className="[&>div]:max-h-none [&>div]:overflow-visible">
             <Table>
               <TableHeader>
-                <TableRow className="border-b border-border bg-muted/30 hover:bg-muted/30">
-                  <TableHead className="sticky top-0 z-30 w-[350px] border-b border-border bg-card">Libellé</TableHead>
+                <TableRow className="border-b border-blue-200 bg-blue-100/80 hover:bg-blue-100/80">
+                  <TableHead className="sticky top-0 z-30 w-[350px] border-b border-blue-200 bg-blue-100/80 font-bold text-slate-900">Libellé</TableHead>
                   {viewMode === 'hierarchical' ? (
                     <>
-                      <TableHead className="sticky top-0 z-30 border-b border-border bg-card text-right">Modifié</TableHead>
-                      <TableHead className="sticky top-0 z-30 border-b border-border bg-card text-right">Engagé</TableHead>
-                      <TableHead className="sticky top-0 z-30 border-b border-border bg-card text-right">Disponible</TableHead>
-                      <TableHead className="sticky top-0 z-30 border-b border-border bg-card text-center">Taux</TableHead>
+                      <TableHead className="sticky top-0 z-30 border-b border-blue-200 bg-blue-100/80 text-right font-bold text-slate-900">Modifié</TableHead>
+                      <TableHead className="sticky top-0 z-30 border-b border-blue-200 bg-blue-100/80 text-right font-bold text-slate-900">Engagé</TableHead>
+                      <TableHead className="sticky top-0 z-30 border-b border-blue-200 bg-blue-100/80 text-right font-bold text-slate-900">Disponible</TableHead>
+                      <TableHead className="sticky top-0 z-30 border-b border-blue-200 bg-blue-100/80 text-center font-bold text-slate-900">Taux</TableHead>
                     </>
                   ) : (
                     <>
-                      <TableHead className="sticky top-0 z-30 border-b border-border bg-card text-right">Montant Initial</TableHead>
-                      <TableHead className="sticky top-0 z-30 border-b border-border bg-card text-right">Modifié</TableHead>
-                      <TableHead className="sticky top-0 z-30 border-b border-border bg-card text-right">Réservé</TableHead>
-                      <TableHead className="sticky top-0 z-30 border-b border-border bg-card text-right">Engagé</TableHead>
-                      <TableHead className="sticky top-0 z-30 border-b border-border bg-card text-right">Liquidé</TableHead>
-                      <TableHead className="sticky top-0 z-30 border-b border-border bg-card text-right">Payé</TableHead>
-                      <TableHead className="sticky top-0 z-30 border-b border-border bg-card text-right">Disponible</TableHead>
-                      <TableHead className="sticky top-0 z-30 border-b border-border bg-card text-center">Taux Exec.</TableHead>
-                      <TableHead className="bg-card text-center">Statut</TableHead>
-                      <TableHead className="w-[100px] bg-card text-right">Actions</TableHead>
+                      <TableHead className="sticky top-0 z-30 border-b border-blue-200 bg-blue-100/80 text-right font-bold text-slate-900">Montant Initial</TableHead>
+                      <TableHead className="sticky top-0 z-30 border-b border-blue-200 bg-blue-100/80 text-right font-bold text-slate-900">Modifié</TableHead>
+                      <TableHead className="sticky top-0 z-30 border-b border-blue-200 bg-blue-100/80 text-right font-bold text-slate-900">Réservé</TableHead>
+                      <TableHead className="sticky top-0 z-30 border-b border-blue-200 bg-blue-100/80 text-right font-bold text-slate-900">Engagé</TableHead>
+                      <TableHead className="sticky top-0 z-30 border-b border-blue-200 bg-blue-100/80 text-right font-bold text-slate-900">Liquidé</TableHead>
+                      <TableHead className="sticky top-0 z-30 border-b border-blue-200 bg-blue-100/80 text-right font-bold text-slate-900">Payé</TableHead>
+                      <TableHead className="sticky top-0 z-30 border-b border-blue-200 bg-blue-100/80 text-right font-bold text-slate-900">Disponible</TableHead>
+                      <TableHead className="sticky top-0 z-30 border-b border-blue-200 bg-blue-100/80 text-center font-bold text-slate-900">Taux Exec.</TableHead>
+                      <TableHead className="bg-blue-100/80 text-center font-bold text-slate-900">Statut</TableHead>
+                      <TableHead className="w-[100px] bg-blue-100/80 text-right font-bold text-slate-900">Actions</TableHead>
                     </>
                   )}
                 </TableRow>
