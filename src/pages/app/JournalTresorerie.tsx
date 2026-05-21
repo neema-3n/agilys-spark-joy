@@ -38,10 +38,10 @@ const JournalTresorerie = () => {
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatsCard title="Mouvements" value={`${stats?.nombreTotal || 0}`} icon={ListOrdered} />
-        <StatsCard title="Encaissements" value={formatCurrency(stats?.montantEncaissements || 0)} icon={ArrowDownCircle} showCurrencyCode />
-        <StatsCard title="Décaissements" value={formatCurrency(stats?.montantDecaissements || 0)} icon={ArrowUpCircle} showCurrencyCode />
-        <StatsCard title="Non rapprochées" value={`${stats?.operationsNonRapprochees || 0}`} icon={Unplug} />
+        <StatsCard title="Mouvements" value={`${stats?.nombreTotal || 0}`} icon={ListOrdered} color="text-blue-700" />
+        <StatsCard title="Encaissements" value={formatCurrency(stats?.montantEncaissements || 0)} icon={ArrowDownCircle} showCurrencyCode color="text-green-600" />
+        <StatsCard title="Décaissements" value={formatCurrency(stats?.montantDecaissements || 0)} icon={ArrowUpCircle} showCurrencyCode color="text-red-600" />
+        <StatsCard title="Non rapprochées" value={`${stats?.operationsNonRapprochees || 0}`} icon={Unplug} color="text-amber-600" />
       </div>
 
       <Card>

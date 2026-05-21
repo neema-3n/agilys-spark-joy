@@ -21,6 +21,7 @@ export const TresorerieStats = ({ stats }: TresorerieStatsComponentProps) => {
         showCurrencyCode
         trend={`${stats.variationMensuelle >= 0 ? '+' : ''}${formatMontant(stats.variationMensuelle)} vs mois dernier`}
         trendUp={stats.variationMensuelle >= 0}
+        color="text-blue-700"
       />
       <StatsCard
         title="Encaissements"
@@ -43,6 +44,7 @@ export const TresorerieStats = ({ stats }: TresorerieStatsComponentProps) => {
         value={formatMontant(stats.soldePrevisionnel)}
         icon={Calendar}
         showCurrencyCode
+        color="text-cyan-700"
       />
     </div>
   );

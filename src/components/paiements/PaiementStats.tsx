@@ -47,28 +47,26 @@ export const PaiementStats = ({ paiements }: PaiementStatsProps) => {
         title="Total paiements"
         value={stats.nombreTotal}
         icon={Banknote}
+        color="text-blue-700"
       />
       <StatsCard
         title="Brouillons"
         value={stats.nombreBrouillon}
         icon={PencilLine}
+        color="text-slate-600"
       />
       <StatsCard
         title="Paiements validés"
         value={stats.nombreValide}
         icon={CheckCircle}
-      />
-      <StatsCard
-        title="Montant aujourd'hui"
-        value={stats.montantAujourdHui}
-        icon={TrendingUp}
-        showCurrencyCode
+        color="text-emerald-700"
       />
       <StatsCard
         title="Montant ce mois"
         value={stats.montantCeMois}
         icon={Banknote}
         showCurrencyCode
+        color="text-blue-700"
       />
     </div>
   );

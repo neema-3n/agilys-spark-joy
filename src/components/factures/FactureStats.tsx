@@ -59,7 +59,7 @@ export const FactureStats = ({ factures, stats: globalStats }: FactureStatsProps
         title="Soldées"
         value={stats.nombreSoldee.toString()}
         icon={DollarSign}
-        color="text-accent"
+        color="text-cyan-700"
         trend={formatMontant(stats.montantLiquide)}
         trendUp={true}
       />

@@ -26,7 +26,7 @@ export const ProjetStats = () => {
         title="En cours"
         value={stats.nombreEnCours.toString()}
         icon={PlayCircle}
-        color="text-primary"
+        color="text-blue-700"
       />
       <StatsCard
         title="Terminés"
@@ -46,14 +46,14 @@ export const ProjetStats = () => {
         value={`${formatMontant(stats.budgetTotalConsomme / 1000000, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}M`}
         icon={DollarSign}
         showCurrencyCode
-        color="text-accent"
+        color="text-amber-600"
         trend={`${tauxExecutionGlobal.toFixed(1)}% du total`}
       />
       <StatsCard
         title="Avancement moyen"
         value={`${stats.tauxExecutionMoyen.toFixed(0)}%`}
         icon={TrendingUp}
-        color="text-secondary"
+        color="text-cyan-700"
       />
     </div>
   );

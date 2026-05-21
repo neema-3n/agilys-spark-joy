@@ -40,14 +40,14 @@ export const EngagementStats = ({ engagements }: EngagementStatsProps) => {
         title="En Attente"
         value={enAttente.toString()}
         icon={Clock}
-        color="text-muted-foreground"
+        color="text-amber-600"
         trend="Brouillons à valider"
       />
       <StatsCard
         title="Annulés"
         value={engagementsAnnules.toString()}
         icon={XCircle}
-        color="text-muted-foreground"
+        color="text-red-600"
         trend="Engagements annulés"
       />
     </div>

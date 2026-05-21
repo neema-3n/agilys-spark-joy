@@ -41,7 +41,7 @@ export const BonCommandeStats = ({ bonsCommande }: BonCommandeStatsProps) => {
         title="Émis"
         value={stats.emis.toString()}
         icon={CheckCircle}
-        color="text-secondary"
+        color="text-blue-700"
         trend={formatMontant(stats.montantEmis)}
         trendUp={true}
       />
@@ -49,7 +49,7 @@ export const BonCommandeStats = ({ bonsCommande }: BonCommandeStatsProps) => {
         title="Réceptionnés"
         value={stats.receptionne.toString()}
         icon={Package}
-        color="text-accent"
+        color="text-emerald-700"
         trend={formatMontant(stats.montantReceptionne)}
         trendUp={true}
       />
@@ -57,7 +57,7 @@ export const BonCommandeStats = ({ bonsCommande }: BonCommandeStatsProps) => {
         title="Montant facturé"
         value={formatMontant(stats.montantFacture)}
         icon={DollarSign}
-        color="text-green-600"
+        color="text-cyan-700"
         trend={`${stats.receptionne} réceptionné${stats.receptionne > 1 ? 's' : ''}`}
         trendUp={true}
       />

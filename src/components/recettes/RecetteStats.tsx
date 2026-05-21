@@ -37,6 +37,7 @@ export const RecetteStats = ({ stats }: RecetteStatsProps) => {
         icon={Calendar}
         showCurrencyCode
         trend="Mois en cours"
+        color="text-blue-700"
       />
       <StatsCard
         title="Aujourd'hui"
@@ -44,6 +45,7 @@ export const RecetteStats = ({ stats }: RecetteStatsProps) => {
         icon={FileText}
         showCurrencyCode
         trend="Encaissements du jour"
+        color="text-cyan-700"
       />
     </div>
   );
