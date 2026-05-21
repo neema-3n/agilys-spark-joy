@@ -1,11 +1,13 @@
 import { ReactNode } from 'react';
 import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ListToolbarProps {
   searchValue: string;
   onSearchChange: (value: string) => void;
   searchPlaceholder?: string;
+  mobileSearchPlaceholder?: string;
   filters?: ReactNode[];
   rightSlot?: ReactNode;
 }
@@ -14,9 +16,13 @@ export const ListToolbar = ({
   searchValue,
   onSearchChange,
   searchPlaceholder,
+  mobileSearchPlaceholder = 'Rechercher...',
   filters = [],
   rightSlot,
 }: ListToolbarProps) => {
+  const isMobile = useIsMobile();
+  const effectivePlaceholder = isMobile ? mobileSearchPlaceholder : searchPlaceholder;
+
   return (
     <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
       <div className="relative flex-1">
@@ -24,7 +30,7 @@ export const ListToolbar = ({
         <Input
           value={searchValue}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder={searchPlaceholder}
+          placeholder={effectivePlaceholder}
           className="bg-background pl-10 pr-10"
           aria-label="Rechercher dans la liste"
         />
@@ -39,13 +45,13 @@ export const ListToolbar = ({
           </button>
         )}
       </div>
-      <div className="flex flex-wrap items-center gap-2 md:flex-nowrap">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 md:flex-nowrap md:overflow-visible md:pb-0">
         {filters.map((filter, index) => (
-          <div key={index} className="flex-shrink-0">
+          <div key={index} className="flex-shrink-0 whitespace-nowrap">
             {filter}
           </div>
         ))}
-        {rightSlot && <div className="flex-1 md:flex-none">{rightSlot}</div>}
+        {rightSlot && <div className="flex-shrink-0 whitespace-nowrap">{rightSlot}</div>}
       </div>
     </div>
   );
