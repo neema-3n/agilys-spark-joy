@@ -32,8 +32,6 @@ export const ReservationStats = ({ reservations }: ReservationStatsProps) => {
         value={stats.totalActives.toString()}
         icon={Clock}
         color="text-blue-700"
-        borderTintClassName="border-blue-200/90"
-        iconBgClassName="bg-blue-100/80"
         trend="En cours de validité"
       />
       <StatsCard
@@ -42,8 +40,6 @@ export const ReservationStats = ({ reservations }: ReservationStatsProps) => {
         icon={DollarSign}
         showCurrencyCode
         color="text-cyan-700"
-        borderTintClassName="border-cyan-200/90"
-        iconBgClassName="bg-cyan-100/80"
         trend="En réservation active"
         trendUp={true}
       />
@@ -53,8 +49,6 @@ export const ReservationStats = ({ reservations }: ReservationStatsProps) => {
         icon={CheckCircle}
         showCurrencyCode
         color="text-emerald-700"
-        borderTintClassName="border-emerald-200/90"
-        iconBgClassName="bg-emerald-100/80"
         trend="Consommés"
         trendUp={true}
       />
@@ -63,8 +57,6 @@ export const ReservationStats = ({ reservations }: ReservationStatsProps) => {
         value={stats.totalAnnulees.toString()}
         icon={XCircle}
         color="text-rose-700"
-        borderTintClassName="border-rose-200/90"
-        iconBgClassName="bg-rose-100/80"
         trend="Réservations abandonnées"
       />
     </div>

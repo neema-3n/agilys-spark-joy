@@ -660,7 +660,7 @@ const TailAdminHeader = ({
   const [notificationCount] = useState(3);
 
   return (
-    <header className="sticky top-0 z-30 h-[76px] border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <header className="sticky top-0 z-30 h-[76px] border-b border-border bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/90">
       <div className="flex h-full items-center gap-3 px-4 sm:px-5 lg:px-8">
         <Button
           type="button"
