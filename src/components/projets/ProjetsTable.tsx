@@ -26,6 +26,7 @@ interface ProjetsTableProps {
   onEdit: (projet: Projet) => void;
   onDelete: (projet: Projet) => void;
   canEdit?: boolean;
+  canDelete?: boolean;
   selection?: ListSelectionHandlers;
   stickyHeader?: boolean;
   stickyHeaderOffset?: number;
@@ -39,6 +40,7 @@ export const ProjetsTable = ({
   onEdit,
   onDelete,
   canEdit = true,
+  canDelete = canEdit,
   selection,
   stickyHeader = false,
   stickyHeaderOffset = 0,
@@ -176,22 +178,24 @@ export const ProjetsTable = ({
                 <Edit2 className="mr-2 h-4 w-4" />
                 Modifier
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={(event) => {
-                  event.preventDefault();
-                  onDelete(projet);
-                }}
-                className="text-destructive"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Supprimer
-              </DropdownMenuItem>
+              {canDelete ? (
+                <DropdownMenuItem
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    onDelete(projet);
+                  }}
+                  className="text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Supprimer
+                </DropdownMenuItem>
+              ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
         ),
       },
     ];
-  }, [canEdit, onDelete, onEdit, onView, selection]);
+  }, [canDelete, canEdit, onDelete, onEdit, onView, selection]);
 
   return (
     <ListTable
