@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from '@/components/ui/form';
 import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
 import { useProjets } from '@/hooks/useProjets';
 import { useExercice } from '@/contexts/ExerciceContext';
@@ -78,6 +78,10 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation, pre
       });
     }
   }, [reservation, open, currentExercice, preSelectedLigneBudgetaire]);
+
+  useEffect(() => {
+    form.clearErrors(['projetId', 'beneficiaire']);
+  }, [form, typeBeneficiaire]);
 
   const handleSubmit = async (values: z.infer<typeof reservationSchema>) => {
     if (typeBeneficiaire === 'projet' && !values.projetId) {
@@ -223,6 +227,9 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation, pre
                   <label htmlFor="autre" className="text-sm">Autre bénéficiaire</label>
                 </div>
               </RadioGroup>
+              <p className="text-sm text-muted-foreground">
+                Un rattachement est obligatoire : sélectionnez un projet ou saisissez un autre bénéficiaire.
+              </p>
             </div>
 
             {typeBeneficiaire === 'projet' ? (
@@ -246,6 +253,7 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation, pre
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormDescription>La réservation ne peut pas être créée sans projet si ce mode est sélectionné.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -260,6 +268,7 @@ export const ReservationDialog = ({ open, onOpenChange, onSave, reservation, pre
                     <FormControl>
                       <Input {...field} placeholder="Nom du bénéficiaire" />
                     </FormControl>
+                    <FormDescription>Renseignez ce champ si la réservation n'est pas rattachée à un projet.</FormDescription>
                     <FormMessage />
                   </FormItem>
               )}

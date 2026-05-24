@@ -15,6 +15,11 @@ import { formatCurrency, cn } from '@/lib/utils';
 import { Edit, Trash2, Eye, MoreHorizontal, XCircle, CheckCircle } from 'lucide-react';
 import type { ReservationCredit } from '@/types/reservation.types';
 import { formatDateValue } from '@/lib/date-utils';
+import {
+  canCancelReservation,
+  canCreateReservationEngagement,
+  canEditReservation,
+} from '@/lib/reservation-actions';
 
 interface ReservationTableProps {
   reservations: ReservationCredit[];
@@ -182,7 +187,9 @@ export const ReservationTable = ({
         cellClassName: 'text-right w-[70px]',
         render: (reservation) => {
           const solde = calculerSolde(reservation);
-          const isActive = reservation.statut === 'active';
+          const canEdit = canEditReservation(reservation.statut);
+          const canCreateEngagement = canCreateReservationEngagement(reservation.statut);
+          const canCancel = canCancelReservation(reservation.statut);
 
           return (
             <DropdownMenu>
@@ -199,21 +206,21 @@ export const ReservationTable = ({
                   </DropdownMenuItem>
                 )}
 
-                {(reservation.statut === 'brouillon' || isActive) && onEdit && (
+                {canEdit && onEdit && (
                   <DropdownMenuItem onClick={() => onEdit(reservation.id)}>
                     <Edit className="h-4 w-4 mr-2" />
                     Modifier
                   </DropdownMenuItem>
                 )}
 
-                {isActive && onCreerEngagement && (
+                {canCreateEngagement && onCreerEngagement && (
                   <DropdownMenuItem onClick={() => onCreerEngagement(reservation.id)} disabled={solde === 0}>
                     <CheckCircle className="h-4 w-4 mr-2" />
                     Créer un engagement
                   </DropdownMenuItem>
                 )}
 
-                {isActive && onAnnuler && (
+                {canCancel && onAnnuler && (
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => onAnnuler(reservation.id)}>

@@ -7,6 +7,11 @@ import { SnapshotLinkedEntitiesCard } from '@/components/shared/SnapshotLinkedEn
 import { SnapshotPrimaryCard } from '@/components/shared/SnapshotPrimaryCard';
 import type { ReservationCredit } from '@/types/reservation.types';
 import { formatDate, formatDateTime, formatMontant, getEntityUrl } from '@/lib/snapshot-utils';
+import {
+  canCancelReservation,
+  canCreateReservationEngagement,
+  canEditReservation,
+} from '@/lib/reservation-actions';
 import { useNavigate } from 'react-router-dom';
 
 interface ReservationSnapshotProps {
@@ -17,6 +22,7 @@ interface ReservationSnapshotProps {
   hasNext: boolean;
   currentIndex: number;
   totalCount: number;
+  onEdit?: () => void;
   onCreerEngagement?: () => void;
   onAnnuler?: () => void;
   onNavigateToEntity?: (type: string, id: string) => void;
@@ -30,6 +36,7 @@ export const ReservationSnapshot = ({
   hasNext,
   currentIndex,
   totalCount,
+  onEdit,
   onCreerEngagement,
   onAnnuler,
   onNavigateToEntity,
@@ -77,12 +84,17 @@ export const ReservationSnapshot = ({
 
   const actions = (
     <>
-      {reservation.statut === 'active' && onCreerEngagement && (
+      {canEditReservation(reservation.statut) && onEdit && (
+        <Button variant="outline" size="sm" onClick={onEdit}>
+          Modifier
+        </Button>
+      )}
+      {canCreateReservationEngagement(reservation.statut) && onCreerEngagement && (
         <Button variant="outline" size="sm" onClick={onCreerEngagement}>
           Créer un engagement
         </Button>
       )}
-      {(reservation.statut === 'active' || reservation.statut === 'convertie') && onAnnuler && (
+      {canCancelReservation(reservation.statut) && onAnnuler && (
         <Button variant="destructive" size="sm" onClick={onAnnuler}>
           Annuler
         </Button>
