@@ -69,6 +69,8 @@ const Projets = () => {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projetToDelete, setProjetToDelete] = useState<Projet | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeletingProjet, setIsDeletingProjet] = useState(false);
   const [isProjetDirty, setIsProjetDirty] = useState(false);
   const [search, setSearch] = useState('');
   const [statutFilter, setStatutFilter] = useState<'tous' | StatutProjet>('tous');
@@ -201,6 +203,7 @@ const Projets = () => {
   };
 
   const handleDeleteClick = (projet: Projet) => {
+    setDeleteError(null);
     setProjetToDelete(projet);
     setDeleteDialogOpen(true);
   };
@@ -237,24 +240,29 @@ const Projets = () => {
   };
 
   const handleConfirmDelete = async () => {
-    if (!projetToDelete) return;
+    if (!projetToDelete || isDeletingProjet) return;
 
     try {
+      setIsDeletingProjet(true);
+      setDeleteError(null);
       await projetsService.delete(projetToDelete.id);
       toast({
         title: 'Succès',
         description: 'Projet supprimé avec succès',
       });
       refetch();
+      setDeleteDialogOpen(false);
+      setProjetToDelete(null);
     } catch (error: any) {
+      const message = error.message || 'Impossible de supprimer ce projet';
+      setDeleteError(message);
       toast({
         title: 'Erreur',
-        description: error.message || 'Impossible de supprimer ce projet',
+        description: message,
         variant: 'destructive',
       });
     } finally {
-      setDeleteDialogOpen(false);
-      setProjetToDelete(null);
+      setIsDeletingProjet(false);
     }
   };
 
@@ -328,6 +336,7 @@ const Projets = () => {
           }
         />
         <ProjetForm
+          key={selectedProjet?.id || 'create'}
           projet={selectedProjet}
           onSubmit={handleSubmit}
           onCancel={handleSingleCancel}
@@ -543,7 +552,16 @@ const Projets = () => {
         />
       </ListLayout>
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          setDeleteDialogOpen(open);
+          if (!open) {
+            setProjetToDelete(null);
+            setDeleteError(null);
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
@@ -552,9 +570,14 @@ const Projets = () => {
               Cette action est irréversible.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {deleteError ? (
+            <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {deleteError}
+            </p>
+          ) : null}
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete}>
+            <AlertDialogCancel disabled={isDeletingProjet}>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} disabled={isDeletingProjet}>
               Supprimer
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -12,9 +12,8 @@ import { ListColumn, ListTable } from '@/components/lists/ListTable';
 import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/selectionColumn';
 import { formatCurrency } from '@/lib/utils';
 import { CheckCircle2, Eye, Pencil, XCircle } from 'lucide-react';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import type { Paiement } from '@/types/paiement.types';
+import { formatDateValue } from '@/lib/date-utils';
 
 interface PaiementTableProps {
   paiements: Paiement[];
@@ -29,7 +28,7 @@ interface PaiementTableProps {
   footer?: React.ReactNode;
 }
 
-const formatDate = (dateString: string) => format(new Date(dateString), 'dd/MM/yyyy', { locale: fr });
+const formatDate = (dateString: string) => formatDateValue(dateString);
 
 export const PaiementTable = ({
   paiements,

@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
 import { Edit2, MoreHorizontal, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,6 +18,7 @@ import {
   ProjetPrioriteBadge,
   getProjetBudgetDisponible,
 } from '@/components/projets/projet-ui';
+import { formatDateValue } from '@/lib/date-utils';
 
 interface ProjetsTableProps {
   projets: Projet[];
@@ -143,8 +143,8 @@ export const ProjetsTable = ({
         header: 'Dates',
         render: (projet) => (
           <div className="text-sm text-muted-foreground">
-            <div>{format(new Date(projet.dateDebut), 'dd/MM/yyyy')}</div>
-            <div>{format(new Date(projet.dateFin), 'dd/MM/yyyy')}</div>
+            <div>{formatDateValue(projet.dateDebut)}</div>
+            <div>{formatDateValue(projet.dateFin)}</div>
           </div>
         ),
       },
@@ -167,12 +167,20 @@ export const ProjetsTable = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(projet)}>
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault();
+                  onEdit(projet);
+                }}
+              >
                 <Edit2 className="mr-2 h-4 w-4" />
                 Modifier
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => onDelete(projet)}
+                onSelect={(event) => {
+                  event.preventDefault();
+                  onDelete(projet);
+                }}
                 className="text-destructive"
               >
                 <Trash2 className="mr-2 h-4 w-4" />

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -22,8 +22,16 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
+import { selectFieldContentOnFocus } from '@/lib/form-focus-utils';
+
+const includeCurrentSelection = <T extends { id: string; statut?: string }>(
+  items: T[],
+  selectedId?: string
+) => items.filter((item) => item.statut === 'actif' || item.id === selectedId);
 
 const ligneBudgetaireSchema = z.object({
+  sectionId: z.string().min(1, 'Veuillez sélectionner une section'),
+  programmeId: z.string().min(1, 'Veuillez sélectionner un programme'),
   actionId: z.string().min(1, 'Veuillez sélectionner une action budgétaire'),
   compteId: z.string().min(1, 'Veuillez sélectionner un compte comptable'),
   enveloppeId: z.string().optional(),
@@ -60,17 +68,13 @@ export const LigneBudgetaireForm = ({
   onDirtyChange,
   submitLabel,
 }: LigneBudgetaireFormProps) => {
-  const [selectedSectionId, setSelectedSectionId] = useState('');
-  const [selectedProgrammeId, setSelectedProgrammeId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const initialHierarchyRef = useRef<{ sectionId: string; programmeId: string }>({
-    sectionId: '',
-    programmeId: '',
-  });
 
   const form = useForm<LigneBudgetaireFormValues>({
     resolver: zodResolver(ligneBudgetaireSchema),
     defaultValues: {
+      sectionId: '',
+      programmeId: '',
       actionId: '',
       compteId: '',
       enveloppeId: '',
@@ -79,37 +83,48 @@ export const LigneBudgetaireForm = ({
     },
   });
 
-  const sectionsActives = useMemo(() => sections.filter((section) => section.statut === 'actif'), [sections]);
-  const comptesActifs = useMemo(() => comptes.filter((compte) => compte.statut === 'actif'), [comptes]);
-  const enveloppesActives = useMemo(() => enveloppes.filter((enveloppe) => enveloppe.statut === 'actif'), [enveloppes]);
+  const selectedSectionId = form.watch('sectionId');
+  const selectedProgrammeId = form.watch('programmeId');
+  const selectedActionId = form.watch('actionId');
+  const selectedCompteId = form.watch('compteId');
+  const selectedEnveloppeId = form.watch('enveloppeId');
+
+  const sectionsActives = useMemo(
+    () => includeCurrentSelection(sections, selectedSectionId),
+    [sections, selectedSectionId]
+  );
+  const comptesActifs = useMemo(
+    () => includeCurrentSelection(comptes, selectedCompteId),
+    [comptes, selectedCompteId]
+  );
+  const enveloppesActives = useMemo(
+    () => includeCurrentSelection(enveloppes, selectedEnveloppeId),
+    [enveloppes, selectedEnveloppeId]
+  );
 
   const programmesActifs = useMemo(
     () =>
-      programmes.filter(
-        (programme) => programme.statut === 'actif' && programme.section_id === selectedSectionId
+      includeCurrentSelection(programmes, selectedProgrammeId).filter(
+        (programme) => programme.section_id === selectedSectionId
       ),
-    [programmes, selectedSectionId]
+    [programmes, selectedProgrammeId, selectedSectionId]
   );
 
   const actionsActives = useMemo(
     () =>
-      actions.filter(
-        (action) => action.statut === 'actif' && action.programme_id === selectedProgrammeId
+      includeCurrentSelection(actions, selectedActionId).filter(
+        (action) => action.programme_id === selectedProgrammeId
       ),
-    [actions, selectedProgrammeId]
+    [actions, selectedActionId, selectedProgrammeId]
   );
 
   useEffect(() => {
     if (ligne) {
       const selectedAction = actions.find((action) => action.id === ligne.actionId);
       const selectedProgramme = programmes.find((programme) => programme.id === selectedAction?.programme_id);
-      setSelectedSectionId(selectedProgramme?.section_id || '');
-      setSelectedProgrammeId(selectedAction?.programme_id || '');
-      initialHierarchyRef.current = {
+      form.reset({
         sectionId: selectedProgramme?.section_id || '',
         programmeId: selectedAction?.programme_id || '',
-      };
-      form.reset({
         actionId: ligne.actionId,
         compteId: ligne.compteId,
         enveloppeId: ligne.enveloppeId || '',
@@ -119,10 +134,9 @@ export const LigneBudgetaireForm = ({
       return;
     }
 
-    setSelectedSectionId('');
-    setSelectedProgrammeId('');
-    initialHierarchyRef.current = { sectionId: '', programmeId: '' };
     form.reset({
+      sectionId: '',
+      programmeId: '',
       actionId: '',
       compteId: '',
       enveloppeId: '',
@@ -131,14 +145,9 @@ export const LigneBudgetaireForm = ({
     });
   }, [actions, form, ligne, programmes]);
 
-  const isDirty =
-    form.formState.isDirty ||
-    selectedSectionId !== initialHierarchyRef.current.sectionId ||
-    selectedProgrammeId !== initialHierarchyRef.current.programmeId;
-
   useEffect(() => {
-    onDirtyChange?.(isDirty);
-  }, [isDirty, onDirtyChange]);
+    onDirtyChange?.(form.formState.isDirty);
+  }, [form.formState.isDirty, onDirtyChange]);
 
   useEffect(() => {
     return () => onDirtyChange?.(false);
@@ -174,55 +183,77 @@ export const LigneBudgetaireForm = ({
 
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
-              <FormLabel>Section *</FormLabel>
-              <Select
-                value={selectedSectionId}
-                onValueChange={(value) => {
-                  setSelectedSectionId(value);
-                  setSelectedProgrammeId('');
-                  form.setValue('actionId', '');
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner une section" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sectionsActives.map((section) => (
-                    <SelectItem key={section.id} value={section.id}>
-                      {section.code} - {section.libelle}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormField
+                control={form.control}
+                name="sectionId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Section *</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        form.setValue('programmeId', '', { shouldDirty: true, shouldValidate: true });
+                        form.setValue('actionId', '', { shouldDirty: true, shouldValidate: true });
+                      }}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner une section" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {sectionsActives.map((section) => (
+                          <SelectItem key={section.id} value={section.id}>
+                            {section.code} - {section.libelle}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             <div className="space-y-2">
-              <FormLabel>Programme *</FormLabel>
-              <Select
-                value={selectedProgrammeId}
-                onValueChange={(value) => {
-                  setSelectedProgrammeId(value);
-                  form.setValue('actionId', '');
-                }}
-                disabled={!selectedSectionId}
-              >
-                <SelectTrigger>
-                  <SelectValue
-                    placeholder={
-                      selectedSectionId
-                        ? 'Sélectionner un programme'
-                        : "Veuillez d'abord sélectionner une section"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {programmesActifs.map((programme) => (
-                    <SelectItem key={programme.id} value={programme.id}>
-                      {programme.code} - {programme.libelle}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormField
+                control={form.control}
+                name="programmeId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Programme *</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        form.setValue('actionId', '', { shouldDirty: true, shouldValidate: true });
+                      }}
+                      value={field.value}
+                      disabled={!selectedSectionId}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={
+                              selectedSectionId
+                                ? 'Sélectionner un programme'
+                                : "Veuillez d'abord sélectionner une section"
+                            }
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {programmesActifs.map((programme) => (
+                          <SelectItem key={programme.id} value={programme.id}>
+                            {programme.code} - {programme.libelle}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
           </div>
 
@@ -273,7 +304,7 @@ export const LigneBudgetaireForm = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Compte comptable *</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value || ligne?.compteId || ''}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionner un compte" />
@@ -298,7 +329,7 @@ export const LigneBudgetaireForm = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Enveloppe (optionnel)</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value || ligne?.enveloppeId || ''}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionner une enveloppe" />
@@ -325,7 +356,7 @@ export const LigneBudgetaireForm = ({
               <FormItem>
                 <FormLabel>Libellé *</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="Libellé de la ligne budgétaire" />
+                  <Input {...field} placeholder="Libellé de la ligne budgétaire" onFocus={ligne ? selectFieldContentOnFocus : undefined} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -348,7 +379,7 @@ export const LigneBudgetaireForm = ({
               <FormItem>
                 <FormLabel>Montant initial *</FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.01" {...field} placeholder="0" />
+                  <Input type="number" step="0.01" {...field} placeholder="0" onFocus={ligne ? selectFieldContentOnFocus : undefined} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

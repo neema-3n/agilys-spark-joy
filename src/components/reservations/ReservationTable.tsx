@@ -13,9 +13,8 @@ import { ListColumn, ListTable } from '@/components/lists/ListTable';
 import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/selectionColumn';
 import { formatCurrency, cn } from '@/lib/utils';
 import { Edit, Trash2, Eye, MoreHorizontal, XCircle, CheckCircle } from 'lucide-react';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import type { ReservationCredit } from '@/types/reservation.types';
+import { formatDateValue } from '@/lib/date-utils';
 
 interface ReservationTableProps {
   reservations: ReservationCredit[];
@@ -43,7 +42,7 @@ const calculerSolde = (reservation: ReservationCredit): number => {
   return Number(reservation.montant) - montantEngage;
 };
 
-const formatDate = (dateString: string) => format(new Date(dateString), 'dd/MM/yyyy', { locale: fr });
+const formatDate = (dateString: string) => formatDateValue(dateString);
 
 const getStatutBadge = (statut: ReservationCredit['statut']) => {
   const variants: Record<ReservationCredit['statut'], 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'> = {

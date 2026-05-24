@@ -2,10 +2,9 @@ import { ListTable, ListColumn } from '@/components/lists/ListTable';
 import type { Recette } from '@/types/recette.types';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { Eye, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { formatDateValue } from '@/lib/date-utils';
 
 interface RecetteTableProps {
   recettes: Recette[];
@@ -23,7 +22,7 @@ export const RecetteTable = ({ recettes, onView, onAnnuler }: RecetteTableProps)
     {
       id: 'dateRecette',
       header: 'Date',
-      render: (recette) => format(new Date(recette.dateRecette), 'dd/MM/yyyy', { locale: fr }),
+      render: (recette) => formatDateValue(recette.dateRecette),
     },
     {
       id: 'montant',
