@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -16,6 +16,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -90,6 +91,10 @@ export const EngagementForm = ({
   const [pendingOverrideSubmission, setPendingOverrideSubmission] = useState<PendingOverrideSubmission | null>(null);
   const initialTypeBeneficiaireRef = useRef<'fournisseur' | 'direct' | null>(null);
 
+  const currentLigneBudgetaireId = selectedReservation?.ligneBudgetaireId || engagement?.ligneBudgetaireId;
+  const currentFournisseurId = engagement?.fournisseurId;
+  const currentProjetId = selectedReservation?.projetId || engagement?.projetId;
+
   const form = useForm<EngagementFormValues>({
     resolver: zodResolver(engagementSchema),
     defaultValues: {
@@ -103,6 +108,33 @@ export const EngagementForm = ({
       reservationCreditId: '',
     },
   });
+
+  const ligneBudgetaireOptions = useMemo(() => {
+    if (!currentLigneBudgetaireId || lignesActives.some((ligne) => ligne.id === currentLigneBudgetaireId)) {
+      return lignesActives;
+    }
+
+    const currentLigne = lignesBudgetaires.find((ligne) => ligne.id === currentLigneBudgetaireId);
+    return currentLigne ? [currentLigne, ...lignesActives] : lignesActives;
+  }, [currentLigneBudgetaireId, lignesActives, lignesBudgetaires]);
+
+  const fournisseurOptions = useMemo(() => {
+    if (!currentFournisseurId || fournisseursActifs.some((fournisseur) => fournisseur.id === currentFournisseurId)) {
+      return fournisseursActifs;
+    }
+
+    const currentFournisseur = fournisseurs.find((fournisseur) => fournisseur.id === currentFournisseurId);
+    return currentFournisseur ? [currentFournisseur, ...fournisseursActifs] : fournisseursActifs;
+  }, [currentFournisseurId, fournisseurs, fournisseursActifs]);
+
+  const projetOptions = useMemo(() => {
+    if (!currentProjetId || projetsActifs.some((projet) => projet.id === currentProjetId)) {
+      return projetsActifs;
+    }
+
+    const currentProjet = projets.find((projet) => projet.id === currentProjetId);
+    return currentProjet ? [currentProjet, ...projetsActifs] : projetsActifs;
+  }, [currentProjetId, projets, projetsActifs]);
 
   useEffect(() => {
     initializedRef.current = false;
@@ -184,6 +216,10 @@ export const EngagementForm = ({
   useEffect(() => {
     return () => onDirtyChange?.(false);
   }, [onDirtyChange]);
+
+  useEffect(() => {
+    form.clearErrors(['fournisseurId', 'beneficiaire']);
+  }, [form, typeBeneficiaire]);
 
   const submitEngagement = async (data: EngagementFormData) => {
     setIsSubmitting(true);
@@ -294,7 +330,7 @@ export const EngagementForm = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {lignesActives.map((ligne) => (
+                      {ligneBudgetaireOptions.map((ligne) => (
                         <SelectItem key={ligne.id} value={ligne.id}>
                           {ligne.libelle} - Disponible : {ligne.disponible.toLocaleString('fr-FR')}
                         </SelectItem>
@@ -364,6 +400,9 @@ export const EngagementForm = ({
                 </label>
               </div>
             </RadioGroup>
+            <p className="text-sm text-muted-foreground">
+              Le bénéficiaire doit être renseigné soit via un fournisseur, soit via un nom libre.
+            </p>
           </div>
 
           {typeBeneficiaire === 'fournisseur' ? (
@@ -380,13 +419,14 @@ export const EngagementForm = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {fournisseursActifs.map((fournisseur) => (
+                      {fournisseurOptions.map((fournisseur) => (
                         <SelectItem key={fournisseur.id} value={fournisseur.id}>
                           {fournisseur.code} - {fournisseur.nom}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormDescription>Le fournisseur existant reste sélectionnable en édition même s'il n'est plus actif.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -401,6 +441,7 @@ export const EngagementForm = ({
                   <FormControl>
                     <Input {...field} placeholder="Nom du bénéficiaire" disabled={!!selectedReservation} />
                   </FormControl>
+                  <FormDescription>Utilisez ce mode quand l'engagement n'est pas rattaché à un fournisseur référencé.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -430,13 +471,14 @@ export const EngagementForm = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {projetsActifs.map((projet) => (
+                      {projetOptions.map((projet) => (
                         <SelectItem key={projet.id} value={projet.id}>
                           {projet.code} - {projet.nom}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormDescription>Le projet déjà lié reste disponible en édition, même s'il n'est plus actif.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

@@ -3,6 +3,7 @@ import { useLocation, useMatch, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { EngagementForm } from '@/components/engagements/EngagementForm';
@@ -80,6 +81,7 @@ const Engagements = () => {
   const [montantMin, setMontantMin] = useState('');
   const [montantMax, setMontantMax] = useState('');
   const isMobile = useIsMobile();
+  const batchActionsEnabled = false;
   const navigate = useNavigate();
   const { toast } = useToast();
   const isCreateMode = !!createMatch;
@@ -558,7 +560,7 @@ const Engagements = () => {
                       onToggle={() => setIsAdvancedFiltersOpen((open) => !open)}
                       activeCount={activeAdvancedFiltersCount}
                     />,
-                    ...(!isMobile || selectedIds.size > 0
+                    ...(batchActionsEnabled && (!isMobile || selectedIds.size > 0)
                       ? [
                           <DropdownMenu key="batch-actions">
                             <DropdownMenuTrigger asChild>
@@ -628,7 +630,7 @@ const Engagements = () => {
                 onCreerFacture={handleCreerFacture}
                 onCreerDepense={handleCreerDepense}
                 onViewDetails={handleOpenSnapshot}
-                selection={{ selectedIds, allSelected, toggleOne, toggleAll }}
+                selection={batchActionsEnabled ? { selectedIds, allSelected, toggleOne, toggleAll } : undefined}
                 stickyHeader
                 stickyHeaderOffset={0}
                 scrollContainerClassName="max-h-[calc(100vh-220px)] overflow-auto"
@@ -668,23 +670,27 @@ const Engagements = () => {
           </AlertDialogHeader>
           <div className="py-4">
             <Label htmlFor="motif-engagement">Motif d&apos;annulation</Label>
-            <Input
+            <Textarea
               id="motif-engagement"
               value={motifAnnulation}
               onChange={(event) => setMotifAnnulation(event.target.value)}
               placeholder="Ex: réaffectation budgétaire, erreur de saisie..."
-              className="mt-2"
+              className="mt-2 min-h-28"
             />
+            <p className="mt-2 text-sm text-muted-foreground">
+              Le motif est obligatoire pour tracer l&apos;annulation de l&apos;engagement.
+            </p>
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Fermer</AlertDialogCancel>
-            <AlertDialogAction
+            <Button
+              type="button"
               onClick={handleConfirmMotifAnnulation}
               disabled={!motifAnnulation.trim()}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Confirmer l&apos;annulation
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
