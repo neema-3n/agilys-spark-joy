@@ -59,7 +59,7 @@ const Projets = () => {
   const { toast } = useToast();
   const { currentClient } = useClient();
   const { currentExercice } = useExercice();
-  const { hasAnyRole } = useAuth();
+  const { hasAnyRole, hasRole } = useAuth();
   const navigate = useNavigate();
   const { projetId } = useParams<{ projetId: string }>();
   const { projets, isLoading, refetch } = useProjets();
@@ -87,6 +87,7 @@ const Projets = () => {
   const [batchStatutValue, setBatchStatutValue] = useState<StatutProjet>('planifie');
   const [batchPrioriteValue, setBatchPrioriteValue] = useState<PrioriteProjet>('moyenne');
   const isMobile = useIsMobile();
+  const batchActionsEnabled = false;
   const { data: typesProjet = [] } = useReferentiels('type_projet');
   const selectedProjet = useMemo(
     () => (projetId ? projets.find((projet) => projet.id === projetId) || null : null),
@@ -101,7 +102,7 @@ const Projets = () => {
         projet.code.toLowerCase().includes(searchLower) ||
         projet.nom.toLowerCase().includes(searchLower) ||
         projet.responsable?.toLowerCase().includes(searchLower);
-      const matchesStatut = statutFilter === 'tous' || projet.statut === statutFilter;
+      const matchesStatut = statutFilter === 'tous' || String(projet.statut).trim().toLowerCase() === statutFilter;
       const matchesPriorite =
         prioriteFilter === 'toutes' || projet.priorite === prioriteFilter;
       const matchesResponsable =
@@ -182,6 +183,7 @@ const Projets = () => {
   });
 
   const canEdit = hasAnyRole(['super_admin', 'admin_client', 'directeur_financier', 'chef_service']);
+  const canDelete = hasRole('super_admin');
   const handleSingleCancel = useCallback(() => {
     navigate(selectedProjet ? `/app/projets/${selectedProjet.id}` : '/app/projets');
   }, [navigate, selectedProjet]);
@@ -250,7 +252,8 @@ const Projets = () => {
         title: 'Succès',
         description: 'Projet supprimé avec succès',
       });
-      refetch();
+      await refetch();
+      navigate('/app/projets');
       setDeleteDialogOpen(false);
       setProjetToDelete(null);
     } catch (error: any) {
@@ -352,17 +355,50 @@ const Projets = () => {
 
   if (isDetailRoute && isSnapshotOpen && snapshotProjet) {
     return (
-      <ProjetSnapshot
-        projet={snapshotProjet}
-        onClose={closeSnapshot}
-        onNavigate={navigateSnapshot}
-        hasPrev={snapshotIndex > 0}
-        hasNext={snapshotIndex >= 0 && snapshotIndex < projets.length - 1}
-        currentIndex={Math.max(snapshotIndex, 0)}
-        totalCount={projets.length}
-        onEdit={canEdit ? () => handleEdit(snapshotProjet) : undefined}
-        onDelete={canEdit ? () => handleDeleteClick(snapshotProjet) : undefined}
-      />
+      <>
+        <ProjetSnapshot
+          projet={snapshotProjet}
+          onClose={closeSnapshot}
+          onNavigate={navigateSnapshot}
+          hasPrev={snapshotIndex > 0}
+          hasNext={snapshotIndex >= 0 && snapshotIndex < projets.length - 1}
+          currentIndex={Math.max(snapshotIndex, 0)}
+          totalCount={projets.length}
+          onEdit={canEdit ? () => handleEdit(snapshotProjet) : undefined}
+          onDelete={canDelete ? () => handleDeleteClick(snapshotProjet) : undefined}
+        />
+        <AlertDialog
+          open={deleteDialogOpen}
+          onOpenChange={(open) => {
+            setDeleteDialogOpen(open);
+            if (!open) {
+              setProjetToDelete(null);
+              setDeleteError(null);
+            }
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+              <AlertDialogDescription>
+                Êtes-vous sûr de vouloir supprimer le projet "{projetToDelete?.nom}" ?
+                Cette action est irréversible.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            {deleteError ? (
+              <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {deleteError}
+              </p>
+            ) : null}
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeletingProjet}>Annuler</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmDelete} disabled={isDeletingProjet}>
+                Supprimer
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
     );
   }
 
@@ -420,7 +456,7 @@ const Projets = () => {
                 onToggle={() => setIsAdvancedFiltersOpen((open) => !open)}
                 activeCount={activeAdvancedFiltersCount}
               />,
-              ...(!isMobile || selectedIds.size > 0
+              ...(batchActionsEnabled && (!isMobile || selectedIds.size > 0)
                 ? [
                     <DropdownMenu key="batch-actions">
                       <DropdownMenuTrigger asChild>
@@ -532,7 +568,8 @@ const Projets = () => {
           onEdit={handleEdit}
           onDelete={handleDeleteClick}
           canEdit={canEdit}
-          selection={{ selectedIds, allSelected, toggleOne, toggleAll }}
+          canDelete={canDelete}
+          selection={batchActionsEnabled ? { selectedIds, allSelected, toggleOne, toggleAll } : undefined}
           stickyHeader
           stickyHeaderOffset={0}
           scrollContainerClassName="max-h-[calc(100vh-220px)] overflow-auto"

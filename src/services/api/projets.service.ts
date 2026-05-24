@@ -1,6 +1,24 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Projet, CreateProjetInput, UpdateProjetInput, ProjetStats } from '@/types/projet.types';
 
+const STATUS_ALIASES: Record<string, Projet['statut']> = {
+  planifie: 'planifie',
+  'planifié': 'planifie',
+  en_cours: 'en_cours',
+  'en cours': 'en_cours',
+  en_attente: 'en_attente',
+  'en attente': 'en_attente',
+  termine: 'termine',
+  'terminé': 'termine',
+  annule: 'annule',
+  annulé: 'annule',
+};
+
+const normalizeProjetStatut = (value?: string | null): Projet['statut'] => {
+  const normalized = value?.trim().toLowerCase();
+  return (normalized && STATUS_ALIASES[normalized]) || 'planifie';
+};
+
 // Helper pour mapper les données de la DB vers le type Projet
 const mapFromDatabase = (row: any): Projet => ({
   id: row.id,
@@ -16,7 +34,7 @@ const mapFromDatabase = (row: any): Projet => ({
   budgetConsomme: parseFloat(row.budget_consomme || 0),
   budgetEngage: parseFloat(row.budget_engage || 0),
   enveloppeId: row.enveloppe_id,
-  statut: row.statut,
+  statut: normalizeProjetStatut(row.statut),
   typeProjet: row.type_projet,
   priorite: row.priorite,
   tauxAvancement: parseFloat(row.taux_avancement || 0),
@@ -26,22 +44,25 @@ const mapFromDatabase = (row: any): Projet => ({
 });
 
 // Helper pour mapper les données du type Projet vers la DB
-const mapToDatabase = (input: CreateProjetInput | UpdateProjetInput) => ({
-  client_id: (input as any).clientId,
-  exercice_id: (input as any).exerciceId,
-  code: (input as any).code,
-  nom: (input as any).nom,
-  description: (input as any).description,
-  responsable: (input as any).responsable,
-  date_debut: (input as any).dateDebut,
-  date_fin: (input as any).dateFin,
-  budget_alloue: (input as any).budgetAlloue,
-  enveloppe_id: (input as any).enveloppeId,
-  statut: (input as any).statut,
-  type_projet: (input as any).typeProjet,
-  priorite: (input as any).priorite,
-  taux_avancement: (input as any).tauxAvancement,
-});
+const mapToDatabase = (input: CreateProjetInput | UpdateProjetInput) =>
+  Object.fromEntries(
+    Object.entries({
+      client_id: (input as any).clientId,
+      exercice_id: (input as any).exerciceId,
+      code: (input as any).code,
+      nom: (input as any).nom,
+      description: (input as any).description,
+      responsable: (input as any).responsable,
+      date_debut: (input as any).dateDebut,
+      date_fin: (input as any).dateFin,
+      budget_alloue: (input as any).budgetAlloue,
+      enveloppe_id: (input as any).enveloppeId,
+      statut: (input as any).statut ? normalizeProjetStatut((input as any).statut) : undefined,
+      type_projet: (input as any).typeProjet,
+      priorite: (input as any).priorite,
+      taux_avancement: (input as any).tauxAvancement,
+    }).filter(([, value]) => value !== undefined)
+  );
 
 export const projetsService = {
   async getByExercice(exerciceId: string, clientId: string): Promise<Projet[]> {

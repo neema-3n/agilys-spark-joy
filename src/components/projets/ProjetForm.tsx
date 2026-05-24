@@ -43,6 +43,7 @@ type ProjetFormValues = z.infer<typeof projetFormSchema>;
 export type ProjetFormSubmitData = Omit<ProjetFormValues, 'dateDebut' | 'dateFin'> & {
   dateDebut: string;
   dateFin: string;
+  statut?: string;
 };
 
 const defaultValues: ProjetFormValues = {
@@ -114,6 +115,11 @@ export const ProjetForm = ({ projet, onSubmit, onCancel, onDirtyChange, submitLa
       ...values,
       enveloppeId: values.enveloppeId === 'none' ? undefined : values.enveloppeId,
       typeProjet: values.typeProjet === 'none' ? undefined : values.typeProjet,
+      statut: projet
+        ? values.statut === projet.statut
+          ? undefined
+          : values.statut
+        : values.statut,
       dateDebut: toDateOnlyString(values.dateDebut),
       dateFin: toDateOnlyString(values.dateFin),
     });
