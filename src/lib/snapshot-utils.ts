@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { formatDateValue, parseDateValue } from './date-utils';
 export { formatMontant } from './utils';
 
 /**
@@ -8,7 +9,7 @@ export { formatMontant } from './utils';
 export const formatDate = (dateString?: string): string => {
   if (!dateString) return '-';
   try {
-    return format(new Date(dateString), 'dd/MM/yyyy', { locale: fr });
+    return formatDateValue(dateString, 'dd/MM/yyyy');
   } catch {
     return '-';
   }
@@ -20,7 +21,8 @@ export const formatDate = (dateString?: string): string => {
 export const formatDateTime = (dateString?: string): string => {
   if (!dateString) return '-';
   try {
-    return format(new Date(dateString), "dd/MM/yyyy 'à' HH:mm", { locale: fr });
+    const parsed = parseDateValue(dateString);
+    return parsed ? format(parsed, "dd/MM/yyyy 'à' HH:mm", { locale: fr }) : '-';
   } catch {
     return '-';
   }

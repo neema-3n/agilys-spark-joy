@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Edit2, Trash2, Calendar, User } from 'lucide-react';
 import { Projet } from '@/types/projet.types';
-import { format } from 'date-fns';
 import { formatMontant } from '@/lib/utils';
 import { ProjetStatusBadge } from '@/components/ui/status-badge';
 import {
@@ -11,6 +10,7 @@ import {
   getProjetBudgetConsumptionRate,
   getProjetBudgetDisponible,
 } from '@/components/projets/projet-ui';
+import { formatDateValue } from '@/lib/date-utils';
 
 interface ProjetCardProps {
   projet: Projet;
@@ -112,7 +112,7 @@ export const ProjetCard = ({ projet, onView, onEdit, onDelete, canEdit = true }:
           <div className="flex items-center gap-2 text-muted-foreground">
             <Calendar className="h-3 w-3" />
             <span>
-              {format(new Date(projet.dateDebut), 'dd/MM/yyyy')} - {format(new Date(projet.dateFin), 'dd/MM/yyyy')}
+              {formatDateValue(projet.dateDebut)} - {formatDateValue(projet.dateFin)}
             </span>
           </div>
         </div>

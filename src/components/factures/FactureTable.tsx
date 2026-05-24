@@ -20,8 +20,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,6 +35,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useListSelection } from '@/hooks/useListSelection';
 import { formatMontant } from '@/lib/utils';
 import { FactureStatusBadge } from '@/components/ui/status-badge';
+import { formatDateValue } from '@/lib/date-utils';
 
 type FactureTableSelection = ListSelectionHandlers;
 
@@ -79,7 +78,7 @@ export const FactureTable = ({
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '-';
-    return format(new Date(dateString), 'dd/MM/yyyy', { locale: fr });
+    return formatDateValue(dateString);
   };
 
   const columns: ListColumn<Facture>[] = [

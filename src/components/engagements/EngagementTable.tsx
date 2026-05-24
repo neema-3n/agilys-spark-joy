@@ -14,6 +14,7 @@ import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/
 import { formatCurrency } from '@/lib/utils';
 import { CheckCircle, Edit, FileText, MoreHorizontal, Receipt, Trash2, XCircle } from 'lucide-react';
 import type { Engagement } from '@/types/engagement.types';
+import { formatDateValue } from '@/lib/date-utils';
 
 interface EngagementTableProps {
   engagements: Engagement[];
@@ -32,7 +33,7 @@ interface EngagementTableProps {
   footer?: ReactNode;
 }
 
-const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('fr-FR');
+const formatDate = (dateString: string) => formatDateValue(dateString);
 
 const getStatusBadge = (statut: Engagement['statut']) => {
   const variants: Record<Engagement['statut'], { variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success'; label: string }> = {

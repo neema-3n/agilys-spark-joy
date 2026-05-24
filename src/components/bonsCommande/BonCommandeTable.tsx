@@ -14,8 +14,7 @@ import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/
 import { formatCurrency } from '@/lib/utils';
 import { CheckCircle, Edit, Eye, FileText, MoreHorizontal, PackageCheck, Receipt, Trash2, Truck, XCircle } from 'lucide-react';
 import type { BonCommande } from '@/types/bonCommande.types';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { formatDateValue } from '@/lib/date-utils';
 
 interface BonCommandeTableProps {
   bonsCommande: BonCommande[];
@@ -36,7 +35,7 @@ interface BonCommandeTableProps {
 const formatDate = (dateString?: string | null): string => {
   if (!dateString) return '-';
   try {
-    return format(new Date(dateString), 'dd/MM/yyyy', { locale: fr });
+    return formatDateValue(dateString);
   } catch {
     return '-';
   }

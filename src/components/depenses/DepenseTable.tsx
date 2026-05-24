@@ -13,6 +13,7 @@ import { ListColumn, ListTable } from '@/components/lists/ListTable';
 import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/selectionColumn';
 import { formatCurrency } from '@/lib/utils';
 import type { Depense } from '@/types/depense.types';
+import { formatDateValue } from '@/lib/date-utils';
 
 interface DepenseTableProps {
   depenses: Depense[];
@@ -98,7 +99,7 @@ export const DepenseTable = ({
     {
       id: 'date',
       header: 'Date',
-      render: (depense) => new Date(depense.dateDepense).toLocaleDateString('fr-FR'),
+      render: (depense) => formatDateValue(depense.dateDepense),
     },
     {
       id: 'objet',

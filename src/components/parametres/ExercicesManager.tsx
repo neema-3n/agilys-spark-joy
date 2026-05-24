@@ -31,8 +31,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Plus, MoreVertical, Edit, Lock, Trash2 } from 'lucide-react';
 import { Exercice } from '@/types';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { formatDateValue } from '@/lib/date-utils';
 import { ExerciceForm, ExerciceFormValues } from './ExerciceForm';
 import { ParametreEditorPage } from './ParametreEditorPage';
 
@@ -174,9 +173,9 @@ export function ExercicesManager() {
                   </div>
                 </TableCell>
                     <TableCell>
-                      {format(new Date(exercice.dateDebut), 'dd MMMM yyyy', { locale: fr })}
+                      {formatDateValue(exercice.dateDebut, 'dd MMMM yyyy')}
                       {' - '}
-                      {format(new Date(exercice.dateFin), 'dd MMMM yyyy', { locale: fr })}
+                      {formatDateValue(exercice.dateFin, 'dd MMMM yyyy')}
                     </TableCell>
                     <TableCell>
                       <Badge variant={exercice.statut === 'ouvert' ? 'default' : 'secondary'}>

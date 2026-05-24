@@ -3,9 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
 import type { OperationTresorerie } from '@/types/operation-tresorerie.types';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { ArrowLeft } from 'lucide-react';
+import { formatDateValue } from '@/lib/date-utils';
 
 interface OperationTresorerieDetailsProps {
   operation: OperationTresorerie;
@@ -33,7 +32,7 @@ export const OperationTresorerieDetails = ({ operation, onClose }: OperationTres
     <Card>
       <CardHeader><CardTitle>Informations principales</CardTitle></CardHeader>
       <CardContent className="grid gap-4 md:grid-cols-2">
-        <div><p className="text-sm text-muted-foreground">Date</p><p className="font-medium">{format(new Date(operation.dateOperation), 'dd MMMM yyyy', { locale: fr })}</p></div>
+        <div><p className="text-sm text-muted-foreground">Date</p><p className="font-medium">{formatDateValue(operation.dateOperation, 'dd MMMM yyyy')}</p></div>
         <div><p className="text-sm text-muted-foreground">Montant</p><p className="font-medium">{formatCurrency(operation.montant)}</p></div>
         <div><p className="text-sm text-muted-foreground">Type</p><p className="font-medium capitalize">{operation.typeOperation}</p></div>
         <div><p className="text-sm text-muted-foreground">Mode de paiement</p><p className="font-medium">{operation.modePaiement || '-'}</p></div>

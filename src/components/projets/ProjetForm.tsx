@@ -18,6 +18,8 @@ import type { Projet } from '@/types/projet.types';
 import { useReferentiels } from '@/hooks/useReferentiels';
 import { useEnveloppes } from '@/hooks/useEnveloppes';
 import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
+import { parseDateOnlyValue, toDateOnlyString } from '@/lib/date-utils';
+import { selectFieldContentOnFocus } from '@/lib/form-focus-utils';
 
 export const projetFormSchema = z.object({
   code: z.string().min(1, 'Le code est requis'),
@@ -65,12 +67,12 @@ const getInitialValues = (projet?: Projet | null): ProjetFormValues =>
         nom: projet.nom,
         description: projet.description || '',
         responsable: projet.responsable || '',
-        dateDebut: new Date(projet.dateDebut),
-        dateFin: new Date(projet.dateFin),
+        dateDebut: parseDateOnlyValue(projet.dateDebut) || new Date(),
+        dateFin: parseDateOnlyValue(projet.dateFin) || new Date(),
         budgetAlloue: projet.budgetAlloue,
-        enveloppeId: projet.enveloppeId,
+        enveloppeId: projet.enveloppeId || 'none',
         statut: projet.statut,
-        typeProjet: projet.typeProjet,
+        typeProjet: projet.typeProjet || 'none',
         priorite: projet.priorite || '',
         tauxAvancement: projet.tauxAvancement,
       }
@@ -110,8 +112,10 @@ export const ProjetForm = ({ projet, onSubmit, onCancel, onDirtyChange, submitLa
   const handleSubmit = async (values: ProjetFormValues) => {
     await onSubmit({
       ...values,
-      dateDebut: format(values.dateDebut, 'yyyy-MM-dd'),
-      dateFin: format(values.dateFin, 'yyyy-MM-dd'),
+      enveloppeId: values.enveloppeId === 'none' ? undefined : values.enveloppeId,
+      typeProjet: values.typeProjet === 'none' ? undefined : values.typeProjet,
+      dateDebut: toDateOnlyString(values.dateDebut),
+      dateFin: toDateOnlyString(values.dateFin),
     });
   };
 
@@ -124,14 +128,14 @@ export const ProjetForm = ({ projet, onSubmit, onCancel, onDirtyChange, submitLa
               <FormField control={form.control} name="code" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Code *</FormLabel>
-                  <FormControl><Input placeholder="PROJ-001" {...field} /></FormControl>
+                  <FormControl><Input placeholder="PROJ-001" {...field} onFocus={projet ? selectFieldContentOnFocus : undefined} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
               <FormField control={form.control} name="nom" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Nom *</FormLabel>
-                  <FormControl><Input placeholder="Nom du projet" {...field} /></FormControl>
+                  <FormControl><Input placeholder="Nom du projet" {...field} onFocus={projet ? selectFieldContentOnFocus : undefined} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
@@ -140,7 +144,7 @@ export const ProjetForm = ({ projet, onSubmit, onCancel, onDirtyChange, submitLa
             <FormField control={form.control} name="description" render={({ field }) => (
               <FormItem>
                 <FormLabel>Description</FormLabel>
-                <FormControl><Textarea placeholder="Description du projet" {...field} /></FormControl>
+                <FormControl><Textarea placeholder="Description du projet" {...field} onFocus={projet ? selectFieldContentOnFocus : undefined} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
@@ -149,14 +153,14 @@ export const ProjetForm = ({ projet, onSubmit, onCancel, onDirtyChange, submitLa
               <FormField control={form.control} name="responsable" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Responsable</FormLabel>
-                  <FormControl><Input placeholder="Nom du responsable" {...field} /></FormControl>
+                  <FormControl><Input placeholder="Nom du responsable" {...field} onFocus={projet ? selectFieldContentOnFocus : undefined} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
               <FormField control={form.control} name="budgetAlloue" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Budget alloué *</FormLabel>
-                  <FormControl><Input type="number" placeholder="0" {...field} /></FormControl>
+                  <FormControl><Input type="number" placeholder="0" {...field} onFocus={projet ? selectFieldContentOnFocus : undefined} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
@@ -207,7 +211,7 @@ export const ProjetForm = ({ projet, onSubmit, onCancel, onDirtyChange, submitLa
               <FormField control={form.control} name="enveloppeId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Enveloppe budgétaire</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={(value) => field.onChange(value)} value={field.value || 'none'}>
                     <FormControl><SelectTrigger><SelectValue placeholder="Sélectionner une enveloppe" /></SelectTrigger></FormControl>
                     <SelectContent>
                       <SelectItem value="none">Aucune enveloppe</SelectItem>

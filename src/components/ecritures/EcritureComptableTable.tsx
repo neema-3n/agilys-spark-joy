@@ -7,10 +7,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import type { EcritureComptable } from '@/types/ecriture-comptable.types';
 import { formatMontant } from '@/lib/utils';
+import { formatDateValue } from '@/lib/date-utils';
 
 interface EcritureComptableTableProps {
   ecritures: EcritureComptable[];
@@ -57,7 +56,7 @@ export const EcritureComptableTable = ({ ecritures, onRowClick }: EcritureCompta
                 onClick={() => onRowClick?.(ecriture)}
               >
                 <TableCell>
-                  {format(new Date(ecriture.dateEcriture), 'dd/MM/yyyy', { locale: fr })}
+                  {formatDateValue(ecriture.dateEcriture)}
                 </TableCell>
                 <TableCell className="font-mono text-sm">
                   {ecriture.numeroPiece}

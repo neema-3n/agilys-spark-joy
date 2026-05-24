@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
+import { parseDateOnlyValue } from '@/lib/date-utils';
 
 export const exerciceSchema = z.object({
   libelle: z.string()
@@ -36,12 +37,17 @@ export const exerciceSchema = z.object({
   dateDebut: z.string().min(1, 'La date de début est requise'),
   dateFin: z.string().min(1, 'La date de fin est requise'),
   statut: z.enum(['ouvert', 'cloture']),
-}).refine(data => new Date(data.dateFin) > new Date(data.dateDebut), {
+}).refine(data => {
+  const debut = parseDateOnlyValue(data.dateDebut);
+  const fin = parseDateOnlyValue(data.dateFin);
+  return !!debut && !!fin && fin > debut;
+}, {
   message: 'La date de fin doit être après la date de début',
   path: ['dateFin'],
 }).refine(data => {
-  const debut = new Date(data.dateDebut);
-  const fin = new Date(data.dateFin);
+  const debut = parseDateOnlyValue(data.dateDebut);
+  const fin = parseDateOnlyValue(data.dateFin);
+  if (!debut || !fin) return false;
   const diffMonths = (fin.getFullYear() - debut.getFullYear()) * 12 + (fin.getMonth() - debut.getMonth());
   return diffMonths >= 1 && diffMonths <= 36;
 }, {

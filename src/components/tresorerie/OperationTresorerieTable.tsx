@@ -2,9 +2,8 @@ import { ListTable, ListColumn } from '@/components/lists/ListTable';
 import type { OperationTresorerie } from '@/types/operation-tresorerie.types';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { ArrowDownRight, ArrowUpRight, ArrowRightLeft } from 'lucide-react';
+import { formatDateValue } from '@/lib/date-utils';
 
 interface OperationTresorerieTableProps {
   operations: OperationTresorerie[];
@@ -28,8 +27,7 @@ export const OperationTresorerieTable = ({ operations, onViewDetails }: Operatio
     {
       id: 'dateOperation',
       header: 'Date',
-      render: (operation) =>
-        format(new Date(operation.dateOperation), 'dd/MM/yyyy', { locale: fr }),
+      render: (operation) => formatDateValue(operation.dateOperation),
     },
     {
       id: 'typeOperation',

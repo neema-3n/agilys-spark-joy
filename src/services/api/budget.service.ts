@@ -113,7 +113,18 @@ export const budgetService = {
 
   // Mettre à jour une ligne budgétaire
   updateLigneBudgetaire: async (id: string, updates: Partial<LigneBudgetaire>): Promise<LigneBudgetaire> => {
-    const updateData = toSnakeCase(updates);
+    const normalizedUpdates: Partial<LigneBudgetaire> = { ...updates };
+
+    // Dans ce module, l'édition directe du montant doit mettre à jour le montant courant
+    // pour garder la liste, le détail et le disponible cohérents.
+    if (
+      normalizedUpdates.montantInitial !== undefined &&
+      normalizedUpdates.montantModifie === undefined
+    ) {
+      normalizedUpdates.montantModifie = normalizedUpdates.montantInitial;
+    }
+
+    const updateData = toSnakeCase(normalizedUpdates);
     
     const { data, error } = await supabase
       .from('lignes_budgetaires')

@@ -7,11 +7,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import type { FluxTresorerie } from '@/types/tresorerie.types';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { formatMontant } from '@/lib/utils';
+import { formatDateValue } from '@/lib/date-utils';
 
 interface FluxTresorerieTableProps {
   flux: FluxTresorerie[];
@@ -42,7 +41,7 @@ export const FluxTresorerieTable = ({ flux }: FluxTresorerieTableProps) => {
             flux.map((f) => (
               <TableRow key={f.id}>
                 <TableCell>
-                  {format(new Date(f.date), 'dd/MM/yyyy', { locale: fr })}
+                  {formatDateValue(f.date)}
                 </TableCell>
                 <TableCell>
                   <Badge
