@@ -115,8 +115,24 @@ export const EngagementForm = ({
     }
 
     const currentLigne = lignesBudgetaires.find((ligne) => ligne.id === currentLigneBudgetaireId);
-    return currentLigne ? [currentLigne, ...lignesActives] : lignesActives;
-  }, [currentLigneBudgetaireId, lignesActives, lignesBudgetaires]);
+    if (currentLigne) {
+      return [currentLigne, ...lignesActives];
+    }
+
+    if (engagement?.ligneBudgetaire && engagement.ligneBudgetaireId === currentLigneBudgetaireId) {
+      return [
+        {
+          id: engagement.ligneBudgetaireId,
+          libelle: engagement.ligneBudgetaire.libelle,
+          disponible: engagement.ligneBudgetaire.disponible,
+          statut: 'actif',
+        },
+        ...lignesActives,
+      ];
+    }
+
+    return lignesActives;
+  }, [currentLigneBudgetaireId, engagement, lignesActives, lignesBudgetaires]);
 
   const fournisseurOptions = useMemo(() => {
     if (!currentFournisseurId || fournisseursActifs.some((fournisseur) => fournisseur.id === currentFournisseurId)) {
@@ -124,8 +140,24 @@ export const EngagementForm = ({
     }
 
     const currentFournisseur = fournisseurs.find((fournisseur) => fournisseur.id === currentFournisseurId);
-    return currentFournisseur ? [currentFournisseur, ...fournisseursActifs] : fournisseursActifs;
-  }, [currentFournisseurId, fournisseurs, fournisseursActifs]);
+    if (currentFournisseur) {
+      return [currentFournisseur, ...fournisseursActifs];
+    }
+
+    if (engagement?.fournisseur && engagement.fournisseurId === currentFournisseurId) {
+      return [
+        {
+          id: engagement.fournisseurId,
+          code: engagement.fournisseur.code,
+          nom: engagement.fournisseur.nom,
+          statut: 'actif',
+        },
+        ...fournisseursActifs,
+      ];
+    }
+
+    return fournisseursActifs;
+  }, [currentFournisseurId, engagement, fournisseurs, fournisseursActifs]);
 
   const projetOptions = useMemo(() => {
     if (!currentProjetId || projetsActifs.some((projet) => projet.id === currentProjetId)) {
@@ -133,8 +165,28 @@ export const EngagementForm = ({
     }
 
     const currentProjet = projets.find((projet) => projet.id === currentProjetId);
-    return currentProjet ? [currentProjet, ...projetsActifs] : projetsActifs;
-  }, [currentProjetId, projets, projetsActifs]);
+    if (currentProjet) {
+      return [currentProjet, ...projetsActifs];
+    }
+
+    if (selectedReservation?.projet && selectedReservation.projetId === currentProjetId) {
+      return [selectedReservation.projet, ...projetsActifs];
+    }
+
+    if (engagement?.projet && engagement.projetId === currentProjetId) {
+      return [
+        {
+          id: engagement.projetId,
+          code: engagement.projet.code,
+          nom: engagement.projet.nom,
+          statut: 'planifie',
+        },
+        ...projetsActifs,
+      ];
+    }
+
+    return projetsActifs;
+  }, [currentProjetId, engagement, projets, projetsActifs, selectedReservation]);
 
   useEffect(() => {
     initializedRef.current = false;
