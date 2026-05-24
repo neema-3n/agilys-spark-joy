@@ -44,6 +44,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Textarea } from '@/components/ui/textarea';
 import type { ReservationCreditFormData } from '@/types/reservation.types';
 
 const Reservations = () => {
@@ -423,6 +424,7 @@ const Reservations = () => {
             hasNext={snapshotIndex < reservations.length - 1}
             currentIndex={snapshotIndex}
             totalCount={reservations.length}
+            onEdit={() => handleEdit(snapshotReservation.id)}
             onCreerEngagement={() => handleCreerEngagement(snapshotReservation.id)}
             onAnnuler={() => handleAnnulerFromSnapshot(snapshotReservation.id)}
             onNavigateToEntity={handleNavigateToEntity}
@@ -571,23 +573,27 @@ const Reservations = () => {
           </AlertDialogHeader>
           <div className="py-4">
             <Label htmlFor="motif-reservation">Motif d&apos;annulation</Label>
-            <Input
+            <Textarea
               id="motif-reservation"
               value={motifAnnulation}
               onChange={(event) => setMotifAnnulation(event.target.value)}
               placeholder="Ex: Réaffectation du budget, erreur de saisie..."
-              className="mt-2"
+              className="mt-2 min-h-28"
             />
+            <p className="mt-2 text-sm text-muted-foreground">
+              Le motif est obligatoire pour tracer l&apos;annulation.
+            </p>
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Fermer</AlertDialogCancel>
-            <AlertDialogAction
+            <Button
+              type="button"
               onClick={handleConfirmMotifAnnulation}
               disabled={!motifAnnulation.trim()}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Confirmer l&apos;annulation
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

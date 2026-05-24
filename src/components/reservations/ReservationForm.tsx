@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from '@/components/ui/form';
 import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
 import { useLignesBudgetaires } from '@/hooks/useLignesBudgetaires';
 import { useProjets } from '@/hooks/useProjets';
@@ -102,6 +102,10 @@ export const ReservationForm = ({
   }, [form.formState.isDirty, isBeneficiaryModeDirty, onDirtyChange, watchedValues]);
 
   useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
+
+  useEffect(() => {
+    form.clearErrors(['projetId', 'beneficiaire']);
+  }, [form, typeBeneficiaire]);
 
   const handleSubmit = async (values: ReservationFormValues) => {
     if (typeBeneficiaire === 'projet' && !values.projetId) {
@@ -234,6 +238,9 @@ export const ReservationForm = ({
                   <label htmlFor="beneficiaire-autre" className="text-sm">Autre bénéficiaire</label>
                 </div>
               </RadioGroup>
+              <p className="text-sm text-muted-foreground">
+                Un rattachement est obligatoire : sélectionnez un projet ou saisissez un autre bénéficiaire.
+              </p>
             </div>
 
             {typeBeneficiaire === 'projet' ? (
@@ -257,6 +264,7 @@ export const ReservationForm = ({
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormDescription>La réservation ne peut pas être créée sans projet si ce mode est sélectionné.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -271,6 +279,7 @@ export const ReservationForm = ({
                     <FormControl>
                       <Input {...field} value={field.value || ''} placeholder="Nom du bénéficiaire" />
                     </FormControl>
+                    <FormDescription>Renseignez ce champ si la réservation n'est pas rattachée à un projet.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
