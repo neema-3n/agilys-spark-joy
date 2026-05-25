@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -85,6 +85,9 @@ export const BonCommandeForm = ({
   const { engagements } = useEngagements();
   const { projets } = useProjets();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const currentFournisseurId = selectedEngagement?.fournisseurId || bonCommande?.fournisseurId;
+  const currentEngagementId = selectedEngagement?.id || bonCommande?.engagementId;
+  const currentProjetId = selectedEngagement?.projetId || bonCommande?.projetId;
 
   const isReadOnly =
     !!bonCommande &&
@@ -106,6 +109,86 @@ export const BonCommandeForm = ({
       observations: '',
     },
   });
+
+  const engagementsValides = engagements.filter((e) => e.statut === 'valide');
+
+  const fournisseurOptions = useMemo(() => {
+    if (!currentFournisseurId || fournisseurs.some((fournisseur) => fournisseur.id === currentFournisseurId)) {
+      return fournisseurs;
+    }
+
+    if (bonCommande?.fournisseur && bonCommande.fournisseurId === currentFournisseurId) {
+      return [
+        {
+          id: bonCommande.fournisseurId,
+          nom: bonCommande.fournisseur.nom,
+          code: bonCommande.fournisseur.code,
+        },
+        ...fournisseurs,
+      ];
+    }
+
+    if (selectedEngagement?.fournisseur && selectedEngagement.fournisseurId === currentFournisseurId) {
+      return [
+        {
+          id: selectedEngagement.fournisseurId,
+          nom: selectedEngagement.fournisseur.nom,
+          code: selectedEngagement.fournisseur.code,
+        },
+        ...fournisseurs,
+      ];
+    }
+
+    return fournisseurs;
+  }, [bonCommande, currentFournisseurId, fournisseurs, selectedEngagement]);
+
+  const engagementOptions = useMemo(() => {
+    if (!currentEngagementId || engagementsValides.some((engagement) => engagement.id === currentEngagementId)) {
+      return engagementsValides;
+    }
+
+    const currentEngagement = engagements.find((engagement) => engagement.id === currentEngagementId);
+    if (currentEngagement) {
+      return [currentEngagement, ...engagementsValides];
+    }
+
+    if (bonCommande?.engagement && bonCommande.engagementId === currentEngagementId) {
+      return [
+        {
+          id: bonCommande.engagementId,
+          numero: bonCommande.engagement.numero,
+          objet: bonCommande.objet,
+          statut: 'valide',
+        },
+        ...engagementsValides,
+      ];
+    }
+
+    return engagementsValides;
+  }, [bonCommande, currentEngagementId, engagements, engagementsValides]);
+
+  const projetOptions = useMemo(() => {
+    if (!currentProjetId || projets.some((projet) => projet.id === currentProjetId)) {
+      return projets;
+    }
+
+    if (bonCommande?.projet && bonCommande.projetId === currentProjetId) {
+      return [
+        {
+          id: bonCommande.projetId,
+          code: bonCommande.projet.nom,
+          nom: bonCommande.projet.nom,
+        },
+        ...projets,
+      ];
+    }
+
+    if (selectedEngagement?.projet && selectedEngagement.projetId === currentProjetId) {
+      return [selectedEngagement.projet, ...projets];
+    }
+
+    return projets;
+  }, [bonCommande, currentProjetId, projets, selectedEngagement]);
 
   useEffect(() => {
     if (bonCommande) {
@@ -219,8 +302,6 @@ export const BonCommandeForm = ({
     }
   };
 
-  const engagementsValides = engagements.filter((e) => e.statut === 'valide');
-
   const content = (
     <div className="space-y-10">
       <section className="space-y-3">
@@ -278,7 +359,7 @@ export const BonCommandeForm = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {fournisseurs.map((fournisseur) => (
+                        {fournisseurOptions.map((fournisseur) => (
                           <SelectItem key={fournisseur.id} value={fournisseur.id}>
                             {fournisseur.nom}
                           </SelectItem>
@@ -307,7 +388,7 @@ export const BonCommandeForm = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {engagementsValides.map((engagement) => (
+                        {engagementOptions.map((engagement) => (
                           <SelectItem key={engagement.id} value={engagement.id}>
                             {engagement.numero} - {engagement.objet}
                           </SelectItem>
@@ -337,7 +418,7 @@ export const BonCommandeForm = ({
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="none">-- Aucun --</SelectItem>
-                        {projets.map((projet) => (
+                        {projetOptions.map((projet) => (
                           <SelectItem key={projet.id} value={projet.id}>
                             {projet.code} - {projet.nom}
                           </SelectItem>

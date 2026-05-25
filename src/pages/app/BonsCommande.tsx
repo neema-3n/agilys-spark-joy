@@ -85,6 +85,7 @@ const BonsCommande = () => {
   const [montantMin, setMontantMin] = useState('');
   const [montantMax, setMontantMax] = useState('');
   const isMobile = useIsMobile();
+  const batchActionsEnabled = false;
 
   const {
     bonsCommande,
@@ -472,7 +473,7 @@ const BonsCommande = () => {
                             onToggle={() => setIsAdvancedFiltersOpen((open) => !open)}
                             activeCount={activeAdvancedFiltersCount}
                           />,
-                          ...(!isMobile || selectedIds.size > 0
+                          ...(batchActionsEnabled && (!isMobile || selectedIds.size > 0)
                             ? [
                                 <DropdownMenu key="batch-actions">
                                   <DropdownMenuTrigger asChild>
@@ -536,12 +537,12 @@ const BonsCommande = () => {
                 bonsCommande={paginatedItems}
                 onEdit={handleEdit}
                 onValider={validerBonCommande}
-                onReceptionner={handleReceptionner}
-                onAnnuler={handleAnnuler}
+                      onReceptionner={handleReceptionner}
+                      onAnnuler={handleAnnuler}
                       onDelete={deleteBonCommande}
                       onCreateFacture={handleCreateFacture}
                       onViewDetails={openBonCommandeSnapshot}
-                      selection={{ selectedIds, allSelected, toggleOne, toggleAll }}
+                      selection={batchActionsEnabled ? { selectedIds, allSelected, toggleOne, toggleAll } : undefined}
                       stickyHeader
                       stickyHeaderOffset={0}
                       scrollContainerClassName="max-h-[calc(100vh-220px)] overflow-auto"
