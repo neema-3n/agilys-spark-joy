@@ -290,32 +290,12 @@ export const facturesService = {
 
     if (fetchError) throw fetchError;
 
-    // 2. Si le nouveau statut est 'annulee', autoriser sans vérification d'écritures
+    // 2. Si le nouveau statut est 'annulee', autoriser la transition métier depuis le flux d'annulation
     const isAnnulation = facture.statut === 'annulee';
-
-    if (!isAnnulation) {
-      // 3. Vérifier s'il existe des écritures validées
-      const { data: ecritures, error: ecrituresError } = await supabase
-        .from('ecritures_comptables')
-        .select('id')
-        .eq('facture_id', id)
-        .eq('statut_ecriture', 'validee')
-        .limit(1);
-
-      if (ecrituresError) throw ecrituresError;
-
-      // 4. Si écritures validées existent → BLOQUER
-      if (ecritures && ecritures.length > 0) {
-        throw new Error(
-          'Cette facture ne peut plus être modifiée car elle a déjà été comptabilisée.\n\n' +
-          'Pour effectuer une correction, vous devez l\'annuler puis créer une nouvelle facture.'
-        );
-      }
-    }
     
-    // 5. Vérifier que la facture peut être modifiée
-    if (currentFacture.statut !== 'brouillon' && currentFacture.statut !== 'validee' && !isAnnulation) {
-      throw new Error('Seules les factures en brouillon ou validées peuvent être modifiées');
+    // 3. Vérifier que la facture peut être modifiée
+    if (!isAnnulation && currentFacture.statut !== 'brouillon') {
+      throw new Error('Seules les factures en brouillon peuvent être modifiées.');
     }
 
     const finalBonCommandeId = facture.bonCommandeId ?? currentFacture.bon_commande_id;
@@ -425,7 +405,42 @@ export const facturesService = {
     return 'FAC000001';
   },
 
-  async validerFacture(id: string): Promise<Facture> {
+  async generateFactureEcritures(id: string, clientId: string, exerciceId: string): Promise<void> {
+    const { data, error } = await supabase.functions.invoke('generate-ecritures-comptables', {
+      body: {
+        typeOperation: 'facture',
+        sourceId: id,
+        clientId,
+        exerciceId,
+      }
+    });
+
+    if (error) {
+      let errorMessage = error.message;
+
+      if (error.context) {
+        try {
+          const errorBody = await error.context.json();
+          if (errorBody?.error) {
+            errorMessage = errorBody.error;
+          }
+        } catch (parseError) {
+          console.error('Impossible de parser l’erreur de génération des écritures:', parseError);
+        }
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    if (!data?.success) {
+      throw new Error(data?.error || 'La facture a été validée mais la génération des écritures a échoué.');
+    }
+  },
+
+  async validerFacture(
+    id: string,
+    options?: { onValidated?: (facture: Facture) => void }
+  ): Promise<Facture> {
     const facture = await this.getById(id);
 
     if (facture.statut !== 'brouillon') {
@@ -438,37 +453,11 @@ export const facturesService = {
       dateValidation: new Date().toISOString().split('T')[0],
     });
 
+    options?.onValidated?.(factureValidee);
+
     // 2. Générer les écritures comptables au moment exact de la validation
     try {
-      const { data, error } = await supabase.functions.invoke('generate-ecritures-comptables', {
-        body: {
-          typeOperation: 'facture',
-          sourceId: id,
-          clientId: facture.clientId,
-          exerciceId: facture.exerciceId
-        }
-      });
-
-      if (error) {
-        let errorMessage = error.message;
-
-        if (error.context) {
-          try {
-            const errorBody = await error.context.json();
-            if (errorBody?.error) {
-              errorMessage = errorBody.error;
-            }
-          } catch (parseError) {
-            console.error('Impossible de parser l’erreur de génération des écritures:', parseError);
-          }
-        }
-
-        throw new Error(errorMessage);
-      }
-
-      if (!data?.success) {
-        throw new Error(data?.error || 'La facture a été validée mais la génération des écritures a échoué.');
-      }
+      await this.generateFactureEcritures(id, facture.clientId, facture.exerciceId);
     } catch (error) {
       console.error('Erreur lors de la génération des écritures:', error);
       throw error;

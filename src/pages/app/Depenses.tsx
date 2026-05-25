@@ -332,14 +332,14 @@ const Depenses = () => {
     (Boolean(initialFactureId) && isFacturesLoading && !selectedFacture);
 
   const handleSingleSubmit = useCallback(
-    async (data: DepenseFormData) => {
+    async (data: Partial<DepenseFormData>) => {
       if (editingDepense) {
         const updated = await updateDepense({ id: editingDepense.id, updates: data });
         navigate(`/app/depenses/${updated.id}`);
         return;
       }
 
-      const created = await createDepense(data);
+      const created = await createDepense(data as DepenseFormData);
       navigate(`/app/depenses/${created.id}`);
     },
     [createDepense, editingDepense, navigate, updateDepense]
@@ -358,6 +358,9 @@ const Depenses = () => {
       await deleteDepense(actionDepenseId);
       setDeleteDialogOpen(false);
       setActionDepenseId(null);
+      if (depenseId === actionDepenseId || snapshotDepenseId === actionDepenseId) {
+        navigate('/app/depenses', { replace: true });
+      }
     } finally {
       setIsSubmittingAction(false);
     }
@@ -655,18 +658,19 @@ const Depenses = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Supprimer la dépense</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. Voulez-vous vraiment supprimer cette dépense ?
+              Cette action est irréversible. Voulez-vous vraiment supprimer cette dépense brouillon ?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isSubmittingAction}>Annuler</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmDelete}
+            <Button
+              type="button"
+              onClick={() => void handleConfirmDelete()}
               disabled={isSubmittingAction}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              variant="destructive"
             >
               Supprimer
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

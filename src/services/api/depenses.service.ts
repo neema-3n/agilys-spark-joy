@@ -38,15 +38,141 @@ const cleanData = (obj: any): any => {
   return cleaned;
 };
 
+const hasOwn = <T extends object>(obj: T, key: keyof T) => Object.prototype.hasOwnProperty.call(obj, key);
+
+const resolveDepenseLinkedParty = async (
+  currentDepense: {
+    facture_id: string | null;
+    engagement_id: string | null;
+    fournisseur_id: string | null;
+    beneficiaire: string | null;
+  },
+) => {
+  if (currentDepense.fournisseur_id || currentDepense.beneficiaire) {
+    return {
+      fournisseur_id: currentDepense.fournisseur_id,
+      beneficiaire: currentDepense.beneficiaire,
+    };
+  }
+
+  if (currentDepense.facture_id) {
+    const { data: facture, error } = await supabase
+      .from('factures')
+      .select('fournisseur_id')
+      .eq('id', currentDepense.facture_id)
+      .single();
+
+    if (error) throw error;
+
+    if (facture?.fournisseur_id) {
+      return {
+        fournisseur_id: facture.fournisseur_id,
+        beneficiaire: null,
+      };
+    }
+  }
+
+  if (currentDepense.engagement_id) {
+    const { data: engagement, error } = await supabase
+      .from('engagements')
+      .select('fournisseur_id, beneficiaire')
+      .eq('id', currentDepense.engagement_id)
+      .single();
+
+    if (error) throw error;
+
+    return {
+      fournisseur_id: engagement?.fournisseur_id ?? null,
+      beneficiaire: engagement?.beneficiaire ?? null,
+    };
+  }
+
+  return {
+    fournisseur_id: null,
+    beneficiaire: null,
+  };
+};
+
+const mergeDepenseUpdates = (
+  currentDepense: {
+    engagement_id: string | null;
+    ligne_budgetaire_id: string | null;
+    facture_id: string | null;
+    fournisseur_id: string | null;
+    beneficiaire: string | null;
+    projet_id: string | null;
+    objet: string;
+    montant: number;
+    date_depense: string;
+    mode_paiement: string | null;
+    reference_paiement: string | null;
+    observations: string | null;
+    compte_charge_id: string | null;
+  },
+  preservedParty: {
+    fournisseur_id: string | null;
+    beneficiaire: string | null;
+  },
+  updates: Partial<DepenseFormData>,
+) => {
+  const merged: Record<string, string | number | null> = {
+    engagement_id: updates.engagementId ?? currentDepense.engagement_id,
+    ligne_budgetaire_id: updates.ligneBudgetaireId ?? currentDepense.ligne_budgetaire_id,
+    facture_id: updates.factureId ?? currentDepense.facture_id,
+    projet_id: updates.projetId ?? currentDepense.projet_id,
+    objet: updates.objet ?? currentDepense.objet,
+    montant: updates.montant ?? currentDepense.montant,
+    date_depense: updates.dateDepense ?? currentDepense.date_depense,
+    mode_paiement: updates.modePaiement ?? currentDepense.mode_paiement,
+    reference_paiement: updates.referencePaiement ?? currentDepense.reference_paiement,
+    observations: updates.observations ?? currentDepense.observations,
+    compte_charge_id: updates.compteChargeId ?? currentDepense.compte_charge_id,
+    fournisseur_id: preservedParty.fournisseur_id,
+    beneficiaire: preservedParty.beneficiaire,
+  };
+
+  if (hasOwn(updates, 'fournisseurId') || hasOwn(updates, 'beneficiaire')) {
+    merged.fournisseur_id = updates.fournisseurId ?? null;
+    merged.beneficiaire = updates.beneficiaire ?? null;
+  }
+
+  return cleanData(merged);
+};
+
+const normalizeDepenseRecord = (record: any): Depense => {
+  const normalized = toCamelCase({
+    ...record,
+    compte_charge_id: record?.compte_charge_id ?? null,
+  });
+
+  if (normalized?.facture) {
+    normalized.facture = {
+      ...normalized.facture,
+      montantTTC:
+        normalized.facture.montantTTC ??
+        normalized.facture.montantTtc ??
+        null,
+    };
+    delete normalized.facture.montantTtc;
+  }
+
+  if (!normalized?.fournisseur && normalized?.facture?.fournisseur) {
+    normalized.fournisseur = normalized.facture.fournisseur;
+    normalized.fournisseurId = normalized.fournisseurId ?? normalized.facture.fournisseurId;
+  }
+
+  return normalized as Depense;
+};
+
 export const getDepenses = async (exerciceId: string, clientId: string): Promise<Depense[]> => {
   const { data, error } = await supabase
     .from('depenses')
     .select(`
       *,
-      engagement:engagements(id, numero, montant),
+      engagement:engagements(id, numero, montant, fournisseur_id, beneficiaire),
       reservation_credit:reservations_credits(id, numero, montant, statut),
       ligne_budgetaire:lignes_budgetaires(id, libelle, disponible),
-      facture:factures(id, numero, montant_ttc, statut),
+      facture:factures(id, numero, montant_ttc, statut, fournisseur_id, fournisseur:fournisseurs(id, nom, code)),
       fournisseur:fournisseurs(id, nom, code),
       projet:projets(id, code, nom),
       ecritures_comptables!depense_id(count)
@@ -67,7 +193,7 @@ export const getDepenses = async (exerciceId: string, clientId: string): Promise
     };
   });
   
-  return toCamelCase(depensesWithCount) as Depense[];
+  return depensesWithCount.map((depense) => normalizeDepenseRecord(depense));
 };
 
 export const createDepense = async (
@@ -108,7 +234,7 @@ export const createDepense = async (
   }
   if (!data) throw new Error('Dépense non créée');
 
-  return toCamelCase(data) as Depense;
+  return normalizeDepenseRecord(data);
 };
 
 export const updateDepense = async (
@@ -118,7 +244,22 @@ export const updateDepense = async (
   // 1. Récupérer la dépense actuelle
   const { data: currentDepense, error: fetchError } = await supabase
     .from('depenses')
-    .select('statut, engagement_id, facture_id')
+    .select(`
+      statut,
+      engagement_id,
+      ligne_budgetaire_id,
+      facture_id,
+      fournisseur_id,
+      beneficiaire,
+      projet_id,
+      objet,
+      montant,
+      date_depense,
+      mode_paiement,
+      reference_paiement,
+      observations,
+      compte_charge_id
+    `)
     .eq('id', id)
     .single();
 
@@ -151,7 +292,8 @@ export const updateDepense = async (
     throw new Error("Une dépense doit rester rattachée à un engagement ou à une facture.");
   }
 
-  const cleanedData = cleanData(toSnakeCase(updates));
+  const preservedParty = await resolveDepenseLinkedParty(currentDepense);
+  const cleanedData = mergeDepenseUpdates(currentDepense, preservedParty, updates);
   
   const { data, error } = await supabase
     .from('depenses')
@@ -159,20 +301,17 @@ export const updateDepense = async (
     .eq('id', id)
     .select(`
       *,
-      engagement:engagements(id, numero, montant),
+      engagement:engagements(id, numero, montant, fournisseur_id, beneficiaire),
       reservation_credit:reservations_credits(id, numero, montant, statut),
       ligne_budgetaire:lignes_budgetaires(id, libelle, disponible),
-      facture:factures(id, numero, montant_ttc, statut),
+      facture:factures(id, numero, montant_ttc, statut, fournisseur_id, fournisseur:fournisseurs(id, nom, code)),
       fournisseur:fournisseurs(id, nom, code),
       projet:projets(id, code, nom)
     `)
     .single();
 
   if (error) throw error;
-  return toCamelCase({
-    ...data,
-    compte_charge_id: data.compte_charge_id ?? null,
-  }) as Depense;
+  return normalizeDepenseRecord(data);
 };
 
 export const validerDepense = async (id: string): Promise<Depense> => {
@@ -195,10 +334,10 @@ export const validerDepense = async (id: string): Promise<Depense> => {
     .eq('id', id)
     .select(`
       *,
-      engagement:engagements(id, numero, montant),
+      engagement:engagements(id, numero, montant, fournisseur_id, beneficiaire),
       reservation_credit:reservations_credits(id, numero, montant, statut),
       ligne_budgetaire:lignes_budgetaires(id, libelle, disponible),
-      facture:factures(id, numero, montant_ttc, statut),
+      facture:factures(id, numero, montant_ttc, statut, fournisseur_id, fournisseur:fournisseurs(id, nom, code)),
       fournisseur:fournisseurs(id, nom, code),
       projet:projets(id, code, nom)
     `)
@@ -222,7 +361,7 @@ export const validerDepense = async (id: string): Promise<Depense> => {
     }
   }
 
-  return toCamelCase(data) as Depense;
+  return normalizeDepenseRecord(data);
 };
 
 export const marquerPayee = async (
@@ -253,10 +392,10 @@ export const marquerPayee = async (
     .eq('id', id)
     .select(`
       *,
-      engagement:engagements(id, numero, montant),
+      engagement:engagements(id, numero, montant, fournisseur_id, beneficiaire),
       reservation_credit:reservations_credits(id, numero, montant, statut),
       ligne_budgetaire:lignes_budgetaires(id, libelle, disponible),
-      facture:factures(id, numero, montant_ttc, statut),
+      facture:factures(id, numero, montant_ttc, statut, fournisseur_id, fournisseur:fournisseurs(id, nom, code)),
       fournisseur:fournisseurs(id, nom, code),
       projet:projets(id, code, nom)
     `)
@@ -280,7 +419,7 @@ export const marquerPayee = async (
     }
   }
 
-  return toCamelCase(data) as Depense;
+  return normalizeDepenseRecord(data);
 };
 
 /**
@@ -364,17 +503,17 @@ export const annulerDepense = async (id: string, motif: string): Promise<Depense
     .eq('id', id)
     .select(`
       *,
-      engagement:engagements(id, numero, montant),
+      engagement:engagements(id, numero, montant, fournisseur_id, beneficiaire),
       reservation_credit:reservations_credits(id, numero, montant, statut),
       ligne_budgetaire:lignes_budgetaires(id, libelle, disponible),
-      facture:factures(id, numero, montant_ttc, statut),
+      facture:factures(id, numero, montant_ttc, statut, fournisseur_id, fournisseur:fournisseurs(id, nom, code)),
       fournisseur:fournisseurs(id, nom, code),
       projet:projets(id, code, nom)
     `)
     .single();
 
   if (error) throw error;
-  return toCamelCase(data) as Depense;
+  return normalizeDepenseRecord(data);
 };
 
 export const deleteDepense = async (id: string): Promise<void> => {
@@ -395,13 +534,17 @@ export const deleteDepense = async (id: string): Promise<void> => {
     );
   }
 
-  // 4. OK pour suppression
-  const { error } = await supabase
-    .from('depenses')
-    .delete()
-    .eq('id', id);
+  const { data, error } = await supabase.rpc('delete_depense_brouillon', {
+    p_depense_id: id,
+  });
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
+
+  if (!data || typeof data !== 'object' || !('success' in data) || data.success !== true) {
+    throw new Error('La suppression de la dépense a échoué.');
+  }
 };
 
 /**

@@ -50,6 +50,17 @@ const updateFactureCaches = (queryClient: QueryClient, incoming: Facture) => {
   );
 };
 
+const syncValidatedFactureCaches = (queryClient: QueryClient, validatedFacture: Facture) => {
+  updateFactureCaches(queryClient, validatedFacture);
+  void queryClient.invalidateQueries({ queryKey: ['factures'] });
+  void queryClient.invalidateQueries({ queryKey: ['factures-paginated'] });
+  void queryClient.invalidateQueries({ queryKey: ['factures-stats'] });
+  void queryClient.invalidateQueries({ queryKey: ['facture-editor', validatedFacture.id], exact: true });
+  void queryClient.invalidateQueries({ queryKey: ['facture-snapshot', validatedFacture.id], exact: true });
+  void queryClient.refetchQueries({ queryKey: ['facture-editor', validatedFacture.id], exact: true, type: 'active' });
+  void queryClient.refetchQueries({ queryKey: ['facture-snapshot', validatedFacture.id], exact: true, type: 'active' });
+};
+
 export const useFactures = () => {
   const queryClient = useQueryClient();
   const { currentClient } = useClient();
@@ -127,10 +138,24 @@ export const useFactures = () => {
   });
 
   const validerMutation = useMutation({
-    mutationFn: (id: string) => facturesService.validerFacture(id),
+    mutationFn: async (id: string) => {
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['factures'] }),
+        queryClient.cancelQueries({ queryKey: ['factures-paginated'] }),
+        queryClient.cancelQueries({ queryKey: ['facture-editor', id], exact: true }),
+        queryClient.cancelQueries({ queryKey: ['facture-snapshot', id], exact: true }),
+      ]);
+
+      return facturesService.validerFacture(id, {
+        onValidated: (validatedFacture) => {
+          syncValidatedFactureCaches(queryClient, validatedFacture);
+        },
+      });
+    },
     onSuccess: (validatedFacture) => {
       updateFactureCaches(queryClient, validatedFacture);
       queryClient.invalidateQueries({ queryKey: ['factures'] });
+      queryClient.invalidateQueries({ queryKey: ['factures-stats'] });
       queryClient.invalidateQueries({ queryKey: ['facture-editor', validatedFacture.id] });
       queryClient.invalidateQueries({ queryKey: ['facture-snapshot', validatedFacture.id] });
       queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
@@ -256,11 +281,25 @@ export const useFacturesPaginated = () => {
   });
 
   const validerMutation = useMutation({
-    mutationFn: (id: string) => facturesService.validerFacture(id),
+    mutationFn: async (id: string) => {
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['factures'] }),
+        queryClient.cancelQueries({ queryKey: ['factures-paginated'] }),
+        queryClient.cancelQueries({ queryKey: ['facture-editor', id], exact: true }),
+        queryClient.cancelQueries({ queryKey: ['facture-snapshot', id], exact: true }),
+      ]);
+
+      return facturesService.validerFacture(id, {
+        onValidated: (validatedFacture) => {
+          syncValidatedFactureCaches(queryClient, validatedFacture);
+        },
+      });
+    },
     onSuccess: (validatedFacture) => {
       updateFactureCaches(queryClient, validatedFacture);
       queryClient.invalidateQueries({ queryKey: ['factures-paginated'] });
       queryClient.invalidateQueries({ queryKey: ['factures'] });
+      queryClient.invalidateQueries({ queryKey: ['factures-stats'] });
       queryClient.invalidateQueries({ queryKey: ['facture-editor', validatedFacture.id] });
       queryClient.invalidateQueries({ queryKey: ['facture-snapshot', validatedFacture.id] });
       toast.success('Facture validée avec succès');
