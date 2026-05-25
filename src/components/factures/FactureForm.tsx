@@ -181,6 +181,21 @@ export const FactureForm = ({
       compteChargeId: currentCompteChargeId ?? null,
     });
 
+  const isSeedableAmountField = (
+    fieldName: 'montantHT' | 'montantTTC' | 'montantNetPaye',
+    manualOverride: boolean,
+  ) => {
+    const fieldState = form.getFieldState(fieldName);
+    const currentValue = form.getValues(fieldName);
+
+    return (
+      !manualOverride &&
+      !fieldState.isDirty &&
+      !fieldState.isTouched &&
+      (currentValue === 0 || currentValue === '' || currentValue === null || currentValue === undefined)
+    );
+  };
+
   const form = useForm<z.infer<typeof factureSchema>>({
     resolver: zodResolver(factureSchema),
     defaultValues: {
@@ -486,29 +501,13 @@ export const FactureForm = ({
       form.setValue('projetId', resolvedInheritedProjetId, { shouldDirty: true });
 
       const sourceChanged = hydratedInheritedSourceRef.current !== inheritedSourceKey;
-      if (sourceChanged) {
-        manualMontantOverridesRef.current = {
-          montantHT: false,
-          montantTTC: false,
-          montantNetPaye: false,
-        };
-      }
       const canSeedObjet = sourceChanged || (!form.getFieldState('objet').isDirty && !form.getValues('objet'));
       const canSeedMontantHT =
-        sourceChanged ||
-        (!manualMontantOverridesRef.current.montantHT &&
-          !form.getFieldState('montantHT').isDirty &&
-          !form.getValues('montantHT'));
+        isSeedableAmountField('montantHT', manualMontantOverridesRef.current.montantHT);
       const canSeedMontantTTC =
-        sourceChanged ||
-        (!manualMontantOverridesRef.current.montantTTC &&
-          !form.getFieldState('montantTTC').isDirty &&
-          !form.getValues('montantTTC'));
+        isSeedableAmountField('montantTTC', manualMontantOverridesRef.current.montantTTC);
       const canSeedMontantNetPaye =
-        sourceChanged ||
-        (!manualMontantOverridesRef.current.montantNetPaye &&
-          !form.getFieldState('montantNetPaye').isDirty &&
-          !form.getValues('montantNetPaye'));
+        isSeedableAmountField('montantNetPaye', manualMontantOverridesRef.current.montantNetPaye);
 
       if (canSeedObjet) {
         form.setValue('objet', resolvedInheritedObjet, { shouldDirty: true });

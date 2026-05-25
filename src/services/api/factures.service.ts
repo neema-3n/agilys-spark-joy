@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Facture, CreateFactureInput, UpdateFactureInput, PaginatedResponse, PaginationParams } from '@/types/facture.types';
 import type { FinancialVentilation } from '@/types/financial.types';
+import { canCancelFacture, canDeleteFacture } from '@/lib/facture-rules';
 
 const parseVentilations = (value: any): FinancialVentilation[] => (Array.isArray(value) ? value : []);
 
@@ -387,6 +388,12 @@ export const facturesService = {
   },
 
   async delete(id: string): Promise<void> {
+    const facture = await this.getById(id);
+
+    if (!canDeleteFacture(facture)) {
+      throw new Error('Seules les factures en brouillon peuvent être supprimées.');
+    }
+
     const { error } = await supabase
       .from('factures')
       .delete()
@@ -431,9 +438,9 @@ export const facturesService = {
       dateValidation: new Date().toISOString().split('T')[0],
     });
 
-    // 2. Générer les écritures comptables automatiquement (en arrière-plan)
+    // 2. Générer les écritures comptables au moment exact de la validation
     try {
-      await supabase.functions.invoke('generate-ecritures-comptables', {
+      const { data, error } = await supabase.functions.invoke('generate-ecritures-comptables', {
         body: {
           typeOperation: 'facture',
           sourceId: id,
@@ -441,8 +448,30 @@ export const facturesService = {
           exerciceId: facture.exerciceId
         }
       });
+
+      if (error) {
+        let errorMessage = error.message;
+
+        if (error.context) {
+          try {
+            const errorBody = await error.context.json();
+            if (errorBody?.error) {
+              errorMessage = errorBody.error;
+            }
+          } catch (parseError) {
+            console.error('Impossible de parser l’erreur de génération des écritures:', parseError);
+          }
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'La facture a été validée mais la génération des écritures a échoué.');
+      }
     } catch (error) {
       console.error('Erreur lors de la génération des écritures:', error);
+      throw error;
     }
 
     return factureValidee;
@@ -463,8 +492,16 @@ export const facturesService = {
   async annuler(id: string, motif: string): Promise<Facture> {
     const facture = await this.getById(id);
 
-    if (facture.statut === 'soldee') {
-      throw new Error('Une facture soldée ne peut pas être annulée');
+    if (!canCancelFacture(facture)) {
+      if (facture.statut === 'brouillon') {
+        throw new Error('Une facture en brouillon ne s’annule pas. Elle doit être supprimée.');
+      }
+
+      if (facture.statut === 'soldee' || facture.montantLiquide > 0) {
+        throw new Error('Une facture liquidée ou soldée ne peut pas être annulée.');
+      }
+
+      throw new Error('Cette facture ne peut pas être annulée.');
     }
 
     // 1. Vérifier s'il existe des écritures validées
