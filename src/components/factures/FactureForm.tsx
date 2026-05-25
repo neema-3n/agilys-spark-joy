@@ -45,7 +45,7 @@ const factureSchema = z.object({
   numeroFactureFournisseur: z.string().optional(),
   montantHT: z.coerce.number().positive('Le montant HT est requis'),
   montantTTC: z.coerce.number().positive('Le montant TTC est requis'),
-  montantNetPaye: z.coerce.number().positive('Le montant net paye est requis'),
+  montantNetPaye: z.coerce.number().min(0, 'Le montant net paye doit etre positif ou nul'),
   observations: z.string().optional(),
 }).superRefine((data, ctx) => {
   const hasBonCommande = !!data.bonCommandeId && data.bonCommandeId !== 'none';
@@ -129,6 +129,7 @@ export const FactureForm = ({
   const [compteChargeId, setCompteChargeId] = useState<string>();
   const initializedRef = useRef(false);
   const initialFinanceStateRef = useRef<string | null>(null);
+  const hydratedInheritedSourceRef = useRef<string | null>(null);
 
   const resolveInheritedReferences = useCallback(
     (bonCommandeId?: string, engagementId?: string) => {
@@ -201,6 +202,17 @@ export const FactureForm = ({
     () => resolveInheritedReferences(watchedBonCommandeId, watchedEngagementId),
     [resolveInheritedReferences, watchedBonCommandeId, watchedEngagementId]
   );
+  const inheritedSourceKey = watchedBonCommandeId && watchedBonCommandeId !== 'none'
+    ? `bc:${watchedBonCommandeId}`
+    : watchedEngagementId && watchedEngagementId !== 'none'
+      ? `eng:${watchedEngagementId}`
+      : null;
+  const resolvedInheritedFournisseurId = resolvedInheritedReferences.fournisseurId;
+  const resolvedInheritedEngagementId = resolvedInheritedReferences.engagementId;
+  const resolvedInheritedLigneBudgetaireId = resolvedInheritedReferences.ligneBudgetaireId;
+  const resolvedInheritedProjetId = resolvedInheritedReferences.projetId;
+  const resolvedInheritedObjet = resolvedInheritedReferences.objet;
+  const resolvedInheritedMontant = resolvedInheritedReferences.montant || 0;
   const currentFournisseurId =
     form.getValues('fournisseurId') ||
     facture?.fournisseurId ||
@@ -311,6 +323,7 @@ export const FactureForm = ({
 
   useEffect(() => {
     initializedRef.current = false;
+    hydratedInheritedSourceRef.current = null;
   }, [facture?.id, initialBonCommandeId, initialEngagementId]);
 
   useEffect(() => {
@@ -434,29 +447,60 @@ export const FactureForm = ({
 
   useEffect(() => {
     if (facture) return;
-    const montantTTC = resolvedInheritedReferences.montant || 0;
+    if (!inheritedSourceKey) {
+      hydratedInheritedSourceRef.current = null;
+      return;
+    }
+
+    const montantTTC = resolvedInheritedMontant;
     const montantHT = montantTTC > 0 ? Number((montantTTC / 1.2).toFixed(2)) : 0;
 
     if (hasSelectedBonCommande || hasSelectedEngagement) {
       form.setValue(
         'fournisseurId',
-        resolvedInheritedReferences.fournisseurId === 'none' ? '' : resolvedInheritedReferences.fournisseurId,
+        resolvedInheritedFournisseurId === 'none' ? '' : resolvedInheritedFournisseurId,
         { shouldDirty: true }
       );
-      form.setValue('engagementId', resolvedInheritedReferences.engagementId, { shouldDirty: true });
-      form.setValue('ligneBudgetaireId', resolvedInheritedReferences.ligneBudgetaireId, { shouldDirty: true });
-      form.setValue('projetId', resolvedInheritedReferences.projetId, { shouldDirty: true });
-      form.setValue('objet', resolvedInheritedReferences.objet, { shouldDirty: true });
-      form.setValue('montantHT', montantHT, { shouldDirty: true });
-      form.setValue('montantTTC', montantTTC, { shouldDirty: true });
-      form.setValue('montantNetPaye', montantTTC, { shouldDirty: true });
+      form.setValue('engagementId', resolvedInheritedEngagementId, { shouldDirty: true });
+      form.setValue('ligneBudgetaireId', resolvedInheritedLigneBudgetaireId, { shouldDirty: true });
+      form.setValue('projetId', resolvedInheritedProjetId, { shouldDirty: true });
+
+      const sourceChanged = hydratedInheritedSourceRef.current !== inheritedSourceKey;
+      const canSeedObjet = sourceChanged || (!form.getFieldState('objet').isDirty && !form.getValues('objet'));
+      const canSeedMontantHT =
+        sourceChanged || (!form.getFieldState('montantHT').isDirty && !form.getValues('montantHT'));
+      const canSeedMontantTTC =
+        sourceChanged || (!form.getFieldState('montantTTC').isDirty && !form.getValues('montantTTC'));
+      const canSeedMontantNetPaye =
+        sourceChanged || (!form.getFieldState('montantNetPaye').isDirty && !form.getValues('montantNetPaye'));
+
+      if (canSeedObjet) {
+        form.setValue('objet', resolvedInheritedObjet, { shouldDirty: true });
+      }
+      if (canSeedMontantHT) {
+        form.setValue('montantHT', montantHT, { shouldDirty: true });
+      }
+      if (canSeedMontantTTC) {
+        form.setValue('montantTTC', montantTTC, { shouldDirty: true });
+      }
+      if (canSeedMontantNetPaye) {
+        form.setValue('montantNetPaye', montantTTC, { shouldDirty: true });
+      }
+
+      hydratedInheritedSourceRef.current = inheritedSourceKey;
     }
   }, [
     facture,
     form,
     hasSelectedBonCommande,
     hasSelectedEngagement,
-    resolvedInheritedReferences,
+    inheritedSourceKey,
+    resolvedInheritedEngagementId,
+    resolvedInheritedFournisseurId,
+    resolvedInheritedLigneBudgetaireId,
+    resolvedInheritedMontant,
+    resolvedInheritedObjet,
+    resolvedInheritedProjetId,
   ]);
 
   const breakdown = useMemo(() => {
