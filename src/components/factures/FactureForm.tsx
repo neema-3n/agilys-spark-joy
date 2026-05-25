@@ -398,6 +398,11 @@ export const FactureForm = ({
     [ventilations, chargePrincipaleMode, natureCompteChargeId, compteChargeId]
   );
 
+  const watchedMontantHT = form.watch('montantHT') || 0;
+  const watchedMontantTTC = form.watch('montantTTC') || 0;
+  const watchedMontantNetPaye = form.watch('montantNetPaye') || 0;
+  const hasDetailedVentilations = ventilations.length > 0;
+
   const isDirty =
     form.formState.isDirty ||
     (initialFinanceStateRef.current !== null &&
@@ -454,13 +459,45 @@ export const FactureForm = ({
     resolvedInheritedReferences,
   ]);
 
-  const breakdown = computeFinancialBreakdown(
-    form.watch('montantHT') || 0,
-    form.watch('montantTTC') || 0,
-    form.watch('montantNetPaye') || 0,
-    ventilations
-  );
-  const coherenceErrors = getCoherenceErrors(breakdown);
+  const breakdown = useMemo(() => {
+    const computed = computeFinancialBreakdown(
+      watchedMontantHT,
+      watchedMontantTTC,
+      watchedMontantNetPaye,
+      ventilations
+    );
+
+    if (hasDetailedVentilations) {
+      return computed;
+    }
+
+    const implicitAjouts = Math.max(watchedMontantTTC - watchedMontantHT, 0);
+    const implicitRetraits = Math.max(watchedMontantTTC - watchedMontantNetPaye, 0);
+
+    return {
+      ...computed,
+      totalAjouts: implicitAjouts,
+      totalRetraits: implicitRetraits,
+    };
+  }, [hasDetailedVentilations, ventilations, watchedMontantHT, watchedMontantNetPaye, watchedMontantTTC]);
+
+  const coherenceErrors = useMemo(() => {
+    if (hasDetailedVentilations) {
+      return getCoherenceErrors(breakdown);
+    }
+
+    const errors: string[] = [];
+
+    if (watchedMontantTTC + 0.01 < watchedMontantHT) {
+      errors.push('Le TTC ne peut pas être inférieur au HT.');
+    }
+
+    if (watchedMontantNetPaye - 0.01 > watchedMontantTTC) {
+      errors.push('Le net payé ne peut pas dépasser le TTC.');
+    }
+
+    return errors;
+  }, [breakdown, hasDetailedVentilations, watchedMontantHT, watchedMontantNetPaye, watchedMontantTTC]);
 
   const handleSubmit = async (values: z.infer<typeof factureSchema>) => {
     const resolvedChargePrincipale = resolveChargePrincipale({
@@ -494,7 +531,7 @@ export const FactureForm = ({
       objet: values.objet,
       numeroFactureFournisseur: values.numeroFactureFournisseur || undefined,
       montantHT: values.montantHT,
-      montantTVA: sumTaxVentilations(ventilations),
+      montantTVA: hasDetailedVentilations ? sumTaxVentilations(ventilations) : breakdown.totalAjouts,
       montantTTC: values.montantTTC,
       montantNetPaye: values.montantNetPaye,
       totalAjouts: breakdown.totalAjouts,
