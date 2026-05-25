@@ -130,6 +130,11 @@ export const FactureForm = ({
   const initializedRef = useRef(false);
   const initialFinanceStateRef = useRef<string | null>(null);
   const hydratedInheritedSourceRef = useRef<string | null>(null);
+  const manualMontantOverridesRef = useRef({
+    montantHT: false,
+    montantTTC: false,
+    montantNetPaye: false,
+  });
 
   const resolveInheritedReferences = useCallback(
     (bonCommandeId?: string, engagementId?: string) => {
@@ -324,6 +329,11 @@ export const FactureForm = ({
   useEffect(() => {
     initializedRef.current = false;
     hydratedInheritedSourceRef.current = null;
+    manualMontantOverridesRef.current = {
+      montantHT: false,
+      montantTTC: false,
+      montantNetPaye: false,
+    };
   }, [facture?.id, initialBonCommandeId, initialEngagementId]);
 
   useEffect(() => {
@@ -365,6 +375,11 @@ export const FactureForm = ({
         normalizedChargePrincipale.natureCompteChargeId,
         normalizedChargePrincipale.compteChargeId,
       );
+      manualMontantOverridesRef.current = {
+        montantHT: false,
+        montantTTC: false,
+        montantNetPaye: false,
+      };
       initializedRef.current = true;
       return;
     }
@@ -391,6 +406,11 @@ export const FactureForm = ({
         observations: '',
       });
       initialFinanceStateRef.current = serializeFinanceState([], 'nature');
+      manualMontantOverridesRef.current = {
+        montantHT: false,
+        montantTTC: false,
+        montantNetPaye: false,
+      };
       initializedRef.current = true;
     });
 
@@ -466,13 +486,29 @@ export const FactureForm = ({
       form.setValue('projetId', resolvedInheritedProjetId, { shouldDirty: true });
 
       const sourceChanged = hydratedInheritedSourceRef.current !== inheritedSourceKey;
+      if (sourceChanged) {
+        manualMontantOverridesRef.current = {
+          montantHT: false,
+          montantTTC: false,
+          montantNetPaye: false,
+        };
+      }
       const canSeedObjet = sourceChanged || (!form.getFieldState('objet').isDirty && !form.getValues('objet'));
       const canSeedMontantHT =
-        sourceChanged || (!form.getFieldState('montantHT').isDirty && !form.getValues('montantHT'));
+        sourceChanged ||
+        (!manualMontantOverridesRef.current.montantHT &&
+          !form.getFieldState('montantHT').isDirty &&
+          !form.getValues('montantHT'));
       const canSeedMontantTTC =
-        sourceChanged || (!form.getFieldState('montantTTC').isDirty && !form.getValues('montantTTC'));
+        sourceChanged ||
+        (!manualMontantOverridesRef.current.montantTTC &&
+          !form.getFieldState('montantTTC').isDirty &&
+          !form.getValues('montantTTC'));
       const canSeedMontantNetPaye =
-        sourceChanged || (!form.getFieldState('montantNetPaye').isDirty && !form.getValues('montantNetPaye'));
+        sourceChanged ||
+        (!manualMontantOverridesRef.current.montantNetPaye &&
+          !form.getFieldState('montantNetPaye').isDirty &&
+          !form.getValues('montantNetPaye'));
 
       if (canSeedObjet) {
         form.setValue('objet', resolvedInheritedObjet, { shouldDirty: true });
@@ -544,6 +580,11 @@ export const FactureForm = ({
   }, [breakdown, hasDetailedVentilations, watchedMontantHT, watchedMontantNetPaye, watchedMontantTTC]);
 
   const handleSubmit = async (values: z.infer<typeof factureSchema>) => {
+    const currentValues = form.getValues();
+    const montantHT = Number(currentValues.montantHT || 0);
+    const montantTTC = Number(currentValues.montantTTC || 0);
+    const montantNetPaye = Number(currentValues.montantNetPaye || 0);
+
     const resolvedChargePrincipale = resolveChargePrincipale({
       mode: chargePrincipaleMode,
       natureCompteId: natureCompteChargeId,
@@ -556,8 +597,22 @@ export const FactureForm = ({
       return;
     }
 
-    if (coherenceErrors.length > 0) {
-      form.setError('montantNetPaye', { type: 'manual', message: coherenceErrors[0] });
+    const liveBreakdown = hasDetailedVentilations
+      ? computeFinancialBreakdown(montantHT, montantTTC, montantNetPaye, ventilations)
+      : {
+          ...computeFinancialBreakdown(montantHT, montantTTC, montantNetPaye, ventilations),
+          totalAjouts: Math.max(montantTTC - montantHT, 0),
+          totalRetraits: Math.max(montantTTC - montantNetPaye, 0),
+        };
+    const liveCoherenceErrors = hasDetailedVentilations
+      ? getCoherenceErrors(liveBreakdown)
+      : [
+          ...(montantTTC + 0.01 < montantHT ? ['Le TTC ne peut pas être inférieur au HT.'] : []),
+          ...(montantNetPaye - 0.01 > montantTTC ? ['Le net payé ne peut pas dépasser le TTC.'] : []),
+        ];
+
+    if (liveCoherenceErrors.length > 0) {
+      form.setError('montantNetPaye', { type: 'manual', message: liveCoherenceErrors[0] });
       return;
     }
 
@@ -574,12 +629,12 @@ export const FactureForm = ({
       projetId: values.projetId !== 'none' ? values.projetId : undefined,
       objet: values.objet,
       numeroFactureFournisseur: values.numeroFactureFournisseur || undefined,
-      montantHT: values.montantHT,
-      montantTVA: hasDetailedVentilations ? sumTaxVentilations(ventilations) : breakdown.totalAjouts,
-      montantTTC: values.montantTTC,
-      montantNetPaye: values.montantNetPaye,
-      totalAjouts: breakdown.totalAjouts,
-      totalRetraits: breakdown.totalRetraits,
+      montantHT,
+      montantTVA: hasDetailedVentilations ? sumTaxVentilations(ventilations) : liveBreakdown.totalAjouts,
+      montantTTC,
+      montantNetPaye,
+      totalAjouts: liveBreakdown.totalAjouts,
+      totalRetraits: liveBreakdown.totalRetraits,
       montantLiquide: facture?.montantLiquide || 0,
       chargePrincipaleMode: resolvedChargePrincipale.chargePrincipaleMode,
       natureCompteChargeId: resolvedChargePrincipale.natureCompteChargeId,
@@ -698,13 +753,25 @@ export const FactureForm = ({
 
             <div className="grid gap-4 md:grid-cols-3">
               <FormField control={form.control} name="montantHT" render={({ field }) => (
-                <FormItem><FormLabel>Montant HT</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Montant HT</FormLabel><FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ''} onChange={(event) => {
+                  manualMontantOverridesRef.current.montantHT = true;
+                  const nextValue = event.target.value;
+                  field.onChange(nextValue === '' ? '' : Number(nextValue));
+                }} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="montantTTC" render={({ field }) => (
-                <FormItem><FormLabel>Montant TTC</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Montant TTC</FormLabel><FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ''} onChange={(event) => {
+                  manualMontantOverridesRef.current.montantTTC = true;
+                  const nextValue = event.target.value;
+                  field.onChange(nextValue === '' ? '' : Number(nextValue));
+                }} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="montantNetPaye" render={({ field }) => (
-                <FormItem><FormLabel>Montant net paye</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Montant net paye</FormLabel><FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ''} onChange={(event) => {
+                  manualMontantOverridesRef.current.montantNetPaye = true;
+                  const nextValue = event.target.value;
+                  field.onChange(nextValue === '' ? '' : Number(nextValue));
+                }} /></FormControl><FormMessage /></FormItem>
               )} />
             </div>
           </div>
