@@ -99,6 +99,14 @@ Deno.serve(async (req) => {
           .select('*')
           .eq('id', sourceId)
           .single();
+        if (data?.statut !== 'validee') {
+          return new Response(
+            JSON.stringify({
+              error: 'Seules les factures validées peuvent générer des écritures comptables.',
+            }),
+            { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
         operationData = data;
         numeroPiece = data?.numero || '';
         dateOperation = data?.date_facture || '';

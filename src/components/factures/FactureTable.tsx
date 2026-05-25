@@ -3,7 +3,6 @@ import { Facture } from '@/types/facture.types';
 import { ListColumn, ListTable } from '@/components/lists/ListTable';
 import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/selectionColumn';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   MoreHorizontal,
   Pencil,
@@ -31,11 +30,10 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Link } from 'react-router-dom';
-import { Checkbox } from '@/components/ui/checkbox';
-import { useListSelection } from '@/hooks/useListSelection';
 import { formatMontant } from '@/lib/utils';
 import { FactureStatusBadge } from '@/components/ui/status-badge';
 import { formatDateValue } from '@/lib/date-utils';
+import { canCancelFacture, canDeleteFacture } from '@/lib/facture-rules';
 
 type FactureTableSelection = ListSelectionHandlers;
 
@@ -48,7 +46,7 @@ interface FactureTableProps {
   onAnnuler: (id: string) => void;
   onCreerDepense: (facture: Facture) => void;
   onViewDetails: (factureId: string) => void;
-  selection: FactureTableSelection;
+  selection?: FactureTableSelection;
   stickyHeader?: boolean;
   stickyHeaderOffset?: number;
   scrollContainerClassName?: string;
@@ -71,10 +69,10 @@ export const FactureTable = ({
   footer,
 }: FactureTableProps) => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const factureIds = useMemo(() => factures.map((facture) => facture.id), [factures]);
-  const { selectedIds, allSelected, toggleOne, toggleAll } = selection;
-
-
+  const selectedIds = selection?.selectedIds ?? new Set<string>();
+  const allSelected = selection?.allSelected ?? false;
+  const toggleOne = selection?.toggleOne;
+  const toggleAll = selection?.toggleAll;
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '-';
@@ -82,12 +80,16 @@ export const FactureTable = ({
   };
 
   const columns: ListColumn<Facture>[] = [
-    buildSelectionColumn<Facture>({
-      selection: { selectedIds, allSelected, toggleOne, toggleAll },
-      getId: (facture) => facture.id,
-      getLabel: (facture) => `Sélectionner la facture ${facture.numero}`,
-      allLabel: 'Sélectionner toutes les factures',
-    }),
+    ...(selection
+      ? [
+          buildSelectionColumn<Facture>({
+            selection: { selectedIds, allSelected, toggleOne, toggleAll },
+            getId: (facture) => facture.id,
+            getLabel: (facture) => `Sélectionner la facture ${facture.numero}`,
+            allLabel: 'Sélectionner toutes les factures',
+          }),
+        ]
+      : []),
     {
       id: 'numero',
       header: 'Numéro',
@@ -210,13 +212,13 @@ export const FactureTable = ({
                 </DropdownMenuItem>
               </>
             )}
-            {facture.statut !== 'soldee' && facture.statut !== 'annulee' && (
+            {canCancelFacture(facture) && (
               <DropdownMenuItem onClick={() => onAnnuler(facture.id)}>
                 <XCircle className="mr-2 h-4 w-4" />
                 Annuler
               </DropdownMenuItem>
             )}
-            {facture.statut === 'brouillon' && (
+            {canDeleteFacture(facture) && (
               <DropdownMenuItem
                 onClick={() => setDeleteId(facture.id)}
                 className="text-destructive"

@@ -21,6 +21,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { ListLayout } from '@/components/lists/ListLayout';
 import { ListToolbar } from '@/components/lists/ListToolbar';
 import { ListPageLoading } from '@/components/lists/ListPageLoading';
@@ -59,6 +60,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { canCancelFacture, canDeleteFacture } from '@/lib/facture-rules';
 
 export default function Factures() {
   const navigate = useNavigate();
@@ -230,7 +232,7 @@ export default function Factures() {
 
   const {
     snapshotId: snapshotFactureId,
-    snapshotItem: snapshotFacture,
+    snapshotItem: snapshotFactureFromList,
     snapshotIndex,
     isSnapshotOpen,
     isSnapshotLoading,
@@ -245,6 +247,14 @@ export default function Factures() {
     onMissingId: () => navigate('/app/factures', { replace: true }),
     isLoadingItems: isLoading,
   });
+
+  const { data: snapshotFactureDetail, isLoading: isSnapshotFactureDetailLoading } = useQuery({
+    queryKey: ['facture-snapshot', snapshotFactureId],
+    queryFn: () => facturesService.getById(snapshotFactureId!),
+    enabled: !!snapshotFactureId,
+  });
+
+  const snapshotFacture = snapshotFactureDetail || snapshotFactureFromList;
 
   const { headerCtaRef, isHeaderCtaVisible } = useHeaderCtaReveal([isSnapshotOpen]);
 
@@ -317,12 +327,20 @@ export default function Factures() {
 
   const handleConfirmAnnulation = useCallback(async () => {
     if (annulationFactureId && motifAnnulation.trim()) {
-      await annulerFacture({ id: annulationFactureId, motif: motifAnnulation });
+      await annulerFacture({ id: annulationFactureId, motif: motifAnnulation.trim() });
       setAnnulerDialogOpen(false);
       setAnnulationFactureId(undefined);
       setMotifAnnulation('');
     }
   }, [annulationFactureId, motifAnnulation, annulerFacture]);
+
+  const handleDeleteFacture = useCallback(async (id: string) => {
+    await deleteFacture(id);
+    if (snapshotFactureId === id) {
+      handleCloseSnapshot();
+    }
+    navigate('/app/factures');
+  }, [deleteFacture, handleCloseSnapshot, navigate, snapshotFactureId]);
 
   const handleNavigateToEntity = useCallback((type: string, id: string) => {
     switch (type) {
@@ -495,11 +513,12 @@ export default function Factures() {
             onNavigateToEntity={handleNavigateToEntity}
             onValider={snapshotFacture.statut === 'brouillon' ? () => validerFacture(snapshotFacture.id) : undefined}
             onMarquerSoldee={snapshotFacture.statut === 'validee' ? () => marquerPayee(snapshotFacture.id) : undefined}
-            onAnnuler={snapshotFacture.statut !== 'annulee' && snapshotFacture.statut !== 'soldee' ? () => handleAnnuler(snapshotFacture.id) : undefined}
+            onAnnuler={canCancelFacture(snapshotFacture) ? () => handleAnnuler(snapshotFacture.id) : undefined}
+            onDelete={canDeleteFacture(snapshotFacture) ? () => handleDeleteFacture(snapshotFacture.id) : undefined}
             onEdit={snapshotFacture.statut === 'brouillon' ? () => handleEdit(snapshotFacture.id) : undefined}
             onCreerDepense={(snapshotFacture.statut === 'validee' || snapshotFacture.statut === 'soldee') ? () => handleCreateDepenseFromFacture(snapshotFacture) : undefined}
           />
-        ) : isSnapshotOpen && isSnapshotLoading ? (
+        ) : isSnapshotOpen && (isSnapshotLoading || isSnapshotFactureDetailLoading) ? (
           <div className="py-12 text-center text-muted-foreground">Chargement du snapshot...</div>
         ) : (
           <>
@@ -675,23 +694,25 @@ export default function Factures() {
           </AlertDialogHeader>
           <div className="py-4">
             <Label htmlFor="motif">Motif d'annulation</Label>
-            <Input
+            <Textarea
               id="motif"
               value={motifAnnulation}
               onChange={(e) => setMotifAnnulation(e.target.value)}
               placeholder="Ex: Erreur de saisie, facture en double..."
               className="mt-2"
+              rows={4}
             />
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmAnnulation}
+            <Button
+              type="button"
+              onClick={() => void handleConfirmAnnulation()}
               disabled={!motifAnnulation.trim()}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Confirmer l'annulation
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

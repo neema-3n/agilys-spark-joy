@@ -14,6 +14,7 @@ import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { EcrituresSection } from '@/components/ecritures/EcrituresSection';
 import { useNavigate } from 'react-router-dom';
+import { canCancelFacture, canDeleteFacture } from '@/lib/facture-rules';
 
 interface FactureSnapshotProps {
   facture: Facture;
@@ -40,6 +41,9 @@ interface FactureSnapshotProps {
   
   /** Annuler la facture */
   onAnnuler?: () => void;
+
+  /** Supprimer la facture brouillon */
+  onDelete?: () => void;
   
   /**
    * Créer une dépense depuis cette facture.
@@ -63,6 +67,7 @@ export const FactureSnapshot = ({
   onValider,
   onMarquerSoldee,
   onAnnuler,
+  onDelete,
   onCreerDepense,
   onNavigateToEntity,
 }: FactureSnapshotProps) => {
@@ -143,9 +148,14 @@ export const FactureSnapshot = ({
           Créer une dépense
         </Button>
       )}
-      {(facture.statut === 'brouillon' || facture.statut === 'validee') && onAnnuler && (
+      {canCancelFacture(facture) && onAnnuler && (
         <Button variant="destructive" size="sm" onClick={onAnnuler}>
           Annuler
+        </Button>
+      )}
+      {canDeleteFacture(facture) && onDelete && (
+        <Button variant="destructive" size="sm" onClick={onDelete}>
+          Supprimer
         </Button>
       )}
     </>

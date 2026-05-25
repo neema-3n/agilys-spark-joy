@@ -6,6 +6,49 @@ import { useExercice } from '@/contexts/ExerciceContext';
 import { toast } from 'sonner';
 import { useServerPagination } from './useServerPagination';
 import type { Facture } from '@/types/facture.types';
+import type { QueryClient } from '@tanstack/react-query';
+
+const mergeFacture = (current: Facture, incoming: Facture): Facture => ({
+  ...current,
+  ...incoming,
+});
+
+const updateFactureInCollection = (items: Facture[] | undefined, incoming: Facture): Facture[] | undefined =>
+  items?.map((facture) => (facture.id === incoming.id ? mergeFacture(facture, incoming) : facture));
+
+const updateFactureCaches = (queryClient: QueryClient, incoming: Facture) => {
+  queryClient.setQueriesData({ queryKey: ['factures'] }, (current: Facture[] | undefined) =>
+    updateFactureInCollection(current, incoming)
+  );
+
+  queryClient.setQueriesData(
+    { queryKey: ['factures-paginated'] },
+    (
+      current:
+        | {
+            data: Facture[];
+            totalCount: number;
+            page: number;
+            pageSize: number;
+            totalPages: number;
+          }
+        | undefined
+    ) =>
+      current
+        ? {
+            ...current,
+            data: updateFactureInCollection(current.data, incoming) || current.data,
+          }
+        : current
+  );
+
+  queryClient.setQueryData(['facture-editor', incoming.id], (current: Facture | undefined) =>
+    current ? mergeFacture(current, incoming) : incoming
+  );
+  queryClient.setQueryData(['facture-snapshot', incoming.id], (current: Facture | undefined) =>
+    current ? mergeFacture(current, incoming) : incoming
+  );
+};
 
 export const useFactures = () => {
   const queryClient = useQueryClient();
@@ -46,8 +89,11 @@ export const useFactures = () => {
   const updateMutation = useMutation({
     mutationFn: ({ id, facture }: { id: string; facture: UpdateFactureInput }) =>
       facturesService.update(id, facture),
-    onSuccess: () => {
+    onSuccess: (updatedFacture) => {
+      updateFactureCaches(queryClient, updatedFacture);
       queryClient.invalidateQueries({ queryKey: ['factures'] });
+      queryClient.invalidateQueries({ queryKey: ['facture-editor', updatedFacture.id] });
+      queryClient.invalidateQueries({ queryKey: ['facture-snapshot', updatedFacture.id] });
       toast.success('Facture mise à jour avec succès');
     },
     onError: (error: Error) => {
@@ -82,8 +128,11 @@ export const useFactures = () => {
 
   const validerMutation = useMutation({
     mutationFn: (id: string) => facturesService.validerFacture(id),
-    onSuccess: () => {
+    onSuccess: (validatedFacture) => {
+      updateFactureCaches(queryClient, validatedFacture);
       queryClient.invalidateQueries({ queryKey: ['factures'] });
+      queryClient.invalidateQueries({ queryKey: ['facture-editor', validatedFacture.id] });
+      queryClient.invalidateQueries({ queryKey: ['facture-snapshot', validatedFacture.id] });
       queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       toast.success('Facture validée avec succès');
     },
@@ -107,8 +156,11 @@ export const useFactures = () => {
   const annulerMutation = useMutation({
     mutationFn: ({ id, motif }: { id: string; motif: string }) =>
       facturesService.annuler(id, motif),
-    onSuccess: () => {
+    onSuccess: (cancelledFacture) => {
+      updateFactureCaches(queryClient, cancelledFacture);
       queryClient.invalidateQueries({ queryKey: ['factures'] });
+      queryClient.invalidateQueries({ queryKey: ['facture-editor', cancelledFacture.id] });
+      queryClient.invalidateQueries({ queryKey: ['facture-snapshot', cancelledFacture.id] });
       queryClient.invalidateQueries({ queryKey: ['ecritures-comptables'] });
       toast.success('Facture annulée avec succès');
     },
@@ -171,9 +223,12 @@ export const useFacturesPaginated = () => {
   const updateMutation = useMutation({
     mutationFn: ({ id, facture }: { id: string; facture: UpdateFactureInput }) =>
       facturesService.update(id, facture),
-    onSuccess: () => {
+    onSuccess: (updatedFacture) => {
+      updateFactureCaches(queryClient, updatedFacture);
       queryClient.invalidateQueries({ queryKey: ['factures-paginated'] });
       queryClient.invalidateQueries({ queryKey: ['factures'] });
+      queryClient.invalidateQueries({ queryKey: ['facture-editor', updatedFacture.id] });
+      queryClient.invalidateQueries({ queryKey: ['facture-snapshot', updatedFacture.id] });
       toast.success('Facture mise à jour avec succès');
     },
     onError: (error: Error) => {
@@ -202,9 +257,12 @@ export const useFacturesPaginated = () => {
 
   const validerMutation = useMutation({
     mutationFn: (id: string) => facturesService.validerFacture(id),
-    onSuccess: () => {
+    onSuccess: (validatedFacture) => {
+      updateFactureCaches(queryClient, validatedFacture);
       queryClient.invalidateQueries({ queryKey: ['factures-paginated'] });
       queryClient.invalidateQueries({ queryKey: ['factures'] });
+      queryClient.invalidateQueries({ queryKey: ['facture-editor', validatedFacture.id] });
+      queryClient.invalidateQueries({ queryKey: ['facture-snapshot', validatedFacture.id] });
       toast.success('Facture validée avec succès');
     },
     onError: (error: Error) => {
@@ -227,9 +285,12 @@ export const useFacturesPaginated = () => {
   const annulerMutation = useMutation({
     mutationFn: ({ id, motif }: { id: string; motif: string }) =>
       facturesService.annuler(id, motif),
-    onSuccess: () => {
+    onSuccess: (cancelledFacture) => {
+      updateFactureCaches(queryClient, cancelledFacture);
       queryClient.invalidateQueries({ queryKey: ['factures-paginated'] });
       queryClient.invalidateQueries({ queryKey: ['factures'] });
+      queryClient.invalidateQueries({ queryKey: ['facture-editor', cancelledFacture.id] });
+      queryClient.invalidateQueries({ queryKey: ['facture-snapshot', cancelledFacture.id] });
       toast.success('Facture annulée avec succès');
     },
     onError: (error: Error) => {
