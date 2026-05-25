@@ -616,6 +616,11 @@ export const FactureForm = ({
       return;
     }
 
+    const effectiveMontantTTC = Number((montantHT + liveBreakdown.totalAjouts).toFixed(2));
+    const effectiveMontantNetPaye = Number(
+      Math.max(effectiveMontantTTC - liveBreakdown.totalRetraits, 0).toFixed(2)
+    );
+
     const payload: CreateFactureInput = {
       clientId: currentClientId,
       exerciceId: currentExerciceId,
@@ -631,8 +636,8 @@ export const FactureForm = ({
       numeroFactureFournisseur: values.numeroFactureFournisseur || undefined,
       montantHT,
       montantTVA: hasDetailedVentilations ? sumTaxVentilations(ventilations) : liveBreakdown.totalAjouts,
-      montantTTC,
-      montantNetPaye,
+      montantTTC: effectiveMontantTTC,
+      montantNetPaye: effectiveMontantNetPaye,
       totalAjouts: liveBreakdown.totalAjouts,
       totalRetraits: liveBreakdown.totalRetraits,
       montantLiquide: facture?.montantLiquide || 0,

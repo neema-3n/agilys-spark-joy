@@ -31,6 +31,19 @@ interface CreateFactureRequest {
   observations?: string;
 }
 
+const toFiniteNumber = (value: unknown): number => {
+  const normalized =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string'
+        ? Number(value)
+        : NaN;
+
+  return Number.isFinite(normalized) ? normalized : 0;
+};
+
+const roundCurrency = (value: number): number => Math.round(value * 100) / 100;
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -68,10 +81,34 @@ Deno.serve(async (req) => {
       throw new Error('Champs requis manquants: exerciceId, clientId, fournisseurId, objet');
     }
 
+    const montantHT = toFiniteNumber(body.montantHT);
+    const providedMontantTTC = toFiniteNumber(body.montantTTC);
+    const totalAjouts = body.totalAjouts !== undefined
+      ? toFiniteNumber(body.totalAjouts)
+      : body.montantTVA !== undefined
+        ? toFiniteNumber(body.montantTVA)
+        : Math.max(providedMontantTTC - montantHT, 0);
+    const totalRetraits = body.totalRetraits !== undefined
+      ? toFiniteNumber(body.totalRetraits)
+      : Math.max(providedMontantTTC - toFiniteNumber(body.montantNetPaye), 0);
+    const effectiveMontantTTC = roundCurrency(montantHT + totalAjouts);
+    const effectiveMontantNetPaye = roundCurrency(
+      body.montantNetPaye !== undefined
+        ? toFiniteNumber(body.montantNetPaye)
+        : Math.max(effectiveMontantTTC - totalRetraits, 0)
+    );
+    const effectiveMontantTVA = body.montantTVA !== undefined
+      ? toFiniteNumber(body.montantTVA)
+      : totalAjouts;
+
     console.log('Creating facture:', {
       exerciceId: body.exerciceId,
       clientId: body.clientId,
       fournisseurId: body.fournisseurId,
+      montantHT,
+      providedMontantTTC,
+      effectiveMontantTTC,
+      effectiveMontantNetPaye,
       userId: user.id
     });
 
@@ -88,9 +125,9 @@ Deno.serve(async (req) => {
       p_objet: body.objet,
       p_date_facture: body.dateFacture || new Date().toISOString().split('T')[0],
       p_date_echeance: body.dateEcheance || null,
-      p_montant_ht: body.montantHT || 0,
-      p_montant_tva: body.montantTVA || 0,
-      p_montant_ttc: body.montantTTC || 0,
+      p_montant_ht: montantHT,
+      p_montant_tva: effectiveMontantTVA,
+      p_montant_ttc: effectiveMontantTTC,
       p_numero_facture_fournisseur: body.numeroFactureFournisseur || null,
       p_bon_commande_id: body.bonCommandeId || null,
       p_engagement_id: body.engagementId || null,
@@ -112,14 +149,14 @@ Deno.serve(async (req) => {
         if (match) {
           const totalFacture = parseFloat(match[1]);
           const montantBC = parseFloat(match[2]);
-          const deja = totalFacture - body.montantTTC;
+          const deja = totalFacture - effectiveMontantTTC;
           const disponible = montantBC - deja;
           
           userMessage = `⚠️ Montant insuffisant sur le bon de commande\n\n` +
                        `• Montant du BC : ${montantBC.toFixed(2)} €\n` +
                        `• Déjà facturé : ${deja.toFixed(2)} €\n` +
                        `• Disponible : ${disponible.toFixed(2)} €\n` +
-                       `• Vous tentez de facturer : ${body.montantTTC.toFixed(2)} €\n\n` +
+                       `• Vous tentez de facturer : ${effectiveMontantTTC.toFixed(2)} €\n\n` +
                        `💡 Réduisez le montant à ${disponible.toFixed(2)} € maximum`;
         }
       }
@@ -130,7 +167,7 @@ Deno.serve(async (req) => {
         if (match) {
           const totalFacture = parseFloat(match[1]);
           const montantEng = parseFloat(match[2]);
-          const disponible = montantEng - (totalFacture - body.montantTTC);
+          const disponible = montantEng - (totalFacture - effectiveMontantTTC);
           
           userMessage = `⚠️ Montant insuffisant sur l'engagement\n\n` +
                        `• Montant de l'engagement : ${montantEng.toFixed(2)} €\n` +
@@ -153,9 +190,9 @@ Deno.serve(async (req) => {
     const { error: patchError } = await supabaseAdmin
       .from('factures')
       .update({
-        montant_net_paye: body.montantNetPaye ?? body.montantTTC,
-        total_ajouts: body.totalAjouts ?? body.montantTVA ?? 0,
-        total_retraits: body.totalRetraits ?? 0,
+        montant_net_paye: effectiveMontantNetPaye,
+        total_ajouts: totalAjouts,
+        total_retraits: totalRetraits,
         charge_principale_mode: body.chargePrincipaleMode ?? 'nature',
         nature_compte_charge_id: body.natureCompteChargeId || null,
         compte_charge_id: body.compteChargeId || null,
@@ -210,9 +247,9 @@ Deno.serve(async (req) => {
 
     const result = toCamelCase({
       ...data,
-      montant_net_paye: body.montantNetPaye ?? body.montantTTC,
-      total_ajouts: body.totalAjouts ?? body.montantTVA ?? 0,
-      total_retraits: body.totalRetraits ?? 0,
+      montant_net_paye: effectiveMontantNetPaye,
+      total_ajouts: totalAjouts,
+      total_retraits: totalRetraits,
       charge_principale_mode: body.chargePrincipaleMode ?? 'nature',
       nature_compte_charge_id: body.natureCompteChargeId || null,
       compte_charge_id: body.compteChargeId || null,
