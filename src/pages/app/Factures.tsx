@@ -90,6 +90,7 @@ export default function Factures() {
   const [isFactureDirty, setIsFactureDirty] = useState(false);
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   const isMobile = useIsMobile();
+  const batchActionsEnabled = false;
 
   // Pagination côté serveur
   const {
@@ -542,7 +543,7 @@ export default function Factures() {
                       onToggle={() => setIsAdvancedFiltersOpen((open) => !open)}
                       activeCount={activeAdvancedFiltersCount}
                     />,
-                    ...(!isMobile || hasSelection
+                    ...(batchActionsEnabled && (!isMobile || hasSelection)
                       ? [
                           <DropdownMenu key="batch-actions">
                             <DropdownMenuTrigger asChild>
@@ -639,7 +640,7 @@ export default function Factures() {
                 onAnnuler={handleAnnuler}
                 onCreerDepense={handleCreateDepenseFromFacture}
                 onViewDetails={handleOpenSnapshot}
-                selection={{ selectedIds, allSelected, toggleOne, toggleAll }}
+                selection={batchActionsEnabled ? { selectedIds, allSelected, toggleOne, toggleAll } : undefined}
                 stickyHeader
                 stickyHeaderOffset={0}
                 scrollContainerClassName="max-h-[calc(100vh-220px)] overflow-auto"
