@@ -17,7 +17,7 @@ import { formatDateValue } from '@/lib/date-utils';
 
 interface DepenseTableProps {
   depenses: Depense[];
-  onEdit?: (depense: Depense) => void;
+  onEdit?: (id: string) => void;
   onValider?: (id: string) => void;
   onEnregistrerPaiement?: (id: string) => void;
   onAnnuler?: (id: string) => void;
@@ -185,7 +185,7 @@ export const DepenseTable = ({
               <>
                 {onEdit && (
                   <DropdownMenuItem
-                    onClick={() => onEdit(depense)}
+                    onClick={() => onEdit(depense.id)}
                     disabled={disableActions}
                   >
                     <Pencil className="h-4 w-4 mr-2" />

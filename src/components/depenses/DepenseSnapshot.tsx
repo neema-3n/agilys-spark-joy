@@ -77,6 +77,7 @@ export const DepenseSnapshot = ({
   };
 
   const canGenerateEcritures = showAccountingSection && depense.statut !== 'brouillon';
+  const factureMontant = Number(depense.facture?.montantTTC);
 
   const montantRestant = depense.montant - depense.montantPaye;
   const pourcentagePaye = depense.montant > 0 ? (depense.montantPaye / depense.montant) * 100 : 0;
@@ -246,7 +247,7 @@ export const DepenseSnapshot = ({
                 key: 'facture',
                 label: 'Facture',
                 value: depense.facture.numero,
-                description: formatMontant(depense.facture.montantTTC),
+                description: Number.isFinite(factureMontant) ? formatMontant(factureMontant) : undefined,
                 icon: <Receipt className="h-4 w-4" />,
                 onClick: () => handleEntityClick('facture', depense.factureId),
               }

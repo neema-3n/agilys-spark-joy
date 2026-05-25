@@ -156,6 +156,7 @@ export default function Factures() {
   });
 
   const editorFacture = routeEditingFactureFromList || routeEditingFacture;
+  const isEditBlocked = isEditMode && !!editorFacture && editorFacture.statut !== 'brouillon';
 
   const handleSearchChange = useCallback((value: string) => {
     setFilters({ ...filters, searchTerm: value || undefined });
@@ -469,6 +470,19 @@ export default function Factures() {
               </p>
               <Button variant="outline" className="mt-4" onClick={() => navigate('/app/factures')}>
                 Retour à la liste
+              </Button>
+            </div>
+          ) : isEditBlocked ? (
+            <div className="rounded-xl border border-dashed p-8 text-center">
+              <p className="text-sm text-muted-foreground">
+                Seules les factures en brouillon peuvent être modifiées.
+              </p>
+              <Button
+                variant="outline"
+                className="mt-4"
+                onClick={() => navigate(`/app/factures/${editorFacture.id}`)}
+              >
+                Retour au détail
               </Button>
             </div>
           ) : (

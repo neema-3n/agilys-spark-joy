@@ -73,9 +73,11 @@ const depenseSchema = z
 
 type DepenseSchemaValues = z.infer<typeof depenseSchema>;
 
+const normalizeOptional = (value?: string) => value?.trim() || undefined;
+
 interface DepenseFormProps {
   depense?: Depense;
-  onSubmit: (data: DepenseFormData) => Promise<void>;
+  onSubmit: (data: Partial<DepenseFormData>) => Promise<void>;
   onCancel: () => void;
   onDirtyChange?: (isDirty: boolean) => void;
   preSelectedEngagement?: Engagement;
@@ -341,7 +343,7 @@ export const DepenseForm = ({
   const lockImputationSource = !!preSelectedEngagement || !!preSelectedFacture;
   const lockTypeBeneficiaire =
     !!preSelectedFacture || (typeImputation === 'engagement' && hasSelectedEngagement);
-  const lockDepenseInheritedFields =
+  const lockLinkedReferenceFields =
     !!preSelectedFacture ||
     (!!preSelectedEngagement && typeImputation === 'engagement') ||
     (typeImputation === 'facture' && !!watchedFactureId) ||
@@ -352,19 +354,41 @@ export const DepenseForm = ({
       engagementId: values.engagementId || undefined,
       ligneBudgetaireId: values.ligneBudgetaireId || undefined,
       factureId: values.factureId || undefined,
-      fournisseurId: typeBeneficiaire === 'fournisseur' ? values.fournisseurId || undefined : undefined,
-      beneficiaire: typeBeneficiaire === 'direct' ? values.beneficiaire || undefined : undefined,
+      fournisseurId: typeBeneficiaire === 'fournisseur' ? normalizeOptional(values.fournisseurId) : undefined,
+      beneficiaire: typeBeneficiaire === 'direct' ? normalizeOptional(values.beneficiaire) : undefined,
       projetId: values.projetId || undefined,
       objet: values.objet,
       montant: values.montant,
       dateDepense: values.dateDepense,
       modePaiement: values.modePaiement as DepenseFormData['modePaiement'],
-      referencePaiement: values.referencePaiement || undefined,
-      observations: values.observations || undefined,
+      referencePaiement: normalizeOptional(values.referencePaiement),
+      observations: normalizeOptional(values.observations),
       compteChargeId: isFactureDerived ? compteChargeId || undefined : values.compteChargeId || undefined,
     };
 
-    await onSubmit(payload);
+    if (!depense) {
+      await onSubmit(payload);
+      return;
+    }
+
+    const changes: Partial<DepenseFormData> = {};
+    const dirtyFields = form.formState.dirtyFields;
+
+    if (dirtyFields.engagementId) changes.engagementId = payload.engagementId;
+    if (dirtyFields.ligneBudgetaireId) changes.ligneBudgetaireId = payload.ligneBudgetaireId;
+    if (dirtyFields.factureId) changes.factureId = payload.factureId;
+    if (dirtyFields.fournisseurId) changes.fournisseurId = payload.fournisseurId;
+    if (dirtyFields.beneficiaire) changes.beneficiaire = payload.beneficiaire;
+    if (dirtyFields.projetId) changes.projetId = payload.projetId;
+    if (dirtyFields.objet) changes.objet = payload.objet;
+    if (dirtyFields.montant) changes.montant = payload.montant;
+    if (dirtyFields.dateDepense) changes.dateDepense = payload.dateDepense;
+    if (dirtyFields.modePaiement) changes.modePaiement = payload.modePaiement;
+    if (dirtyFields.referencePaiement) changes.referencePaiement = payload.referencePaiement;
+    if (dirtyFields.observations) changes.observations = payload.observations;
+    if (dirtyFields.compteChargeId) changes.compteChargeId = payload.compteChargeId;
+
+    await onSubmit(changes);
   };
 
   const body = (
@@ -471,7 +495,7 @@ export const DepenseForm = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Ligne budgétaire</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled={lockDepenseInheritedFields}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={lockLinkedReferenceFields}>
                       <FormControl>
                         <SelectTrigger><SelectValue placeholder="Sélectionner une ligne budgétaire" /></SelectTrigger>
                       </FormControl>
@@ -495,7 +519,7 @@ export const DepenseForm = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Fournisseur</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value} disabled={lockDepenseInheritedFields}>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={lockLinkedReferenceFields}>
                         <FormControl>
                           <SelectTrigger><SelectValue placeholder="Sélectionner un fournisseur" /></SelectTrigger>
                         </FormControl>
@@ -519,7 +543,7 @@ export const DepenseForm = ({
                     <FormItem>
                       <FormLabel>Bénéficiaire</FormLabel>
                       <FormControl>
-                        <Input {...field} value={field.value || ''} disabled={lockDepenseInheritedFields} />
+                        <Input {...field} value={field.value || ''} disabled={lockLinkedReferenceFields} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -533,7 +557,7 @@ export const DepenseForm = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Projet</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled={lockDepenseInheritedFields}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={lockLinkedReferenceFields}>
                       <FormControl>
                         <SelectTrigger><SelectValue placeholder="Sélectionner un projet" /></SelectTrigger>
                       </FormControl>
@@ -556,7 +580,7 @@ export const DepenseForm = ({
                 render={({ field }) => (
                   <FormItem className="md:col-span-2">
                     <FormLabel>Objet</FormLabel>
-                    <FormControl><Input {...field} disabled={lockDepenseInheritedFields} /></FormControl>
+                    <FormControl><Input {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
