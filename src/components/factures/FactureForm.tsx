@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -130,6 +130,38 @@ export const FactureForm = ({
   const initializedRef = useRef(false);
   const initialFinanceStateRef = useRef<string | null>(null);
 
+  const resolveInheritedReferences = useCallback(
+    (bonCommandeId?: string, engagementId?: string) => {
+      const selectedBonCommande =
+        bonCommandeId && bonCommandeId !== 'none'
+          ? bonsCommande.find((item) => item.id === bonCommandeId)
+          : undefined;
+      const fallbackEngagementId =
+        selectedBonCommande?.engagement_id || (engagementId && engagementId !== 'none' ? engagementId : undefined);
+      const selectedEngagement = fallbackEngagementId
+        ? engagements.find((item) => item.id === fallbackEngagementId)
+        : undefined;
+
+      return {
+        selectedBonCommande,
+        selectedEngagement,
+        fournisseurId:
+          selectedBonCommande?.fournisseur_id || selectedEngagement?.fournisseurId || 'none',
+        engagementId:
+          selectedBonCommande?.engagement_id || selectedEngagement?.id || 'none',
+        ligneBudgetaireId:
+          selectedBonCommande?.ligne_budgetaire_id || selectedEngagement?.ligneBudgetaireId || 'none',
+        projetId:
+          selectedBonCommande?.projet_id || selectedEngagement?.projetId || 'none',
+        objet:
+          selectedBonCommande?.objet || selectedEngagement?.objet || '',
+        montant:
+          selectedBonCommande?.montant || selectedEngagement?.montant || 0,
+      };
+    },
+    [bonsCommande, engagements]
+  );
+
   const serializeFinanceState = (
     currentVentilations: FinancialVentilation[],
     currentChargePrincipaleMode: ChargePrincipaleMode,
@@ -162,6 +194,120 @@ export const FactureForm = ({
       observations: '',
     },
   });
+
+  const watchedBonCommandeId = form.watch('bonCommandeId');
+  const watchedEngagementId = form.watch('engagementId');
+  const resolvedInheritedReferences = useMemo(
+    () => resolveInheritedReferences(watchedBonCommandeId, watchedEngagementId),
+    [resolveInheritedReferences, watchedBonCommandeId, watchedEngagementId]
+  );
+  const currentFournisseurId =
+    form.getValues('fournisseurId') ||
+    facture?.fournisseurId ||
+    resolvedInheritedReferences.fournisseurId;
+  const currentEngagementId =
+    form.getValues('engagementId') ||
+    facture?.engagementId ||
+    resolvedInheritedReferences.engagementId;
+  const currentLigneBudgetaireId =
+    form.getValues('ligneBudgetaireId') ||
+    facture?.ligneBudgetaireId ||
+    resolvedInheritedReferences.ligneBudgetaireId;
+  const currentProjetId =
+    form.getValues('projetId') ||
+    facture?.projetId ||
+    resolvedInheritedReferences.projetId;
+
+  const fournisseurOptions = useMemo(() => {
+    if (!currentFournisseurId || currentFournisseurId === 'none' || fournisseurs.some((item) => item.id === currentFournisseurId)) {
+      return fournisseurs;
+    }
+
+    if (facture?.fournisseur && facture.fournisseurId === currentFournisseurId) {
+      return [facture.fournisseur, ...fournisseurs];
+    }
+
+    const engagementFournisseur =
+      resolvedInheritedReferences.selectedEngagement?.fournisseurId &&
+      fournisseurs.find((item) => item.id === resolvedInheritedReferences.selectedEngagement?.fournisseurId);
+    if (engagementFournisseur && engagementFournisseur.id === currentFournisseurId) {
+      return [engagementFournisseur, ...fournisseurs];
+    }
+
+    return fournisseurs;
+  }, [currentFournisseurId, facture, fournisseurs, resolvedInheritedReferences.selectedEngagement]);
+
+  const engagementOptions = useMemo(() => {
+    if (!currentEngagementId || currentEngagementId === 'none' || engagements.some((item) => item.id === currentEngagementId)) {
+      return engagements;
+    }
+
+    if (facture?.engagement && facture.engagementId === currentEngagementId) {
+      return [
+        {
+          id: facture.engagementId,
+          numero: facture.engagement.numero,
+          fournisseurId: facture.fournisseurId,
+          ligneBudgetaireId: facture.ligneBudgetaireId,
+          projetId: facture.projetId,
+          objet: facture.objet,
+          montant: facture.montantTTC,
+        },
+        ...engagements,
+      ];
+    }
+
+    return engagements;
+  }, [currentEngagementId, engagements, facture]);
+
+  const ligneBudgetaireOptions = useMemo(() => {
+    if (
+      !currentLigneBudgetaireId ||
+      currentLigneBudgetaireId === 'none' ||
+      lignesBudgetaires.some((item) => item.id === currentLigneBudgetaireId)
+    ) {
+      return lignesBudgetaires;
+    }
+
+    if (facture?.ligneBudgetaire && facture.ligneBudgetaireId === currentLigneBudgetaireId) {
+      return [facture.ligneBudgetaire, ...lignesBudgetaires];
+    }
+
+    const engagementLine =
+      resolvedInheritedReferences.selectedEngagement?.ligneBudgetaireId &&
+      lignesBudgetaires.find((item) => item.id === resolvedInheritedReferences.selectedEngagement?.ligneBudgetaireId);
+    if (engagementLine && engagementLine.id === currentLigneBudgetaireId) {
+      return [engagementLine, ...lignesBudgetaires];
+    }
+
+    return lignesBudgetaires;
+  }, [currentLigneBudgetaireId, facture, lignesBudgetaires, resolvedInheritedReferences.selectedEngagement]);
+
+  const projetOptions = useMemo(() => {
+    if (!currentProjetId || currentProjetId === 'none' || projets.some((item) => item.id === currentProjetId)) {
+      return projets;
+    }
+
+    if (facture?.projet && facture.projetId === currentProjetId) {
+      return [
+        {
+          id: facture.projetId,
+          nom: facture.projet.nom,
+          code: facture.projet.id,
+        },
+        ...projets,
+      ];
+    }
+
+    const engagementProject =
+      resolvedInheritedReferences.selectedEngagement?.projetId &&
+      projets.find((item) => item.id === resolvedInheritedReferences.selectedEngagement?.projetId);
+    if (engagementProject && engagementProject.id === currentProjetId) {
+      return [engagementProject, ...projets];
+    }
+
+    return projets;
+  }, [currentProjetId, facture, projets, resolvedInheritedReferences.selectedEngagement]);
 
   useEffect(() => {
     initializedRef.current = false;
@@ -211,25 +357,20 @@ export const FactureForm = ({
     }
 
     void onGenererNumero().then((numero) => {
-      const selectedBC = initialBonCommandeId
-        ? bonsCommande.find((bc) => bc.id === initialBonCommandeId)
-        : undefined;
-      const selectedEngagement = !selectedBC && initialEngagementId
-        ? engagements.find((engagement) => engagement.id === initialEngagementId)
-        : undefined;
-      const montantTTC = selectedBC?.montant || selectedEngagement?.montant || 0;
+      const resolved = resolveInheritedReferences(initialBonCommandeId, initialEngagementId);
+      const montantTTC = resolved.montant || 0;
       const montantHT = montantTTC > 0 ? Number((montantTTC / 1.2).toFixed(2)) : 0;
 
       form.reset({
         numero,
         dateFacture: format(new Date(), 'yyyy-MM-dd'),
         dateEcheance: '',
-        fournisseurId: selectedBC?.fournisseur_id || selectedEngagement?.fournisseurId || '',
-        bonCommandeId: selectedBC?.id || 'none',
-        engagementId: selectedBC?.engagement_id || selectedEngagement?.id || 'none',
-        ligneBudgetaireId: selectedBC?.ligne_budgetaire_id || selectedEngagement?.ligneBudgetaireId || 'none',
-        projetId: selectedBC?.projet_id || selectedEngagement?.projetId || 'none',
-        objet: selectedBC?.objet || selectedEngagement?.objet || '',
+        fournisseurId: resolved.fournisseurId === 'none' ? '' : resolved.fournisseurId,
+        bonCommandeId: resolved.selectedBonCommande?.id || 'none',
+        engagementId: resolved.engagementId,
+        ligneBudgetaireId: resolved.ligneBudgetaireId,
+        projetId: resolved.projetId,
+        objet: resolved.objet,
         numeroFactureFournisseur: '',
         montantHT,
         montantTTC,
@@ -278,8 +419,6 @@ export const FactureForm = ({
     }
   }, [chargePrincipaleMode, natureCompteChargeId, naturesCompte]);
 
-  const watchedBonCommandeId = form.watch('bonCommandeId');
-  const watchedEngagementId = form.watch('engagementId');
   const hasSelectedBonCommande = !!watchedBonCommandeId && watchedBonCommandeId !== 'none';
   const hasSelectedEngagement = !!watchedEngagementId && watchedEngagementId !== 'none';
   const isHydratedFromBonCommande = !facture && hasSelectedBonCommande;
@@ -290,42 +429,30 @@ export const FactureForm = ({
 
   useEffect(() => {
     if (facture) return;
+    const montantTTC = resolvedInheritedReferences.montant || 0;
+    const montantHT = montantTTC > 0 ? Number((montantTTC / 1.2).toFixed(2)) : 0;
 
-    const selectedBC =
-      watchedBonCommandeId && watchedBonCommandeId !== 'none'
-        ? bonsCommande.find((item) => item.id === watchedBonCommandeId)
-        : undefined;
-
-    if (selectedBC) {
-      const montantTTC = selectedBC.montant || 0;
-      const montantHT = montantTTC > 0 ? Number((montantTTC / 1.2).toFixed(2)) : 0;
-      form.setValue('fournisseurId', selectedBC.fournisseur_id || '', { shouldDirty: true });
-      form.setValue('engagementId', selectedBC.engagement_id || 'none', { shouldDirty: true });
-      form.setValue('ligneBudgetaireId', selectedBC.ligne_budgetaire_id || 'none', { shouldDirty: true });
-      form.setValue('projetId', selectedBC.projet_id || 'none', { shouldDirty: true });
-      form.setValue('objet', selectedBC.objet || '', { shouldDirty: true });
+    if (hasSelectedBonCommande || hasSelectedEngagement) {
+      form.setValue(
+        'fournisseurId',
+        resolvedInheritedReferences.fournisseurId === 'none' ? '' : resolvedInheritedReferences.fournisseurId,
+        { shouldDirty: true }
+      );
+      form.setValue('engagementId', resolvedInheritedReferences.engagementId, { shouldDirty: true });
+      form.setValue('ligneBudgetaireId', resolvedInheritedReferences.ligneBudgetaireId, { shouldDirty: true });
+      form.setValue('projetId', resolvedInheritedReferences.projetId, { shouldDirty: true });
+      form.setValue('objet', resolvedInheritedReferences.objet, { shouldDirty: true });
       form.setValue('montantHT', montantHT, { shouldDirty: true });
       form.setValue('montantTTC', montantTTC, { shouldDirty: true });
       form.setValue('montantNetPaye', montantTTC, { shouldDirty: true });
-      return;
     }
-
-    const selectedEngagement =
-      watchedEngagementId && watchedEngagementId !== 'none'
-        ? engagements.find((item) => item.id === watchedEngagementId)
-        : undefined;
-
-    if (selectedEngagement) {
-      const montant = selectedEngagement.montant || 0;
-      form.setValue('fournisseurId', selectedEngagement.fournisseurId || '', { shouldDirty: true });
-      form.setValue('ligneBudgetaireId', selectedEngagement.ligneBudgetaireId || 'none', { shouldDirty: true });
-      form.setValue('projetId', selectedEngagement.projetId || 'none', { shouldDirty: true });
-      form.setValue('objet', selectedEngagement.objet || '', { shouldDirty: true });
-      form.setValue('montantHT', montant, { shouldDirty: true });
-      form.setValue('montantTTC', montant, { shouldDirty: true });
-      form.setValue('montantNetPaye', montant, { shouldDirty: true });
-    }
-  }, [bonsCommande, engagements, facture, form, watchedBonCommandeId, watchedEngagementId]);
+  }, [
+    facture,
+    form,
+    hasSelectedBonCommande,
+    hasSelectedEngagement,
+    resolvedInheritedReferences,
+  ]);
 
   const breakdown = computeFinancialBreakdown(
     form.watch('montantHT') || 0,
@@ -413,7 +540,7 @@ export const FactureForm = ({
                 <Select onValueChange={field.onChange} value={field.value} disabled={lockFactureInheritedFields}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Selectionner un fournisseur" /></SelectTrigger></FormControl>
                   <SelectContent>
-                    {fournisseurs.map((item) => <SelectItem key={item.id} value={item.id}>{item.nom} - {item.code}</SelectItem>)}
+                    {fournisseurOptions.map((item) => <SelectItem key={item.id} value={item.id}>{item.nom} - {item.code}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -442,7 +569,7 @@ export const FactureForm = ({
                   <FormControl><SelectTrigger><SelectValue placeholder="Aucun engagement" /></SelectTrigger></FormControl>
                   <SelectContent>
                     <SelectItem value="none">Aucun</SelectItem>
-                    {engagements.map((item) => <SelectItem key={item.id} value={item.id}>{item.numero}</SelectItem>)}
+                    {engagementOptions.map((item) => <SelectItem key={item.id} value={item.id}>{item.numero}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -455,7 +582,7 @@ export const FactureForm = ({
                   <FormControl><SelectTrigger><SelectValue placeholder="Aucune ligne budgetaire" /></SelectTrigger></FormControl>
                   <SelectContent>
                     <SelectItem value="none">Aucune</SelectItem>
-                    {lignesBudgetaires.map((item) => <SelectItem key={item.id} value={item.id}>{item.libelle}</SelectItem>)}
+                    {ligneBudgetaireOptions.map((item) => <SelectItem key={item.id} value={item.id}>{item.libelle}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -468,7 +595,7 @@ export const FactureForm = ({
                   <FormControl><SelectTrigger><SelectValue placeholder="Aucun projet" /></SelectTrigger></FormControl>
                   <SelectContent>
                     <SelectItem value="none">Aucun</SelectItem>
-                    {projets.map((item) => <SelectItem key={item.id} value={item.id}>{item.code} - {item.nom}</SelectItem>)}
+                    {projetOptions.map((item) => <SelectItem key={item.id} value={item.id}>{item.code} - {item.nom}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <FormMessage />
