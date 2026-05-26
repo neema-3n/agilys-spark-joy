@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -40,13 +39,11 @@ import {
   getReportCategory,
   getReportDefinition,
   getReportMetadataStamp,
-  reportCategories,
   reportsByCategory,
 } from '@/lib/reporting-definitions';
 import type { ReportDefinition, ReportingDataContext, ReportingFilters } from '@/types/reporting';
 import {
   BookOpen,
-  CalendarRange,
   FileSpreadsheet,
   FileText,
   Landmark,
@@ -129,7 +126,6 @@ const filterRows = (
 };
 
 const Reporting = () => {
-  const navigate = useNavigate();
   const { reportType } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = reportType || 'budgetaire';
@@ -283,17 +279,13 @@ const Reporting = () => {
     [appliedFilters, builtReport.rows],
   );
 
-  const statusOptions = useMemo(() => {
-    const statuses = new Set<string>();
-    builtReport.rows.forEach((row) => {
-      if (row.meta?.status) statuses.add(row.meta.status);
-    });
-    return Array.from(statuses);
-  }, [builtReport.rows]);
-
-  const reportLabel = selectedReport ? `Rapport ${category?.label.toLowerCase()}` : 'Rapport';
+  const reportLabel = 'Rapport';
   const stamp = getReportMetadataStamp(reportingContext);
-  const ActiveIcon = CATEGORY_ICONS[activeTab as keyof typeof CATEGORY_ICONS] || FileText;
+  const headerTitle = category ? `Reporting ${category.label.toLowerCase()}` : 'Reporting';
+  const headerDescription =
+    category?.id === 'budgetaire'
+      ? 'Suivi du budget et de sa consommation.'
+      : category?.objective || 'Pilotage des états et rapports AGILYS.';
 
   const handleApplyFilters = () => {
     setAppliedFilters(draftFilters);
@@ -325,306 +317,175 @@ const Reporting = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Reporting"
-        description={category?.objective || 'Pilotage des états et rapports AGILYS.'}
+        title={headerTitle}
+        description={headerDescription || 'Pilotage des états et rapports AGILYS.'}
+        actions={
+          <div className="w-full rounded-2xl border bg-card px-4 py-3 shadow-sm md:w-[360px]">
+            <Label className="mb-2 block text-xs uppercase tracking-wide text-muted-foreground">
+              {reportLabel}
+            </Label>
+            <Select
+              value={selectedReport?.id}
+              onValueChange={(value) => {
+                setSearchParams((previous) => {
+                  const next = new URLSearchParams(previous);
+                  next.set('report', value);
+                  return next;
+                });
+              }}
+            >
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Sélectionner un rapport" />
+              </SelectTrigger>
+              <SelectContent>
+                {reportOptions.map((option) => (
+                  <SelectItem key={option.id} value={option.id}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        }
         sticky={false}
       />
 
-      <Tabs
-        value={activeTab}
-        onValueChange={(value) => navigate(`/app/reporting/${value}`)}
-        className="space-y-6"
-      >
-        <TabsList className="grid w-full grid-cols-2 gap-2 md:grid-cols-5">
-          {reportCategories.map((reportCategory) => {
-            const Icon = CATEGORY_ICONS[reportCategory.id];
-            return (
-              <TabsTrigger key={reportCategory.id} value={reportCategory.id} className="flex items-center gap-2">
-                <Icon className="h-4 w-4" />
-                <span>{reportCategory.label}</span>
-              </TabsTrigger>
-            );
-          })}
-        </TabsList>
-
-        {reportCategories.map((reportCategory) => (
-          <TabsContent key={reportCategory.id} value={reportCategory.id} className="space-y-6">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="space-y-6 pt-6">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-[1.1fr_1fr_1fr_1.25fr_auto_auto_auto]">
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                  <ActiveIcon className="h-4 w-4" />
-                  <span>{reportCategory.label}</span>
-                </div>
-                <p className="max-w-3xl text-sm text-muted-foreground">
-                  {selectedReport?.description || reportCategory.objective}
-                </p>
-              </div>
-
-              <div className="w-full lg:max-w-md">
-                <Label className="mb-2 block text-xs uppercase tracking-wide text-muted-foreground">
-                  {reportLabel}
-                </Label>
+                <Label>Période</Label>
                 <Select
-                  value={selectedReport?.id}
-                  onValueChange={(value) => {
-                    setSearchParams((previous) => {
-                      const next = new URLSearchParams(previous);
-                      next.set('report', value);
-                      return next;
-                    });
+                  value={draftFilters.period}
+                  onValueChange={(value: ReportingFilters['period']) => {
+                    const nextDates = applyPeriodPreset(
+                      value,
+                      currentExercice?.dateDebut,
+                      currentExercice?.dateFin,
+                    );
+                    setDraftFilters((previous) => ({
+                      ...previous,
+                      period: value,
+                      ...nextDates,
+                    }));
                   }}
                 >
-                  <SelectTrigger className="h-11">
-                    <SelectValue placeholder="Sélectionner un rapport" />
+                  <SelectTrigger>
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {reportOptions.map((option) => (
-                      <SelectItem key={option.id} value={option.id}>
-                        {option.label}
+                    <SelectItem value="personnalisee">Personnalisée</SelectItem>
+                    <SelectItem value="mois">Mois en cours</SelectItem>
+                    <SelectItem value="trimestre">Trimestre</SelectItem>
+                    <SelectItem value="exercice">Exercice</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Date début</Label>
+                <Input
+                  type="date"
+                  value={draftFilters.dateDebut}
+                  onChange={(event) =>
+                    setDraftFilters((previous) => ({
+                      ...previous,
+                      dateDebut: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Date fin</Label>
+                <Input
+                  type="date"
+                  value={draftFilters.dateFin}
+                  onChange={(event) =>
+                    setDraftFilters((previous) => ({
+                      ...previous,
+                      dateFin: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Modèle de sortie</Label>
+                <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectedReport?.outputTemplates.map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+
+              <Button className="h-10 self-end" onClick={handleApplyFilters}>
+                <Play className="mr-2 h-4 w-4" />
+                Afficher le rapport
+              </Button>
+              <Button variant="outline" className="h-10 self-end px-3" onClick={handleExportXls}>
+                <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-600" />
+                XLS
+              </Button>
+              <Button variant="outline" className="h-10 self-end px-3" onClick={handleExportPdf}>
+                <FileText className="mr-2 h-4 w-4 text-rose-600" />
+                PDF
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-1">
+              <CardTitle>{selectedReport?.label || 'Rapport'}</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {selectedTemplate?.label ? `${selectedTemplate.label} · ` : ''}
+                {currentClient?.nom || 'Entité'} · {currentExercice?.libelle || 'Exercice'} · Généré le {stamp}
+              </p>
             </div>
 
-            <Card>
-              <CardContent className="space-y-6 pt-6">
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
-                  <div className="space-y-2">
-                    <Label>Période</Label>
-                    <Select
-                      value={draftFilters.period}
-                      onValueChange={(value: ReportingFilters['period']) => {
-                        const nextDates = applyPeriodPreset(
-                          value,
-                          currentExercice?.dateDebut,
-                          currentExercice?.dateFin,
-                        );
-                        setDraftFilters((previous) => ({
-                          ...previous,
-                          period: value,
-                          ...nextDates,
-                        }));
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="personnalisee">Personnalisée</SelectItem>
-                        <SelectItem value="mois">Mois en cours</SelectItem>
-                        <SelectItem value="trimestre">Trimestre</SelectItem>
-                        <SelectItem value="exercice">Exercice</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Date début</Label>
-                    <Input
-                      type="date"
-                      value={draftFilters.dateDebut}
-                      onChange={(event) =>
-                        setDraftFilters((previous) => ({
-                          ...previous,
-                          dateDebut: event.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Date fin</Label>
-                    <Input
-                      type="date"
-                      value={draftFilters.dateFin}
-                      onChange={(event) =>
-                        setDraftFilters((previous) => ({
-                          ...previous,
-                          dateFin: event.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Projet</Label>
-                    <Select
-                      value={draftFilters.projectId}
-                      onValueChange={(value) =>
-                        setDraftFilters((previous) => ({
-                          ...previous,
-                          projectId: value,
-                        }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tous les projets</SelectItem>
-                        {projets.map((projet) => (
-                          <SelectItem key={projet.id} value={projet.id}>
-                            {projet.code} - {projet.nom}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Statut</Label>
-                    <Select
-                      value={draftFilters.status}
-                      onValueChange={(value) =>
-                        setDraftFilters((previous) => ({
-                          ...previous,
-                          status: value,
-                        }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tous</SelectItem>
-                        {statusOptions.map((status) => (
-                          <SelectItem key={status} value={status}>
-                            {status}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Devise</Label>
-                    <Select
-                      value={draftFilters.devise}
-                      onValueChange={(value) =>
-                        setDraftFilters((previous) => ({
-                          ...previous,
-                          devise: value,
-                        }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Toutes</SelectItem>
-                        <SelectItem value={currentClient?.devise || 'XOF'}>
-                          {currentClient?.devise || 'XOF'}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-                  <div className="flex-1 space-y-2">
-                    <Label>Recherche</Label>
-                    <div className="relative">
-                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        value={draftFilters.search}
-                        onChange={(event) =>
-                          setDraftFilters((previous) => ({
-                            ...previous,
-                            search: event.target.value,
-                          }))
-                        }
-                        placeholder="Rechercher dans le rapport"
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-3 xl:min-w-[620px]">
-                    <div className="grid gap-3 md:grid-cols-[1fr_auto_auto_auto]">
-                      <div className="space-y-1">
-                        <Label>Modèle de sortie</Label>
-                        <p className="text-xs text-muted-foreground">
-                          Définition d’output appliquée à l’écran et aux exports.
-                        </p>
-                        <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {selectedReport?.outputTemplates.map((template) => (
-                              <SelectItem key={template.id} value={template.id}>
-                                {template.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <Button className="h-10 self-end" onClick={handleApplyFilters}>
-                        <Play className="mr-2 h-4 w-4" />
-                        Afficher le rapport
-                      </Button>
-                      <Button variant="outline" className="h-10 self-end px-3" onClick={handleExportXls}>
-                        <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-600" />
-                        XLS
-                      </Button>
-                      <Button variant="outline" className="h-10 self-end px-3" onClick={handleExportPdf}>
-                        <FileText className="mr-2 h-4 w-4 text-rose-600" />
-                        PDF
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="space-y-1">
-                  <CardTitle>{selectedReport?.label || 'Rapport'}</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedTemplate?.label ? `${selectedTemplate.label} · ` : ''}
-                    {currentClient?.nom || 'Entité'} · {currentExercice?.libelle || 'Exercice'} · Généré le {stamp}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                  <span>{filteredRows.length} lignes</span>
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="totals-toggle" className="text-sm text-muted-foreground">
-                      Totaux affichés
-                    </Label>
-                    <Switch id="totals-toggle" checked={showTotals} onCheckedChange={setShowTotals} />
-                  </div>
-                  {builtReport.availability !== 'live' && (
-                    <span
-                      className={cn(
-                        'rounded-full px-2.5 py-1 text-xs font-medium',
-                        builtReport.availability === 'partial'
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-slate-100 text-slate-700',
-                      )}
-                    >
-                      {builtReport.availability === 'partial' ? 'Données partielles' : 'À compléter'}
-                    </span>
+            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+              <span>{filteredRows.length} lignes</span>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="totals-toggle" className="text-sm text-muted-foreground">
+                  Totaux affichés
+                </Label>
+                <Switch id="totals-toggle" checked={showTotals} onCheckedChange={setShowTotals} />
+              </div>
+              {builtReport.availability !== 'live' && (
+                <span
+                  className={cn(
+                    'rounded-full px-2.5 py-1 text-xs font-medium',
+                    builtReport.availability === 'partial'
+                      ? 'bg-amber-100 text-amber-800'
+                      : 'bg-slate-100 text-slate-700',
                   )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {builtReport.message ? (
-                  <div className="rounded-md border border-dashed bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
-                    {builtReport.message}
-                  </div>
-                ) : null}
+                >
+                  {builtReport.availability === 'partial' ? 'Données partielles' : 'À compléter'}
+                </span>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {builtReport.message ? (
+              <div className="rounded-md border border-dashed bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+                {builtReport.message}
+              </div>
+            ) : null}
 
-                <ReportingTable columns={visibleColumns} rows={filteredRows} totalsEnabled={showTotals} />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        ))}
-      </Tabs>
+            <ReportingTable columns={visibleColumns} rows={filteredRows} totalsEnabled={showTotals} />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

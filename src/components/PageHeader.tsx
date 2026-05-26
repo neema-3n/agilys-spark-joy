@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 
 interface PageHeaderProps {
   title: string;
-  description?: string;
+  description?: ReactNode;
   actions?: ReactNode;
   scrollProgress?: number;
   sticky?: boolean;
@@ -48,9 +48,9 @@ export const PageHeader = ({
               {title}
             </h1>
             {description && (
-              <p className="max-w-3xl text-sm text-muted-foreground md:text-base">
+              <div className="max-w-3xl text-sm text-muted-foreground md:text-base">
                 {description}
-              </p>
+              </div>
             )}
           </div>
           {actions && <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>}
