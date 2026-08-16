@@ -71,10 +71,19 @@ export interface AuthContextType {
   logout: () => void;
 }
 
+export interface ClientAccessInfo {
+  /** Rôle de l'utilisateur chez ce client. */
+  role: string;
+  /** Client porté par le jeton, donc périmètre réellement appliqué par la base. */
+  isActive: boolean;
+  /** Accès d'un super admin à un client dont il n'est pas membre. */
+  isTakeover: boolean;
+}
+
 export interface ClientContextType {
-  currentClient: Client | null;
-  clients: Client[];
-  setCurrentClient: (client: Client) => void;
+  currentClient: (Client & ClientAccessInfo) | null;
+  clients: (Client & ClientAccessInfo)[];
+  setCurrentClient: (client: Client & ClientAccessInfo) => void;
   /** Bascule le client actif : jeton rafraîchi et cache de données vidé. */
   switchClient: (clientId: string) => Promise<void>;
   isSwitching: boolean;

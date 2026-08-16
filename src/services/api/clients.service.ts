@@ -23,6 +23,8 @@ type MyClientRow = {
 export type ClientAccess = Client & {
   /** Rôle de l'utilisateur chez ce client. */
   role: string;
+  /** Vrai lorsque ce client est celui porté par le jeton, donc le périmètre appliqué par la base. */
+  isActive: boolean;
   /** Vrai lorsqu'un super admin accède à un client dont il n'est pas membre. */
   isTakeover: boolean;
 };
@@ -36,6 +38,7 @@ const mapRow = (row: MyClientRow): ClientAccess => ({
   statut: row.statut === 'actif' ? 'actif' : 'inactif',
   moneyFormat: row.money_format ?? undefined,
   role: row.role,
+  isActive: row.is_active,
   isTakeover: row.is_takeover,
 });
 

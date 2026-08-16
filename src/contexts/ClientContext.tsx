@@ -9,8 +9,8 @@ const ClientContext = createContext<ClientContextType | undefined>(undefined);
 
 export const ClientProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
-  const [clients, setClients] = useState<Client[]>([]);
-  const [currentClient, setCurrentClient] = useState<Client | null>(null);
+  const [clients, setClients] = useState<ClientAccess[]>([]);
+  const [currentClient, setCurrentClient] = useState<ClientAccess | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
@@ -26,8 +26,14 @@ export const ClientProvider = ({ children }: { children: ReactNode }) => {
       const allClients = await clientsService.getAll();
       setClients(allClients);
 
+      // `isActive` reflète le client porté par le jeton, donc le périmètre
+      // réellement appliqué par la base. Il prime sur profiles.client_id, qui
+      // n'est qu'une préférence historique : sans cette priorité, une bascule
+      // vers un autre client serait aussitôt annulée au rechargement de la
+      // liste, et l'interface reviendrait au client du profil.
+      const active = allClients.find((client) => client.isActive);
       const preferred = allClients.find((client) => client.id === user?.clientId);
-      setCurrentClient(preferred ?? allClients[0] ?? null);
+      setCurrentClient(active ?? preferred ?? allClients[0] ?? null);
     } catch (error) {
       console.error('Chargement des clients impossible :', error);
       setClients([]);
@@ -59,15 +65,21 @@ export const ClientProvider = ({ children }: { children: ReactNode }) => {
   // trace. Les triggers d'audit ne couvrent que les écritures : sans cet appel,
   // une consultation ne laisserait rien derrière elle.
   useEffect(() => {
-    if (currentClient && (currentClient as ClientAccess).isTakeover) {
+    if (currentClient?.isTakeover) {
       void clientsService.logTakeover(currentClient.id);
     }
   }, [currentClient]);
 
   const switchClient = useCallback(async (clientId: string) => {
     const target = clients.find((client) => client.id === clientId);
-    if (!target || clientId === currentClient?.id) return;
+    if (!target) return;
 
+    // Pas de raccourci "c'est déjà le client courant" : `currentClient` est un
+    // état React, alors que le périmètre réel vit dans le jeton. Les deux
+    // peuvent diverger — c'est précisément le cas juste après la connexion,
+    // où l'interface affiche un client alors que le jeton n'en porte aucun.
+    // Sauter l'appel dans ce cas laisserait un utilisateur multi-client sans
+    // périmètre, donc devant des écrans vides.
     setIsSwitching(true);
     try {
       // Pose le client actif côté serveur et rafraîchit le jeton.
