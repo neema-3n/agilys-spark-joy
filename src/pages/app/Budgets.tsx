@@ -126,7 +126,16 @@ const Budgets = () => {
   }, [currentExercice, currentClient]);
 
   const loadData = async () => {
-    if (!currentExercice || !currentClient) return;
+    // `loading` démarre à true : sortir sans le redescendre laisse la page sur
+    // son spinner indéfiniment, sans jamais afficher l'en-tête du module.
+    // C'est l'état de tout client sans exercice, donc de tout client
+    // nouvellement créé.
+    if (!currentExercice || !currentClient) {
+      setLignes([]);
+      setModifications([]);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     try {
