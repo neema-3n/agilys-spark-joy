@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       actions: {
@@ -70,6 +95,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      audit_log: {
+        Row: {
+          acting_as: string | null
+          changed_fields: string[] | null
+          client_id: string | null
+          id: number
+          new_data: Json | null
+          occurred_at: string
+          old_data: Json | null
+          operation: string
+          record_id: string | null
+          table_name: string
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          acting_as?: string | null
+          changed_fields?: string[] | null
+          client_id?: string | null
+          id?: number
+          new_data?: Json | null
+          occurred_at?: string
+          old_data?: Json | null
+          operation: string
+          record_id?: string | null
+          table_name: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          acting_as?: string | null
+          changed_fields?: string[] | null
+          client_id?: string | null
+          id?: number
+          new_data?: Json | null
+          occurred_at?: string
+          old_data?: Json | null
+          operation?: string
+          record_id?: string | null
+          table_name?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       bons_commande: {
         Row: {
@@ -175,6 +245,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      clients: {
+        Row: {
+          code: string
+          created_at: string
+          devise: string
+          id: string
+          money_format: Json | null
+          nom: string
+          pays: string
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          devise?: string
+          id: string
+          money_format?: Json | null
+          nom: string
+          pays?: string
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          devise?: string
+          id?: string
+          money_format?: Json | null
+          nom?: string
+          pays?: string
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       comptes: {
         Row: {
@@ -288,211 +394,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      modeles_fiscaux: {
-        Row: {
-          actif: boolean
-          client_id: string
-          code: string
-          created_at: string
-          created_by: string | null
-          description: string | null
-          id: string
-          libelle: string
-          ordre: number
-          updated_at: string
-        }
-        Insert: {
-          actif?: boolean
-          client_id: string
-          code: string
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          libelle: string
-          ordre?: number
-          updated_at?: string
-        }
-        Update: {
-          actif?: boolean
-          client_id?: string
-          code?: string
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          libelle?: string
-          ordre?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      modele_fiscal_lignes: {
-        Row: {
-          created_at: string
-          id: string
-          modele_fiscal_id: string
-          montant_defaut_override: number | null
-          ordre: number
-          taux_defaut_override: number | null
-          taxe_fiscale_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          modele_fiscal_id: string
-          montant_defaut_override?: number | null
-          ordre?: number
-          taux_defaut_override?: number | null
-          taxe_fiscale_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          modele_fiscal_id?: string
-          montant_defaut_override?: number | null
-          ordre?: number
-          taux_defaut_override?: number | null
-          taxe_fiscale_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "modele_fiscal_lignes_modele_fiscal_id_fkey"
-            columns: ["modele_fiscal_id"]
-            isOneToOne: false
-            referencedRelation: "modeles_fiscaux"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "modele_fiscal_lignes_taxe_fiscale_id_fkey"
-            columns: ["taxe_fiscale_id"]
-            isOneToOne: false
-            referencedRelation: "taxes_fiscales"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      natures_compte: {
-        Row: {
-          actif: boolean
-          client_id: string
-          code: string
-          compte_defaut_id: string | null
-          created_at: string
-          created_by: string | null
-          description: string | null
-          id: string
-          libelle: string
-          ordre: number
-          updated_at: string
-        }
-        Insert: {
-          actif?: boolean
-          client_id: string
-          code: string
-          compte_defaut_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          libelle: string
-          ordre?: number
-          updated_at?: string
-        }
-        Update: {
-          actif?: boolean
-          client_id?: string
-          code?: string
-          compte_defaut_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          libelle?: string
-          ordre?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "natures_compte_compte_defaut_id_fkey"
-            columns: ["compte_defaut_id"]
-            isOneToOne: false
-            referencedRelation: "comptes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      taxes_fiscales: {
-        Row: {
-          actif: boolean
-          client_id: string
-          code: string
-          compte_comptable_id: string | null
-          created_at: string
-          created_by: string | null
-          date_debut_validite: string | null
-          date_fin_validite: string | null
-          description: string | null
-          id: string
-          libelle: string
-          montant_fixe_defaut: number | null
-          nature: string
-          ordre: number
-          sens_defaut: string
-          taux_defaut: number | null
-          updated_at: string
-        }
-        Insert: {
-          actif?: boolean
-          client_id: string
-          code: string
-          compte_comptable_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          date_debut_validite?: string | null
-          date_fin_validite?: string | null
-          description?: string | null
-          id?: string
-          libelle: string
-          montant_fixe_defaut?: number | null
-          nature: string
-          ordre?: number
-          sens_defaut: string
-          taux_defaut?: number | null
-          updated_at?: string
-        }
-        Update: {
-          actif?: boolean
-          client_id?: string
-          code?: string
-          compte_comptable_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          date_debut_validite?: string | null
-          date_fin_validite?: string | null
-          description?: string | null
-          id?: string
-          libelle?: string
-          montant_fixe_defaut?: number | null
-          nature?: string
-          ordre?: number
-          sens_defaut?: string
-          taux_defaut?: number | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "taxes_fiscales_compte_comptable_id_fkey"
-            columns: ["compte_comptable_id"]
-            isOneToOne: false
-            referencedRelation: "comptes"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       depenses: {
         Row: {
@@ -664,16 +565,21 @@ export type Database = {
           facture_id: string | null
           id: string
           libelle: string
+          metadata: Json
           montant: number
           numero_ligne: number
           numero_piece: string
           paiement_id: string | null
+          point_comptable: string | null
           regle_comptable_id: string | null
           reservation_id: string | null
+          role_ligne: string | null
           source_id: string
           statut_ecriture: string | null
           type_operation: string
           updated_at: string | null
+          ventilation_nature: string | null
+          ventilation_sens: string | null
         }
         Insert: {
           bon_commande_id?: string | null
@@ -690,16 +596,21 @@ export type Database = {
           facture_id?: string | null
           id?: string
           libelle: string
+          metadata?: Json
           montant: number
           numero_ligne: number
           numero_piece: string
           paiement_id?: string | null
+          point_comptable?: string | null
           regle_comptable_id?: string | null
           reservation_id?: string | null
+          role_ligne?: string | null
           source_id: string
           statut_ecriture?: string | null
           type_operation: string
           updated_at?: string | null
+          ventilation_nature?: string | null
+          ventilation_sens?: string | null
         }
         Update: {
           bon_commande_id?: string | null
@@ -716,16 +627,21 @@ export type Database = {
           facture_id?: string | null
           id?: string
           libelle?: string
+          metadata?: Json
           montant?: number
           numero_ligne?: number
           numero_piece?: string
           paiement_id?: string | null
+          point_comptable?: string | null
           regle_comptable_id?: string | null
           reservation_id?: string | null
+          role_ligne?: string | null
           source_id?: string
           statut_ecriture?: string | null
           type_operation?: string
           updated_at?: string | null
+          ventilation_nature?: string | null
+          ventilation_sens?: string | null
         }
         Relationships: [
           {
@@ -997,7 +913,9 @@ export type Database = {
       factures: {
         Row: {
           bon_commande_id: string | null
+          charge_principale_mode: string
           client_id: string
+          compte_charge_id: string | null
           created_at: string
           created_by: string | null
           date_echeance: string | null
@@ -1010,19 +928,26 @@ export type Database = {
           ligne_budgetaire_id: string | null
           montant_ht: number
           montant_liquide: number
+          montant_net_paye: number
           montant_ttc: number
           montant_tva: number
+          nature_compte_charge_id: string | null
           numero: string
           numero_facture_fournisseur: string | null
           objet: string
           observations: string | null
           projet_id: string | null
           statut: string
+          total_ajouts: number
+          total_retraits: number
           updated_at: string
+          ventilations: Json
         }
         Insert: {
           bon_commande_id?: string | null
+          charge_principale_mode?: string
           client_id: string
+          compte_charge_id?: string | null
           created_at?: string
           created_by?: string | null
           date_echeance?: string | null
@@ -1035,19 +960,26 @@ export type Database = {
           ligne_budgetaire_id?: string | null
           montant_ht?: number
           montant_liquide?: number
+          montant_net_paye?: number
           montant_ttc?: number
           montant_tva?: number
+          nature_compte_charge_id?: string | null
           numero: string
           numero_facture_fournisseur?: string | null
           objet: string
           observations?: string | null
           projet_id?: string | null
           statut?: string
+          total_ajouts?: number
+          total_retraits?: number
           updated_at?: string
+          ventilations?: Json
         }
         Update: {
           bon_commande_id?: string | null
+          charge_principale_mode?: string
           client_id?: string
+          compte_charge_id?: string | null
           created_at?: string
           created_by?: string | null
           date_echeance?: string | null
@@ -1060,15 +992,20 @@ export type Database = {
           ligne_budgetaire_id?: string | null
           montant_ht?: number
           montant_liquide?: number
+          montant_net_paye?: number
           montant_ttc?: number
           montant_tva?: number
+          nature_compte_charge_id?: string | null
           numero?: string
           numero_facture_fournisseur?: string | null
           objet?: string
           observations?: string | null
           projet_id?: string | null
           statut?: string
+          total_ajouts?: number
+          total_retraits?: number
           updated_at?: string
+          ventilations?: Json
         }
         Relationships: [
           {
@@ -1076,6 +1013,13 @@ export type Database = {
             columns: ["bon_commande_id"]
             isOneToOne: false
             referencedRelation: "bons_commande"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factures_compte_charge_id_fkey"
+            columns: ["compte_charge_id"]
+            isOneToOne: false
+            referencedRelation: "comptes"
             referencedColumns: ["id"]
           },
           {
@@ -1111,6 +1055,13 @@ export type Database = {
             columns: ["ligne_budgetaire_id"]
             isOneToOne: false
             referencedRelation: "lignes_budgetaires"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factures_nature_compte_charge_id_fkey"
+            columns: ["nature_compte_charge_id"]
+            isOneToOne: false
+            referencedRelation: "natures_compte"
             referencedColumns: ["id"]
           },
           {
@@ -1385,6 +1336,101 @@ export type Database = {
           },
         ]
       }
+      modele_fiscal_lignes: {
+        Row: {
+          created_at: string
+          id: string
+          modele_fiscal_id: string
+          montant_defaut_override: number | null
+          ordre: number
+          taux_defaut_override: number | null
+          taxe_fiscale_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          modele_fiscal_id: string
+          montant_defaut_override?: number | null
+          ordre?: number
+          taux_defaut_override?: number | null
+          taxe_fiscale_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          modele_fiscal_id?: string
+          montant_defaut_override?: number | null
+          ordre?: number
+          taux_defaut_override?: number | null
+          taxe_fiscale_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "modele_fiscal_lignes_modele_fiscal_id_fkey"
+            columns: ["modele_fiscal_id"]
+            isOneToOne: false
+            referencedRelation: "modeles_fiscaux"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "modele_fiscal_lignes_taxe_fiscale_id_fkey"
+            columns: ["taxe_fiscale_id"]
+            isOneToOne: false
+            referencedRelation: "taxes_fiscales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      modeles_fiscaux: {
+        Row: {
+          actif: boolean
+          client_id: string
+          code: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          libelle: string
+          ordre: number
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          client_id: string
+          code: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          libelle: string
+          ordre?: number
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          client_id?: string
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          libelle?: string
+          ordre?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "modeles_fiscaux_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       modifications_budgetaires: {
         Row: {
           client_id: string
@@ -1438,6 +1484,63 @@ export type Database = {
           valide_par?: string | null
         }
         Relationships: []
+      }
+      natures_compte: {
+        Row: {
+          actif: boolean
+          client_id: string
+          code: string
+          compte_defaut_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          libelle: string
+          ordre: number
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          client_id: string
+          code: string
+          compte_defaut_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          libelle: string
+          ordre?: number
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          client_id?: string
+          code?: string
+          compte_defaut_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          libelle?: string
+          ordre?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "natures_compte_compte_defaut_id_fkey"
+            columns: ["compte_defaut_id"]
+            isOneToOne: false
+            referencedRelation: "comptes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "natures_compte_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       operations_tresorerie: {
         Row: {
@@ -1565,6 +1668,7 @@ export type Database = {
       }
       paiements: {
         Row: {
+          beneficiaire: string | null
           client_id: string
           compte_tresorerie_id: string | null
           created_at: string
@@ -1586,10 +1690,10 @@ export type Database = {
           projet_id: string | null
           reference_paiement: string | null
           statut: string
-          beneficiaire: string | null
           updated_at: string
         }
         Insert: {
+          beneficiaire?: string | null
           client_id: string
           compte_tresorerie_id?: string | null
           created_at?: string
@@ -1611,10 +1715,10 @@ export type Database = {
           projet_id?: string | null
           reference_paiement?: string | null
           statut?: string
-          beneficiaire?: string | null
           updated_at?: string
         }
         Update: {
+          beneficiaire?: string | null
           client_id?: string
           compte_tresorerie_id?: string | null
           created_at?: string
@@ -1636,7 +1740,6 @@ export type Database = {
           projet_id?: string | null
           reference_paiement?: string | null
           statut?: string
-          beneficiaire?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1662,10 +1765,38 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "paiements_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "paiements_exercice_id_fkey"
             columns: ["exercice_id"]
             isOneToOne: false
             referencedRelation: "exercices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paiements_fournisseur_id_fkey"
+            columns: ["fournisseur_id"]
+            isOneToOne: false
+            referencedRelation: "fournisseurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paiements_ligne_budgetaire_id_fkey"
+            columns: ["ligne_budgetaire_id"]
+            isOneToOne: false
+            referencedRelation: "lignes_budgetaires"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paiements_projet_id_fkey"
+            columns: ["projet_id"]
+            isOneToOne: false
+            referencedRelation: "projets"
             referencedColumns: ["id"]
           },
         ]
@@ -1743,7 +1874,15 @@ export type Database = {
           prenom?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       programmes: {
         Row: {
@@ -2032,18 +2171,25 @@ export type Database = {
           actif: boolean | null
           client_id: string
           code: string
-          compte_credit_id: string
-          compte_debit_id: string
+          compte_credit_id: string | null
+          compte_debit_id: string | null
           conditions: Json
           created_at: string | null
           created_by: string | null
+          credit_source: string
           date_debut: string | null
           date_fin: string | null
+          debit_source: string
           description: string | null
           id: string
+          nature_ventilation: string | null
           nom: string
           ordre: number | null
           permanente: boolean | null
+          point_comptable: string
+          role_ligne: string
+          sens_ventilation: string | null
+          source_montant: string
           type_operation: string
           updated_at: string | null
         }
@@ -2051,18 +2197,25 @@ export type Database = {
           actif?: boolean | null
           client_id: string
           code: string
-          compte_credit_id: string
-          compte_debit_id: string
+          compte_credit_id?: string | null
+          compte_debit_id?: string | null
           conditions?: Json
           created_at?: string | null
           created_by?: string | null
+          credit_source?: string
           date_debut?: string | null
           date_fin?: string | null
+          debit_source?: string
           description?: string | null
           id?: string
+          nature_ventilation?: string | null
           nom: string
           ordre?: number | null
           permanente?: boolean | null
+          point_comptable?: string
+          role_ligne?: string
+          sens_ventilation?: string | null
+          source_montant?: string
           type_operation: string
           updated_at?: string | null
         }
@@ -2070,18 +2223,25 @@ export type Database = {
           actif?: boolean | null
           client_id?: string
           code?: string
-          compte_credit_id?: string
-          compte_debit_id?: string
+          compte_credit_id?: string | null
+          compte_debit_id?: string | null
           conditions?: Json
           created_at?: string | null
           created_by?: string | null
+          credit_source?: string
           date_debut?: string | null
           date_fin?: string | null
+          debit_source?: string
           description?: string | null
           id?: string
+          nature_ventilation?: string | null
           nom?: string
           ordre?: number | null
           permanente?: boolean | null
+          point_comptable?: string
+          role_ligne?: string
+          sens_ventilation?: string | null
+          source_montant?: string
           type_operation?: string
           updated_at?: string | null
         }
@@ -2355,6 +2515,119 @@ export type Database = {
           },
         ]
       }
+      taxes_fiscales: {
+        Row: {
+          actif: boolean
+          client_id: string
+          code: string
+          compte_comptable_id: string | null
+          created_at: string
+          created_by: string | null
+          date_debut_validite: string | null
+          date_fin_validite: string | null
+          description: string | null
+          id: string
+          libelle: string
+          montant_fixe_defaut: number | null
+          nature: string
+          ordre: number
+          sens_defaut: string
+          taux_defaut: number | null
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          client_id: string
+          code: string
+          compte_comptable_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_debut_validite?: string | null
+          date_fin_validite?: string | null
+          description?: string | null
+          id?: string
+          libelle: string
+          montant_fixe_defaut?: number | null
+          nature: string
+          ordre?: number
+          sens_defaut: string
+          taux_defaut?: number | null
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          client_id?: string
+          code?: string
+          compte_comptable_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_debut_validite?: string | null
+          date_fin_validite?: string | null
+          description?: string | null
+          id?: string
+          libelle?: string
+          montant_fixe_defaut?: number | null
+          nature?: string
+          ordre?: number
+          sens_defaut?: string
+          taux_defaut?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "taxes_fiscales_compte_comptable_id_fkey"
+            columns: ["compte_comptable_id"]
+            isOneToOne: false
+            referencedRelation: "comptes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "taxes_fiscales_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_clients: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          statut: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          statut?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          statut?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_clients_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -2384,6 +2657,10 @@ export type Database = {
       calculate_montant_reserve: {
         Args: { p_ligne_budgetaire_id: string }
         Returns: number
+      }
+      can_read_client_audit: {
+        Args: { _client_id: string; _user_id: string }
+        Returns: boolean
       }
       create_bon_commande_with_numero: {
         Args: {
@@ -2476,13 +2753,13 @@ export type Database = {
       create_paiement_with_numero: {
         Args: {
           p_client_id: string
+          p_compte_tresorerie_id?: string
           p_date_paiement: string
           p_depense_id: string
           p_exercice_id: string
           p_mode_paiement: string
           p_montant: number
           p_observations: string
-          p_compte_tresorerie_id?: string
           p_reference_paiement: string
           p_statut?: string
           p_user_id: string
@@ -2501,6 +2778,10 @@ export type Database = {
           p_projet_id: string
           p_user_id: string
         }
+        Returns: Json
+      }
+      delete_depense_brouillon: {
+        Args: { p_depense_id: string }
         Returns: Json
       }
       evaluate_condition: {
@@ -2533,6 +2814,28 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_client_admin: {
+        Args: { _client_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      jwt_active_client_id: { Args: never; Returns: string }
+      log_client_takeover: { Args: { _client_id: string }; Returns: undefined }
+      my_clients: {
+        Args: never
+        Returns: {
+          code: string
+          devise: string
+          id: string
+          is_active: boolean
+          is_takeover: boolean
+          money_format: Json
+          nom: string
+          pays: string
+          role: Database["public"]["Enums"]["app_role"]
+          statut: string
+        }[]
+      }
       recalculate_facture_montant_liquide: {
         Args: { p_facture_id: string }
         Returns: undefined
@@ -2556,6 +2859,10 @@ export type Database = {
       recalculate_montant_reserve: {
         Args: { p_ligne_budgetaire_id: string }
         Returns: undefined
+      }
+      user_has_client_access: {
+        Args: { _client_id: string; _user_id: string }
+        Returns: boolean
       }
     }
     Enums: {
@@ -2691,6 +2998,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: [

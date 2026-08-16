@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { ClientContextType, Client } from '@/types';
-import { clientsService } from '@/services/api/clients.service';
+import { clientsService, type ClientAccess } from '@/services/api/clients.service';
 import { useAuth } from './AuthContext';
 import { setMoneyFormatSettings } from '@/lib/utils';
 
@@ -15,21 +15,24 @@ export const ClientProvider = ({ children }: { children: ReactNode }) => {
 
   const loadClients = useCallback(async () => {
     setIsLoading(true);
-    const allClients = await clientsService.getAll();
-    setClients(allClients);
-    
-    // SECURITY NOTE: This client-side role check is for UI/UX purposes only.
-    // Actual data access control is enforced server-side via RLS policies
-    // that filter by the user's client_id from their profile.
-    // This code only determines which client selector to display in the UI.
-    if (user?.roles.includes('super_admin')) {
-      setCurrentClient(allClients[0] || null);
-    } else {
-      const userClient = allClients.find(c => c.id === user?.clientId);
-      setCurrentClient(userClient || allClients[0] || null);
+    try {
+      // `my_clients` applique déjà les règles d'appartenance côté base : ce que
+      // la liste contient est exactement ce que l'utilisateur a le droit de voir.
+      // Aucun filtrage supplémentaire n'est fait ici, et il ne faut pas en
+      // rajouter : ce serait du confort d'affichage pris pour de la sécurité.
+      const allClients = await clientsService.getAll();
+      setClients(allClients);
+
+      const preferred = allClients.find((client) => client.id === user?.clientId);
+      setCurrentClient(preferred ?? allClients[0] ?? null);
+    } catch (error) {
+      console.error('Chargement des clients impossible :', error);
+      setClients([]);
+      setCurrentClient(null);
+    } finally {
+      setHasLoaded(true);
+      setIsLoading(false);
     }
-    setHasLoaded(true);
-    setIsLoading(false);
   }, [user]);
 
   useEffect(() => {
@@ -47,6 +50,15 @@ export const ClientProvider = ({ children }: { children: ReactNode }) => {
       ...currentClient?.moneyFormat,
       currencyCode: currentClient?.moneyFormat?.currencyCode || currentClient?.devise || '',
     });
+  }, [currentClient]);
+
+  // Un super admin qui consulte un client dont il n'est pas membre laisse une
+  // trace. Les triggers d'audit ne couvrent que les écritures : sans cet appel,
+  // une consultation ne laisserait rien derrière elle.
+  useEffect(() => {
+    if (currentClient && (currentClient as ClientAccess).isTakeover) {
+      void clientsService.logTakeover(currentClient.id);
+    }
   }, [currentClient]);
 
   const contextValue = useMemo(() => ({
