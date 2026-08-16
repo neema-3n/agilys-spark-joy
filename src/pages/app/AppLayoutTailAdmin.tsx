@@ -108,11 +108,6 @@ const navigationSections: NavigationSection[] = [
         href: '/app/previsions',
         icon: TrendingUp,
       },
-      {
-        name: 'Enveloppes & financement',
-        href: '/app/parametres/enveloppes',
-        icon: PiggyBank,
-      },
     ],
   },
   {
@@ -242,11 +237,6 @@ const navigationSections: NavigationSection[] = [
         name: 'Paramètres',
         href: '/app/parametres/exercices',
         icon: Settings,
-      },
-      {
-        name: 'Structure organisationnelle',
-        href: '/app/parametres/structure',
-        icon: Building2,
       },
     ],
   },

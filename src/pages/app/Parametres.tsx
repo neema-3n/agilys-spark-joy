@@ -3,13 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { CalendarDays, Briefcase, Building2, BookOpen, Users, Database, Menu, Layers, Calculator } from 'lucide-react';
+import { CalendarDays, Briefcase, Building2, Users, Database, Menu, Layers, Calculator } from 'lucide-react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ExercicesManager } from '@/components/parametres/ExercicesManager';
 import { EnveloppesManager } from '@/components/parametres/EnveloppesManager';
 import { StructureManager } from '@/components/parametres/StructureManager';
-import { PlanComptableManager } from '@/components/parametres/PlanComptableManager';
 import { ReferentielsManager } from '@/components/parametres/ReferentielsManager';
 import { StructureBudgetaireManager } from '@/components/parametres/StructureBudgetaireManager';
 import { ReglesComptablesManager } from '@/components/parametres/ReglesComptablesManager';
@@ -21,7 +20,6 @@ const SECTION_IDS = [
   'enveloppes',
   'structure',
   'structure-budgetaire',
-  'plan-comptable',
   'regles-comptables',
   'referentiels',
   'format-monetaire',
@@ -98,13 +96,6 @@ const Parametres = () => {
       description: 'Sections, Programmes, Actions',
       icon: Layers,
       component: <StructureBudgetaireManager />
-    },
-    {
-      id: 'plan-comptable' as ParametreSection,
-      title: 'Plan Comptable',
-      description: 'Comptes et structure comptable',
-      icon: BookOpen,
-      component: <PlanComptableManager />
     },
     {
       id: 'regles-comptables' as ParametreSection,

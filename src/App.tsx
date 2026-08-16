@@ -173,11 +173,24 @@ const App = () => (
                   <Route path="structure" element={<Navigate to="/app/parametres/structure" replace />} />
                   <Route path="parametres">
                     <Route index element={<Parametres />} />
+                    {/* Plan comptable now lives under /app/plan-comptable */}
+                    <Route
+                      path="plan-comptable"
+                      element={<Navigate to="/app/plan-comptable" replace />}
+                    />
+                    <Route
+                      path="plan-comptable/create"
+                      element={<Navigate to="/app/plan-comptable/create" replace />}
+                    />
                     <Route path=":sectionId" element={<Parametres />} />
                     <Route path=":sectionId/create" element={<Parametres />} />
                     <Route path=":sectionId/:itemId/edit" element={<Parametres />} />
                   </Route>
-                  <Route path="plan-comptable" element={<PlanComptable />} />
+                  <Route path="plan-comptable">
+                    <Route index element={<PlanComptable />} />
+                    <Route path="create" element={<PlanComptable />} />
+                    <Route path=":itemId/edit" element={<PlanComptable />} />
+                  </Route>
 
                   {/* Reporting & Analysis */}
                   <Route path="reporting">

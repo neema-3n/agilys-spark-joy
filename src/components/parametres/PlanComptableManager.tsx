@@ -25,8 +25,8 @@ const PlanComptableManager = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { itemId } = useParams<{ itemId?: string }>();
-  const isCreateRoute = !!useMatch('/app/parametres/plan-comptable/create');
-  const isEditRoute = !!useMatch('/app/parametres/plan-comptable/:itemId/edit');
+  const isCreateRoute = !!useMatch('/app/plan-comptable/create');
+  const isEditRoute = !!useMatch('/app/plan-comptable/:itemId/edit');
   const isEditorMode = isCreateRoute || isEditRoute;
   const [comptes, setComptes] = useState<Compte[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -184,7 +184,7 @@ const PlanComptableManager = () => {
       });
       
       await loadComptes();
-      navigate('/app/parametres/plan-comptable');
+      navigate('/app/plan-comptable');
     } catch (error) {
       console.error('Erreur lors de la création:', error);
       toast({
@@ -207,7 +207,7 @@ const PlanComptableManager = () => {
       });
       
       await loadComptes();
-      navigate('/app/parametres/plan-comptable');
+      navigate('/app/plan-comptable');
     } catch (error) {
       console.error('Erreur lors de la mise à jour:', error);
       toast({
@@ -264,11 +264,11 @@ const PlanComptableManager = () => {
   };
 
   const openEditDialog = (compte: Compte) => {
-    navigate(`/app/parametres/plan-comptable/${compte.id}/edit`);
+    navigate(`/app/plan-comptable/${compte.id}/edit`);
   };
 
   const openCreateDialog = () => {
-    navigate('/app/parametres/plan-comptable/create');
+    navigate('/app/plan-comptable/create');
   };
 
   const getTypeLabel = (type: string) => {
@@ -316,7 +316,7 @@ const PlanComptableManager = () => {
         title={selectedCompte ? 'Modifier un compte' : 'Nouveau compte'}
         description="Configurez la structure et le rattachement du compte dans le plan comptable."
         backLabel="Retour au plan comptable"
-        onBack={() => navigate('/app/parametres/plan-comptable')}
+        onBack={() => navigate('/app/plan-comptable')}
         dirty={isCompteDirty}
         entityLabel="ce compte"
       >
@@ -324,7 +324,7 @@ const PlanComptableManager = () => {
           compte={selectedCompte}
           comptes={comptes}
           onSubmit={selectedCompte ? handleUpdate : handleCreate}
-          onCancel={() => navigate('/app/parametres/plan-comptable')}
+          onCancel={() => navigate('/app/plan-comptable')}
           onDirtyChange={setIsCompteDirty}
         />
       </ParametreEditorPage>
