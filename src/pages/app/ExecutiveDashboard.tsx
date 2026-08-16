@@ -165,8 +165,19 @@ const formatPercent = (value: number) =>
   })} %`;
 
 const formatDateRange = (start: string, end: string) => {
+  // Intl.DateTimeFormat lève une RangeError sur une date invalide, ce qui
+  // suffit à faire tomber tout l'écran. Le cas se produit dès qu'aucun
+  // exercice n'est disponible : les bornes valent alors la chaîne vide.
+  // isDateInRange, juste en dessous, applique déjà cette protection.
   const formatter = new Intl.DateTimeFormat('fr-FR');
-  return `${formatter.format(new Date(start))} - ${formatter.format(new Date(end))}`;
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    return 'Période non définie';
+  }
+
+  return `${formatter.format(startDate)} - ${formatter.format(endDate)}`;
 };
 
 const getTodayIsoDate = () => new Date().toISOString().split('T')[0];
