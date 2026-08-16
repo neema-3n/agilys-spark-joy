@@ -68,11 +68,26 @@ serve(async (req) => {
 
     console.log('Starting test users initialization...');
 
+    // Le mot de passe initial vient d'un secret de la fonction, jamais du code
+    // source : ce dépôt est public, et un mot de passe écrit ici resterait
+    // lisible dans l'historique git même après suppression.
+    // À définir avec : supabase secrets set TEST_USERS_PASSWORD='...'
+    const initialPassword = Deno.env.get('TEST_USERS_PASSWORD');
+    if (!initialPassword) {
+      return new Response(
+        JSON.stringify({
+          error: "Le secret TEST_USERS_PASSWORD n'est pas défini. " +
+                 "Configurez-le avec : supabase secrets set TEST_USERS_PASSWORD='<mot de passe>'",
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Définir les utilisateurs de test
     const testUsers = [
       {
         email: 'super@agilys.com',
-        password: 'MotDePasse123!',
+        password: initialPassword,
         user_metadata: {
           nom: 'Super',
           prenom: 'Admin',
@@ -82,7 +97,7 @@ serve(async (req) => {
       },
       {
         email: 'admin@portonovo.bj',
-        password: 'MotDePasse123!',
+        password: initialPassword,
         user_metadata: {
           nom: 'Admin',
           prenom: 'Client',
@@ -92,7 +107,7 @@ serve(async (req) => {
       },
       {
         email: 'directeur@portonovo.bj',
-        password: 'MotDePasse123!',
+        password: initialPassword,
         user_metadata: {
           nom: 'Directeur',
           prenom: 'Financier',
@@ -102,7 +117,7 @@ serve(async (req) => {
       },
       {
         email: 'comptable@portonovo.bj',
-        password: 'MotDePasse123!',
+        password: initialPassword,
         user_metadata: {
           nom: 'Comptable',
           prenom: 'Test',

@@ -9,15 +9,9 @@ npm install
 npm run dev
 ```
 
-L'application démarre sur http://localhost:8080.
+L'application démarre sur http://localhost:8080, sans configuration préalable : l'URL du projet Supabase et la clé publique `anon` sont écrites dans [`src/integrations/supabase/client.ts`](src/integrations/supabase/client.ts), fichier généré.
 
-Un fichier `.env` est requis à la racine :
-
-```
-VITE_SUPABASE_URL=...
-VITE_SUPABASE_PROJECT_ID=...
-VITE_SUPABASE_PUBLISHABLE_KEY=...
-```
+Un `.env` reste utile pour l'outillage local — voir [`.env.example`](.env.example). Il n'est pas versionné et ne doit jamais l'être.
 
 ## Le domaine métier
 

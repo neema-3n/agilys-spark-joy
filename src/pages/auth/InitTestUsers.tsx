@@ -101,13 +101,18 @@ export default function InitTestUsers() {
 
               <Alert>
                 <AlertDescription>
-                  <strong>Utilisateurs créés:</strong>
+                  <strong>Utilisateurs créés :</strong>
                   <ul className="mt-2 space-y-1 text-sm">
-                    <li>• super@agilys.com / MotDePasse123! (Super Admin)</li>
-                    <li>• admin@portonovo.bj / MotDePasse123! (Admin Client)</li>
-                    <li>• directeur@portonovo.bj / MotDePasse123! (Directeur Financier)</li>
-                    <li>• comptable@portonovo.bj / MotDePasse123! (Comptable)</li>
+                    <li>• super@agilys.com (Super Admin)</li>
+                    <li>• admin@portonovo.bj (Admin Client)</li>
+                    <li>• directeur@portonovo.bj (Directeur Financier)</li>
+                    <li>• comptable@portonovo.bj (Comptable)</li>
                   </ul>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Tous ces comptes utilisent le mot de passe défini dans le secret
+                    <code className="mx-1">TEST_USERS_PASSWORD</code>
+                    de la fonction. Il n'est volontairement affiché nulle part.
+                  </p>
                 </AlertDescription>
               </Alert>
             </div>
