@@ -1879,6 +1879,33 @@ export type Database = {
         }
         Relationships: []
       }
+      permissions: {
+        Row: {
+          action: string
+          code: string
+          description: string | null
+          libelle: string
+          module: string
+          ordre: number
+        }
+        Insert: {
+          action: string
+          code: string
+          description?: string | null
+          libelle: string
+          module: string
+          ordre?: number
+        }
+        Update: {
+          action?: string
+          code?: string
+          description?: string | null
+          libelle?: string
+          module?: string
+          ordre?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           client_id: string
@@ -2388,6 +2415,80 @@ export type Database = {
           },
         ]
       }
+      role_permissions: {
+        Row: {
+          permission_code: string
+          role_id: string
+        }
+        Insert: {
+          permission_code: string
+          role_id: string
+        }
+        Update: {
+          permission_code?: string
+          role_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_permission_code_fkey"
+            columns: ["permission_code"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "role_permissions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roles: {
+        Row: {
+          client_id: string
+          code: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          est_standard: boolean
+          id: string
+          libelle: string
+          role_base: Database["public"]["Enums"]["app_role"] | null
+        }
+        Insert: {
+          client_id: string
+          code: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          est_standard?: boolean
+          id?: string
+          libelle: string
+          role_base?: Database["public"]["Enums"]["app_role"] | null
+        }
+        Update: {
+          client_id?: string
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          est_standard?: boolean
+          id?: string
+          libelle?: string
+          role_base?: Database["public"]["Enums"]["app_role"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roles_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scenarios_prevision: {
         Row: {
           annee_reference: number
@@ -2630,6 +2731,7 @@ export type Database = {
           created_by: string | null
           id: string
           role: Database["public"]["Enums"]["app_role"]
+          role_id: string | null
           statut: string
           user_id: string
         }
@@ -2639,6 +2741,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           role: Database["public"]["Enums"]["app_role"]
+          role_id?: string | null
           statut?: string
           user_id: string
         }
@@ -2648,6 +2751,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          role_id?: string | null
           statut?: string
           user_id?: string
         }
@@ -2657,6 +2761,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_clients_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
             referencedColumns: ["id"]
           },
         ]
@@ -2691,10 +2802,12 @@ export type Database = {
         Args: { p_ligne_budgetaire_id: string }
         Returns: number
       }
+      can_manage_role: { Args: { _role_id: string }; Returns: boolean }
       can_read_client_audit: {
         Args: { _client_id: string; _user_id: string }
         Returns: boolean
       }
+      can_read_role: { Args: { _role_id: string }; Returns: boolean }
       client_today: { Args: { _client_id: string }; Returns: string }
       create_bon_commande_with_numero: {
         Args: {
@@ -2841,6 +2954,10 @@ export type Database = {
         Returns: Json
       }
       get_user_client_id: { Args: { user_id: string }; Returns: string }
+      has_permission: {
+        Args: { _permission: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2896,6 +3013,7 @@ export type Database = {
         Args: { p_ligne_budgetaire_id: string }
         Returns: undefined
       }
+      seed_standard_roles: { Args: { _client_id: string }; Returns: undefined }
       user_has_client_access: {
         Args: { _client_id: string; _user_id: string }
         Returns: boolean
