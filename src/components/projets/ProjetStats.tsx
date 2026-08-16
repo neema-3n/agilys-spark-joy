@@ -6,8 +6,16 @@ import { formatMontant } from '@/lib/utils';
 export const ProjetStats = () => {
   const { stats, isLoading } = useProjetStats();
 
-  if (isLoading || !stats) {
-    return <div>Chargement des statistiques...</div>;
+  if (isLoading) {
+    return <div className="text-sm text-muted-foreground">Chargement des statistiques…</div>;
+  }
+
+  // Sans exercice sélectionné, la requête est désactivée et ne renvoie jamais
+  // rien : confondre cette absence avec un chargement en cours laisserait
+  // « Chargement des statistiques… » affiché indéfiniment. Le tableau des
+  // projets, juste en dessous, annonce déjà qu'il n'y a rien à montrer.
+  if (!stats) {
+    return null;
   }
 
   const tauxExecutionGlobal = stats.budgetTotalAlloue > 0
