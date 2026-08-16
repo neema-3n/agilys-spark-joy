@@ -79,6 +79,7 @@ const Login = () => {
           <CardDescription>
             Plateforme de gestion budgétaire et comptable
           </CardDescription>
+          <p className="text-xs text-muted-foreground">v2 · 2026-08-16</p>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
