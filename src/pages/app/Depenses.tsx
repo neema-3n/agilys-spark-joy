@@ -55,6 +55,7 @@ import { useFocusedEditorGuard } from '@/components/editors/FocusedEditorGuard';
 import { Input } from '@/components/ui/input';
 import { useClientPagination } from '@/hooks/useClientPagination';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 type DepensesLocationState = {
   initialEngagementId?: string;
@@ -80,6 +81,7 @@ const Depenses = () => {
   const navigate = useNavigate();
   const [actionDepenseId, setActionDepenseId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
   const [annulerMultipleDialogOpen, setAnnulerMultipleDialogOpen] = useState(false);
   const [isSubmittingAction, setIsSubmittingAction] = useState(false);
@@ -253,6 +255,7 @@ const Depenses = () => {
 
   const handleOpenDelete = useCallback((id: string) => {
     setActionDepenseId(id);
+    setDeleteError(null);
     setDeleteDialogOpen(true);
   }, []);
 
@@ -355,12 +358,16 @@ const Depenses = () => {
     if (!actionDepenseId) return;
     try {
       setIsSubmittingAction(true);
+      setDeleteError(null);
       await deleteDepense(actionDepenseId);
       setDeleteDialogOpen(false);
       setActionDepenseId(null);
       if (depenseId === actionDepenseId || snapshotDepenseId === actionDepenseId) {
         navigate('/app/depenses', { replace: true });
       }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'La suppression de la dépense a échoué.';
+      setDeleteError(message);
     } finally {
       setIsSubmittingAction(false);
     }
@@ -661,6 +668,11 @@ const Depenses = () => {
               Cette action est irréversible. Voulez-vous vraiment supprimer cette dépense brouillon ?
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {deleteError ? (
+            <Alert variant="destructive">
+              <AlertDescription className="whitespace-pre-line">{deleteError}</AlertDescription>
+            </Alert>
+          ) : null}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isSubmittingAction}>Annuler</AlertDialogCancel>
             <Button

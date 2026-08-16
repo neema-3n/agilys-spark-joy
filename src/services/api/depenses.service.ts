@@ -38,6 +38,25 @@ const cleanData = (obj: any): any => {
   return cleaned;
 };
 
+const getSupabaseErrorMessage = async (error: any) => {
+  let errorMessage = error?.message || 'Une erreur est survenue';
+
+  if (error?.context) {
+    try {
+      const errorBody = await error.context.json();
+      if (errorBody?.error) {
+        errorMessage = errorBody.error;
+      } else if (errorBody?.message) {
+        errorMessage = errorBody.message;
+      }
+    } catch {
+      // keep original message
+    }
+  }
+
+  return errorMessage;
+};
+
 const hasOwn = <T extends object>(obj: T, key: keyof T) => Object.prototype.hasOwnProperty.call(obj, key);
 
 const resolveDepenseLinkedParty = async (
@@ -534,17 +553,63 @@ export const deleteDepense = async (id: string): Promise<void> => {
     );
   }
 
-  const { data, error } = await supabase.rpc('delete_depense_brouillon', {
+  const depenseStillExists = async () => {
+    const { data: existingDepense, error } = await supabase
+      .from('depenses')
+      .select('id')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) throw error;
+    return !!existingDepense;
+  };
+
+  const errors: string[] = [];
+
+  const { data: functionData, error: functionError } = await supabase.functions.invoke('delete-depense', {
+    body: { id },
+  });
+
+  if (!functionError && functionData?.success === true && !(await depenseStillExists())) {
+    return;
+  }
+
+  if (functionError) {
+    errors.push(`Edge Function: ${await getSupabaseErrorMessage(functionError)}`);
+  } else {
+    errors.push('Edge Function: la dépense existe toujours après confirmation.');
+  }
+
+  const { data: rpcData, error: rpcError } = await supabase.rpc('delete_depense_brouillon', {
     p_depense_id: id,
   });
 
-  if (error) {
-    throw error;
+  if (!rpcError && rpcData && typeof rpcData === 'object' && 'success' in rpcData && rpcData.success === true && !(await depenseStillExists())) {
+    return;
   }
 
-  if (!data || typeof data !== 'object' || !('success' in data) || data.success !== true) {
-    throw new Error('La suppression de la dépense a échoué.');
+  if (rpcError) {
+    errors.push(`RPC SQL: ${await getSupabaseErrorMessage(rpcError)}`);
+  } else {
+    errors.push('RPC SQL: la dépense existe toujours après confirmation.');
   }
+
+  const { error: directDeleteError } = await supabase
+    .from('depenses')
+    .delete()
+    .eq('id', id);
+
+  if (!directDeleteError && !(await depenseStillExists())) {
+    return;
+  }
+
+  if (directDeleteError) {
+    errors.push(`DELETE direct: ${await getSupabaseErrorMessage(directDeleteError)}`);
+  } else {
+    errors.push('DELETE direct: aucune ligne supprimée.');
+  }
+
+  throw new Error(`La suppression de la dépense a échoué.\n${errors.join('\n')}`);
 };
 
 /**
