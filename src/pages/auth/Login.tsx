@@ -25,7 +25,7 @@ const Login = () => {
   const location = useLocation();
   const { toast } = useToast();
 
-  const from = location.state?.from || '/app/dashboard';
+  const from = location.state?.from || '/app/executive-dashboard';
 
   useEffect(() => {
     if (isAuthenticated) {

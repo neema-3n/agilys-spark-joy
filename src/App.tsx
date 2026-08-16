@@ -17,7 +17,6 @@ const InitTestUsers = lazy(() => import("./pages/auth/InitTestUsers"));
 
 // App layout and main pages
 const AppLayout = lazy(() => import("./pages/app/AppLayoutTailAdmin"));
-const Dashboard = lazy(() => import("./pages/app/Dashboard"));
 const ExecutiveDashboard = lazy(() => import("./pages/app/ExecutiveDashboard"));
 
 // Budget & Finance pages
@@ -33,12 +32,10 @@ const TresorerieOperations = lazy(() => import("./pages/app/TresorerieOperations
 const TresorerieRapprochements = lazy(() => import("./pages/app/TresorerieRapprochements"));
 const Previsions = lazy(() => import("./pages/app/Previsions"));
 const Reservations = lazy(() => import("./pages/app/Reservations"));
-const Enveloppes = lazy(() => import("./pages/app/Enveloppes"));
 
 // Administration pages
 const Fournisseurs = lazy(() => import("./pages/app/Fournisseurs"));
 const Projets = lazy(() => import("./pages/app/Projets"));
-const Structure = lazy(() => import("./pages/app/Structure"));
 const Parametres = lazy(() => import("./pages/app/Parametres"));
 const PlanComptable = lazy(() => import("./pages/app/PlanComptable"));
 
@@ -88,7 +85,7 @@ const App = () => (
                     </ProtectedRoute>
                   }
                 >
-                  <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="dashboard" element={<Navigate to="/app/executive-dashboard" replace />} />
                   <Route path="executive-dashboard" element={<ExecutiveDashboard />} />
 
                   {/* Budget & Finance */}
@@ -98,7 +95,7 @@ const App = () => (
                     <Route path=":ligneId/edit" element={<Budgets />} />
                     <Route path=":ligneId" element={<Budgets />} />
                   </Route>
-                  <Route path="enveloppes" element={<Enveloppes />} />
+                  <Route path="enveloppes" element={<Navigate to="/app/parametres/enveloppes" replace />} />
                   <Route path="reservations">
                     <Route index element={<Reservations />} />
                     <Route path="create" element={<Reservations />} />
@@ -173,7 +170,7 @@ const App = () => (
                     <Route path=":projetId/edit" element={<Projets />} />
                     <Route path=":projetId" element={<Projets />} />
                   </Route>
-                  <Route path="structure" element={<Structure />} />
+                  <Route path="structure" element={<Navigate to="/app/parametres/structure" replace />} />
                   <Route path="parametres">
                     <Route index element={<Parametres />} />
                     <Route path=":sectionId" element={<Parametres />} />
