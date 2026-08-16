@@ -661,7 +661,7 @@ const ExecutiveDashboard = () => {
   // Afficher un tableau de bord entièrement à zéro le laisserait sans aucune
   // indication de ce qui manque : la liste de contrôle prend sa place jusqu'à
   // la première ligne budgétaire.
-  if (!setupStatus.isLoading && !setupStatus.isConfigured) {
+  if (setupStatus.isReady && !setupStatus.isConfigured) {
     return <ConfigurationInitiale />;
   }
 

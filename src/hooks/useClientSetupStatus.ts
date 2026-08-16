@@ -87,6 +87,11 @@ export const useClientSetupStatus = () => {
     exercices: 0, comptes: 0, sections: 0, programmes: 0, actions: 0, lignes: 0,
   };
 
+  // La présence des données est le seul signal fiable : `isLoading` de React
+  // Query vaut false aussi bien avant qu'après une requête désactivée, ce qui
+  // ferait conclure « non configuré » avant même d'avoir compté quoi que ce soit.
+  const isReady = data !== undefined;
+
   const hasExercice = counts.exercices > 0;
   const hasPlanComptable = counts.comptes > 0;
   const hasStructure = counts.sections > 0 && counts.programmes > 0 && counts.actions > 0;
@@ -95,6 +100,7 @@ export const useClientSetupStatus = () => {
   return {
     counts,
     isLoading,
+    isReady,
     hasExercice,
     hasPlanComptable,
     hasStructure,

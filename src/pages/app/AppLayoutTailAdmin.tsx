@@ -37,6 +37,7 @@ import {
   X,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { SetupBanner } from '@/components/setup/SetupBanner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
@@ -432,6 +433,8 @@ const AppLayoutTailAdmin = () => {
             onLogout={logout}
             user={user}
           />
+
+          <SetupBanner />
 
           <main
             ref={mainRef}
