@@ -35,6 +35,8 @@ import { useReservations } from '@/hooks/useReservations';
 import { useSections } from '@/hooks/useSections';
 import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
+import { useClientSetupStatus } from '@/hooks/useClientSetupStatus';
+import { ConfigurationInitiale } from '@/components/setup/ConfigurationInitiale';
 import { cn, formatMontant } from '@/lib/utils';
 
 const SOURCE_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4'];
@@ -335,6 +337,7 @@ const ExecutiveTableCard = ({
 const ExecutiveDashboard = () => {
   const { currentClient } = useClient();
   const { currentExercice } = useExercice();
+  const setupStatus = useClientSetupStatus();
   const { lignes, isLoading: lignesLoading } = useLignesBudgetaires();
   const { enveloppes, isLoading: enveloppesLoading } = useEnveloppes();
   const { reservations, isLoading: reservationsLoading } = useReservations();
@@ -653,6 +656,14 @@ const ExecutiveDashboard = () => {
       toast.error('Impossible d’exporter le dashboard');
     }
   };
+
+  // Un client neuf n'a ni exercice, ni plan comptable, ni structure budgétaire.
+  // Afficher un tableau de bord entièrement à zéro le laisserait sans aucune
+  // indication de ce qui manque : la liste de contrôle prend sa place jusqu'à
+  // la première ligne budgétaire.
+  if (!setupStatus.isLoading && !setupStatus.isConfigured) {
+    return <ConfigurationInitiale />;
+  }
 
   return (
     <div className="space-y-6">

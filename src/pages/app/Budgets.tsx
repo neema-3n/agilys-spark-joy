@@ -484,6 +484,32 @@ const Budgets = () => {
     );
   }
 
+  // Accès direct par URL sur un client sans exercice : la liste vide ne dirait
+  // pas ce qui manque. Le tableau de bord affiche la liste de contrôle
+  // complète ; ici on nomme simplement le prérequis et on y conduit.
+  if (!currentExercice) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Gestion des Budgets"
+          description="Plan budgétaire, modifications et suivi d'exécution"
+        />
+        <Card>
+          <CardContent className="py-12 text-center">
+            <h3 className="text-lg font-semibold">Aucun exercice budgétaire</h3>
+            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+              Le budget se rattache à un exercice. Commencez par en définir un pour
+              {currentClient ? ` ${currentClient.nom}` : ' cette organisation'}.
+            </p>
+            <Button className="mt-6" onClick={() => navigate('/app/parametres/exercices')}>
+              Créer un exercice
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <>
     {guard}
