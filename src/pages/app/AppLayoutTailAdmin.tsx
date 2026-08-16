@@ -26,6 +26,7 @@ import {
   Receipt,
   Search,
   Settings,
+  ShieldCheck,
   ShoppingCart,
   Sun,
   TrendingUp,
@@ -79,6 +80,14 @@ type NavigationItem = {
 type NavigationSection = {
   title: string;
   items: NavigationItem[];
+};
+
+// Réservé au super admin : l'entrée n'apparaît que pour lui, la page elle-même
+// restant gardée par son propre contrôle de rôle.
+const SUPER_ADMIN_ITEM: NavigationItem = {
+  name: 'Administration',
+  href: '/admin/clients',
+  icon: ShieldCheck,
 };
 
 const navigationSections: NavigationSection[] = [
@@ -317,7 +326,7 @@ const OutletContentSkeleton = () => (
 );
 
 const AppLayoutTailAdmin = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, hasRole } = useAuth();
   const { isLoading: clientLoading, hasLoaded: clientLoaded, currentClient } = useClient();
   const { isLoading: exerciceLoading, hasLoaded: exerciceLoaded } = useExercice();
   const location = useLocation();
@@ -473,6 +482,20 @@ interface SidebarChromeProps {
   showCloseButton: boolean;
 }
 
+const useVisibleSections = () => {
+  const { hasRole } = useAuth();
+
+  return useMemo(() => {
+    if (!hasRole('super_admin')) return navigationSections;
+
+    return navigationSections.map((section) =>
+      section.title === 'Admin'
+        ? { ...section, items: [...section.items, SUPER_ADMIN_ITEM] }
+        : section,
+    );
+  }, [hasRole]);
+};
+
 const SidebarChrome = ({
   expanded,
   activeSectionTitle,
@@ -482,6 +505,8 @@ const SidebarChrome = ({
   onCloseMobile,
   showCloseButton,
 }: SidebarChromeProps) => {
+  const visibleSections = useVisibleSections();
+
   const location = useLocation();
 
   return (
@@ -512,7 +537,7 @@ const SidebarChrome = ({
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-5">
-        {navigationSections.map((section) => {
+        {visibleSections.map((section) => {
           const sectionIsActive = section.title === activeSectionTitle;
           const sectionIsOpen = openSections[section.title] ?? sectionIsActive;
 

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Building2, ShieldAlert, AlertCircle } from 'lucide-react';
+import { Building2, ShieldAlert, AlertCircle, ShieldCheck, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { useClient } from '@/contexts/ClientContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -26,6 +28,8 @@ const SelectClient = () => {
   const location = useLocation();
   const destination = (location.state as { from?: string } | null)?.from ?? '/app/executive-dashboard';
   const { clients, hasLoaded, switchClient, isSwitching } = useClient();
+  const { hasRole } = useAuth();
+  const isSuperAdmin = hasRole('super_admin');
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
 
@@ -64,16 +68,26 @@ const SelectClient = () => {
           <CardHeader className="space-y-2 text-center">
             <CardTitle className="text-2xl font-bold">Aucun accès</CardTitle>
             <CardDescription>
-              Votre compte n'est rattaché à aucune organisation. Contactez votre administrateur.
+              {isSuperAdmin
+                ? "Aucune organisation n'est encore créée. Ouvrez l'administration pour en créer une."
+                : "Votre compte n'est rattaché à aucune organisation. Contactez votre administrateur."}
             </CardDescription>
           </CardHeader>
+          {isSuperAdmin ? (
+            <CardContent>
+              <Button className="w-full" onClick={() => navigate('/admin/clients')}>
+                <ShieldCheck className="mr-2 h-4 w-4" />
+                Ouvrir l'administration
+              </Button>
+            </CardContent>
+          ) : null}
         </Card>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-hero p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-hero p-4">
       <Card className="w-full max-w-lg shadow-primary">
         <CardHeader className="space-y-2 text-center">
           <CardTitle className="text-2xl font-bold">Choisir une organisation</CardTitle>
@@ -134,6 +148,21 @@ const SelectClient = () => {
           })}
         </CardContent>
       </Card>
+
+      {isSuperAdmin ? (
+        <p className="mt-4 text-center text-sm text-muted-foreground">
+          Ou{' '}
+          <button
+            type="button"
+            className="font-medium text-primary underline-offset-4 hover:underline"
+            onClick={() => navigate('/admin/clients')}
+          >
+            ouvrez l'administration
+            <ArrowRight className="ml-1 inline h-3.5 w-3.5" />
+          </button>{' '}
+          pour gérer les organisations.
+        </p>
+      ) : null}
     </div>
   );
 };
