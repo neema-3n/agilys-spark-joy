@@ -78,6 +78,9 @@ export interface ClientAccessInfo {
   isActive: boolean;
   /** Accès d'un super admin à un client dont il n'est pas membre. */
   isTakeover: boolean;
+  typeAbonnement: 'trial' | 'live';
+  /** Échéance de l'abonnement. `null` = aucune validité, donc lecture seule. */
+  dateFinAbonnement: string | null;
 }
 
 export interface ClientContextType {

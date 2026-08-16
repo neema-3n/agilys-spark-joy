@@ -250,34 +250,40 @@ export type Database = {
         Row: {
           code: string
           created_at: string
+          date_fin_abonnement: string | null
           devise: string
           id: string
           money_format: Json | null
           nom: string
           pays: string
           statut: string
+          type_abonnement: Database["public"]["Enums"]["type_abonnement"]
           updated_at: string
         }
         Insert: {
           code: string
           created_at?: string
+          date_fin_abonnement?: string | null
           devise?: string
           id: string
           money_format?: Json | null
           nom: string
           pays?: string
           statut?: string
+          type_abonnement?: Database["public"]["Enums"]["type_abonnement"]
           updated_at?: string
         }
         Update: {
           code?: string
           created_at?: string
+          date_fin_abonnement?: string | null
           devise?: string
           id?: string
           money_format?: Json | null
           nom?: string
           pays?: string
           statut?: string
+          type_abonnement?: Database["public"]["Enums"]["type_abonnement"]
           updated_at?: string
         }
         Relationships: []
@@ -1846,6 +1852,30 @@ export type Database = {
         }
         Relationships: []
       }
+      parametres_systeme: {
+        Row: {
+          cle: string
+          description: string | null
+          updated_at: string
+          updated_by: string | null
+          valeur: Json
+        }
+        Insert: {
+          cle: string
+          description?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          valeur: Json
+        }
+        Update: {
+          cle?: string
+          description?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          valeur?: Json
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           client_id: string
@@ -2825,6 +2855,7 @@ export type Database = {
         Args: never
         Returns: {
           code: string
+          date_fin_abonnement: string
           devise: string
           id: string
           is_active: boolean
@@ -2834,6 +2865,7 @@ export type Database = {
           pays: string
           role: Database["public"]["Enums"]["app_role"]
           statut: string
+          type_abonnement: Database["public"]["Enums"]["type_abonnement"]
         }[]
       }
       recalculate_facture_montant_liquide: {
@@ -2873,6 +2905,7 @@ export type Database = {
         | "chef_service"
         | "comptable"
         | "operateur_saisie"
+      type_abonnement: "trial" | "live"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3011,6 +3044,7 @@ export const Constants = {
         "comptable",
         "operateur_saisie",
       ],
+      type_abonnement: ["trial", "live"],
     },
   },
 } as const

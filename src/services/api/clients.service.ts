@@ -18,6 +18,8 @@ type MyClientRow = {
   role: string;
   is_active: boolean;
   is_takeover: boolean;
+  type_abonnement: 'trial' | 'live';
+  date_fin_abonnement: string | null;
 };
 
 export type ClientAccess = Client & {
@@ -27,6 +29,9 @@ export type ClientAccess = Client & {
   isActive: boolean;
   /** Vrai lorsqu'un super admin accède à un client dont il n'est pas membre. */
   isTakeover: boolean;
+  typeAbonnement: 'trial' | 'live';
+  /** Échéance de l'abonnement. `null` = aucune validité, donc lecture seule. */
+  dateFinAbonnement: string | null;
 };
 
 const mapRow = (row: MyClientRow): ClientAccess => ({
@@ -40,6 +45,8 @@ const mapRow = (row: MyClientRow): ClientAccess => ({
   role: row.role,
   isActive: row.is_active,
   isTakeover: row.is_takeover,
+  typeAbonnement: row.type_abonnement ?? 'trial',
+  dateFinAbonnement: row.date_fin_abonnement,
 });
 
 export const clientsService = {
