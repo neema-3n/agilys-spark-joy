@@ -75,6 +75,9 @@ export interface ClientContextType {
   currentClient: Client | null;
   clients: Client[];
   setCurrentClient: (client: Client) => void;
+  /** Bascule le client actif : jeton rafraîchi et cache de données vidé. */
+  switchClient: (clientId: string) => Promise<void>;
+  isSwitching: boolean;
   isLoading: boolean;
   hasLoaded: boolean;
 }

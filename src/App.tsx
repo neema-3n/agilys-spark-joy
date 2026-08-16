@@ -14,6 +14,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 // Auth pages
 const Login = lazy(() => import("./pages/auth/Login"));
 const InitTestUsers = lazy(() => import("./pages/auth/InitTestUsers"));
+const SelectClient = lazy(() => import("./pages/auth/SelectClient"));
 
 // App layout and main pages
 const AppLayout = lazy(() => import("./pages/app/AppLayoutTailAdmin"));
@@ -73,6 +74,14 @@ const App = () => (
                 {/* Auth routes */}
                 <Route path="/auth/login" element={<Suspense fallback={<FullScreenLoader />}><Login /></Suspense>} />
                 <Route path="/auth/init-test-users" element={<Suspense fallback={<FullScreenLoader />}><InitTestUsers /></Suspense>} />
+                <Route
+                  path="/auth/select-client"
+                  element={
+                    <ProtectedRoute>
+                      <Suspense fallback={<FullScreenLoader />}><SelectClient /></Suspense>
+                    </ProtectedRoute>
+                  }
+                />
 
                 {/* Protected app routes */}
                 <Route

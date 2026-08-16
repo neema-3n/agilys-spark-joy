@@ -4,6 +4,7 @@ import { useClient } from '@/contexts/ClientContext';
 import { useExercice } from '@/contexts/ExerciceContext';
 import { useTheme } from 'next-themes';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useToast } from '@/hooks/use-toast';
 import {
   Bell,
   ChevronDown,
@@ -34,14 +35,27 @@ interface AppHeaderProps {
 
 export const AppHeader = ({ onMenuClick }: AppHeaderProps) => {
   const { user, logout } = useAuth();
-  const { currentClient, clients, setCurrentClient } = useClient();
+  const { currentClient, clients, switchClient, isSwitching } = useClient();
   const { currentExercice, exercices, setCurrentExercice } = useExercice();
   const { theme, setTheme } = useTheme();
   const isMobile = useIsMobile();
   const [notificationCount] = useState(3); // Mock notifications
+  const { toast } = useToast();
 
   const handleLogout = async () => {
     await logout();
+  };
+
+  const handleSwitch = async (clientId: string) => {
+    try {
+      await switchClient(clientId);
+    } catch (error) {
+      toast({
+        title: 'Changement de client impossible',
+        description: error instanceof Error ? error.message : 'Erreur inattendue',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -66,10 +80,13 @@ export const AppHeader = ({ onMenuClick }: AppHeaderProps) => {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
+                disabled={isSwitching}
                 className="min-w-[140px] md:min-w-[180px] lg:min-w-[220px] justify-start bg-card hover:bg-accent h-10 px-4"
               >
                 <span className="truncate text-sm font-medium">
-                  {currentClient?.nom || 'Sélectionner un client'}
+                  {isSwitching
+                    ? 'Changement en cours…'
+                    : currentClient?.nom || 'Sélectionner un client'}
                 </span>
               </Button>
             </DropdownMenuTrigger>
@@ -77,7 +94,13 @@ export const AppHeader = ({ onMenuClick }: AppHeaderProps) => {
               {clients.map((client) => (
                 <DropdownMenuItem
                   key={client.id}
-                  onClick={() => setCurrentClient(client)}
+                  disabled={isSwitching}
+                  // switchClient et non setCurrentClient : il faut poser le
+                  // client actif cote serveur, rafraichir le jeton et vider le
+                  // cache. Un simple changement d'etat local afficherait le
+                  // nouveau client tout en continuant de lire les donnees de
+                  // l'ancien.
+                  onClick={() => { void handleSwitch(client.id); }}
                   className={
                     currentClient?.id === client.id
                       ? 'bg-primary/10 text-primary'

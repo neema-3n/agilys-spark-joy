@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { ClientContextType, Client } from '@/types';
 import { clientsService, type ClientAccess } from '@/services/api/clients.service';
 import { useAuth } from './AuthContext';
@@ -12,6 +13,8 @@ export const ClientProvider = ({ children }: { children: ReactNode }) => {
   const [currentClient, setCurrentClient] = useState<Client | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [isSwitching, setIsSwitching] = useState(false);
+  const queryClient = useQueryClient();
 
   const loadClients = useCallback(async () => {
     setIsLoading(true);
@@ -61,13 +64,37 @@ export const ClientProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [currentClient]);
 
+  const switchClient = useCallback(async (clientId: string) => {
+    const target = clients.find((client) => client.id === clientId);
+    if (!target || clientId === currentClient?.id) return;
+
+    setIsSwitching(true);
+    try {
+      // Pose le client actif côté serveur et rafraîchit le jeton.
+      await clientsService.switchTo(clientId);
+
+      // Purge totale du cache, et non une invalidation ciblée : chaque requête
+      // en cache a été résolue sous le périmètre du client précédent. En
+      // conserver une seule reviendrait à afficher les données d'un client
+      // sous l'en-tête d'un autre.
+      queryClient.clear();
+
+      setCurrentClient(target);
+      await loadClients();
+    } finally {
+      setIsSwitching(false);
+    }
+  }, [clients, currentClient, queryClient, loadClients]);
+
   const contextValue = useMemo(() => ({
     currentClient,
     clients,
     setCurrentClient,
+    switchClient,
+    isSwitching,
     isLoading,
     hasLoaded
-  }), [currentClient, clients, isLoading, hasLoaded]);
+  }), [currentClient, clients, switchClient, isSwitching, isLoading, hasLoaded]);
 
   return (
     <ClientContext.Provider value={contextValue}>

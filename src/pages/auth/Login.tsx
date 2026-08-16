@@ -27,9 +27,12 @@ const Login = () => {
 
   const from = location.state?.from || '/app/executive-dashboard';
 
+  // On passe systematiquement par l'ecran de selection : lui seul connait le
+  // nombre de clients accessibles, et il redirige immediatement quand il n'y en
+  // a qu'un. Un utilisateur mono-client ne le voit donc jamais.
   useEffect(() => {
     if (isAuthenticated) {
-      navigate(from, { replace: true });
+      navigate('/auth/select-client', { replace: true, state: { from } });
     }
   }, [isAuthenticated, navigate, from]);
 
@@ -56,7 +59,7 @@ const Login = () => {
         title: 'Connexion réussie',
         description: 'Bienvenue sur AGILYS',
       });
-      navigate(from);
+      navigate('/auth/select-client', { state: { from } });
     } else {
       toast({
         title: 'Erreur de connexion',

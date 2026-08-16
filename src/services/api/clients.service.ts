@@ -72,6 +72,51 @@ export const clientsService = {
   },
 
   /**
+   * Bascule le client actif de l'utilisateur.
+   *
+   * Le rafraîchissement de session qui suit n'est pas optionnel : le jeton en
+   * cours porte encore l'ancien client, et `get_user_client_id()` le lit dans
+   * ce jeton. Sans ce refresh, la RLS continuerait de répondre pour le client
+   * précédent alors que l'interface affiche déjà le nouveau — c'est-à-dire le
+   * scénario exact d'un mélange de données entre clients.
+   *
+   * L'invalidation du cache React Query est de la responsabilité de l'appelant
+   * (voir ClientContext), pour la même raison.
+   */
+  switchTo: async (clientId: string): Promise<void> => {
+    const { data, error } = await supabase.functions.invoke('switch-client', {
+      body: { clientId },
+    });
+
+    if (error) {
+      let message = error.message ?? 'Changement de client impossible.';
+      // Les edge functions renvoient le détail dans le corps de la réponse.
+      const context = (error as { context?: { json?: () => Promise<unknown> } }).context;
+      if (context?.json) {
+        try {
+          const body = (await context.json()) as { error?: string };
+          if (body?.error) message = body.error;
+        } catch {
+          // on garde le message d'origine
+        }
+      }
+      throw new Error(message);
+    }
+
+    if (!data?.success) {
+      throw new Error(data?.error ?? 'Changement de client impossible.');
+    }
+
+    const { error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError) {
+      throw new Error(
+        "Le client a été changé mais la session n'a pas pu être rafraîchie. " +
+          'Reconnectez-vous pour appliquer le changement.',
+      );
+    }
+  },
+
+  /**
    * Journalise l'accès d'un super admin à un client dont il n'est pas membre.
    * Sans effet pour un utilisateur ordinaire, et idempotent sur une heure :
    * un rechargement de page ne produit pas d'entrée supplémentaire.
