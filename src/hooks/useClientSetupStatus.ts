@@ -20,14 +20,30 @@ type SetupTable =
   | 'actions'
   | 'lignes_budgetaires';
 
-const countRows = async (table: SetupTable, clientId: string, exerciceId?: string) => {
-  // `from()` avec un nom de table variable fait diverger l'inférence des types
-  // générés : TypeScript tente de résoudre l'union de toutes les tables et
-  // abandonne (TS2589). On ne récupère ici qu'un compteur, jamais de lignes,
-  // donc le type précis du builder n'apporte rien.
-  const from = supabase.from as (table: string) => ReturnType<typeof supabase.from>;
+/**
+ * `from()` avec un nom de table variable fait diverger l'inférence des types
+ * générés : TypeScript tente de résoudre l'union de toutes les tables et
+ * abandonne (TS2589). On ne lit ici qu'un compteur, jamais de lignes, donc le
+ * type précis du constructeur de requête n'apporte rien.
+ *
+ * La vue allégée porte sur le client entier, et non sur la méthode seule :
+ * extraire `supabase.from` dans une variable lui ferait perdre son `this`, et
+ * l'appel échouerait à l'exécution.
+ */
+type CountQuery = {
+  eq: (column: string, value: string) => CountQuery;
+  then: Promise<{ count: number | null; error: { message: string } | null }>['then'];
+};
 
-  let query = from(table)
+const countClient = supabase as unknown as {
+  from: (table: string) => {
+    select: (columns: string, options: { count: 'exact'; head: boolean }) => CountQuery;
+  };
+};
+
+const countRows = async (table: SetupTable, clientId: string, exerciceId?: string) => {
+  let query = countClient
+    .from(table)
     .select('*', { count: 'exact', head: true })
     .eq('client_id', clientId);
 
@@ -38,7 +54,12 @@ const countRows = async (table: SetupTable, clientId: string, exerciceId?: strin
   }
 
   const { count, error } = await query;
-  if (error) throw error;
+  if (error) {
+    // Une erreur avalée ici laisserait `data` indéfini et la liste de contrôle
+    // invisible, sans le moindre indice de la cause.
+    console.error(`Comptage impossible sur ${table} :`, error.message);
+    throw new Error(`Comptage impossible sur ${table} : ${error.message}`);
+  }
   return count ?? 0;
 };
 
