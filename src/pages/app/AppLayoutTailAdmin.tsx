@@ -66,6 +66,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
 type NavigationItem = {
@@ -679,11 +680,24 @@ const TailAdminHeader = ({
   onLogout,
   user,
 }: TailAdminHeaderProps) => {
-  const { currentClient, clients, setCurrentClient } = useClient();
+  const { currentClient, clients, switchClient, isSwitching } = useClient();
   const { currentExercice, exercices, setCurrentExercice } = useExercice();
   const { theme, setTheme } = useTheme();
   const isMobile = useIsMobile();
+  const { toast } = useToast();
   const [notificationCount] = useState(3);
+
+  const handleClientSelect = async (clientId: string) => {
+    try {
+      await switchClient(clientId);
+    } catch (error) {
+      toast({
+        title: 'Changement de client impossible',
+        description: error instanceof Error ? error.message : 'Erreur inattendue',
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
     <header className="sticky top-0 z-30 h-[76px] border-b border-border bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/90">
@@ -725,12 +739,18 @@ const TailAdminHeader = ({
         <div className="ml-auto flex min-w-0 items-center gap-2">
           <ContextSwitcher
             label="Client"
-            value={currentClient?.nom ?? 'Sélectionner un client'}
+            value={
+              isSwitching ? 'Changement en cours…' : currentClient?.nom ?? 'Sélectionner un client'
+            }
             items={clients.map((client) => ({
               id: client.id,
               primary: client.nom,
               active: currentClient?.id === client.id,
-              onSelect: () => setCurrentClient(client),
+              // switchClient, et non setCurrentClient : ce dernier ne change
+              // qu'un état React. Le périmètre appliqué par la base vit dans le
+              // jeton, et sans bascule serveur l'interface affiche un client
+              // pendant que les données proviennent d'un autre.
+              onSelect: () => { void handleClientSelect(client.id); },
             }))}
           />
 
