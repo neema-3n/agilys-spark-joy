@@ -252,6 +252,7 @@ export type Database = {
           created_at: string
           date_fin_abonnement: string | null
           devise: string
+          fuseau_horaire: string
           id: string
           money_format: Json | null
           nom: string
@@ -265,6 +266,7 @@ export type Database = {
           created_at?: string
           date_fin_abonnement?: string | null
           devise?: string
+          fuseau_horaire?: string
           id: string
           money_format?: Json | null
           nom: string
@@ -278,6 +280,7 @@ export type Database = {
           created_at?: string
           date_fin_abonnement?: string | null
           devise?: string
+          fuseau_horaire?: string
           id?: string
           money_format?: Json | null
           nom?: string
@@ -2692,6 +2695,7 @@ export type Database = {
         Args: { _client_id: string; _user_id: string }
         Returns: boolean
       }
+      client_today: { Args: { _client_id: string }; Returns: string }
       create_bon_commande_with_numero: {
         Args: {
           p_client_id: string
