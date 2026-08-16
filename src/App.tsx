@@ -18,6 +18,10 @@ const Login = lazy(() => import("./pages/auth/Login"));
 const InitTestUsers = lazy(() => import("./pages/auth/InitTestUsers"));
 const SelectClient = lazy(() => import("./pages/auth/SelectClient"));
 
+// Back-office, hors application metier
+const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
+const AdminClients = lazy(() => import("./pages/admin/AdminClients"));
+
 // App layout and main pages
 const AppLayout = lazy(() => import("./pages/app/AppLayoutTailAdmin"));
 const ExecutiveDashboard = lazy(() => import("./pages/app/ExecutiveDashboard"));
@@ -85,6 +89,15 @@ const App = () => (
                     </ProtectedRoute>
                   }
                 />
+
+                {/* Back-office super admin */}
+                <Route
+                  path="/admin"
+                  element={<Suspense fallback={<FullScreenLoader />}><AdminLayout /></Suspense>}
+                >
+                  <Route index element={<Navigate to="/admin/clients" replace />} />
+                  <Route path="clients" element={<Suspense fallback={<FullScreenLoader />}><AdminClients /></Suspense>} />
+                </Route>
 
                 {/* Protected app routes */}
                 <Route
