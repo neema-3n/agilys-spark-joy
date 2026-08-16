@@ -9,6 +9,7 @@ import { ClientProvider } from "@/contexts/ClientContext";
 import { ExerciceProvider } from "@/contexts/ExerciceContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
+import { RequireActiveClient } from "@/components/RequireActiveClient";
 
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -90,9 +91,11 @@ const App = () => (
                   path="/app"
                   element={
                     <ProtectedRoute>
-                      <Suspense fallback={<FullScreenLoader />}>
-                        <AppLayout />
-                      </Suspense>
+                      <RequireActiveClient>
+                        <Suspense fallback={<FullScreenLoader />}>
+                          <AppLayout />
+                        </Suspense>
+                      </RequireActiveClient>
                     </ProtectedRoute>
                   }
                 >
