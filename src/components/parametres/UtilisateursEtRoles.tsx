@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useParams } from 'react-router-dom';
+
 import {
-  ArrowLeft, Copy, Lock, Mail, ShieldCheck, Trash2, UserMinus, UserPlus, Users,
+  Copy, Lock, Mail, ShieldCheck, Trash2, UserMinus, UserPlus, Users,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,8 @@ import {
 } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { adminClientsService } from '@/services/api/admin-clients.service';
+import { useClient } from '@/contexts/ClientContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import { adminUsersService, type OrganisationRole } from '@/services/api/admin-users.service';
 
 const MODULE_LABELS: Record<string, string> = {
@@ -34,9 +35,18 @@ const slug = (v: string) =>
   v.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
     .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40);
 
-const AdminOrganisationDetail = () => {
-  const { clientId = '' } = useParams();
-  const navigate = useNavigate();
+/**
+ * Utilisateurs et rôles de l'organisation courante.
+ *
+ * Cet écran vit dans l'application, pas dans le back-office : l'administrateur
+ * d'une organisation est l'un de ses utilisateurs, et le super admin AGILYS n'a
+ * pas à connaître le personnel de ses clients. Un super admin qui doit
+ * intervenir passe par la prise en main du client, qui est journalisée.
+ */
+export const UtilisateursEtRoles = () => {
+  const { currentClient } = useClient();
+  const { can, isLoading: chargementDroits } = usePermissions();
+  const clientId = currentClient?.id ?? '';
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -48,9 +58,6 @@ const AdminOrganisationDetail = () => {
 
   const echec = (error: Error) =>
     toast({ title: 'Opération impossible', description: error.message, variant: 'destructive' });
-
-  const { data: clients = [] } = useQuery({ queryKey: ['admin-clients'], queryFn: adminClientsService.listAll });
-  const organisation = clients.find((c) => c.id === clientId);
 
   const { data: roles = [] } = useQuery({
     queryKey: ['org-roles', clientId], queryFn: () => adminUsersService.roles(clientId), enabled: !!clientId,
@@ -132,22 +139,24 @@ const AdminOrganisationDetail = () => {
   const modules = [...new Set(catalogue.map((p) => p.module))];
   const accordees = new Set(permissionsRole);
 
+  // Masquer l'écran à qui n'a pas le droit d'en faire usage. La base le
+  // refuserait de toute façon ; l'afficher ne ferait que promettre en vain.
+  if (!chargementDroits && !can('utilisateurs.gerer')) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Accès restreint</CardTitle>
+          <CardDescription>
+            La gestion des utilisateurs et des rôles revient aux administrateurs de
+            {currentClient ? ` ${currentClient.nom}` : ' cette organisation'}.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/admin/clients')}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Organisations
-        </Button>
-      </div>
-
-      <div>
-        <h1 className="text-2xl font-semibold">{organisation?.nom ?? clientId}</h1>
-        <p className="text-sm text-muted-foreground">
-          Utilisateurs et rôles de cette organisation.
-        </p>
-      </div>
-
       <Tabs defaultValue="utilisateurs" className="space-y-4">
         <TabsList>
           <TabsTrigger value="utilisateurs">
@@ -476,4 +485,4 @@ const AdminOrganisationDetail = () => {
   );
 };
 
-export default AdminOrganisationDetail;
+

@@ -14,6 +14,7 @@ import { StructureBudgetaireManager } from '@/components/parametres/StructureBud
 import { ReglesComptablesManager } from '@/components/parametres/ReglesComptablesManager';
 import { ParametresEditorFocusContext } from '@/components/parametres/ParametresEditorFocusContext';
 import { MoneyFormatManager } from '@/components/parametres/MoneyFormatManager';
+import { UtilisateursEtRoles } from '@/components/parametres/UtilisateursEtRoles';
 
 const SECTION_IDS = [
   'exercices',
@@ -120,20 +121,10 @@ const Parametres = () => {
     },
     {
       id: 'utilisateurs' as ParametreSection,
-      title: 'Utilisateurs',
-      description: 'Gestion des accès',
+      title: 'Utilisateurs & rôles',
+      description: 'Accès et permissions',
       icon: Users,
-      component: (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Utilisateurs
-            </CardTitle>
-            <CardDescription>Module de gestion des utilisateurs à venir</CardDescription>
-          </CardHeader>
-        </Card>
-      )
+      component: <UtilisateursEtRoles />
     }
   ];
 

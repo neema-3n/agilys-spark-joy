@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Building2, CalendarClock, Pause, Play, Plus, Settings2, Users, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -90,7 +89,6 @@ const AbonnementCell = ({ client }: { client: AdminClient }) => {
 };
 
 const AdminClients = () => {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -272,10 +270,6 @@ const AdminClients = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="sm" onClick={() => navigate(`/admin/clients/${client.id}`)}>
-                          <Users className="mr-2 h-3.5 w-3.5" />
-                          Gérer
-                        </Button>
                         <Button variant="outline" size="sm" onClick={() => openAbonnement(client)}>
                           <CalendarClock className="mr-2 h-3.5 w-3.5" />
                           Abonnement
