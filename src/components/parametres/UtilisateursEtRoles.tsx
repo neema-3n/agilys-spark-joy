@@ -62,7 +62,7 @@ export const UtilisateursEtRoles = () => {
   const { data: roles = [] } = useQuery({
     queryKey: ['org-roles', clientId], queryFn: () => adminUsersService.roles(clientId), enabled: !!clientId,
   });
-  const { data: utilisateurs = [], isLoading: chargementUsers } = useQuery({
+  const { data: utilisateurs = [], isLoading: chargementUsers, error: erreurUsers } = useQuery({
     queryKey: ['org-users', clientId], queryFn: () => adminUsersService.utilisateurs(clientId), enabled: !!clientId,
   });
   const { data: catalogue = [] } = useQuery({ queryKey: ['catalogue'], queryFn: adminUsersService.catalogue });
@@ -244,7 +244,15 @@ export const UtilisateursEtRoles = () => {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {!chargementUsers && utilisateurs.length === 0 ? (
+                  {/* Une requête en échec et une liste réellement vide se
+                      ressemblaient trop : on distingue les deux. */}
+                  {erreurUsers ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="py-10 text-center text-destructive">
+                        Chargement impossible : {(erreurUsers as Error).message}
+                      </TableCell>
+                    </TableRow>
+                  ) : !chargementUsers && utilisateurs.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={4} className="py-10 text-center text-muted-foreground">
                         Aucun utilisateur rattaché.

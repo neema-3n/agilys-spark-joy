@@ -94,40 +94,53 @@ export const adminUsersService = {
   },
 
   utilisateurs: async (clientId: string): Promise<OrganisationUser[]> => {
-    const { data, error } = await supabase
+    // Deux requêtes plutôt qu'une imbrication : `user_clients.user_id`
+    // référence `auth.users`, pas `public.profiles`. Sans clé étrangère entre
+    // les deux tables exposées, PostgREST ne sait pas résoudre `profiles(...)`
+    // et la requête entière échoue — la liste revient vide sans rien dire.
+    const { data: liaisons, error } = await supabase
       .from('user_clients')
-      .select('user_id, statut, role_id, roles(libelle), profiles(email, nom, prenom)')
+      .select('user_id, statut, role_id, roles(libelle)')
       .eq('client_id', clientId);
 
     if (error) throw error;
 
-    const lignes = (data ?? []) as unknown as Array<{
+    const lignes = (liaisons ?? []) as unknown as Array<{
       user_id: string; statut: string; role_id: string | null;
       roles: { libelle: string } | null;
-      profiles: { email: string; nom: string; prenom: string } | null;
     }>;
 
-    // Un même compte peut appartenir à plusieurs organisations : le signaler
-    // évite de croire qu'on le supprime en le détachant d'ici.
-    const { data: toutes } = await supabase
-      .from('user_clients')
-      .select('user_id')
-      .in('user_id', lignes.map((l) => l.user_id));
+    if (lignes.length === 0) return [];
 
+    const ids = lignes.map((l) => l.user_id);
+
+    const [{ data: profils, error: profilError }, { data: toutes }] = await Promise.all([
+      supabase.from('profiles').select('id, email, nom, prenom').in('id', ids),
+      // Un même compte peut appartenir à plusieurs organisations : le signaler
+      // évite de croire qu'on le supprime en le détachant d'ici.
+      supabase.from('user_clients').select('user_id').in('user_id', ids),
+    ]);
+
+    if (profilError) throw profilError;
+
+    const parId = new Map((profils ?? []).map((p) => [p.id, p]));
     const compte = new Map<string, number>();
     (toutes ?? []).forEach((l) => compte.set(l.user_id, (compte.get(l.user_id) ?? 0) + 1));
 
     return lignes
-      .map((l) => ({
-        userId: l.user_id,
-        email: l.profiles?.email ?? '(compte sans profil)',
-        nom: l.profiles?.nom ?? '',
-        prenom: l.profiles?.prenom ?? '',
-        roleId: l.role_id,
-        roleLibelle: l.roles?.libelle ?? null,
-        statut: (l.statut === 'inactif' ? 'inactif' : 'actif') as 'actif' | 'inactif',
-        autresOrganisations: Math.max(0, (compte.get(l.user_id) ?? 1) - 1),
-      }))
+      .map((l) => {
+        const profil = parId.get(l.user_id);
+        return {
+          userId: l.user_id,
+          email: profil?.email ?? '(profil illisible)',
+          nom: profil?.nom ?? '',
+          prenom: profil?.prenom ?? '',
+          roleId: l.role_id,
+          roleLibelle: l.roles?.libelle ?? null,
+          statut: (l.statut === 'inactif' ? 'inactif' : 'actif') as 'actif' | 'inactif',
+          autresOrganisations: Math.max(0, (compte.get(l.user_id) ?? 1) - 1),
+        };
+      })
       .sort((a, b) => a.email.localeCompare(b.email));
   },
 
