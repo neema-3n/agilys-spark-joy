@@ -6,6 +6,9 @@ verify_jwt = true
 [functions.switch-client]
 verify_jwt = true
 
+[functions.manage-users]
+verify_jwt = true
+
 [functions.create-engagement]
 verify_jwt = true
 
