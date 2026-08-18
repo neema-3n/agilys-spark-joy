@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
+import { PermissionButton } from '@/components/PermissionButton';
 import { PaiementStats } from '@/components/paiements/PaiementStats';
 import { PaiementTable } from '@/components/paiements/PaiementTable';
 import { PaiementForm } from '@/components/paiements/PaiementForm';
@@ -356,7 +357,7 @@ export default function Paiements() {
             description="Gestion et suivi des paiements effectués"
             sticky={false}
             scrollProgress={scrollProgress}
-            actions={<Button onClick={handleCreate}><Plus className="mr-2 h-4 w-4" />Nouveau paiement</Button>}
+            actions={<PermissionButton permission="paiements.creer" onClick={handleCreate}><Plus className="mr-2 h-4 w-4" />Nouveau paiement</PermissionButton>}
           />
 
           <div className="space-y-6">

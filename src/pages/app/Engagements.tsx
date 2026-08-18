@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
+import { PermissionButton } from '@/components/PermissionButton';
 import { EngagementForm } from '@/components/engagements/EngagementForm';
 import { EngagementTable } from '@/components/engagements/EngagementTable';
 import { EngagementStats } from '@/components/engagements/EngagementStats';
@@ -427,10 +428,10 @@ const Engagements = () => {
       sticky={false}
       scrollProgress={snapshotEngagementId ? scrollProgress : 0}
       actions={
-        <Button onClick={handleCreate} ref={headerCtaRef}>
+        <PermissionButton permission="engagements.creer" onClick={handleCreate} ref={headerCtaRef}>
           <Plus className="h-4 w-4 mr-2" />
           Nouvel engagement
-        </Button>
+        </PermissionButton>
       }
     />
   );
@@ -523,10 +524,10 @@ const Engagements = () => {
               description="Recherche, filtres et actions sur les engagements"
               actions={
                 !isHeaderCtaVisible ? (
-                  <Button onClick={handleCreate} className="sticky-cta-appear">
+                  <PermissionButton permission="engagements.creer" onClick={handleCreate} className="sticky-cta-appear">
                     <Plus className="h-4 w-4 mr-2" />
                     Nouvel engagement
-                  </Button>
+                  </PermissionButton>
                 ) : undefined
               }
               toolbar={

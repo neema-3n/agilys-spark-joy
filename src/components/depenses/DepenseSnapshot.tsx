@@ -2,6 +2,7 @@ import { Building2, Calendar, FileText, FolderOpen, Info, Receipt, Wallet, Credi
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { PermissionButton } from '@/components/PermissionButton';
 import { Progress } from '@/components/ui/progress';
 import { SnapshotBase } from '@/components/shared/SnapshotBase';
 import { SnapshotLinkedEntitiesCard } from '@/components/shared/SnapshotLinkedEntitiesCard';
@@ -113,14 +114,16 @@ export const DepenseSnapshot = ({
 
     if (onValider && depense.statut === 'brouillon') {
       buttons.push(
-        <Button
+        <PermissionButton
           key="valider"
+          permission="depenses.valider"
+          quandRefuse="desactiver"
           size="sm"
           onClick={() => onValider(depense.id)}
           disabled={disableActions}
         >
           Valider
-        </Button>
+        </PermissionButton>
       );
     }
 

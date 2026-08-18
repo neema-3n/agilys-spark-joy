@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
+import { PermissionButton } from '@/components/PermissionButton';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { DepenseStatsCards } from '@/components/depenses/DepensesStats';
@@ -424,10 +425,10 @@ const Depenses = () => {
       scrollProgress={scrollProgress}
       sticky={false}
       actions={
-        <Button onClick={handleCreate} ref={headerCtaRef}>
+        <PermissionButton permission="depenses.creer" onClick={handleCreate} ref={headerCtaRef}>
           <Plus className="h-4 w-4 mr-2" />
           Nouvelle dépense
-        </Button>
+        </PermissionButton>
       }
     />
   );
@@ -516,10 +517,10 @@ const Depenses = () => {
               description="Recherche, filtres et actions groupées sur les dépenses"
               actions={
                 !isHeaderCtaVisible ? (
-                  <Button onClick={handleCreate} className="sticky-cta-appear">
+                  <PermissionButton permission="depenses.creer" onClick={handleCreate} className="sticky-cta-appear">
                     <Plus className="h-4 w-4 mr-2" />
                     Nouvelle dépense
-                  </Button>
+                  </PermissionButton>
                 ) : undefined
               }
               toolbar={

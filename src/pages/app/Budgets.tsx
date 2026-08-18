@@ -4,6 +4,7 @@ import { useExercice } from '@/contexts/ExerciceContext';
 import { useClient } from '@/contexts/ClientContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { PageHeader } from '@/components/PageHeader';
+import { PermissionButton } from '@/components/PermissionButton';
 import { showNavigationToast } from '@/lib/navigation-toast';
 import { budgetService } from '@/services/api/budget.service';
 import { useSections } from '@/hooks/useSections';
@@ -618,10 +619,10 @@ const Budgets = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Plan Budgétaire {currentExercice?.libelle}</CardTitle>
-                  <Button onClick={handleCreate}>
+                  <PermissionButton permission="budgets.creer" onClick={handleCreate}>
                     <Plus className="h-4 w-4 mr-2" />
                     Nouvelle ligne
-                  </Button>
+                  </PermissionButton>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Panneau de recherche multi-critères */}

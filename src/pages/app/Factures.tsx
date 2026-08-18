@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
+import { PermissionButton } from '@/components/PermissionButton';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { useFacturesPaginated } from '@/hooks/useFactures';
@@ -407,10 +408,10 @@ export default function Factures() {
       sticky={false}
       actions={
         <div className="flex items-center gap-2">
-          <Button onClick={handleCreate} ref={headerCtaRef}>
+          <PermissionButton permission="factures.creer" onClick={handleCreate} ref={headerCtaRef}>
             <Plus className="mr-2 h-4 w-4" />
             Nouvelle facture
-          </Button>
+          </PermissionButton>
         </div>
       }
     />
@@ -543,10 +544,10 @@ export default function Factures() {
               description="Visualisez, filtrez et gérez vos factures fournisseurs"
               actions={
                 !isHeaderCtaVisible ? (
-                  <Button onClick={handleCreate} className="sticky-cta-appear">
+                  <PermissionButton permission="factures.creer" onClick={handleCreate} className="sticky-cta-appear">
                     <Plus className="mr-2 h-4 w-4" />
                     Nouvelle facture
-                  </Button>
+                  </PermissionButton>
                 ) : undefined
               }
               toolbar={

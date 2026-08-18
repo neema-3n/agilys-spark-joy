@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
+import { PermissionButton } from '@/components/PermissionButton';
 import { ReservationForm } from '@/components/reservations/ReservationForm';
 import { ReservationTable } from '@/components/reservations/ReservationTable';
 import { ReservationStats } from '@/components/reservations/ReservationStats';
@@ -400,10 +401,10 @@ const Reservations = () => {
       scrollProgress={scrollProgress}
       sticky={false}
       actions={
-        <Button onClick={handleCreate} ref={headerCtaRef}>
+        <PermissionButton permission="reservations.creer" onClick={handleCreate} ref={headerCtaRef}>
           <Plus className="h-4 w-4 mr-2" />
           Nouvelle réservation
-        </Button>
+        </PermissionButton>
       }
     />
   );
@@ -441,10 +442,10 @@ const Reservations = () => {
             description="Recherche, filtres et actions sur les réservations de crédits"
             actions={
               !isHeaderCtaVisible ? (
-                <Button onClick={handleCreate} className="sticky-cta-appear">
+                <PermissionButton permission="reservations.creer" onClick={handleCreate} className="sticky-cta-appear">
                   <Plus className="h-4 w-4 mr-2" />
                   Nouvelle réservation
-                </Button>
+                </PermissionButton>
               ) : undefined
             }
             toolbar={

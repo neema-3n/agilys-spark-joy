@@ -1,5 +1,6 @@
 import { FileText, Building2, FolderOpen, Calendar, AlertCircle, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PermissionButton } from '@/components/PermissionButton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -88,9 +89,9 @@ export const EngagementSnapshot = ({
         </Button>
       )}
       {engagement.statut === 'brouillon' && onValider && (
-        <Button size="sm" onClick={onValider}>
+        <PermissionButton permission="engagements.valider" quandRefuse="desactiver" size="sm" onClick={onValider}>
           Valider
-        </Button>
+        </PermissionButton>
       )}
       {engagement.statut === 'valide' &&
       engagement.fournisseurId &&

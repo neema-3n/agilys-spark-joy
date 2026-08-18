@@ -3,6 +3,7 @@ import { useLocation, useMatch, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
+import { PermissionButton } from '@/components/PermissionButton';
 import { useBonsCommande } from '@/hooks/useBonsCommande';
 import { useEngagements } from '@/hooks/useEngagements';
 import { BonCommandeStats } from '@/components/bonsCommande/BonCommandeStats';
@@ -348,10 +349,10 @@ const BonsCommande = () => {
       sticky={false}
       scrollProgress={snapshotBonCommandeId ? scrollProgress : 0}
       actions={
-        <Button onClick={handleCreate} ref={headerCtaRef}>
+        <PermissionButton permission="bons_commande.creer" onClick={handleCreate} ref={headerCtaRef}>
           <Plus className="mr-2 h-4 w-4" />
           Nouveau bon de commande
-        </Button>
+        </PermissionButton>
       }
     />
   );
@@ -441,10 +442,10 @@ const BonsCommande = () => {
                     description="Visualisez, filtrez et gérez vos bons de commande"
                     actions={
                       !isHeaderCtaVisible ? (
-                        <Button onClick={handleCreate} className="sticky-cta-appear">
+                        <PermissionButton permission="bons_commande.creer" onClick={handleCreate} className="sticky-cta-appear">
                           <Plus className="mr-2 h-4 w-4" />
                           Nouveau bon de commande
-                        </Button>
+                        </PermissionButton>
                       ) : undefined
                     }
                     toolbar={
