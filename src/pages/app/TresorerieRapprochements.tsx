@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { ArrowLeft, CheckCircle2, Plus } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
+import { PermissionButton } from '@/components/PermissionButton';
 import { ListLayout } from '@/components/lists/ListLayout';
 import { ListToolbar } from '@/components/lists/ListToolbar';
 import { ListTable, ListColumn } from '@/components/lists/ListTable';
@@ -112,10 +113,10 @@ const TresorerieRapprochements = () => {
       header: 'Actions',
       render: (item) =>
         item.statut !== 'valide' ? (
-          <Button variant="outline" size="sm" onClick={() => validateRapprochement(item.id)}>
+          <PermissionButton permission="tresorerie.rapprocher" quandRefuse="desactiver" variant="outline" size="sm" onClick={() => validateRapprochement(item.id)}>
             <CheckCircle2 className="mr-2 h-4 w-4" />
             Valider
-          </Button>
+          </PermissionButton>
         ) : (
           <span className="text-sm text-muted-foreground">Audit clos</span>
         ),
@@ -176,10 +177,10 @@ const TresorerieRapprochements = () => {
         description="Contrôle des écarts entre relevés bancaires et opérations comptabilisées"
         sticky={false}
         actions={
-          <Button onClick={() => navigate('/app/tresorerie/rapprochements/create')}>
+          <PermissionButton permission="tresorerie.rapprocher" onClick={() => navigate('/app/tresorerie/rapprochements/create')}>
             <Plus className="mr-2 h-4 w-4" />
             Nouveau rapprochement
-          </Button>
+          </PermissionButton>
         }
       />
 

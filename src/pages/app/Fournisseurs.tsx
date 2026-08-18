@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, useMatch } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
+import { PermissionButton } from '@/components/PermissionButton';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useFournisseurs } from '@/hooks/useFournisseurs';
@@ -292,10 +293,10 @@ const Fournisseurs = () => {
       scrollProgress={scrollProgress}
       sticky={false}
       actions={
-        <Button onClick={handleCreate} ref={headerCtaRef}>
+        <PermissionButton permission="fournisseurs.gerer" onClick={handleCreate} ref={headerCtaRef}>
           <Plus className="mr-2 h-4 w-4" />
           Nouveau fournisseur
-        </Button>
+        </PermissionButton>
       }
     />
   );
@@ -330,10 +331,10 @@ const Fournisseurs = () => {
               description="Visualisez, filtrez et gérez votre référentiel fournisseurs"
               actions={
                 !isHeaderCtaVisible ? (
-                  <Button onClick={handleCreate} className="sticky-cta-appear">
+                  <PermissionButton permission="fournisseurs.gerer" onClick={handleCreate} className="sticky-cta-appear">
                     <Plus className="mr-2 h-4 w-4" />
                     Nouveau fournisseur
-                  </Button>
+                  </PermissionButton>
                 ) : undefined
               }
               toolbar={

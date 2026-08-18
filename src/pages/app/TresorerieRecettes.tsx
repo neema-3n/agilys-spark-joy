@@ -8,6 +8,7 @@ import { RecetteForm } from '@/components/recettes/RecetteForm';
 import { RecetteDetails } from '@/components/recettes/RecetteDetails';
 import { AnnulerRecetteDialog } from '@/components/recettes/AnnulerRecetteDialog';
 import { Button } from '@/components/ui/button';
+import { PermissionButton } from '@/components/PermissionButton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRecettes } from '@/hooks/useRecettes';
 import type { Recette } from '@/types/recette.types';
@@ -113,10 +114,10 @@ const TresorerieRecettes = () => {
         description="Encaissements et ressources enregistrés dans la trésorerie"
         sticky={false}
         actions={
-          <Button onClick={() => navigate('/app/tresorerie/recettes/create')}>
+          <PermissionButton permission="tresorerie.gerer" onClick={() => navigate('/app/tresorerie/recettes/create')}>
             <Plus className="mr-2 h-4 w-4" />
             Nouvelle recette
-          </Button>
+          </PermissionButton>
         }
       />
 

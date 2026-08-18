@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
+import { PermissionButton } from '@/components/PermissionButton';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -409,10 +410,10 @@ const Projets = () => {
         description="Suivi financier multi-projet avec axe analytique"
         actions={
           canEdit ? (
-            <Button onClick={handleCreate}>
+            <PermissionButton permission="projets.creer" onClick={handleCreate}>
               <Plus className="mr-2 h-4 w-4" />
               Nouveau projet
-            </Button>
+            </PermissionButton>
           ) : undefined
         }
       />

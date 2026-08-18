@@ -5,6 +5,7 @@ import { CompteTresorerieTable } from '@/components/tresorerie/CompteTresorerieT
 import { CompteTresorerieDialog } from '@/components/tresorerie/CompteTresorerieDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { PermissionButton } from '@/components/PermissionButton';
 import { StatsCard } from '@/components/ui/stats-card';
 import { useComptesTresorerie } from '@/hooks/useComptesTresorerie';
 import type { CompteTresorerie } from '@/types/compte-tresorerie.types';
@@ -22,10 +23,10 @@ const TresorerieComptes = () => {
         description="Gestion des comptes bancaires et caisses avec suivi des soldes"
         sticky={false}
         actions={
-          <Button onClick={() => setDialogOpen(true)}>
+          <PermissionButton permission="tresorerie.gerer" onClick={() => setDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Nouveau compte
-          </Button>
+          </PermissionButton>
         }
       />
 

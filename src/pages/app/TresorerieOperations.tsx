@@ -6,6 +6,7 @@ import { OperationTresorerieTable } from '@/components/tresorerie/OperationTreso
 import { OperationTresorerieForm } from '@/components/tresorerie/OperationTresorerieForm';
 import { OperationTresorerieDetails } from '@/components/tresorerie/OperationTresorerieDetails';
 import { Button } from '@/components/ui/button';
+import { PermissionButton } from '@/components/PermissionButton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatsCard } from '@/components/ui/stats-card';
 import { useOperationsTresorerie } from '@/hooks/useOperationsTresorerie';
@@ -79,10 +80,10 @@ const TresorerieOperations = () => {
         description="Mouvements de caisse et de banque, transferts et régularisations"
         sticky={false}
         actions={
-          <Button onClick={() => navigate('/app/tresorerie/operations/create')}>
+          <PermissionButton permission="tresorerie.gerer" onClick={() => navigate('/app/tresorerie/operations/create')}>
             <Plus className="mr-2 h-4 w-4" />
             Nouvelle opération
-          </Button>
+          </PermissionButton>
         }
       />
 
