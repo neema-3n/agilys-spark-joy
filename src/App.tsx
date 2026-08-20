@@ -17,6 +17,8 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const Login = lazy(() => import("./pages/auth/Login"));
 const InitTestUsers = lazy(() => import("./pages/auth/InitTestUsers"));
 const SelectClient = lazy(() => import("./pages/auth/SelectClient"));
+const MotDePasseOublie = lazy(() => import("./pages/auth/MotDePasseOublie"));
+const NouveauMotDePasse = lazy(() => import("./pages/auth/NouveauMotDePasse"));
 
 // Back-office, hors application metier
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
@@ -81,6 +83,10 @@ const App = () => (
                 {/* Auth routes */}
                 <Route path="/auth/login" element={<Suspense fallback={<FullScreenLoader />}><Login /></Suspense>} />
                 <Route path="/auth/init-test-users" element={<Suspense fallback={<FullScreenLoader />}><InitTestUsers /></Suspense>} />
+                <Route path="/auth/mot-de-passe-oublie" element={<Suspense fallback={<FullScreenLoader />}><MotDePasseOublie /></Suspense>} />
+                {/* Hors ProtectedRoute : la session de recuperation n'a ni client
+                    actif ni rattachement, et serait renvoyee vers la selection. */}
+                <Route path="/auth/nouveau-mot-de-passe" element={<Suspense fallback={<FullScreenLoader />}><NouveauMotDePasse /></Suspense>} />
                 <Route
                   path="/auth/select-client"
                   element={

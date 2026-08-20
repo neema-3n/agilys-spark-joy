@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -136,6 +136,15 @@ const Login = () => {
                 >
                   {isLoading ? 'Connexion...' : 'Se connecter'}
                 </Button>
+
+                <div className="text-center">
+                  <Link
+                    to="/auth/mot-de-passe-oublie"
+                    className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                  >
+                    Mot de passe oublié ?
+                  </Link>
+                </div>
               </form>
 
             </TabsContent>
