@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Pencil, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { SiPermission } from '@/components/SiPermission';
 
 interface CompteNode extends Compte {
   children: CompteNode[];
@@ -85,6 +86,7 @@ export const CompteTreeItem = ({
             {node.statut}
           </span>
           
+          <SiPermission permission="comptabilite.gerer">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -118,6 +120,7 @@ export const CompteTreeItem = ({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </SiPermission>
         </div>
       </div>
 

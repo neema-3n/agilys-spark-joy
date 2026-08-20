@@ -30,6 +30,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { PermissionButton } from '@/components/PermissionButton';
+import { SiPermission } from '@/components/SiPermission';
 
 export const StructureBudgetaireManager = () => {
   const { currentClient } = useClient();
@@ -172,10 +174,10 @@ export const StructureBudgetaireManager = () => {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Sections Budgétaires</CardTitle>
-                <Button onClick={() => { setSelectedSection(null); setSectionDialogOpen(true); }}>
+                <PermissionButton permission="parametres.gerer" onClick={() => { setSelectedSection(null); setSectionDialogOpen(true); }}>
                   <Plus className="h-4 w-4 mr-2" />
                   Nouvelle Section
-                </Button>
+                </PermissionButton>
               </div>
             </CardHeader>
             <CardContent>
@@ -204,7 +206,7 @@ export const StructureBudgetaireManager = () => {
                         <TableCell>{section.ordre}</TableCell>
                         <TableCell>{getSectionProgrammesCount(section.id)}</TableCell>
                         <TableCell className="text-right">
-                          <div className="flex gap-2 justify-end">
+                          <SiPermission permission="parametres.gerer"><div className="flex gap-2 justify-end">
                             <Button
                               variant="ghost"
                               size="icon"
@@ -219,7 +221,7 @@ export const StructureBudgetaireManager = () => {
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
-                          </div>
+                          </div></SiPermission>
                         </TableCell>
                       </TableRow>
                     ))
@@ -235,10 +237,10 @@ export const StructureBudgetaireManager = () => {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Programmes</CardTitle>
-                <Button onClick={() => { setSelectedProgramme(null); setProgrammeDialogOpen(true); }} disabled={sections.length === 0}>
+                <PermissionButton permission="parametres.gerer" onClick={() => { setSelectedProgramme(null); setProgrammeDialogOpen(true); }} disabled={sections.length === 0}>
                   <Plus className="h-4 w-4 mr-2" />
                   Nouveau Programme
-                </Button>
+                </PermissionButton>
               </div>
             </CardHeader>
             <CardContent>
@@ -271,7 +273,7 @@ export const StructureBudgetaireManager = () => {
                           <TableCell>{programme.ordre}</TableCell>
                           <TableCell>{getProgrammeActionsCount(programme.id)}</TableCell>
                           <TableCell className="text-right">
-                            <div className="flex gap-2 justify-end">
+                            <SiPermission permission="parametres.gerer"><div className="flex gap-2 justify-end">
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -286,7 +288,7 @@ export const StructureBudgetaireManager = () => {
                               >
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
-                            </div>
+                            </div></SiPermission>
                           </TableCell>
                         </TableRow>
                       );
@@ -303,10 +305,10 @@ export const StructureBudgetaireManager = () => {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Actions Budgétaires</CardTitle>
-                <Button onClick={() => { setSelectedAction(null); setActionDialogOpen(true); }} disabled={programmes.length === 0}>
+                <PermissionButton permission="parametres.gerer" onClick={() => { setSelectedAction(null); setActionDialogOpen(true); }} disabled={programmes.length === 0}>
                   <Plus className="h-4 w-4 mr-2" />
                   Nouvelle Action
-                </Button>
+                </PermissionButton>
               </div>
             </CardHeader>
             <CardContent>
@@ -337,7 +339,7 @@ export const StructureBudgetaireManager = () => {
                           <TableCell>{action.libelle}</TableCell>
                           <TableCell>{action.ordre}</TableCell>
                           <TableCell className="text-right">
-                            <div className="flex gap-2 justify-end">
+                            <SiPermission permission="parametres.gerer"><div className="flex gap-2 justify-end">
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -352,7 +354,7 @@ export const StructureBudgetaireManager = () => {
                               >
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
-                            </div>
+                            </div></SiPermission>
                           </TableCell>
                         </TableRow>
                       );

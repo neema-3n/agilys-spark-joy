@@ -31,6 +31,8 @@ import {
 } from '@/lib/regles-comptables-fields';
 import { ACCOUNTING_OPERATION_TYPES } from '@/lib/accounting-policy';
 import type { TypeOperation, RegleComptable } from '@/types/regle-comptable.types';
+import { PermissionButton } from '@/components/PermissionButton';
+import { SiPermission } from '@/components/SiPermission';
 const TYPE_OPERATIONS: TypeOperation[] = ACCOUNTING_OPERATION_TYPES;
 
 export const ReglesComptablesManager = () => {
@@ -161,13 +163,14 @@ export const ReglesComptablesManager = () => {
               Configurez les règles automatiques de génération des écritures comptables
             </CardDescription>
           </div>
-          <Button
+          <PermissionButton
+            permission="parametres.gerer"
             onClick={() => navigate(`/app/parametres/regles-comptables/create?type=${activeTab}`)}
             className="w-full justify-center sm:w-auto"
           >
             <Plus className="h-4 w-4 mr-2" />
             Nouvelle règle
-          </Button>
+          </PermissionButton>
         </div>
       </CardHeader>
 
@@ -218,6 +221,7 @@ export const ReglesComptablesManager = () => {
                               </div>
                             </div>
 
+                            <SiPermission permission="parametres.gerer">
                             <div className="flex flex-wrap gap-2 justify-start lg:justify-end shrink-0">
                               <div className="flex items-center gap-2 sm:hidden">
                                 <Button
@@ -274,6 +278,7 @@ export const ReglesComptablesManager = () => {
                                 </Button>
                               </div>
                             </div>
+                            </SiPermission>
                           </div>
 
                           {regle.description && (

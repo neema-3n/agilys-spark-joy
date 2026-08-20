@@ -34,6 +34,8 @@ import { Exercice } from '@/types';
 import { formatDateValue } from '@/lib/date-utils';
 import { ExerciceForm, ExerciceFormValues } from './ExerciceForm';
 import { ParametreEditorPage } from './ParametreEditorPage';
+import { PermissionButton } from '@/components/PermissionButton';
+import { SiPermission } from '@/components/SiPermission';
 
 export function ExercicesManager() {
   const { exercices, isLoading, createExercice, updateExercice, cloturerExercice, deleteExercice } = useExercice();
@@ -136,10 +138,10 @@ export function ExercicesManager() {
                 Gérez les exercices budgétaires de votre organisation
               </CardDescription>
             </div>
-            <Button onClick={openCreateDialog}>
+            <PermissionButton permission="parametres.gerer" onClick={openCreateDialog}>
               <Plus className="mr-2 h-4 w-4" />
               Nouvel exercice
-            </Button>
+            </PermissionButton>
           </div>
         </CardHeader>
         <CardContent>
@@ -183,6 +185,7 @@ export function ExercicesManager() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
+                      <SiPermission permission="parametres.gerer">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
@@ -212,6 +215,7 @@ export function ExercicesManager() {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                      </SiPermission>
                     </TableCell>
                   </TableRow>
                 ))}

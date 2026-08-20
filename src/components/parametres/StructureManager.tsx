@@ -14,6 +14,8 @@ import { structuresService } from '@/services/api/structures.service';
 import { useToast } from '@/hooks/use-toast';
 import { StructureForm, StructureFormData } from './StructureForm';
 import { ParametreEditorPage } from './ParametreEditorPage';
+import { PermissionButton } from '@/components/PermissionButton';
+import { SiPermission } from '@/components/SiPermission';
 
 const StructureManager = () => {
   const { currentClient } = useClient();
@@ -180,10 +182,10 @@ const StructureManager = () => {
                 Gérez les entités, services et centres de coûts
               </CardDescription>
             </div>
-            <Button onClick={openCreateDialog}>
+            <PermissionButton permission="parametres.gerer" onClick={openCreateDialog}>
               <Plus className="h-4 w-4 mr-2" />
               Nouvelle structure
-            </Button>
+            </PermissionButton>
           </div>
         </CardHeader>
         <CardContent>
@@ -221,6 +223,7 @@ const StructureManager = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
+                      <SiPermission permission="parametres.gerer">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm">
@@ -244,6 +247,7 @@ const StructureManager = () => {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                      </SiPermission>
                     </TableCell>
                   </TableRow>
                 ))}

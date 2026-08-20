@@ -23,6 +23,8 @@ import type { Enveloppe } from '@/types/enveloppe.types';
 import { EnveloppeForm, EnveloppeFormValues } from './EnveloppeForm';
 import { ParametreEditorPage } from './ParametreEditorPage';
 import { formatCurrency as formatSharedCurrency } from '@/lib/utils';
+import { PermissionButton } from '@/components/PermissionButton';
+import { SiPermission } from '@/components/SiPermission';
 
 const EnveloppesManager = () => {
   const { currentClient } = useClient();
@@ -186,10 +188,10 @@ const EnveloppesManager = () => {
                 Gérez les enveloppes budgétaires et sources de financement pour {currentExercice.libelle}
               </CardDescription>
             </div>
-            <Button onClick={handleCreate}>
+            <PermissionButton permission="parametres.gerer" onClick={handleCreate}>
               <Plus className="h-4 w-4 mr-2" />
               Nouvelle enveloppe
-            </Button>
+            </PermissionButton>
           </div>
         </CardHeader>
         <CardContent>
@@ -252,6 +254,7 @@ const EnveloppesManager = () => {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
+                      <SiPermission permission="parametres.gerer">
                       <div className="flex items-center justify-end gap-2">
                         <Button
                           variant="ghost"
@@ -278,6 +281,7 @@ const EnveloppesManager = () => {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
+                      </SiPermission>
                     </TableCell>
                   </TableRow>
                 ))

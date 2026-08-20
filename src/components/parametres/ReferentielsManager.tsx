@@ -36,6 +36,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { PermissionButton } from '@/components/PermissionButton';
+import { SiPermission } from '@/components/SiPermission';
 
 type ManagerTab = ReferentielCategorie | 'nature_compte' | 'taxe_fiscale' | 'modele_fiscal';
 
@@ -473,10 +475,10 @@ export const ReferentielsManager = () => {
                     <h3 className="text-lg font-medium">{category.label}</h3>
                     <p className="text-sm text-muted-foreground">{category.description}</p>
                   </div>
-                  <Button onClick={handleCreate} size="sm">
+                  <PermissionButton permission="parametres.gerer" onClick={handleCreate} size="sm">
                     <Plus className="mr-2 h-4 w-4" />
                     Ajouter
-                  </Button>
+                  </PermissionButton>
                 </div>
 
                 {category.value === 'nature_compte' ? (
@@ -512,14 +514,14 @@ export const ReferentielsManager = () => {
                                 {natureCompte.actif ? <Check className="mx-auto h-4 w-4 text-green-600" /> : <X className="mx-auto h-4 w-4 text-red-600" />}
                               </TableCell>
                               <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
+                                <SiPermission permission="parametres.gerer"><div className="flex justify-end gap-2">
                                   <Button variant="ghost" size="sm" onClick={() => handleEditNatureCompte(natureCompte)}>
                                     <Pencil className="h-4 w-4" />
                                   </Button>
                                   <Button variant="ghost" size="sm" onClick={() => handleDeleteNatureCompteClick(natureCompte)}>
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
-                                </div>
+                                </div></SiPermission>
                               </TableCell>
                             </TableRow>
                           ))
@@ -560,14 +562,14 @@ export const ReferentielsManager = () => {
                                 {taxe.actif ? <Check className="mx-auto h-4 w-4 text-green-600" /> : <X className="mx-auto h-4 w-4 text-red-600" />}
                               </TableCell>
                               <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
+                                <SiPermission permission="parametres.gerer"><div className="flex justify-end gap-2">
                                   <Button variant="ghost" size="sm" onClick={() => handleEditTaxeFiscale(taxe)}>
                                     <Pencil className="h-4 w-4" />
                                   </Button>
                                   <Button variant="ghost" size="sm" onClick={() => handleDeleteTaxeFiscaleClick(taxe)}>
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
-                                </div>
+                                </div></SiPermission>
                               </TableCell>
                             </TableRow>
                           ))
@@ -604,14 +606,14 @@ export const ReferentielsManager = () => {
                                 {modele.actif ? <Check className="mx-auto h-4 w-4 text-green-600" /> : <X className="mx-auto h-4 w-4 text-red-600" />}
                               </TableCell>
                               <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
+                                <SiPermission permission="parametres.gerer"><div className="flex justify-end gap-2">
                                   <Button variant="ghost" size="sm" onClick={() => handleEditModeleFiscal(modele)}>
                                     <Pencil className="h-4 w-4" />
                                   </Button>
                                   <Button variant="ghost" size="sm" onClick={() => handleDeleteModeleFiscalClick(modele)}>
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
-                                </div>
+                                </div></SiPermission>
                               </TableCell>
                             </TableRow>
                           ))
@@ -652,14 +654,14 @@ export const ReferentielsManager = () => {
                                 {!referentiel.modifiable ? <Badge variant="secondary" className="text-xs">Système</Badge> : null}
                               </TableCell>
                               <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
+                                <SiPermission permission="parametres.gerer"><div className="flex justify-end gap-2">
                                   <Button variant="ghost" size="sm" onClick={() => handleEditReferentiel(referentiel)}>
                                     <Pencil className="h-4 w-4" />
                                   </Button>
                                   <Button variant="ghost" size="sm" onClick={() => handleDeleteReferentielClick(referentiel)} disabled={!referentiel.modifiable}>
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
-                                </div>
+                                </div></SiPermission>
                               </TableCell>
                             </TableRow>
                           ))

@@ -13,6 +13,7 @@ import { CompteForm, CompteFormData } from './CompteForm';
 import { CompteTreeItem } from './CompteTreeItem';
 import { ImportPlanComptableDialog } from './ImportPlanComptableDialog';
 import { useToast } from '@/hooks/use-toast';
+import { SiPermission } from '@/components/SiPermission';
 
 interface CompteNode extends Compte {
   children: CompteNode[];
@@ -395,6 +396,7 @@ const PlanComptableManager = () => {
                 Structure hiérarchique du plan comptable
               </CardDescription>
             </div>
+            <SiPermission permission="comptabilite.gerer">
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
                 <Upload className="h-4 w-4 mr-2" />
@@ -413,6 +415,7 @@ const PlanComptableManager = () => {
                 Nouveau compte
               </Button>
             </div>
+            </SiPermission>
           </div>
         </CardHeader>
         <CardContent>

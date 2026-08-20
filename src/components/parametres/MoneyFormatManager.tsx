@@ -8,6 +8,7 @@ import { clientsService } from '@/services/api/clients.service';
 import { ParametreEditorPage } from './ParametreEditorPage';
 import { MoneyFormatForm, MoneyFormatFormValues } from './MoneyFormatForm';
 import { formatMontantWithSettings } from '@/lib/utils';
+import { PermissionButton } from '@/components/PermissionButton';
 
 const thousandsSeparatorLabel: Record<string, string> = {
   space: 'Espace',
@@ -114,10 +115,10 @@ export function MoneyFormatManager() {
               Définissez comment les montants s&apos;affichent pour le client courant.
             </CardDescription>
           </div>
-          <Button onClick={handleEdit}>
+          <PermissionButton permission="parametres.gerer" onClick={handleEdit}>
             <Edit className="mr-2 h-4 w-4" />
             Modifier
-          </Button>
+          </PermissionButton>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
