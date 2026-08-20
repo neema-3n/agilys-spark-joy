@@ -26,3 +26,29 @@ verify_jwt = true
 
 [functions.import-plan-comptable]
 verify_jwt = true
+
+# ---------------------------------------------------------------------------
+# Envoi des emails — Brevo
+# ---------------------------------------------------------------------------
+# Ces sections sont VOLONTAIREMENT commentees : `supabase config push` envoie
+# la configuration complete, et les valeurs par defaut du CLI ecraseraient les
+# reglages du projet absents d'ici (URL du site, durees de session,
+# fournisseurs, confirmations d'email). Tant que ce fichier ne decrit pas tout
+# le projet, la reference reste le tableau de bord.
+#
+# Elles sont conservees ici pour que le parametrage soit reproductible et
+# documente. Les identifiants passent par des variables d'environnement : ce
+# depot est public.
+#
+# [auth.email.smtp]
+# enabled = true
+# host = "smtp-relay.brevo.com"
+# port = 587
+# user = "env(BREVO_SMTP_LOGIN)"
+# pass = "env(BREVO_SMTP_KEY)"
+# admin_email = "<adresse expeditrice verifiee dans Brevo>"
+# sender_name = "AGILYS"
+#
+# [auth.rate_limit]
+# Sans SMTP, Supabase impose 2 emails par heure et ignore ce reglage.
+# email_sent = 100
