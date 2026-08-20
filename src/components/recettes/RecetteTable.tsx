@@ -5,6 +5,7 @@ import { formatCurrency } from '@/lib/utils';
 import { Eye, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatDateValue } from '@/lib/date-utils';
+import { PermissionButton } from '@/components/PermissionButton';
 
 interface RecetteTableProps {
   recettes: Recette[];
@@ -81,14 +82,15 @@ export const RecetteTable = ({ recettes, onView, onAnnuler }: RecetteTableProps)
             <Eye className="h-4 w-4" />
           </Button>
           {recette.statut === 'validee' && (
-            <Button
+            <PermissionButton
+              permission="tresorerie.gerer"
               variant="ghost"
               size="sm"
               onClick={() => onAnnuler(recette)}
               title="Annuler"
             >
               <XCircle className="h-4 w-4 text-destructive" />
-            </Button>
+            </PermissionButton>
           )}
         </div>
       ),

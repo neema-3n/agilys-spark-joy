@@ -4,6 +4,7 @@ import { Progress } from '@/components/ui/progress';
 import { Edit2, Trash2, Calendar, User } from 'lucide-react';
 import { Projet } from '@/types/projet.types';
 import { formatMontant } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 import { ProjetStatusBadge } from '@/components/ui/status-badge';
 import {
   ProjetPrioriteBadge,

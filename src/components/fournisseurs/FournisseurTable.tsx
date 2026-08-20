@@ -13,6 +13,7 @@ import {
 import { MoreHorizontal, Eye, Edit, Trash2 } from 'lucide-react';
 import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/selectionColumn';
 import { formatMontant } from '@/lib/utils';
+import { SiPermission } from '@/components/SiPermission';
 
 interface FournisseurTableProps {
   fournisseurs: Fournisseur[];
@@ -139,11 +140,14 @@ export const FournisseurTable = ({
                 <Eye className="mr-2 h-4 w-4" />
                 Voir détails
               </DropdownMenuItem>
+              <SiPermission permission="fournisseurs.gerer">
               <DropdownMenuItem onClick={() => onEdit(f.id)}>
                 <Edit className="mr-2 h-4 w-4" />
                 Modifier
               </DropdownMenuItem>
+              </SiPermission>
               {f.nombreEngagements === 0 && (
+                <SiPermission permission="fournisseurs.gerer">
                 <DropdownMenuItem
                   onClick={() => onDelete(f.id)}
                   className="text-destructive"
@@ -151,6 +155,7 @@ export const FournisseurTable = ({
                   <Trash2 className="mr-2 h-4 w-4" />
                   Supprimer
                 </DropdownMenuItem>
+                </SiPermission>
               )}
             </DropdownMenuContent>
           </DropdownMenu>

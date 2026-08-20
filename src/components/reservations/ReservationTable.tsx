@@ -20,6 +20,7 @@ import {
   canCreateReservationEngagement,
   canEditReservation,
 } from '@/lib/reservation-actions';
+import { SiPermission, SiSuperAdmin } from '@/components/SiPermission';
 
 interface ReservationTableProps {
   reservations: ReservationCredit[];
@@ -207,36 +208,44 @@ export const ReservationTable = ({
                 )}
 
                 {canEdit && onEdit && (
+                  <SiPermission permission="reservations.annuler">
                   <DropdownMenuItem onClick={() => onEdit(reservation.id)}>
                     <Edit className="h-4 w-4 mr-2" />
                     Modifier
                   </DropdownMenuItem>
+                  </SiPermission>
                 )}
 
                 {canCreateEngagement && onCreerEngagement && (
+                  <SiPermission permission="engagements.creer">
                   <DropdownMenuItem onClick={() => onCreerEngagement(reservation.id)} disabled={solde === 0}>
                     <CheckCircle className="h-4 w-4 mr-2" />
                     Créer un engagement
                   </DropdownMenuItem>
+                  </SiPermission>
                 )}
 
                 {canCancel && onAnnuler && (
                   <>
                     <DropdownMenuSeparator />
+                    <SiPermission permission="reservations.annuler">
                     <DropdownMenuItem onClick={() => onAnnuler(reservation.id)}>
                       <XCircle className="h-4 w-4 mr-2" />
                       Annuler
                     </DropdownMenuItem>
+                    </SiPermission>
                   </>
                 )}
 
                 {onDelete && (
                   <>
                     <DropdownMenuSeparator />
+                    <SiSuperAdmin>
                     <DropdownMenuItem onClick={() => onDelete(reservation.id)} className="text-destructive">
                       <Trash2 className="h-4 w-4 mr-2" />
                       Supprimer
                     </DropdownMenuItem>
+                    </SiSuperAdmin>
                   </>
                 )}
               </DropdownMenuContent>

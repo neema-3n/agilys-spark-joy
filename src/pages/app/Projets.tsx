@@ -55,12 +55,13 @@ import { Label } from '@/components/ui/label';
 import type { PrioriteProjet, StatutProjet } from '@/types/projet.types';
 import { useReferentiels } from '@/hooks/useReferentiels';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { usePermissions } from '@/hooks/usePermissions';
 
 const Projets = () => {
   const { toast } = useToast();
   const { currentClient } = useClient();
   const { currentExercice } = useExercice();
-  const { hasAnyRole, hasRole } = useAuth();
+  const { can } = usePermissions();
   const navigate = useNavigate();
   const { projetId } = useParams<{ projetId: string }>();
   const { projets, isLoading, refetch } = useProjets();
@@ -183,8 +184,10 @@ const Projets = () => {
     isLoadingItems: isLoading,
   });
 
-  const canEdit = hasAnyRole(['super_admin', 'admin_client', 'directeur_financier', 'chef_service']);
-  const canDelete = hasRole('super_admin');
+  // Les rôles sont propres à chaque organisation et peuvent être clonés :
+  // un nom de rôle en dur ne répondrait jamais pour un rôle sur mesure.
+  const canEdit = can('projets.modifier');
+  const canDelete = can('projets.supprimer');
   const handleSingleCancel = useCallback(() => {
     navigate(selectedProjet ? `/app/projets/${selectedProjet.id}` : '/app/projets');
   }, [navigate, selectedProjet]);

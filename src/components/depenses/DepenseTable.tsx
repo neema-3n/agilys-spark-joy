@@ -14,6 +14,7 @@ import { buildSelectionColumn, ListSelectionHandlers } from '@/components/lists/
 import { formatCurrency } from '@/lib/utils';
 import type { Depense } from '@/types/depense.types';
 import { formatDateValue } from '@/lib/date-utils';
+import { SiPermission } from '@/components/SiPermission';
 
 interface DepenseTableProps {
   depenses: Depense[];
@@ -184,6 +185,7 @@ export const DepenseTable = ({
             {depense.statut === 'brouillon' && (
               <>
                 {onEdit && (
+                  <SiPermission permission="depenses.modifier">
                   <DropdownMenuItem
                     onClick={() => onEdit(depense.id)}
                     disabled={disableActions}
@@ -191,8 +193,10 @@ export const DepenseTable = ({
                     <Pencil className="h-4 w-4 mr-2" />
                     Modifier
                   </DropdownMenuItem>
+                  </SiPermission>
                 )}
                 {onValider && (
+                  <SiPermission permission="depenses.valider">
                   <DropdownMenuItem
                     onClick={() => onValider(depense.id)}
                     disabled={disableActions}
@@ -200,8 +204,10 @@ export const DepenseTable = ({
                     <CheckCircle className="h-4 w-4 mr-2" />
                     Valider
                   </DropdownMenuItem>
+                  </SiPermission>
                 )}
                 {onDelete && (
+                  <SiPermission permission="depenses.supprimer">
                   <DropdownMenuItem
                     onClick={() => onDelete(depense.id)}
                     className="text-destructive"
@@ -210,6 +216,7 @@ export const DepenseTable = ({
                     <Trash className="h-4 w-4 mr-2" />
                     Supprimer
                   </DropdownMenuItem>
+                  </SiPermission>
                 )}
               </>
             )}
@@ -217,6 +224,7 @@ export const DepenseTable = ({
             {depense.statut === 'validee' &&
               depense.montant > depense.montantPaye &&
               onEnregistrerPaiement && (
+                <SiPermission permission="paiements.creer">
                 <DropdownMenuItem
                   onClick={() => onEnregistrerPaiement(depense.id)}
                   disabled={disableActions}
@@ -224,9 +232,11 @@ export const DepenseTable = ({
                   <Banknote className="h-4 w-4 mr-2" />
                   Enregistrer un paiement
                 </DropdownMenuItem>
+                </SiPermission>
               )}
 
             {depense.statut !== 'annulee' && depense.statut !== 'payee' && onAnnuler && (
+              <SiPermission permission={['depenses.modifier', 'depenses.valider']}>
               <DropdownMenuItem
                 onClick={() => onAnnuler(depense.id)}
                 className="text-destructive"
@@ -235,6 +245,7 @@ export const DepenseTable = ({
                 <XCircle className="h-4 w-4 mr-2" />
                 Annuler
               </DropdownMenuItem>
+              </SiPermission>
             )}
           </DropdownMenuContent>
         </DropdownMenu>

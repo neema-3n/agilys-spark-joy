@@ -10,6 +10,7 @@ import {
 import { Scenario } from '@/types/prevision.types';
 import { MoreVertical, Edit, Copy, Archive, Check, Trash2, FileSpreadsheet } from 'lucide-react';
 import { useLignesPrevision } from '@/hooks/usePrevisions';
+import { SiPermission } from '@/components/SiPermission';
 
 interface ScenarioCardProps {
   scenario: Scenario;
@@ -74,30 +75,40 @@ export function ScenarioCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <SiPermission permission="previsions.gerer">
               <DropdownMenuItem onClick={() => onEdit(scenario)}>
                 <Edit className="h-4 w-4 mr-2" />
                 Modifier
               </DropdownMenuItem>
+              </SiPermission>
+              <SiPermission permission="previsions.gerer">
               <DropdownMenuItem onClick={() => onDuplicate(scenario)}>
                 <Copy className="h-4 w-4 mr-2" />
                 Dupliquer
               </DropdownMenuItem>
+              </SiPermission>
               {scenario.statut === 'brouillon' && (
+                <SiPermission permission="previsions.gerer">
                 <DropdownMenuItem onClick={() => onValidate(scenario.id)}>
                   <Check className="h-4 w-4 mr-2" />
                   Valider
                 </DropdownMenuItem>
+                </SiPermission>
               )}
               {scenario.statut === 'valide' && (
+                <SiPermission permission="previsions.gerer">
                 <DropdownMenuItem onClick={() => onArchive(scenario.id)}>
                   <Archive className="h-4 w-4 mr-2" />
                   Archiver
                 </DropdownMenuItem>
+                </SiPermission>
               )}
+              <SiPermission permission="previsions.gerer">
               <DropdownMenuItem onClick={() => onDelete(scenario.id)} className="text-destructive">
                 <Trash2 className="h-4 w-4 mr-2" />
                 Supprimer
               </DropdownMenuItem>
+              </SiPermission>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

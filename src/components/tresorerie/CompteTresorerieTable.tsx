@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Eye, Edit } from 'lucide-react';
+import { PermissionButton } from '@/components/PermissionButton';
 
 interface CompteTresorerieTableProps {
   comptes: CompteTresorerie[];
@@ -81,14 +82,15 @@ export const CompteTresorerieTable = ({ comptes, onView, onEdit }: CompteTresore
             </Button>
           )}
           {onEdit && (
-            <Button
+            <PermissionButton
+              permission="tresorerie.gerer"
               variant="ghost"
               size="sm"
               onClick={() => onEdit(compte)}
               title="Modifier"
             >
               <Edit className="h-4 w-4" />
-            </Button>
+            </PermissionButton>
           )}
         </div>
       ),

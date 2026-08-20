@@ -28,6 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { SiPermission } from '@/components/SiPermission';
 
 interface BudgetTableProps {
   clientId: string;
@@ -500,21 +501,28 @@ export const BudgetTable = ({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <SiPermission permission="budgets.modifier">
                   <DropdownMenuItem onClick={() => onEdit(ligne)}>
                     <Edit className="mr-2 h-4 w-4" />
                     Modifier
                   </DropdownMenuItem>
+                  </SiPermission>
+                  <SiPermission permission="budgets.creer">
                   <DropdownMenuItem onClick={() => onCreateModification(ligne)}>
                     <FileEdit className="mr-2 h-4 w-4" />
                     Créer modification budgétaire
                   </DropdownMenuItem>
+                  </SiPermission>
                   {ligne.disponible > 0 && (
+                    <SiPermission permission="reservations.creer">
                     <DropdownMenuItem onClick={() => onReserver(ligne)}>
                       <BookmarkPlus className="mr-2 h-4 w-4" />
                       Réserver crédit
                     </DropdownMenuItem>
+                    </SiPermission>
                   )}
                   <DropdownMenuSeparator />
+                  <SiPermission permission="budgets.supprimer">
                   <DropdownMenuItem
                     onClick={() => onDelete(ligne.id)}
                     className="text-destructive"
@@ -522,6 +530,7 @@ export const BudgetTable = ({
                     <Trash2 className="mr-2 h-4 w-4" />
                     Supprimer
                   </DropdownMenuItem>
+                  </SiPermission>
                 </DropdownMenuContent>
               </DropdownMenu>
             </TableCell>

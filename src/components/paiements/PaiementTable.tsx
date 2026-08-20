@@ -14,6 +14,7 @@ import { formatCurrency } from '@/lib/utils';
 import { CheckCircle2, Eye, Pencil, XCircle } from 'lucide-react';
 import type { Paiement } from '@/types/paiement.types';
 import { formatDateValue } from '@/lib/date-utils';
+import { SiPermission } from '@/components/SiPermission';
 
 interface PaiementTableProps {
   paiements: Paiement[];
@@ -150,24 +151,30 @@ export const PaiementTable = ({
                 </DropdownMenuItem>
               )}
               {paiement.statut === 'brouillon' && onEdit && (
+                <SiPermission permission="paiements.valider">
                 <DropdownMenuItem onClick={() => onEdit(paiement.id)}>
                   <Pencil className="h-4 w-4 mr-2" />
                   Modifier
                 </DropdownMenuItem>
+                </SiPermission>
               )}
               {paiement.statut === 'brouillon' && onValidate && (
+                <SiPermission permission="paiements.valider">
                 <DropdownMenuItem onClick={() => onValidate(paiement.id)}>
                   <CheckCircle2 className="h-4 w-4 mr-2" />
                   Valider
                 </DropdownMenuItem>
+                </SiPermission>
               )}
               {paiement.statut === 'valide' && onAnnuler && (
                 <>
                   <DropdownMenuSeparator />
+                  <SiPermission permission="paiements.valider">
                   <DropdownMenuItem onClick={() => onAnnuler(paiement.id)}>
                     <XCircle className="h-4 w-4 mr-2" />
                     Annuler
                   </DropdownMenuItem>
+                  </SiPermission>
                 </>
               )}
             </DropdownMenuContent>

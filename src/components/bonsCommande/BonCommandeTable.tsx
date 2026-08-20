@@ -15,6 +15,7 @@ import { formatCurrency } from '@/lib/utils';
 import { CheckCircle, Edit, Eye, FileText, MoreHorizontal, PackageCheck, Receipt, Trash2, Truck, XCircle } from 'lucide-react';
 import type { BonCommande } from '@/types/bonCommande.types';
 import { formatDateValue } from '@/lib/date-utils';
+import { SiPermission, SiSuperAdmin } from '@/components/SiPermission';
 
 interface BonCommandeTableProps {
   bonsCommande: BonCommande[];
@@ -178,52 +179,64 @@ export const BonCommandeTable = ({
               {bc.statut === 'brouillon' && (
                 <>
                   {onEdit && (
+                    <SiPermission permission="bons_commande.valider">
                     <DropdownMenuItem onClick={() => onEdit(bc.id)}>
                       <Edit className="h-4 w-4 mr-2" />
                       Modifier
                     </DropdownMenuItem>
+                    </SiPermission>
                   )}
                   {onValider && (
+                    <SiPermission permission="bons_commande.valider">
                     <DropdownMenuItem onClick={() => onValider(bc.id)}>
                       <CheckCircle className="h-4 w-4 mr-2" />
                       Valider
                     </DropdownMenuItem>
+                    </SiPermission>
                   )}
                   <DropdownMenuSeparator />
                 </>
               )}
 
               {bc.statut === 'emis' && onReceptionner && (
+                <SiPermission permission="bons_commande.valider">
                 <DropdownMenuItem onClick={() => onReceptionner(bc.id)}>
                   <PackageCheck className="h-4 w-4 mr-2" />
                   Réceptionner
                 </DropdownMenuItem>
+                </SiPermission>
               )}
 
               {bc.statut === 'receptionne' && bc.engagementId && onCreateFacture && (
+                <SiPermission permission="factures.creer">
                 <DropdownMenuItem onClick={() => onCreateFacture(bc.id)}>
                   <Receipt className="h-4 w-4 mr-2" />
                   Créer une facture
                 </DropdownMenuItem>
+                </SiPermission>
               )}
 
               {bc.statut !== 'annule' && onAnnuler && (
                 <>
                   <DropdownMenuSeparator />
+                  <SiPermission permission="bons_commande.valider">
                   <DropdownMenuItem onClick={() => onAnnuler(bc.id)}>
                     <XCircle className="h-4 w-4 mr-2" />
                     Annuler
                   </DropdownMenuItem>
+                  </SiPermission>
                 </>
               )}
 
               {onDelete && (
                 <>
                   <DropdownMenuSeparator />
+                  <SiSuperAdmin>
                   <DropdownMenuItem onClick={() => onDelete(bc.id)} className="text-destructive">
                     <Trash2 className="h-4 w-4 mr-2" />
                     Supprimer
                   </DropdownMenuItem>
+                  </SiSuperAdmin>
                 </>
               )}
             </DropdownMenuContent>

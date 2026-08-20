@@ -34,6 +34,7 @@ import { formatMontant } from '@/lib/utils';
 import { FactureStatusBadge } from '@/components/ui/status-badge';
 import { formatDateValue } from '@/lib/date-utils';
 import { canCancelFacture, canDeleteFacture } from '@/lib/facture-rules';
+import { SiPermission } from '@/components/SiPermission';
 
 type FactureTableSelection = ListSelectionHandlers;
 
@@ -186,37 +187,47 @@ export const FactureTable = ({
             <DropdownMenuSeparator />
 
             {facture.statut === 'brouillon' && (
+              <SiPermission permission="factures.modifier">
               <DropdownMenuItem onClick={() => onEdit(facture)}>
                 <Pencil className="mr-2 h-4 w-4" />
                 Modifier
               </DropdownMenuItem>
+              </SiPermission>
             )}
 
             {facture.statut === 'brouillon' && (
+              <SiPermission permission="factures.valider">
               <DropdownMenuItem onClick={() => onValider(facture.id)}>
                 <CheckCircle className="mr-2 h-4 w-4" />
                 Valider
               </DropdownMenuItem>
+              </SiPermission>
             )}
             {facture.statut === 'validee' && (
+              <SiPermission permission="factures.valider">
               <DropdownMenuItem onClick={() => onMarquerSoldee(facture.id)}>
                 <CheckCircle className="mr-2 h-4 w-4" />
                 Marquer comme soldée
               </DropdownMenuItem>
+              </SiPermission>
             )}
             {(facture.statut === 'validee' || facture.statut === 'soldee') && (
               <>
+                <SiPermission permission="depenses.creer">
                 <DropdownMenuItem onClick={() => onCreerDepense(facture)}>
                   <FileText className="mr-2 h-4 w-4" />
                   Créer une dépense
                 </DropdownMenuItem>
+                </SiPermission>
               </>
             )}
             {canCancelFacture(facture) && (
+              <SiPermission permission={['factures.modifier', 'factures.valider']}>
               <DropdownMenuItem onClick={() => onAnnuler(facture.id)}>
                 <XCircle className="mr-2 h-4 w-4" />
                 Annuler
               </DropdownMenuItem>
+              </SiPermission>
             )}
             {canDeleteFacture(facture) && (
               <DropdownMenuItem

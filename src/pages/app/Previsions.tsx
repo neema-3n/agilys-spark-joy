@@ -21,6 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { PermissionButton } from '@/components/PermissionButton';
 
 const Previsions = () => {
   const [generateurOpen, setGenerateurOpen] = useState(false);
@@ -162,14 +163,15 @@ const Previsions = () => {
         title="Prévisions Budgétaires"
         description="Projections pluriannuelles et scénarios budgétaires"
         actions={
-          <Button
+          <PermissionButton
+            permission="previsions.gerer"
             onClick={() => {
               navigate('/app/previsions/create');
             }}
           >
             <Plus className="h-4 w-4 mr-2" />
             Nouveau scénario
-          </Button>
+          </PermissionButton>
         }
       />
       <div>

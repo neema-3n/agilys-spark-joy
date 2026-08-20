@@ -16,12 +16,28 @@ export const SiPermission = ({
   children,
   sinon = null,
 }: {
-  permission: string;
+  /** Un code, ou plusieurs : il suffit d'en détenir un, comme en base. */
+  permission: string | string[];
   children: ReactNode;
   /** Ce qu'on affiche à la place, quand l'absence laisserait un vide gênant. */
   sinon?: ReactNode;
 }) => {
   const { can, isLoading } = usePermissions();
   if (isLoading) return null;
-  return <>{can(permission) ? children : sinon}</>;
+  const codes = Array.isArray(permission) ? permission : [permission];
+  return <>{codes.some(can) ? children : sinon}</>;
+};
+
+/**
+ * N'affiche ses enfants que pour le super admin.
+ *
+ * Sert aux gestes que la base lui réserve — la suppression d'une pièce de la
+ * chaîne de dépense, par exemple : on annule une pièce, on ne l'efface pas.
+ * Proposer « Supprimer » à un administrateur d'organisation serait une
+ * promesse que les politiques refusent de tenir.
+ */
+export const SiSuperAdmin = ({ children }: { children: ReactNode }) => {
+  const { estSuperAdmin, isLoading } = usePermissions();
+  if (isLoading || !estSuperAdmin) return null;
+  return <>{children}</>;
 };

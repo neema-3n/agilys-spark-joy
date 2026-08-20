@@ -45,6 +45,7 @@ export const usePermissions = () => {
 
   return {
     isLoading,
+    estSuperAdmin,
     /** Le super admin en prise en main n'a pas de rattachement, donc pas de rôle. */
     can: (code: string) => estSuperAdmin || accordees.has(code),
     permissions: accordees,

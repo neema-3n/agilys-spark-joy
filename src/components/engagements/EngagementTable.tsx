@@ -15,6 +15,7 @@ import { formatCurrency } from '@/lib/utils';
 import { CheckCircle, Edit, FileText, MoreHorizontal, Receipt, Trash2, XCircle } from 'lucide-react';
 import type { Engagement } from '@/types/engagement.types';
 import { formatDateValue } from '@/lib/date-utils';
+import { SiPermission, SiSuperAdmin } from '@/components/SiPermission';
 
 interface EngagementTableProps {
   engagements: Engagement[];
@@ -179,16 +180,20 @@ export const EngagementTable = ({
               {engagement.statut === 'brouillon' && (
                 <>
                   {onEdit && (
+                    <SiPermission permission="engagements.modifier">
                     <DropdownMenuItem onClick={() => onEdit(engagement.id)}>
                       <Edit className="h-4 w-4 mr-2" />
                       Modifier
                     </DropdownMenuItem>
+                    </SiPermission>
                   )}
                   {onValider && (
+                    <SiPermission permission="engagements.valider">
                     <DropdownMenuItem onClick={() => onValider(engagement.id)}>
                       <CheckCircle className="h-4 w-4 mr-2" />
                       Valider
                     </DropdownMenuItem>
+                    </SiPermission>
                   )}
                   <DropdownMenuSeparator />
                 </>
@@ -197,38 +202,48 @@ export const EngagementTable = ({
               {engagement.statut === 'valide' && (
                 <>
                   {onCreerBonCommande && engagement.fournisseurId && (
+                    <SiPermission permission="bons_commande.creer">
                     <DropdownMenuItem onClick={() => onCreerBonCommande(engagement.id)}>
                       <FileText className="h-4 w-4 mr-2" />
                       Créer bon de commande
                     </DropdownMenuItem>
+                    </SiPermission>
                   )}
                   {onCreerFacture && (
+                    <SiPermission permission="factures.creer">
                     <DropdownMenuItem onClick={() => onCreerFacture(engagement.id)}>
                       <Receipt className="h-4 w-4 mr-2" />
                       Créer une facture
                     </DropdownMenuItem>
+                    </SiPermission>
                   )}
                   {onCreerDepense && (
+                    <SiPermission permission="depenses.creer">
                     <DropdownMenuItem onClick={() => onCreerDepense(engagement.id)}>
                       <Receipt className="h-4 w-4 mr-2" />
                       Créer une dépense
                     </DropdownMenuItem>
+                    </SiPermission>
                   )}
                   {onAnnuler && (
+                    <SiPermission permission="engagements.annuler">
                     <DropdownMenuItem onClick={() => onAnnuler(engagement.id)}>
                       <XCircle className="h-4 w-4 mr-2" />
                       Annuler
                     </DropdownMenuItem>
+                    </SiPermission>
                   )}
                   <DropdownMenuSeparator />
                 </>
               )}
 
               {onDelete && (
+                <SiSuperAdmin>
                 <DropdownMenuItem onClick={() => onDelete(engagement.id)} className="text-destructive">
                   <Trash2 className="h-4 w-4 mr-2" />
                   Supprimer
                 </DropdownMenuItem>
+                </SiSuperAdmin>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
