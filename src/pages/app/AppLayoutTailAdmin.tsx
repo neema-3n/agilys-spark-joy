@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeftRight,
@@ -708,6 +708,7 @@ const TailAdminHeader = ({
   onLogout,
   user,
 }: TailAdminHeaderProps) => {
+  const navigate = useNavigate();
   const { currentClient, clients, switchClient, isSwitching } = useClient();
   const { currentExercice, exercices, setCurrentExercice } = useExercice();
   const { theme, setTheme } = useTheme();
@@ -858,11 +859,11 @@ const TailAdminHeader = ({
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/app/profil')}>
                 <User className="mr-2 h-4 w-4" />
                 Mon profil
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/app/parametres/exercices')}>
                 <Settings className="mr-2 h-4 w-4" />
                 Paramètres
               </DropdownMenuItem>

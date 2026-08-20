@@ -27,6 +27,7 @@ const AdminClients = lazy(() => import("./pages/admin/AdminClients"));
 // App layout and main pages
 const AppLayout = lazy(() => import("./pages/app/AppLayoutTailAdmin"));
 const ExecutiveDashboard = lazy(() => import("./pages/app/ExecutiveDashboard"));
+const MonProfil = lazy(() => import("./pages/app/MonProfil"));
 
 // Budget & Finance pages
 const Budgets = lazy(() => import("./pages/app/Budgets"));
@@ -120,6 +121,7 @@ const App = () => (
                 >
                   <Route path="dashboard" element={<Navigate to="/app/executive-dashboard" replace />} />
                   <Route path="executive-dashboard" element={<ExecutiveDashboard />} />
+                  <Route path="profil" element={<MonProfil />} />
 
                   {/* Budget & Finance */}
                   <Route path="budgets">

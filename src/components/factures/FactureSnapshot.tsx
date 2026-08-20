@@ -1,5 +1,6 @@
 import { FileText, Building2, ShoppingCart, FileCheck, FolderOpen, Calendar, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PermissionButton } from '@/components/PermissionButton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -134,9 +135,9 @@ export const FactureSnapshot = ({
         </Button>
       )}
       {facture.statut === 'brouillon' && onValider && (
-        <Button size="sm" onClick={onValider}>
+        <PermissionButton permission="factures.valider" quandRefuse="desactiver" size="sm" onClick={onValider}>
           Valider
-        </Button>
+        </PermissionButton>
       )}
       {facture.statut === 'validee' && onMarquerSoldee && (
         <Button size="sm" onClick={onMarquerSoldee}>

@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { PermissionButton } from '@/components/PermissionButton';
 import { Progress } from '@/components/ui/progress';
 import { SnapshotBase } from '@/components/shared/SnapshotBase';
 import { SnapshotLinkedEntitiesCard } from '@/components/shared/SnapshotLinkedEntitiesCard';
@@ -95,14 +96,14 @@ export const BonCommandeSnapshot = ({
         </Button>
       )}
       {onValider && bonCommande.statut === 'brouillon' && (
-        <Button size="sm" onClick={onValider}>
+        <PermissionButton permission="bons_commande.valider" quandRefuse="desactiver" size="sm" onClick={onValider}>
           Émettre
-        </Button>
+        </PermissionButton>
       )}
       {onReceptionner && bonCommande.statut === 'emis' && (
-        <Button size="sm" variant="secondary" onClick={onReceptionner}>
+        <PermissionButton permission="bons_commande.valider" quandRefuse="desactiver" size="sm" variant="secondary" onClick={onReceptionner}>
           Réceptionner
-        </Button>
+        </PermissionButton>
       )}
       {onCreateFacture && bonCommande.engagementId && bonCommande.statut === 'receptionne' && (
         <Button size="sm" variant="secondary" onClick={onCreateFacture}>
