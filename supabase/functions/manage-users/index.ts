@@ -16,6 +16,8 @@ interface RequestBody {
   roleId?: string;
   userId?: string;
   statut?: 'actif' | 'inactif';
+  /** Adresse de retour du lien d'invitation, fournie par l'application. */
+  redirectTo?: string;
 }
 
 /**
@@ -111,8 +113,12 @@ Deno.serve(async (req) => {
           }, 409);
         }
 
+        // Sans redirectTo, le lien pointe vers la Site URL du projet Supabase,
+        // restée à sa valeur par défaut : l'invitation part et ne mène nulle
+        // part. L'application fournit sa propre adresse.
         const { data: invite, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
           data: { nom: nom ?? '', prenom: prenom ?? '', client_id: clientId },
+          redirectTo: body.redirectTo,
         });
 
         if (inviteError) return json({ error: inviteError.message }, 500);

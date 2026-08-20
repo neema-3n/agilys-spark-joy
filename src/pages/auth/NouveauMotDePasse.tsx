@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, KeyRound, Lock } from 'lucide-react';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,10 @@ const schema = z
  */
 const NouveauMotDePasse = () => {
   const navigate = useNavigate();
+  const [parametres] = useSearchParams();
+  // Un invité n'a jamais eu de mot de passe : lui parler de « nouveau » mot de
+  // passe ou de « lien expiré » n'aurait aucun sens de son point de vue.
+  const estInvitation = parametres.get('invitation') === '1';
   const [motDePasse, setMotDePasse] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [erreur, setErreur] = useState<string | null>(null);
@@ -82,13 +86,17 @@ const NouveauMotDePasse = () => {
           <CardHeader className="space-y-2 text-center">
             <CardTitle className="text-2xl font-bold">Lien expiré</CardTitle>
             <CardDescription>
-              Ce lien de réinitialisation n&apos;est plus valable. Les liens expirent au bout
-              d&apos;une heure et ne servent qu&apos;une fois.
+              {estInvitation
+                ? "Ce lien d'invitation n'est plus valable. Demandez à votre administrateur de vous en envoyer un nouveau."
+                : "Ce lien de réinitialisation n'est plus valable. Les liens expirent au bout d'une heure et ne servent qu'une fois."}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full" onClick={() => navigate('/auth/mot-de-passe-oublie')}>
-              Demander un nouveau lien
+            <Button
+              className="w-full"
+              onClick={() => navigate(estInvitation ? '/auth/login' : '/auth/mot-de-passe-oublie')}
+            >
+              {estInvitation ? 'Retour à la connexion' : 'Demander un nouveau lien'}
             </Button>
           </CardContent>
         </Card>
@@ -110,12 +118,18 @@ const NouveauMotDePasse = () => {
             </div>
           </div>
           <CardTitle className="text-2xl font-bold">
-            {termine ? 'Mot de passe enregistré' : 'Nouveau mot de passe'}
+            {termine
+              ? 'Mot de passe enregistré'
+              : estInvitation
+                ? 'Bienvenue sur AGILYS'
+                : 'Nouveau mot de passe'}
           </CardTitle>
           <CardDescription>
             {termine
-              ? 'Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.'
-              : 'Choisissez un mot de passe que vous êtes seul à connaître.'}
+              ? 'Vous pouvez maintenant vous connecter avec votre mot de passe.'
+              : estInvitation
+                ? 'Votre accès est créé. Choisissez le mot de passe qui vous servira à vous connecter.'
+                : 'Choisissez un mot de passe que vous êtes seul à connaître.'}
           </CardDescription>
         </CardHeader>
 
@@ -133,7 +147,7 @@ const NouveauMotDePasse = () => {
               ) : null}
 
               <div className="space-y-2">
-                <Label htmlFor="mdp">Nouveau mot de passe</Label>
+                <Label htmlFor="mdp">{estInvitation ? 'Mot de passe' : 'Nouveau mot de passe'}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input

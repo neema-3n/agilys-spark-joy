@@ -145,7 +145,11 @@ export const adminUsersService = {
   },
 
   inviter: (clientId: string, email: string, nom: string, prenom: string, roleId: string) =>
-    invoquer({ action: 'inviter', clientId, email, nom, prenom, roleId }),
+    invoquer({
+      action: 'inviter', clientId, email, nom, prenom, roleId,
+      // L'invité arrive directement sur le choix de son mot de passe.
+      redirectTo: `${window.location.origin}/auth/nouveau-mot-de-passe?invitation=1`,
+    }),
 
   rattacher: (clientId: string, email: string, roleId: string) =>
     invoquer({ action: 'rattacher', clientId, email, roleId }),
