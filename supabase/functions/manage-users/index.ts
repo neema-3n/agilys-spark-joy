@@ -123,7 +123,16 @@ Deno.serve(async (req) => {
           role_id: roleId,
           created_by: user.id,
         });
-        if (lienError) return json({ error: lienError.message }, 500);
+
+        if (lienError) {
+          // Le compte a été créé avant le rattachement : le laisser en place
+          // interdirait de réessayer avec la même adresse, qui serait alors
+          // « déjà connue » alors qu'elle n'a jamais reçu d'accès.
+          await admin.auth.admin.deleteUser(invite.user.id);
+          return json({
+            error: `Le rattachement a échoué, l'invitation a été annulée : ${lienError.message}`,
+          }, 500);
+        }
 
         return json({ success: true, userId: invite.user.id, invitation: true });
       }
