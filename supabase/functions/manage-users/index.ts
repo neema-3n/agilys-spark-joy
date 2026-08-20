@@ -64,6 +64,31 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
+    /**
+     * Les erreurs d'authentification remontent en anglais et en langage
+     * technique. Un administrateur qui lit « email rate limit exceeded » ne
+     * peut ni comprendre ni agir : on nomme la cause et la sortie.
+     */
+    const traduire = (message: string) => {
+      if (/rate limit/i.test(message)) {
+        return (
+          "Quota d'envoi d'emails atteint. Le service intégré de Supabase est limité à " +
+          "quelques messages par heure. Attendez une heure, ou configurez un service " +
+          "d'envoi dédié dans Supabase (Authentication → Emails → SMTP)."
+        );
+      }
+      if (/already registered|already exists/i.test(message)) {
+        return "Cette adresse a déjà un compte. Utilisez « Compte existant » pour lui donner accès.";
+      }
+      if (/invalid.*email|email.*invalid/i.test(message)) {
+        return "Adresse email invalide.";
+      }
+      if (/sending.*email|smtp/i.test(message)) {
+        return "L'email n'a pas pu être envoyé. Vérifiez la configuration d'envoi dans Supabase.";
+      }
+      return message;
+    };
+
     // Le droit d'agir sur CETTE organisation est verifie ici, pas deduit de ce
     // que le navigateur affirme.
     const { data: estAdmin, error: droitError } = await admin.rpc('is_client_admin', {
@@ -121,7 +146,7 @@ Deno.serve(async (req) => {
           redirectTo: body.redirectTo,
         });
 
-        if (inviteError) return json({ error: inviteError.message }, 500);
+        if (inviteError) return json({ error: traduire(inviteError.message) }, 500);
 
         const { error: lienError } = await admin.from('user_clients').insert({
           user_id: invite.user.id,
