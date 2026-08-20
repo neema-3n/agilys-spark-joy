@@ -10,6 +10,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // Seul le tout premier chargement doit masquer l'application. Les suivants
+  // non : sans cette distinction, le moindre événement d'authentification
+  // — dont USER_UPDATED, émis par un changement de mot de passe — démonte
+  // l'arbre entier et fait perdre son état à la page en cours.
+  const [initialise, setInitialise] = useState(false);
   const isMountedRef = useRef(true);
   const activeUserIdRef = useRef<string | null>(null);
   const fallbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -23,6 +28,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       activeUserIdRef.current = nextSession.user.id;
     }
     setIsLoading(false);
+    setInitialise(true);
   };
 
   const loadUserFromSession = (nextSession: Session | null) => {
@@ -50,6 +56,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } finally {
           if (isMountedRef.current && activeUserIdRef.current === expectedUserId) {
             setIsLoading(false);
+            setInitialise(true);
           }
         }
       }, 0);
@@ -57,6 +64,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(null);
       hasUserLoadedRef.current = false;
       setIsLoading(false);
+      setInitialise(true);
     }
   };
 
@@ -161,7 +169,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return roles.some(role => hasRole(role));
   };
 
-  if (isLoading) {
+  if (!initialise) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>

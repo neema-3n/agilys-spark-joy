@@ -73,13 +73,16 @@ const NouveauMotDePasse = () => {
       return;
     }
 
-    // La session de récupération est fermée : on se reconnecte avec le nouveau
-    // mot de passe, ce qui vérifie au passage qu'il fonctionne.
-    await supabase.auth.signOut();
+    // La réussite est actée avant la déconnexion : celle-ci supprime la
+    // session, et rien de ce qu'elle déclenche ne doit pouvoir repeindre en
+    // « lien expiré » un mot de passe déjà enregistré.
     setTermine(true);
+    await supabase.auth.signOut();
   };
 
-  if (sessionValide === false) {
+  // `termine` prime : une fois le mot de passe accepté par le serveur, la
+  // disparition de la session est le résultat attendu, pas un lien invalide.
+  if (sessionValide === false && !termine) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-hero p-4">
         <Card className="w-full max-w-md shadow-primary">
