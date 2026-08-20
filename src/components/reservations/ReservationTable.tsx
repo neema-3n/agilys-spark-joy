@@ -208,7 +208,7 @@ export const ReservationTable = ({
                 )}
 
                 {canEdit && onEdit && (
-                  <SiPermission permission="reservations.annuler">
+                  <SiPermission permission="reservations.modifier">
                   <DropdownMenuItem onClick={() => onEdit(reservation.id)}>
                     <Edit className="h-4 w-4 mr-2" />
                     Modifier

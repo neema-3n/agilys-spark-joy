@@ -179,7 +179,7 @@ export const BonCommandeTable = ({
               {bc.statut === 'brouillon' && (
                 <>
                   {onEdit && (
-                    <SiPermission permission="bons_commande.valider">
+                    <SiPermission permission="bons_commande.modifier">
                     <DropdownMenuItem onClick={() => onEdit(bc.id)}>
                       <Edit className="h-4 w-4 mr-2" />
                       Modifier
@@ -219,7 +219,7 @@ export const BonCommandeTable = ({
               {bc.statut !== 'annule' && onAnnuler && (
                 <>
                   <DropdownMenuSeparator />
-                  <SiPermission permission="bons_commande.valider">
+                  <SiPermission permission="bons_commande.annuler">
                   <DropdownMenuItem onClick={() => onAnnuler(bc.id)}>
                     <XCircle className="h-4 w-4 mr-2" />
                     Annuler

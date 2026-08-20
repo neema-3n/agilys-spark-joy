@@ -222,7 +222,7 @@ export const FactureTable = ({
               </>
             )}
             {canCancelFacture(facture) && (
-              <SiPermission permission={['factures.modifier', 'factures.valider']}>
+              <SiPermission permission="factures.annuler">
               <DropdownMenuItem onClick={() => onAnnuler(facture.id)}>
                 <XCircle className="mr-2 h-4 w-4" />
                 Annuler

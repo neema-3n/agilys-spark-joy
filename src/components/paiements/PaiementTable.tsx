@@ -151,7 +151,7 @@ export const PaiementTable = ({
                 </DropdownMenuItem>
               )}
               {paiement.statut === 'brouillon' && onEdit && (
-                <SiPermission permission="paiements.valider">
+                <SiPermission permission="paiements.modifier">
                 <DropdownMenuItem onClick={() => onEdit(paiement.id)}>
                   <Pencil className="h-4 w-4 mr-2" />
                   Modifier
@@ -169,7 +169,7 @@ export const PaiementTable = ({
               {paiement.statut === 'valide' && onAnnuler && (
                 <>
                   <DropdownMenuSeparator />
-                  <SiPermission permission="paiements.valider">
+                  <SiPermission permission="paiements.annuler">
                   <DropdownMenuItem onClick={() => onAnnuler(paiement.id)}>
                     <XCircle className="h-4 w-4 mr-2" />
                     Annuler

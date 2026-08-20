@@ -236,7 +236,7 @@ export const DepenseTable = ({
               )}
 
             {depense.statut !== 'annulee' && depense.statut !== 'payee' && onAnnuler && (
-              <SiPermission permission={['depenses.modifier', 'depenses.valider']}>
+              <SiPermission permission="depenses.annuler">
               <DropdownMenuItem
                 onClick={() => onAnnuler(depense.id)}
                 className="text-destructive"
