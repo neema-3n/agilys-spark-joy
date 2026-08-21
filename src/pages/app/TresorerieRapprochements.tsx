@@ -28,11 +28,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useStatutInitial } from '@/hooks/useStatutInitial';
 
 const TresorerieRapprochements = () => {
   const { rapprochements, createRapprochement, validateRapprochement } = useRapprochementsBancaires();
   const [searchValue, setSearchValue] = useState('');
-  const [statutFilter, setStatutFilter] = useState<'tous' | 'en_cours' | 'valide' | 'annule'>('tous');
+  const statutInitial = useStatutInitial(['tous', 'en_cours', 'valide', 'annule'] as const, 'tous');
+  const [statutFilter, setStatutFilter] = useState<'tous' | 'en_cours' | 'valide' | 'annule'>(statutInitial);
   const [isRapprochementDirty, setIsRapprochementDirty] = useState(false);
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   const [dateDebutFilter, setDateDebutFilter] = useState('');

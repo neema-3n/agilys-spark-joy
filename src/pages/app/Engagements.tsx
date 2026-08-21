@@ -56,6 +56,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useStatutInitial } from '@/hooks/useStatutInitial';
 
 type EngagementLocationState = {
   initialReservationId?: string;
@@ -73,7 +74,8 @@ const Engagements = () => {
   const [annulationEngagementId, setAnnulationEngagementId] = useState<string | null>(null);
   const [motifAnnulation, setMotifAnnulation] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [statutFilter, setStatutFilter] = useState<'tous' | 'brouillon' | 'valide' | 'annule'>('tous');
+  const statutInitial = useStatutInitial(['tous', 'brouillon', 'valide', 'annule'] as const, 'tous');
+  const [statutFilter, setStatutFilter] = useState<'tous' | 'brouillon' | 'valide' | 'annule'>(statutInitial);
   const [isEngagementDirty, setIsEngagementDirty] = useState(false);
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<'tous' | 'reservation' | 'direct'>('tous');

@@ -47,6 +47,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useStatutInitial } from '@/hooks/useStatutInitial';
 
 type BonsCommandeLocationState = {
   initialEngagementId?: string;
@@ -76,8 +77,12 @@ const BonsCommande = () => {
   const [annulationBonCommandeId, setAnnulationBonCommandeId] = useState<string | undefined>();
   const [searchTerm, setSearchTerm] = useState('');
   const [isBonCommandeDirty, setIsBonCommandeDirty] = useState(false);
+  const statutInitial = useStatutInitial(
+    ['tous', 'brouillon', 'emis', 'receptionne', 'annule'] as const,
+    'tous',
+  );
   const [statutFilter, setStatutFilter] = useState<'tous' | 'brouillon' | 'emis' | 'receptionne' | 'annule'>(
-    'tous'
+    statutInitial
   );
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<'tous' | 'engagement' | 'direct'>('tous');

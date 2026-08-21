@@ -21,7 +21,7 @@ const FILES = [
     table: 'engagements',
     statut: 'brouillon',
     permission: 'engagements.valider',
-    route: '/app/engagements',
+    route: '/app/engagements?statut=brouillon',
     singulier: 'engagement à valider',
     pluriel: 'engagements à valider',
   },
@@ -30,7 +30,7 @@ const FILES = [
     table: 'bons_commande',
     statut: 'brouillon',
     permission: 'bons_commande.valider',
-    route: '/app/bons-commande',
+    route: '/app/bons-commande?statut=brouillon',
     singulier: 'bon de commande à émettre',
     pluriel: 'bons de commande à émettre',
   },
@@ -39,7 +39,7 @@ const FILES = [
     table: 'factures',
     statut: 'brouillon',
     permission: 'factures.valider',
-    route: '/app/factures',
+    route: '/app/factures?statut=brouillon',
     singulier: 'facture à valider',
     pluriel: 'factures à valider',
   },
@@ -48,7 +48,7 @@ const FILES = [
     table: 'depenses',
     statut: 'brouillon',
     permission: 'depenses.valider',
-    route: '/app/depenses',
+    route: '/app/depenses?statut=brouillon',
     singulier: 'dépense à liquider',
     pluriel: 'dépenses à liquider',
   },
@@ -57,7 +57,7 @@ const FILES = [
     table: 'paiements',
     statut: 'brouillon',
     permission: 'paiements.valider',
-    route: '/app/paiements',
+    route: '/app/paiements?statut=brouillon',
     singulier: 'paiement à décaisser',
     pluriel: 'paiements à décaisser',
   },
@@ -66,6 +66,8 @@ const FILES = [
     table: 'modifications_budgetaires',
     statut: 'en_attente',
     permission: 'budgets.valider',
+    // Seule file sans filtre : les modifications budgétaires n'ont pas de
+    // liste propre dans la page Budgets, il n'y a donc rien à cibler.
     route: '/app/budgets',
     singulier: 'modification budgétaire à arbitrer',
     pluriel: 'modifications budgétaires à arbitrer',
@@ -75,7 +77,7 @@ const FILES = [
     table: 'rapprochements_bancaires',
     statut: 'en_cours',
     permission: 'tresorerie.rapprocher',
-    route: '/app/tresorerie/rapprochements',
+    route: '/app/tresorerie/rapprochements?statut=en_cours',
     singulier: 'rapprochement à finaliser',
     pluriel: 'rapprochements à finaliser',
   },
@@ -90,6 +92,10 @@ const FILES = [
  *
  * Aucune table dédiée : les statuts portent déjà l'information. Ce qui attend
  * une validation, c'est ce qui est resté en brouillon.
+ *
+ * Chaque lien porte son statut dans l'adresse : annoncer « 11 factures à
+ * valider » puis déverser la liste entière obligerait à refaire à la main le
+ * tri qu'on vient d'afficher.
  */
 export const useNotifications = () => {
   const { currentClient } = useClient();

@@ -57,6 +57,7 @@ import { Input } from '@/components/ui/input';
 import { useClientPagination } from '@/hooks/useClientPagination';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useStatutInitial } from '@/hooks/useStatutInitial';
 
 type DepensesLocationState = {
   initialEngagementId?: string;
@@ -88,9 +89,13 @@ const Depenses = () => {
   const [isSubmittingAction, setIsSubmittingAction] = useState(false);
   const [isDepenseDirty, setIsDepenseDirty] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const statutInitial = useStatutInitial(
+    ['tous', 'brouillon', 'validee', 'payee', 'annulee'] as const,
+    'tous',
+  );
   const [statutFilter, setStatutFilter] = useState<
     'tous' | 'brouillon' | 'validee' | 'payee' | 'annulee'
-  >('tous');
+  >(statutInitial);
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<'tous' | 'facture' | 'engagement'>('tous');
   const [dateDebut, setDateDebut] = useState('');

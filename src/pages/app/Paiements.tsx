@@ -52,6 +52,7 @@ import { useClientPagination } from '@/hooks/useClientPagination';
 import { Input } from '@/components/ui/input';
 import { useDepenses } from '@/hooks/useDepenses';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useStatutInitial } from '@/hooks/useStatutInitial';
 
 type PaiementLocationState = {
   initialDepenseId?: string;
@@ -69,7 +70,8 @@ export default function Paiements() {
     usePaiements();
   const { depenses, isLoading: isDepensesLoading } = useDepenses();
   const [search, setSearch] = useState('');
-  const [statutFilter, setStatutFilter] = useState<'tous' | 'brouillon' | 'valide' | 'annule'>('tous');
+  const statutInitial = useStatutInitial(['tous', 'brouillon', 'valide', 'annule'] as const, 'tous');
+  const [statutFilter, setStatutFilter] = useState<'tous' | 'brouillon' | 'valide' | 'annule'>(statutInitial);
   const [annulerDialogOpen, setAnnulerDialogOpen] = useState(false);
   const [selectedPaiementId, setSelectedPaiementId] = useState<string | null>(null);
   const [motifAnnulation, setMotifAnnulation] = useState('');
