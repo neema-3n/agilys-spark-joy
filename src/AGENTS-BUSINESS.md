@@ -536,23 +536,37 @@ async cancel(id: string, motif: string): Promise<Engagement> {
 
 ### Implémentation
 
-**Contexte** : `AuthContext` expose `user.roles[]`
+Ce qui protège, ce sont les politiques RLS et les triggers en base. L'interface
+ne protège rien : elle évite seulement de proposer un geste voué à l'échec, un
+refus découvert au clic ressemblant à une panne plutôt qu'à une règle.
 
-**Composant Guard** :
+**Hook** : `usePermissions()` expose `can(code)` pour l'organisation active.
+
+**Un bouton isolé** :
 ```tsx
-<RoleGuard allowedRoles={['admin_client', 'directeur_financier']}>
-  <Button onClick={handleValidate}>Valider</Button>
-</RoleGuard>
+<PermissionButton permission="engagements.valider" onClick={handleValidate}>
+  Valider
+</PermissionButton>
 ```
 
-**Hook personnalisé** :
-```typescript
-const { hasRole } = useAuth();
-
-if (hasRole(['admin_client', 'directeur_financier'])) {
-  // Afficher action
-}
+**Un groupe** — colonne d'actions, menu contextuel :
+```tsx
+<SiPermission permission="depenses.supprimer">
+  <DropdownMenuItem onClick={handleDelete}>Supprimer</DropdownMenuItem>
+</SiPermission>
 ```
+
+**Ce que la base réserve au super admin** — supprimer une pièce de la chaîne de
+dépense, qu'on annule au lieu de l'effacer :
+```tsx
+<SiSuperAdmin>
+  <DropdownMenuItem onClick={handleDelete}>Supprimer</DropdownMenuItem>
+</SiSuperAdmin>
+```
+
+Ne jamais tester un nom de rôle en dur : les rôles appartiennent à chaque
+organisation et peuvent être clonés, un rôle sur mesure n'y répondrait pas.
+Toujours raisonner en permissions.
 
 **RLS Policies** :
 ```sql
