@@ -70,6 +70,7 @@ import {
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useNotifications } from '@/hooks/useNotifications';
 
 type NavigationItem = {
   name: string;
@@ -714,7 +715,8 @@ const TailAdminHeader = ({
   const { theme, setTheme } = useTheme();
   const isMobile = useIsMobile();
   const { toast } = useToast();
-  const [notificationCount] = useState(3);
+  const { files: filesAttente, total: notificationCount, isLoading: notificationsEnCours,
+          aucuneFile, sansExercice, error: notificationsErreur } = useNotifications();
 
   const handleClientSelect = async (clientId: string) => {
     try {
@@ -820,11 +822,40 @@ const TailAdminHeader = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80">
-              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+              <DropdownMenuLabel>En attente de votre action</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <div className="p-4 text-center text-sm text-muted-foreground">
-                Aucune notification pour le moment
-              </div>
+              {notificationsErreur ? (
+                <div className="p-4 text-center text-sm text-destructive">
+                  Impossible de lire les files d&apos;attente.
+                </div>
+              ) : notificationsEnCours ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">Lecture…</div>
+              ) : sansExercice ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  Aucun exercice ouvert.
+                </div>
+              ) : aucuneFile ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  Votre rôle ne vous confie aucune validation.
+                </div>
+              ) : filesAttente.length === 0 ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  Rien n&apos;attend votre action.
+                </div>
+              ) : (
+                filesAttente.map((file) => (
+                  <DropdownMenuItem
+                    key={file.cle}
+                    onClick={() => navigate(file.route)}
+                    className="cursor-pointer justify-between gap-3"
+                  >
+                    <span>{file.libelle}</span>
+                    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground">
+                      {file.nombre}
+                    </span>
+                  </DropdownMenuItem>
+                ))
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 
