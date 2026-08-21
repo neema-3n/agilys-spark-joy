@@ -226,6 +226,9 @@ const Projets = () => {
       } else {
         const projet = await projetsService.create({
           ...data,
+          // À la création, le formulaire n'impose pas de statut : un projet qui
+          // n'a pas commencé est planifié.
+          statut: data.statut ?? 'planifie',
           clientId: currentClient!.id,
           exerciceId: currentExercice!.id,
         });

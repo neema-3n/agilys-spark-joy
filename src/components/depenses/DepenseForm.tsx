@@ -631,7 +631,7 @@ export const DepenseForm = ({
                       <SelectContent>
                         {comptesCharge.map((compte) => (
                           <SelectItem key={compte.id} value={compte.id}>
-                            {compte.code} - {compte.libelle}
+                            {compte.numero} - {compte.libelle}
                           </SelectItem>
                         ))}
                       </SelectContent>

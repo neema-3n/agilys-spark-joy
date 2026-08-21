@@ -240,7 +240,7 @@ const buildEtatDepenses = (context: ReportingDataContext): ReportingBuildResult 
     cells: {
       referenceDepense: depense.numero,
       date: depense.dateDepense,
-      nature: depense.natureCompteChargeId || depense.compteChargeId || 'Charge',
+      nature: depense.compteChargeId || 'Charge',
       beneficiaire: depense.fournisseur?.nom || depense.beneficiaire || '—',
       objet: depense.objet,
       montant: depense.montant,

@@ -18,7 +18,14 @@ export const referentielSchema = z.object({
   actif: z.boolean(),
 });
 
-export type ReferentielFormData = z.infer<typeof referentielSchema>;
+/** Déclaré plutôt qu'inféré, pour la même raison que les autres formulaires. */
+export type ReferentielFormData = {
+  code: string;
+  libelle: string;
+  description?: string;
+  ordre: number;
+  actif: boolean;
+};
 
 interface ReferentielFormProps {
   referentiel?: ParametreReferentiel;

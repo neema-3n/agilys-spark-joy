@@ -186,7 +186,9 @@ export const FactureForm = ({
     manualOverride: boolean,
   ) => {
     const fieldState = form.getFieldState(fieldName);
-    const currentValue = form.getValues(fieldName);
+    // Un champ numérique vidé rend '' et non 0 : le test le prévoyait déjà,
+      // seul le type l'ignorait.
+      const currentValue = form.getValues(fieldName) as number | string | null | undefined;
 
     return (
       !manualOverride &&

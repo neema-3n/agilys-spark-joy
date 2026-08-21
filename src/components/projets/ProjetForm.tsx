@@ -20,6 +20,7 @@ import { useEnveloppes } from '@/hooks/useEnveloppes';
 import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
 import { parseDateOnlyValue, toDateOnlyString } from '@/lib/date-utils';
 import { selectFieldContentOnFocus } from '@/lib/form-focus-utils';
+import type { StatutProjet, PrioriteProjet } from '@/types/projet.types';
 
 export const projetFormSchema = z.object({
   code: z.string().min(1, 'Le code est requis'),
@@ -40,10 +41,24 @@ export const projetFormSchema = z.object({
 });
 
 type ProjetFormValues = z.infer<typeof projetFormSchema>;
-export type ProjetFormSubmitData = Omit<ProjetFormValues, 'dateDebut' | 'dateFin'> & {
+/**
+ * Déclaré plutôt qu'inféré : en `strict: false`, `z.infer` rend tout optionnel
+ * et le service reçoit alors un contrat sans garantie. Les dates sont
+ * converties en chaînes au moment de l'envoi, d'où l'écart avec le schéma.
+ */
+export type ProjetFormSubmitData = {
+  code: string;
+  nom: string;
+  description?: string;
+  responsable?: string;
   dateDebut: string;
   dateFin: string;
-  statut?: string;
+  budgetAlloue: number;
+  enveloppeId?: string;
+  statut?: StatutProjet;
+  typeProjet?: string;
+  priorite: PrioriteProjet;
+  tauxAvancement: number;
 };
 
 const defaultValues: ProjetFormValues = {
@@ -111,18 +126,23 @@ export const ProjetForm = ({ projet, onSubmit, onCancel, onDirtyChange, submitLa
   }, [onDirtyChange]);
 
   const handleSubmit = async (values: ProjetFormValues) => {
+    // zod a déjà validé ces valeurs ; l'inférence les rend optionnelles parce
+    // que le projet compile en `strict: false`.
     await onSubmit({
       ...values,
       enveloppeId: values.enveloppeId === 'none' ? undefined : values.enveloppeId,
       typeProjet: values.typeProjet === 'none' ? undefined : values.typeProjet,
-      statut: projet
-        ? values.statut === projet.statut
-          ? undefined
-          : values.statut
-        : values.statut,
+      // Le statut n'est transmis que s'il change : l'envoyer à l'identique
+      // déclencherait une transition d'état pour rien. Le référentiel étant
+      // modifiable par l'organisation, la conversion se fait ici plutôt qu'en
+      // figeant le schéma.
+      statut: (projet && values.statut === projet.statut
+        ? undefined
+        : (values.statut as StatutProjet)),
+      priorite: values.priorite as PrioriteProjet,
       dateDebut: toDateOnlyString(values.dateDebut),
       dateFin: toDateOnlyString(values.dateFin),
-    });
+    } as ProjetFormSubmitData);
   };
 
   return (

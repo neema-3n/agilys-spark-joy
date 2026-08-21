@@ -32,6 +32,7 @@ export interface BonCommande {
   engagement?: {
     id: string;
     numero: string;
+    objet?: string;
   };
   ligneBudgetaire?: {
     id: string;
@@ -40,6 +41,7 @@ export interface BonCommande {
   projet?: {
     id: string;
     nom: string;
+    code?: string;
   };
   
   // Montant facturé (calculé)

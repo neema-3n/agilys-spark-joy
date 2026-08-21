@@ -15,6 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
+import type { StructureType, StructureStatut } from '@/types/structure.types';
 
 export const structureSchema = z.object({
   code: z.string().min(1, 'Le code est requis').max(20, 'Maximum 20 caractères'),
@@ -24,7 +25,15 @@ export const structureSchema = z.object({
   statut: z.string().min(1, 'Le statut est requis'),
 });
 
-export type StructureFormData = z.infer<typeof structureSchema>;
+/** Déclaré plutôt qu'inféré : en `strict: false`, `z.infer` rend tout
+ *  optionnel. Zod continue de faire respecter le contrat à l'exécution. */
+export type StructureFormData = {
+  code: string;
+  nom: string;
+  type: StructureType;
+  responsable?: string;
+  statut: StructureStatut;
+};
 
 interface StructureFormProps {
   structure?: Structure;

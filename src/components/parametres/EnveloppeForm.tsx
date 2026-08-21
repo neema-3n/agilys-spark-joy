@@ -29,13 +29,29 @@ export const enveloppeSchema = z.object({
   sourceFinancement: z.string().min(1, 'La source de financement est requise').max(200, 'La source de financement est trop longue'),
   montantAlloue: z.coerce.number().min(0, 'Le montant doit être positif'),
   montantConsomme: z.coerce.number().min(0, 'Le montant doit être positif').default(0),
-  statut: z.string().min(1, 'Le statut est requis'),
+  // La base n'accepte que ces deux valeurs pour une enveloppe. Le référentiel
+  // « statut_general » propose actif/inactif : s'en servir ici laissait choisir
+  // « Inactif », que l'enregistrement rejetait ensuite.
+  statut: z.enum(['actif', 'cloture'], { required_error: 'Le statut est requis' }),
 }).refine(data => data.montantConsomme <= data.montantAlloue, {
   message: 'Le montant consommé ne peut pas dépasser le montant alloué',
   path: ['montantConsomme'],
 });
 
-export type EnveloppeFormValues = z.infer<typeof enveloppeSchema>;
+/**
+ * Déclaré plutôt qu'inféré : le projet compile en `strict: false`, où
+ * `z.infer` rend tout optionnel et laisse passer un objet vide. Écrire le
+ * contrat à la main lui rend sa valeur — zod continue de le faire respecter
+ * à l'exécution.
+ */
+export type EnveloppeFormValues = {
+  code: string;
+  nom: string;
+  sourceFinancement: string;
+  montantAlloue: number;
+  montantConsomme: number;
+  statut: 'actif' | 'cloture';
+};
 
 interface EnveloppeFormProps {
   enveloppe?: Enveloppe;
@@ -47,7 +63,6 @@ interface EnveloppeFormProps {
 export function EnveloppeForm({ enveloppe, onSubmit, onCancel, onDirtyChange }: EnveloppeFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { data: sourcesFinancement = [], isLoading: loadingSources } = useReferentiels('source_financement');
-  const { data: statuts = [], isLoading: loadingStatuts } = useReferentiels('statut_general');
 
   const form = useForm<EnveloppeFormValues>({
     resolver: zodResolver(enveloppeSchema),
@@ -120,17 +135,8 @@ export function EnveloppeForm({ enveloppe, onSubmit, onCancel, onDirtyChange }: 
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {loadingStatuts ? (
-                      <SelectItem value="loading" disabled>Chargement...</SelectItem>
-                    ) : statuts.length === 0 ? (
-                      <SelectItem value="empty" disabled>Aucun statut disponible</SelectItem>
-                    ) : (
-                      statuts.map((statut) => (
-                        <SelectItem key={statut.id} value={statut.code}>
-                          {statut.libelle}
-                        </SelectItem>
-                      ))
-                    )}
+                    <SelectItem value="actif">Actif</SelectItem>
+                    <SelectItem value="cloture">Clôturée</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />

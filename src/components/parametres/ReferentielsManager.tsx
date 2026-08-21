@@ -313,7 +313,10 @@ export const ReferentielsManager = () => {
         await referentielsService.create({
           clientId,
           categorie: activeCategorie as ReferentielCategorie,
-          ...data,
+          // Cette branche n'est atteinte que pour un référentiel : c'est donc
+          // ReferentielForm qui a produit `data`. TypeScript ne voit pas ce
+          // lien entre la catégorie active et le formulaire affiché.
+          ...(data as ReferentielFormData),
           modifiable: true,
         });
         toast({ title: 'Référentiel créé', description: 'Le référentiel a été créé avec succès.' });

@@ -68,9 +68,9 @@ export const bonsCommandeService = {
       .select(`
         *,
         fournisseurs(id, nom, code),
-        engagements(id, numero),
+        engagements(id, numero, objet),
         lignes_budgetaires(id, libelle),
-        projets(id, nom),
+        projets(id, nom, code),
         ecritures_comptables!bon_commande_id(count)
       `)
       .eq('client_id', clientId)
@@ -115,9 +115,9 @@ export const bonsCommandeService = {
       .select(`
         *,
         fournisseurs(id, nom, code),
-        engagements(id, numero),
+        engagements(id, numero, objet),
         lignes_budgetaires(id, libelle),
-        projets(id, nom)
+        projets(id, nom, code)
       `)
       .eq('id', id)
       .single();
@@ -186,9 +186,9 @@ export const bonsCommandeService = {
       .select(`
         *,
         fournisseurs(id, nom, code),
-        engagements(id, numero),
+        engagements(id, numero, objet),
         lignes_budgetaires(id, libelle),
-        projets(id, nom)
+        projets(id, nom, code)
       `)
       .single();
 
@@ -268,9 +268,9 @@ export const bonsCommandeService = {
       .select(`
         *,
         fournisseurs(id, nom, code),
-        engagements(id, numero),
+        engagements(id, numero, objet),
         lignes_budgetaires(id, libelle),
-        projets(id, nom)
+        projets(id, nom, code)
       `)
       .single();
 
@@ -301,9 +301,9 @@ export const bonsCommandeService = {
       .select(`
         *,
         fournisseurs(id, nom, code),
-        engagements(id, numero),
+        engagements(id, numero, objet),
         lignes_budgetaires(id, libelle),
-        projets(id, nom)
+        projets(id, nom, code)
       `)
       .single();
 
@@ -346,9 +346,9 @@ export const bonsCommandeService = {
       .select(`
         *,
         fournisseurs(id, nom, code),
-        engagements(id, numero),
+        engagements(id, numero, objet),
         lignes_budgetaires(id, libelle),
-        projets(id, nom)
+        projets(id, nom, code)
       `)
       .single();
 

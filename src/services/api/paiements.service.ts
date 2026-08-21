@@ -137,7 +137,9 @@ export const createPaiement = async (
 
 export const updatePaiement = async (
   id: string,
-  paiement: PaiementFormData,
+  // Partiel : `toSnakeCase` ne reprend que les clés fournies, et les appels
+  // internes ne changent souvent qu'un statut.
+  paiement: Partial<PaiementFormData>,
 ): Promise<Paiement> => {
   const { data: currentPaiement, error: currentPaiementError } = await supabase
     .from('paiements')

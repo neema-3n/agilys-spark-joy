@@ -256,7 +256,7 @@ export const ReservationTable = ({
       ];
 
       if (selection) {
-        const selectionColumn = buildSelectionColumn({
+        const selectionColumn = buildSelectionColumn<ReservationCredit>({
           selection,
           getId: (reservation) => reservation.id,
           getLabel: (reservation) => `Sélectionner ${reservation.numero}`,

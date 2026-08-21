@@ -43,6 +43,7 @@ export interface Depense {
   engagement?: {
     id: string;
     numero: string;
+    objet?: string;
     montant: number;
     solde?: number;
   };

@@ -110,9 +110,10 @@ export function RegleComptableForm({
       setDateDebut(source.dateDebut || '');
       setDateFin(source.dateFin || '');
       setTypeOperation(source.typeOperation || defaultTypeOperation);
-      const sourceTypeOperation = isAccountingEnabledForOperation(source.typeOperation || defaultTypeOperation)
-        ? (source.typeOperation || defaultTypeOperation)
-        : 'facture';
+      // Hissé dans une constante : le garde de type ne rétrécit que la
+      // variable qu'on lui passe, pas une expression recalculée par branche.
+      const candidat = source.typeOperation || defaultTypeOperation;
+      const sourceTypeOperation = isAccountingEnabledForOperation(candidat) ? candidat : 'facture';
       setPointComptable(source.pointComptable || getAccountingPolicy(sourceTypeOperation).defaultPoint);
       setRoleLigne(source.roleLigne || getAccountingPolicy(sourceTypeOperation).defaultRole);
       setSourceMontant(source.sourceMontant || getDefaultSourceMontant(source.typeOperation || defaultTypeOperation, source.roleLigne || 'charge_principale'));

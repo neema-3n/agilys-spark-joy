@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { CreateNatureCompteInput, NatureCompte, UpdateNatureCompteInput } from '@/types/nature-compte.types';
 import type { Compte } from '@/types/compte.types';
+import type { CompteType, CompteCategorie, CompteStatut } from '@/types/compte.types';
 
 const mapNatureCompte = (row: any): NatureCompte => ({
   id: row.id,
@@ -90,11 +91,11 @@ export const naturesCompteService = {
         clientId: compte.client_id,
         numero: compte.numero,
         libelle: compte.libelle,
-        type: compte.type,
-        categorie: compte.categorie,
+        type: compte.type as CompteType,
+        categorie: compte.categorie as CompteCategorie,
         parentId: compte.parent_id || undefined,
         niveau: compte.niveau,
-        statut: compte.statut,
+        statut: compte.statut as CompteStatut,
         createdAt: compte.created_at,
         updatedAt: compte.updated_at,
       })

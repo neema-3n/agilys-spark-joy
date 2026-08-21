@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useReferentiels } from '@/hooks/useReferentiels';
 import type { Compte } from '@/types/compte.types';
 import { SinglePageFormFooter } from '@/components/shared/SinglePageFormFooter';
+import type { CompteType, CompteCategorie, CompteStatut } from '@/types/compte.types';
 
 const createCompteSchema = (comptes: Compte[]) =>
   z
@@ -33,11 +34,11 @@ const createCompteSchema = (comptes: Compte[]) =>
 export type CompteFormData = {
   numero: string;
   libelle: string;
-  type: string;
-  categorie: string;
+  type: CompteType;
+  categorie: CompteCategorie;
   parentId?: string;
   niveau: number;
-  statut?: string;
+  statut?: CompteStatut;
 };
 
 interface CompteFormProps {

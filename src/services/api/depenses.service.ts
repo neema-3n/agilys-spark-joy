@@ -188,7 +188,7 @@ export const getDepenses = async (exerciceId: string, clientId: string): Promise
     .from('depenses')
     .select(`
       *,
-      engagement:engagements(id, numero, montant, fournisseur_id, beneficiaire),
+      engagement:engagements(id, numero, objet, montant, fournisseur_id, beneficiaire),
       reservation_credit:reservations_credits(id, numero, montant, statut),
       ligne_budgetaire:lignes_budgetaires(id, libelle, disponible),
       facture:factures(id, numero, montant_ttc, statut, fournisseur_id, fournisseur:fournisseurs(id, nom, code)),
@@ -320,7 +320,7 @@ export const updateDepense = async (
     .eq('id', id)
     .select(`
       *,
-      engagement:engagements(id, numero, montant, fournisseur_id, beneficiaire),
+      engagement:engagements(id, numero, objet, montant, fournisseur_id, beneficiaire),
       reservation_credit:reservations_credits(id, numero, montant, statut),
       ligne_budgetaire:lignes_budgetaires(id, libelle, disponible),
       facture:factures(id, numero, montant_ttc, statut, fournisseur_id, fournisseur:fournisseurs(id, nom, code)),
@@ -353,7 +353,7 @@ export const validerDepense = async (id: string): Promise<Depense> => {
     .eq('id', id)
     .select(`
       *,
-      engagement:engagements(id, numero, montant, fournisseur_id, beneficiaire),
+      engagement:engagements(id, numero, objet, montant, fournisseur_id, beneficiaire),
       reservation_credit:reservations_credits(id, numero, montant, statut),
       ligne_budgetaire:lignes_budgetaires(id, libelle, disponible),
       facture:factures(id, numero, montant_ttc, statut, fournisseur_id, fournisseur:fournisseurs(id, nom, code)),
@@ -411,7 +411,7 @@ export const marquerPayee = async (
     .eq('id', id)
     .select(`
       *,
-      engagement:engagements(id, numero, montant, fournisseur_id, beneficiaire),
+      engagement:engagements(id, numero, objet, montant, fournisseur_id, beneficiaire),
       reservation_credit:reservations_credits(id, numero, montant, statut),
       ligne_budgetaire:lignes_budgetaires(id, libelle, disponible),
       facture:factures(id, numero, montant_ttc, statut, fournisseur_id, fournisseur:fournisseurs(id, nom, code)),
@@ -522,7 +522,7 @@ export const annulerDepense = async (id: string, motif: string): Promise<Depense
     .eq('id', id)
     .select(`
       *,
-      engagement:engagements(id, numero, montant, fournisseur_id, beneficiaire),
+      engagement:engagements(id, numero, objet, montant, fournisseur_id, beneficiaire),
       reservation_credit:reservations_credits(id, numero, montant, statut),
       ligne_budgetaire:lignes_budgetaires(id, libelle, disponible),
       facture:factures(id, numero, montant_ttc, statut, fournisseur_id, fournisseur:fournisseurs(id, nom, code)),

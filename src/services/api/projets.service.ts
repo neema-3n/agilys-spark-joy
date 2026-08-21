@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Projet, CreateProjetInput, UpdateProjetInput, ProjetStats } from '@/types/projet.types';
+import type { Database } from '@/integrations/supabase/types';
 
 const STATUS_ALIASES: Record<string, Projet['statut']> = {
   planifie: 'planifie',
@@ -44,6 +45,10 @@ const mapFromDatabase = (row: any): Projet => ({
 });
 
 // Helper pour mapper les données du type Projet vers la DB
+// `Object.fromEntries` efface la forme de l'objet : sans annotation, l'insert
+// ne reconnaît plus la table.
+type ProjetInsert = Database['public']['Tables']['projets']['Insert'];
+
 const mapToDatabase = (input: CreateProjetInput | UpdateProjetInput) =>
   Object.fromEntries(
     Object.entries({
@@ -62,7 +67,7 @@ const mapToDatabase = (input: CreateProjetInput | UpdateProjetInput) =>
       priorite: (input as any).priorite,
       taux_avancement: (input as any).tauxAvancement,
     }).filter(([, value]) => value !== undefined)
-  );
+  ) as ProjetInsert;
 
 export const projetsService = {
   async getByExercice(exerciceId: string, clientId: string): Promise<Projet[]> {

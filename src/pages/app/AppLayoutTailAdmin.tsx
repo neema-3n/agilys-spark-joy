@@ -698,7 +698,7 @@ interface TailAdminHeaderProps {
   onMenuClick: () => void;
   onToggleSidebar: () => void;
   sidebarExpanded: boolean;
-  onLogout: () => Promise<void>;
+  onLogout: () => void | Promise<void>;
   user: ReturnType<typeof useAuth>['user'];
 }
 
